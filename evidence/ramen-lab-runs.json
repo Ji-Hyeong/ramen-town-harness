@@ -1,0 +1,127 @@
+{
+  "scope": "Observed Claude CLI result fields for first prototype; not a subscription quota or savings comparison",
+  "runs": [
+    {
+      "run": "ramen-lab-continuation",
+      "response": {
+        "subtype": "success",
+        "is_error": false,
+        "num_turns": 38
+      },
+      "reported_usage": {
+        "input_tokens": 40,
+        "cache_creation_input_tokens": 186300,
+        "cache_read_input_tokens": 2251106,
+        "output_tokens": 176069
+      },
+      "reported_thinking_tokens": 86887,
+      "permission_denials_count": 0
+    },
+    {
+      "run": "ramen-lab-correction-1-retry",
+      "response": {
+        "subtype": "success",
+        "is_error": false,
+        "num_turns": 17
+      },
+      "reported_usage": {
+        "input_tokens": 16,
+        "cache_creation_input_tokens": 214733,
+        "cache_read_input_tokens": 1475720,
+        "output_tokens": 14371
+      },
+      "reported_thinking_tokens": 5343,
+      "permission_denials_count": 1
+    },
+    {
+      "run": "ramen-lab-correction-1",
+      "response": {
+        "subtype": "success",
+        "is_error": true,
+        "num_turns": 1
+      },
+      "reported_usage": {
+        "input_tokens": 0,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "output_tokens": 0
+      },
+      "reported_thinking_tokens": 0,
+      "permission_denials_count": 0
+    },
+    {
+      "run": "ramen-lab-implementation",
+      "response": {
+        "subtype": "error_during_execution",
+        "is_error": true,
+        "num_turns": 6
+      },
+      "reported_usage": {
+        "input_tokens": 2,
+        "cache_creation_input_tokens": 4050,
+        "cache_read_input_tokens": 3693,
+        "output_tokens": 449
+      },
+      "reported_thinking_tokens": 12,
+      "permission_denials_count": 0
+    },
+    {
+      "run": "ramen-lab-launcher-correction",
+      "response": {
+        "subtype": "success",
+        "is_error": false,
+        "num_turns": 3
+      },
+      "reported_usage": {
+        "input_tokens": 4,
+        "cache_creation_input_tokens": 2491,
+        "cache_read_input_tokens": 453339,
+        "output_tokens": 1141
+      },
+      "reported_thinking_tokens": 0,
+      "permission_denials_count": 0
+    },
+    {
+      "run": "ramen-lab-layout-qa",
+      "response": {
+        "subtype": "success",
+        "is_error": false,
+        "num_turns": 11
+      },
+      "reported_usage": {
+        "input_tokens": 10,
+        "cache_creation_input_tokens": 5177,
+        "cache_read_input_tokens": 1154354,
+        "output_tokens": 3582
+      },
+      "reported_thinking_tokens": 166,
+      "permission_denials_count": 0
+    },
+    {
+      "run": "ramen-lab-native-qa",
+      "response": {
+        "subtype": "success",
+        "is_error": false,
+        "num_turns": 5
+      },
+      "reported_usage": {
+        "input_tokens": 6,
+        "cache_creation_input_tokens": 7438,
+        "cache_read_input_tokens": 663637,
+        "output_tokens": 5970
+      },
+      "reported_thinking_tokens": 846,
+      "permission_denials_count": 0
+    }
+  ],
+  "independent_results": {
+    "domain_tests": 20,
+    "domain_checks": 446,
+    "domain_failures": 0,
+    "headless_ui_layout_checks": 1000,
+    "headless_ui_layout_failures": 0,
+    "actual_png_captures_verified": 16,
+    "ios_device_tested": false,
+    "native_launcher_play_verified": false
+  }
+}
