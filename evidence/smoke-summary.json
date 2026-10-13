@@ -1,0 +1,41 @@
+{
+  "scope": "Noninteractive file read/edit connectivity; not game implementation",
+  "records": [
+    {
+      "attempt": "initial_authentication",
+      "type": "result",
+      "subtype": "success",
+      "is_error": true,
+      "num_turns": 1,
+      "permission_denials": []
+    },
+    {
+      "attempt": "obsolete_model",
+      "type": "result",
+      "subtype": "success",
+      "is_error": true,
+      "num_turns": 1,
+      "permission_denials": []
+    },
+    {
+      "attempt": "turn_limit",
+      "type": "result",
+      "subtype": "error_max_turns",
+      "is_error": false,
+      "num_turns": 8,
+      "permission_denials": []
+    },
+    {
+      "attempt": "accepted_run",
+      "type": "result",
+      "subtype": "success",
+      "is_error": false,
+      "num_turns": 6,
+      "permission_denials": []
+    }
+  ],
+  "independent_verification": {
+    "fixture_matches_expected": true,
+    "historical_baseline_check": "Only smoke/probe.txt changed among nine pre-existing project files; checked before documentation updates."
+  }
+}

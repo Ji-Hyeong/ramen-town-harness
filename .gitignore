@@ -1,0 +1,11 @@
+# Keep raw CLI sessions local; publish only explicitly selected evidence fields.
+smoke/result*.json
+.DS_Store
+.env
+.env.*
+!.env.example
+.godot/
+build/
+exports/
+*.p12
+*.mobileprovision
