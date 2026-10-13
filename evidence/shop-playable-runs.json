@@ -209,5 +209,64 @@
     },
     "ios_device": "not verified",
     "visual_direction": "accepted concept is isometric; current implementation is frontal and less detailed; user play approval pending"
+  },
+  "isometric_refinement": {
+    "contract": "tasks/shop-art-isometric.md",
+    "requested_max_turns": 20,
+    "exit_code": 1,
+    "observed_response_fields": {
+      "subtype": "success",
+      "is_error": true,
+      "num_turns": 19,
+      "duration_ms": 906191,
+      "permission_denials": [],
+      "usage": {
+        "input_tokens": 14,
+        "cache_creation_input_tokens": 50572,
+        "cache_read_input_tokens": 208127,
+        "output_tokens": 109941,
+        "output_tokens_details": {
+          "thinking_tokens": 106440
+        },
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 50572,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "global",
+        "iterations": [
+          {
+            "input_tokens": 2,
+            "output_tokens": 107640,
+            "cache_read_input_tokens": 54435,
+            "cache_creation_input_tokens": 749,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 749
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard",
+        "fallback_credit": null
+      }
+    },
+    "result_message": "Failed to authenticate: OAuth token revoked. Please log in again or contact your administrator.",
+    "accepted": false,
+    "code_state": "Only unfinished unused pixel helpers were added; preserved outside Git and restored to the tested baseline. Isometric scene not implemented."
+  },
+  "fresh_auth_probe": {
+    "exit_code": 1,
+    "no_tools": true,
+    "subtype": "success",
+    "is_error": true,
+    "num_turns": 1,
+    "result_message": "Failed to authenticate: OAuth token revoked. Please log in again or contact your administrator.",
+    "local_auth_status_logged_in": true,
+    "accepted": false
   }
 }
