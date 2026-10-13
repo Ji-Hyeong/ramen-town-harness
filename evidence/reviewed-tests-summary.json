@@ -1,0 +1,27 @@
+{
+  "scope": "Reviewed command execution, not game implementation",
+  "cli_version": "2.1.296",
+  "process_exit_code": 0,
+  "result": {
+    "subtype": "success",
+    "is_error": false,
+    "num_turns": 4,
+    "permission_denials": []
+  },
+  "observed_tools": [
+    "Read",
+    "Read",
+    "Bash"
+  ],
+  "observed_command": "cmp smoke/probe.txt smoke/probe.expected.txt",
+  "tool_result_is_error": false,
+  "independent_comparison": "PASS",
+  "rejection_path": "NOT TESTED",
+  "usage": {
+    "input_tokens": 4,
+    "cache_creation_input_tokens": 2725,
+    "cache_read_input_tokens": 11999,
+    "output_tokens": 480
+  },
+  "quota_note": "Observed usage fields are not subscription quota percentages."
+}

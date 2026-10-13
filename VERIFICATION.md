@@ -1,5 +1,25 @@
 # Verification record - 2026-10-13
 
+## V0 reviewed-tests execution: PASS after scoped permission grant
+
+- The same native CLI reported loggedIn=true in the user's terminal but false in Codex's restricted execution environment.
+- Granted permissions through request_permissions: network, write access to /Users/ji/.claude and /Users/ji/.claude.json, scoped to this turn. After that grant, auth status returned loggedIn=true with claude.ai authentication. No re-login, token extraction or global config change was performed.
+- Native CLI 2.1.296 ran the reviewed-tests contract with restricted/dontAsk and only the reviewed cmp Bash rule. Raw stream output is local and Git-ignored; it was requested to confirm actual tool execution rather than relying on the final claim.
+- Observed calls: Read smoke/probe.txt; Read smoke/probe.expected.txt; Bash command cmp smoke/probe.txt smoke/probe.expected.txt. The Bash result was non-error and had no output.
+- Process exit 0; subtype=success; is_error=false; num_turns=4; no permission denials. Codex independently executed cmp with exit 0, and Git status remained clean before adding this verification evidence.
+- Selected response fields and observed command are in evidence/reviewed-tests-summary.json. Account details, raw sessions and credentials are excluded. Usage fields are observed values, not a subscription quota comparison.
+- Only approved command execution is verified. The unapproved-command rejection path remains NOT TESTED. Scoped permissions may need renewed approval in later turns.
+
+## Earlier usage-distribution attempt (resolved)
+
+- Role documents now assign exploration, detailed design, implementation and permitted self-tests to Claude; Codex performs scoped independent acceptance.
+- Added reviewed-tests invocation and a read-only comparison contract. Existing file-only PASS below does not validate this new Bash profile.
+- New invocation exited 1 with is_error=true, result="Not logged in · Please run /login", duration_api_ms=0. The response reported zero usage; this is not a completed model task or evidence of token savings.
+- An attempt to run outside the restricted execution environment was rejected by the session's approval policy. Whether the user's interactive login remains valid has not been established by this attempt.
+- At that time, independent local fixture comparison and Git whitespace checks passed, but allowed-command execution and rejection-path behavior were UNVERIFIED. Allowed-command execution is now verified above; rejection-path behavior remains untested.
+- Raw failure output stays local under smoke/result-reviewed-tests.json; it is ignored by Git.
+- No game code or helper program was added in this revision. Changes are instructions, task contracts and invocation documentation.
+
 ## Final result: PASS
 
 - User completed login and authorized CLI updates.
