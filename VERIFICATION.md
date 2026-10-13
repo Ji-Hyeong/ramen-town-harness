@@ -1,5 +1,15 @@
 # Verification record - 2026-10-13
 
+## V0 usage-distribution revision: configured, runtime check blocked
+
+- Role documents now assign exploration, detailed design, implementation and permitted self-tests to Claude; Codex performs scoped independent acceptance.
+- Added reviewed-tests invocation and a read-only comparison contract. Existing file-only PASS below does not validate this new Bash profile.
+- New invocation exited 1 with is_error=true, result="Not logged in · Please run /login", duration_api_ms=0. The response reported zero usage; this is not a completed model task or evidence of token savings.
+- An attempt to run outside the restricted execution environment was rejected by the session's approval policy. Whether the user's interactive login remains valid has not been established by this attempt.
+- Independent local fixture comparison and Git whitespace checks pass. Allowed-command execution and rejection-path behavior of the new profile remain UNVERIFIED. Do not mark them passed until actual runs succeed.
+- Raw failure output stays local under smoke/result-reviewed-tests.json; it is ignored by Git.
+- No game code or helper program was added in this revision. Changes are instructions, task contracts and invocation documentation.
+
 ## Final result: PASS
 
 - User completed login and authorized CLI updates.
