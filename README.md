@@ -28,7 +28,22 @@ flowchart LR
 - 프로세스 종료 코드가 0이어도 작업이 완료됐다고 단정할 수 없습니다. 실제로 턴 제한 응답은 종료 코드 0과 `is_error=false`를 반환했습니다.
 - 완료 판정은 종료 코드, 응답 유형, 오류 여부, 보고 내용, 파일 상태를 함께 확인합니다.
 - Claude가 수정했다고 보고한 파일을 Codex가 기준 파일과 바이트 단위로 비교하고, 기존 파일들의 해시로 범위 밖 변경 여부를 확인했습니다.
-- 이 V0는 Claude에 파일 도구만 제공합니다. 테스트 명령은 Codex가 검토 후 독립 실행하며, 전체 무인 개발 파이프라인은 아직 아닙니다.
+- 기본 프로필은 파일 도구만 제공합니다. 검토된 테스트 프로필에서는 지정한 명령만 Claude가 실행하고, Codex도 완료 기준을 독립 검증합니다. 전체 무인 개발 파이프라인은 아닙니다.
+
+## 사용량 분산을 위한 V0 운영
+
+목표는 Claude에 구현 작업을 충분히 맡기면서 Codex의 중복 분석을 줄이는 것입니다. 사용률을 자동으로 50:50으로 맞추는 기능은 없습니다.
+
+| Claude Code | Codex |
+| --- | --- |
+| 관련 코드 탐색과 상세 설계 | 요구사항·범위·완료 기준 정의 |
+| 코드 및 테스트 작성 | 변경 부분과 필요한 주변 코드 리뷰 |
+| 허용된 명령으로 자체 검증 | 완료 기준과 회귀 테스트 독립 실행 |
+| 결함 수정과 짧은 결과 보고 | 재현 조건을 포함한 구체적인 수정 지시 |
+
+초기 작업은 독립된 계약으로 실행합니다. 같은 작업의 수정은 필요한 경우 로컬에 보관된 해당 세션 ID로 `--resume`하되, 권한과 파일 상태를 다시 검토합니다. 전체 대화나 소스 코드를 반복 전달하지 않습니다. 기본 턴 상한은 연결 테스트 20, 작은 구현 작업 30, 수정 요청 10이며 토큰 상한은 아닙니다. 한도 도달 시 상태를 확인하고 작업을 나누거나 이어갑니다.
+
+Claude의 실제 응답에 usage/modelUsage/total_cost_usd가 있으면 로컬 실행 기록에 보관하고, 없는 값은 미확인으로 둡니다. 비용 추정값은 구독 청구액이 아니며 토큰 수로 서비스별 사용률을 환산하지 않습니다. Codex 사용률도 확인 가능한 경우에만 작업 전후 관찰값으로 기록하고, 다른 작업이 동시에 사용했다면 이 작업만의 소비라고 단정하지 않습니다. 실제 게임 작업 몇 건 후 위임 범위를 조정합니다.
 
 원본 실행 로그는 로컬에 보관하고 Git에서는 제외합니다. 공개 증거에는 검증에 필요한 필드만 포함합니다. 아래 통과 기록은 최초 Mac 환경에서 관찰한 결과이며, 다른 계정·모델·CLI 버전에서는 다시 검증해야 합니다.
 
@@ -54,11 +69,33 @@ Codex writes a concrete contract using tasks/template.md. Execute from this dire
 
 This option set passed with native Claude Code 2.1.296 at /Users/ji/.local/bin/claude. The explicit model avoids the obsolete default model in the old CLI. Homebrew Claude was also upgraded from 1.0.120 to 2.1.287; the current shell resolves plain `claude` to /opt/homebrew/bin/claude. This harness explicitly selects the verified native installation without modifying the user's PATH. The successful test used smoke/result-updated.json and completed in six turns.
 
-Use shell input redirection for the contract, not command substitution or eval. Never interpolate the user's task into a shell command. Keep the working directory explicit. Do not use --continue or --resume by default: each contract is self-contained. Do not use --dangerously-skip-permissions, bypassPermissions or additional directories.
+Use shell input redirection for the contract, not command substitution or eval. Never interpolate the user's task into a shell command. Keep the working directory explicit. Do not use --continue; initial contracts are self-contained. Only explicitly resume the same task for corrections as described above. Do not use --dangerously-skip-permissions, bypassPermissions or additional directories.
 
 The empty strict MCP configuration prevents unrelated MCP connections. Only five file tools are exposed; dontAsk rejects unapproved operations, and restricted confines file tools to the working directory and ignores ordinary user/project/local settings. Bash is unavailable, so Claude cannot run tests through Bash in this V0 profile. Codex runs reviewed verification commands independently and returns their results to Claude for targeted corrections. These CLI permissions are not an operating-system sandbox; only use this in a trusted project and enforce editable paths through contracts and independent change review.
 
 For normal implementation, replace the input with the reviewed task contract, choose a unique output path, and set an appropriate finite turn limit. Monitor the process; cancel a stalled invocation rather than retrying concurrently. Retain failed output for diagnosis. Do not broaden permissions to solve an authentication error.
+
+### Reviewed-tests profile
+
+**상태: 설정 완료, 실제 호출 검증 보류.** 이번 실행 환경에서는 인증 오류가 발생했고 환경 밖 재시도도 승인 정책에서 차단됐습니다. 기존 파일 읽기·수정 PASS와 구분하며, 다음 실행에서 이 비교 계약을 먼저 검증합니다. [검증 기록](VERIFICATION.md)
+
+이 프로필은 파일 도구에 Bash를 추가하지만, 자동 허용은 계약에서 검토한 정확한 명령으로 제한합니다. 실행할 스크립트가 있다면 그 내용과 부작용도 먼저 확인합니다. 넓은 `Bash` 허용, 인터프리터 와일드카드, 설치·네트워크·Git 변경·배포 명령은 허용하지 않습니다. 파일 권한은 위 기본 프로필과 같으며 계약의 편집 범위도 계속 검증합니다.
+
+```sh
+"$HOME/.local/bin/claude" -p \
+  --model claude-sonnet-5-5 \
+  --output-format json \
+  --max-turns 20 \
+  --restricted \
+  --permission-mode dontAsk \
+  --strict-mcp-config \
+  --mcp-config '{"mcpServers":{}}' \
+  --tools 'Read,Edit,Write,Glob,Grep,Bash' \
+  --allowedTools 'Read,Edit,Write,Glob,Grep' 'Bash(cmp smoke/probe.txt smoke/probe.expected.txt)' \
+  < tasks/reviewed-tests-smoke.md > smoke/result-reviewed-tests.json
+```
+
+게임 구현 시에는 이 비교 명령을 그대로 쓰지 말고, 실제 테스트 명령을 검토한 뒤 계약과 허용 목록을 함께 바꿉니다. 거부된 명령은 자동 재시도하거나 권한을 넓히지 않습니다. 거부 경로의 자동 테스트는 아직 구성하지 않았습니다.
 
 ## Independent acceptance
 
