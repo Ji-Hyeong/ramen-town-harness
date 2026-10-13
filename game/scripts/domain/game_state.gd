@@ -11,6 +11,7 @@ const Customers = preload("res://scripts/domain/customer_catalog.gd")
 const Check = preload("res://scripts/domain/data_check.gd")
 const Evaluator = preload("res://scripts/domain/recipe_evaluator.gd")
 const Sim = preload("res://scripts/domain/sales_simulator.gd")
+const Session = preload("res://scripts/domain/service_session.gd")
 
 const SCHEMA_VERSION: int = 1
 const MAX_RECORDS: int = 30
@@ -38,6 +39,8 @@ var draft_config: Dictionary = {}
 var draft_name: String = ""
 var draft_lineage_id: int = 0
 var _records: Array = []
+## 진행 중인 영업 런타임. 저장하지 않는다(재시작하면 영업 전 상태로 돌아온다). 있는 동안은 레시피/초안/일차를 잠근다.
+var _active_session: Session = null
 
 
 func _init() -> void:
@@ -98,6 +101,8 @@ func _suggest_name() -> String:
 # ---------- 초안 편집 ----------
 
 func set_draft_choice(slot: String, id: String) -> Dictionary:
+	if service_active():
+		return _locked_fail()
 	if not Catalog.SLOTS.has(slot) or not Catalog.is_valid(slot, id):
 		return _fail("알 수 없는 재료예요.")
 	draft_config[slot] = id
@@ -105,7 +110,9 @@ func set_draft_choice(slot: String, id: String) -> Dictionary:
 
 
 func set_draft_price(price: int) -> Dictionary:
-	if price < Catalog.PRICE_MIN or price > Catalog.PRICE_MAX or price % Catalog.PRICE_STEP != 0:
+	if service_active():
+		return _locked_fail()
+	if price <Catalog.PRICE_MIN or price > Catalog.PRICE_MAX or price % Catalog.PRICE_STEP != 0:
 		return _fail("가격은 %d~%d원, %d원 단위로 정해요." % [Catalog.PRICE_MIN, Catalog.PRICE_MAX, Catalog.PRICE_STEP])
 	draft_config["price"] = price
 	return _ok("")
@@ -113,6 +120,8 @@ func set_draft_price(price: int) -> Dictionary:
 
 ## 이름은 입력 중에는 그대로 저장하고, 시식 때 검증한다. 개정 중에는 이름을 바꿀 수 없다.
 func set_draft_name(text: String) -> Dictionary:
+	if service_active():
+		return _locked_fail()
 	if draft_lineage_id != 0:
 		return _fail("개정 중인 레시피는 이름을 바꿀 수 없어요.")
 	draft_name = text
@@ -121,6 +130,8 @@ func set_draft_name(text: String) -> Dictionary:
 
 ## 새 레시피 시작: 개정 연결과 선택을 풀고 구성은 그대로 둔다.
 func start_new_recipe() -> void:
+	if service_active():
+		return
 	draft_lineage_id = 0
 	selected_record_id = 0
 	draft_name = _suggest_name()
@@ -128,6 +139,8 @@ func start_new_recipe() -> void:
 
 ## 노트에서 선택: 구성/가격/익힘/이름을 복원하고 이후 시식은 같은 레시피의 새 버전이 된다.
 func select_record(id: int) -> Dictionary:
+	if service_active():
+		return _locked_fail()
 	var idx: int = _index_of(id)
 	if idx < 0:
 		return _fail("노트에 없는 기록이에요.")
@@ -142,6 +155,8 @@ func select_record(id: int) -> Dictionary:
 
 
 func delete_record(id: int) -> Dictionary:
+	if service_active():
+		return _locked_fail()
 	var idx: int = _index_of(id)
 	if idx < 0:
 		return _fail("노트에 없는 기록이에요.")
@@ -164,6 +179,8 @@ func trial_cost() -> int:
 
 
 func taste() -> Dictionary:
+	if service_active():
+		return _locked_fail()
 	var cfg_err: String = Check.config_error(draft_config)
 	if cfg_err != "":
 		return _fail(cfg_err)
@@ -251,7 +268,11 @@ func forecast() -> Dictionary:
 
 
 ## 영업 1회 = 정확히 1일. 시뮬레이션은 결정적이므로 forecast()와 결과가 같다.
+## 즉시 정산하는 계산 경로이며 화면은 쓰지 않는다. 실제 플레이는 begin_service()/settle_service()를 거친다
+## (회귀 테스트와 "런타임 결과 == 예측" 대조용으로만 남겨 둔다).
 func serve() -> Dictionary:
+	if service_active():
+		return _locked_fail()
 	var rec: Dictionary = get_record(selected_record_id)
 	if rec.is_empty():
 		return _fail("노트에서 영업할 레시피를 먼저 선택하세요.")
@@ -286,6 +307,124 @@ func serve() -> Dictionary:
 	return res
 
 
+# ---------- 실시간 영업 (런타임 세션) ----------
+##
+## 거래 규칙: begin_service()는 자금·일차·기록을 전혀 바꾸지 않는다. 세션이 FINISHED가 되어 settle_service()가
+## 성공할 때만 자금/일차/보고가 한 번에 바뀐다. 중단·재시작한 세션은 아무 흔적도 남기지 않는다(부분 정산 없음).
+## 세션이 살아 있는 동안 레시피 편집/선택/삭제/시식/즉시 영업은 막혀, 시작할 때 복사한 스냅샷과 어긋날 수 없다.
+
+func service_active() -> bool:
+	return _active_session != null
+
+
+func active_session() -> Session:
+	return _active_session
+
+
+func begin_service() -> Dictionary:
+	if _active_session != null:
+		return _fail("이미 영업 중이에요.")
+	var rec: Dictionary = get_record(selected_record_id)
+	if rec.is_empty():
+		return _fail("노트에서 영업할 레시피를 먼저 선택하세요.")
+	if day >= MAX_DAY:
+		return _fail("더 이상 영업일을 늘릴 수 없어요.")
+	var plan: Dictionary = Session.make_plan(rec, day)
+	if str(plan["error"]) != "":
+		return _fail(str(plan["error"]))
+	var fc: Dictionary = plan["forecast"]
+	var after: int = wallet + int(fc["net"])
+	if after < 0:
+		return _fail("자금이 부족해서 오늘은 영업을 열 수 없어요.")
+	if after > MAX_WALLET:
+		return _fail("보유 자금 한도에 도달했어요.")
+	_active_session = Session.new(plan)
+	return _ok("영업을 시작했어요. 끝까지 진행해야 정산되고, 중간에 닫으면 저장되지 않아요.")
+
+
+## 영업 중단/폐기. 자금·일차·기록은 이미 아무것도 바뀌지 않았으므로 되돌릴 것이 없다.
+func cancel_service() -> void:
+	if _active_session != null:
+		_active_session.cancel()
+		_active_session = null
+
+
+## 끝난 세션의 완료 주문으로 하루를 정산한다. 검증을 모두 마친 뒤에만 상태를 바꾸므로 실패하면 아무 변화가 없다.
+## 성공하면 세션이 비워지고 일차가 올라가 같은 세션/같은 날의 두 번째 정산은 구조적으로 불가능하다.
+func settle_service() -> Dictionary:
+	var s: Session = _active_session
+	if s == null:
+		return _fail("정산할 영업이 없어요.")
+	if s.settled:
+		return _fail("이미 정산된 영업이에요.")
+	if not s.is_finished():
+		return _fail("영업이 아직 끝나지 않았어요. 끝나지 않은 영업은 정산되지 않아요.")
+	var sm: Dictionary = s.summary()
+	if str(sm["error"]) != "":
+		return _fail(str(sm["error"]))
+	if int(sm["day"]) != day:
+		return _fail("영업일이 달라져 정산할 수 없어요.")
+	var rec: Dictionary = get_record(selected_record_id)
+	if rec.is_empty() or int(rec["record_id"]) != int(sm["record_id"]):
+		return _fail("영업한 레시피와 선택된 레시피가 달라 정산할 수 없어요.")
+	var rec_cfg: Dictionary = rec["config"]
+	var sm_cfg: Dictionary = sm["config"]
+	if not Check.same_config(rec_cfg, sm_cfg):
+		return _fail("영업한 레시피 구성이 바뀌어 정산할 수 없어요.")
+	# 도메인 계산이 허용하는 범위를 넘는 판매는 정산하지 않는다(런타임이 수요·용량 한도를 넘길 수 없음을 재확인).
+	var fc: Dictionary = Sim.simulate(rec_cfg, rec["scores"], day)
+	if str(fc["error"]) != "":
+		return _fail(str(fc["error"]))
+	var units: int = int(sm["units"])
+	if units > int(fc["units"]):
+		return _fail("완료 주문이 영업 한도를 넘어 정산할 수 없어요.")
+	var src_sm: Dictionary = sm["by_source"]
+	var src_fc: Dictionary = fc["by_source"]
+	var src_sum: int = 0
+	for k in src_sm:
+		if int(src_sm[k]) > int(src_fc[k]):
+			return _fail("손님별 완료 주문이 영업 한도를 넘어 정산할 수 없어요.")
+		src_sum += int(src_sm[k])
+	var price: int = int(rec_cfg["price"])
+	if src_sum != units or int(sm["revenue"]) != units * price or int(sm["ingredient_cost"]) != units * Evaluator.unit_cost(rec_cfg):
+		return _fail("완료 주문 합계가 맞지 않아 정산할 수 없어요.")
+	if day >= MAX_DAY:
+		return _fail("더 이상 영업일을 늘릴 수 없어요.")
+	var net: int = int(sm["revenue"]) - int(sm["ingredient_cost"]) - int(sm["overhead"])
+	var after: int = wallet + net
+	if after < 0:
+		return _fail("자금이 부족해서 정산할 수 없어요.")
+	if after > MAX_WALLET:
+		return _fail("보유 자금 한도에 도달했어요.")
+	# --- 여기부터는 실패 지점이 없다 ---
+	last_report = {
+		"day": day,
+		"recipe_name": str(rec["name"]),
+		"version": int(rec["version"]),
+		"price": price,
+		"units": units,
+		"revenue": int(sm["revenue"]),
+		"ingredient_cost": int(sm["ingredient_cost"]),
+		"overhead": int(sm["overhead"]),
+		"net": net,
+		"wallet_after": after,
+		"by_source": src_sm.duplicate(true),
+	}
+	wallet = after
+	day += 1
+	s.mark_settled()
+	_active_session = null
+	var res: Dictionary = _ok("%d일차 영업을 마쳤어요." % int(last_report["day"]))
+	res["report"] = last_report.duplicate(true)
+	res["turned_away"] = int(sm["turned_away"])
+	res["avg_stars"] = float(sm["avg_stars"])
+	return res
+
+
+static func _locked_fail() -> Dictionary:
+	return {"ok": false, "message": "영업 중에는 레시피와 일차를 바꿀 수 없어요. 영업을 끝내거나 중단한 뒤 다시 해 보세요."}
+
+
 # ---------- 저장 직렬화 ----------
 
 func to_dict() -> Dictionary:
@@ -310,6 +449,8 @@ func to_dict() -> Dictionary:
 ## 전체를 먼저 임시 변수에 검증한 뒤 한 번에 반영한다. 하나라도 틀리면 상태는 그대로이고
 ## 오류 메시지를 돌려준다(일부만 받아들이는 손실 로드는 하지 않는다). 성공이면 "".
 func load_from_dict(raw: Variant) -> String:
+	if service_active():
+		return "영업 중에는 불러올 수 없어요."
 	if typeof(raw) != TYPE_DICTIONARY:
 		return "저장 구조가 올바르지 않아요."
 	var d: Dictionary = raw

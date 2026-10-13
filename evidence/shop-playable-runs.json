@@ -1,0 +1,213 @@
+{
+  "model": "claude-sonnet-5-5",
+  "cli": "native Claude Code 2.1.296",
+  "profile": "restricted file tools only, dontAsk, empty strict MCP config",
+  "notes": [
+    "Observed response fields, not subscription billing or quota savings.",
+    "Resumed-call turn counts are recorded as returned and may exceed the requested limit.",
+    "Both turn-limit failures retained; only the last invocation has a successful final report.",
+    "No session/account identifiers, credentials, raw transcripts or model thinking published.",
+    "No real renderer screenshot for the new shop; CPU asset composites are separate inspection artifacts."
+  ],
+  "runs": [
+    {
+      "contract": "tasks/shop-playable-v1.md",
+      "requested_max_turns": 30,
+      "observed_exit_code": 1,
+      "subtype": "error_max_turns",
+      "is_error": true,
+      "num_turns": 31,
+      "has_final_report": false,
+      "permission_denials": [],
+      "duration_ms": 1583225,
+      "observed_usage_fields": {
+        "input_tokens": 60,
+        "cache_creation_input_tokens": 333553,
+        "cache_read_input_tokens": 5800449,
+        "output_tokens": 231360,
+        "output_tokens_details": {
+          "thinking_tokens": 114699
+        },
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 333553,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "global",
+        "iterations": [
+          {
+            "input_tokens": 2,
+            "output_tokens": 3187,
+            "cache_read_input_tokens": 331016,
+            "cache_creation_input_tokens": 7149,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 7149
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard",
+        "fallback_credit": null
+      },
+      "tool_calls": {
+        "Glob": 1,
+        "Read": 20,
+        "Grep": 4,
+        "Write": 7,
+        "Edit": 60
+      }
+    },
+    {
+      "contract": "tasks/shop-correction-1.md",
+      "requested_max_turns": 10,
+      "observed_exit_code": 1,
+      "subtype": "error_max_turns",
+      "is_error": true,
+      "num_turns": 11,
+      "has_final_report": false,
+      "permission_denials": [],
+      "duration_ms": 158958,
+      "observed_usage_fields": {
+        "input_tokens": 20,
+        "cache_creation_input_tokens": 27662,
+        "cache_read_input_tokens": 3522909,
+        "output_tokens": 20929,
+        "output_tokens_details": {
+          "thinking_tokens": 10534
+        },
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 27662,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "global",
+        "iterations": [
+          {
+            "input_tokens": 2,
+            "output_tokens": 3775,
+            "cache_read_input_tokens": 363486,
+            "cache_creation_input_tokens": 2341,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 2341
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard",
+        "fallback_credit": null
+      },
+      "tool_calls": {
+        "Edit": 18,
+        "Grep": 3,
+        "Read": 1
+      }
+    },
+    {
+      "contract": "tasks/shop-correction-2.md",
+      "requested_max_turns": 10,
+      "observed_exit_code": 0,
+      "subtype": "success",
+      "is_error": false,
+      "num_turns": 15,
+      "has_final_report": true,
+      "permission_denials": [],
+      "duration_ms": 74645,
+      "observed_usage_fields": {
+        "input_tokens": 8,
+        "cache_creation_input_tokens": 16450,
+        "cache_read_input_tokens": 1491211,
+        "output_tokens": 10725,
+        "output_tokens_details": {
+          "thinking_tokens": 1591
+        },
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 16450,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "global",
+        "iterations": [
+          {
+            "input_tokens": 2,
+            "output_tokens": 1262,
+            "cache_read_input_tokens": 377841,
+            "cache_creation_input_tokens": 4436,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 4436
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard",
+        "fallback_credit": null
+      },
+      "tool_calls": {
+        "Edit": 14
+      }
+    }
+  ],
+  "independent_verification": {
+    "initial_domain": {
+      "tests": 30,
+      "checks": 1148,
+      "failures": 1,
+      "cause": "undefined WHITE in shop_painter.gd"
+    },
+    "corrected_domain": {
+      "tests": 30,
+      "checks": 1593,
+      "failures": 0,
+      "exit_code": 0
+    },
+    "initial_layout": {
+      "checks": 1488,
+      "failures": 2,
+      "cause": "full card reachability for Card_dohyun/Card_maru"
+    },
+    "corrected_layout": {
+      "sizes": [
+        "1280x800",
+        "390x844"
+      ],
+      "checks": 1464,
+      "failures": 0,
+      "exit_code": 0,
+      "mode": "layout-only; no screenshots"
+    },
+    "main_scene": {
+      "frames": 60,
+      "headless": true,
+      "exit_code": 0,
+      "errors": 0
+    },
+    "editor_import": {
+      "exit_code": 0,
+      "errors": 0
+    },
+    "cpu_asset_inspection": {
+      "images": 2,
+      "full_ui_screenshot": false
+    },
+    "native_visual_qa": {
+      "status": "not verified",
+      "blocker": "Native screen tool reported Mac locked"
+    },
+    "ios_device": "not verified",
+    "visual_direction": "accepted concept is isometric; current implementation is frontal and less detailed; user play approval pending"
+  }
+}

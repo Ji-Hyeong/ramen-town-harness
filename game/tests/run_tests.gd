@@ -11,6 +11,10 @@ const Sim = preload("res://scripts/domain/sales_simulator.gd")
 const GameStateScript = preload("res://scripts/domain/game_state.gd")
 const SaveServiceScript = preload("res://scripts/services/save_service.gd")
 const LocationScript = preload("res://scripts/services/data_location.gd")
+const SessionScript = preload("res://scripts/domain/service_session.gd")
+const LayoutScript = preload("res://scripts/ui/shop_layout.gd")
+const ArtScript = preload("res://scripts/ui/pixel_art.gd")
+const PainterScript = preload("res://scripts/ui/shop_painter.gd")
 
 const ARG: String = "--test-data-dir="
 
@@ -46,6 +50,10 @@ func _initialize() -> void:
 		test_wallet_and_serve, test_invalid_inputs, test_save_roundtrip,
 		test_missing_corrupt_future_saves, test_malformed_state_rejected, test_backup_strategy,
 		test_data_location,
+		test_service_plan_deterministic, test_service_lifecycle_order, test_service_queue_and_seat_reuse,
+		test_service_money_matches_runtime, test_service_quality_changes_arrivals_and_reactions,
+		test_service_recipe_locking, test_service_cancel_and_reload, test_service_settlement_guards,
+		test_service_determinism_and_chunking, test_shop_layout_and_art,
 	]
 	var ran: int = 0
 	for t in tests:
@@ -823,4 +831,603 @@ func test_data_location() -> void:
 	var twice: Dictionary = LocationScript.resolve(PackedStringArray(["--dev-data-dir=" + dir, "--dev-data-dir=" + dir + "/x"]))
 	_check(not bool(twice["ok"]), "중복 지정 거부")
 	DirAccess.remove_absolute(dir)
+	_end()
+
+
+# ---------- 실시간 영업 런타임 ----------
+# 아래 시험은 시간을 게임초 틱으로 직접 진행하므로 실제 시간·렌더러·난수에 의존하지 않는다.
+
+## 준비 시간 73초(가장 빠른 축)인 레시피: 서버/자리 병목 없이 요리사 속도만 보게 하는 기준.
+func _fast_cfg(price: int = 9000) -> Dictionary:
+	return _cfg("broth_chicken", "tare_shio", "oil_scallion", "noodle_thin", "topping_nori", "cook_firm", price)
+
+
+func _state_with_recipe(config: Dictionary, wallet: int = 100000) -> GameStateScript:
+	var s: GameStateScript = _state_with_wallet(wallet)
+	_apply_cfg(s, config)
+	s.set_draft_name("영업 시험")
+	var r: Dictionary = s.taste()
+	_check(bool(r["ok"]), "시험용 시식 실패: " + str(r["message"]))
+	return s
+
+
+func _arrival(t: int, source: String = "walkin") -> Dictionary:
+	return {"t": t, "source": source, "will_order": true}
+
+
+func _plan_with(rec: Dictionary, day: int, arrivals: Array) -> Dictionary:
+	var plan: Dictionary = SessionScript.make_plan(rec, day)
+	_check(str(plan["error"]) == "", "계획 생성 실패: " + str(plan["error"]))
+	plan["arrivals"] = arrivals
+	return plan
+
+
+func _json(s: GameStateScript) -> String:
+	return JSON.stringify(s.to_dict(), "\t", true)
+
+
+func test_service_plan_deterministic() -> void:
+	var s: GameStateScript = _state_with_recipe(_rich_cfg())
+	var rec: Dictionary = s.get_record(s.selected_record_id)
+	for day in [1, 3, 6]:
+		var a: Dictionary = SessionScript.make_plan(rec, day)
+		var b: Dictionary = SessionScript.make_plan(rec, day)
+		_check(str(a["error"]) == "" and str(a) == str(b), "같은 레시피·같은 날의 계획은 같아야 해요 (%d일차)" % day)
+		var fc: Dictionary = a["forecast"]
+		var by_source: Dictionary = fc["by_source"]
+		var counts: Dictionary = {}
+		var orders: int = 0
+		var lost: int = 0
+		var in_window: bool = true
+		for x in a["arrivals"]:
+			var ar: Dictionary = x
+			if int(ar["t"]) < 5 or int(ar["t"]) > SessionScript.ARRIVAL_SPAN + 12:
+				in_window = false
+			if bool(ar["will_order"]):
+				orders += 1
+				counts[str(ar["source"])] = int(counts.get(str(ar["source"]), 0)) + 1
+			else:
+				lost += 1
+		_check(in_window, "도착 시각이 영업 시간 안이어야 해요 (%d일차)" % day)
+		_check(orders == int(fc["units"]), "주문 손님 수 = 영업 시뮬레이션 판매량 (%d일차)" % day)
+		_check(lost == int(fc["demand"]) - int(fc["units"]), "돌아가는 손님 수 = 수요 - 판매량 (%d일차)" % day)
+		for id in by_source:
+			_check(int(counts.get(id, 0)) == int(by_source[id]), "손님별 도착 수가 시뮬레이션과 같아야 해요: " + str(id))
+	# 스냅샷: 계획 이후 레시피/상태를 바꿔도 이미 만든 계획의 구성은 변하지 않는다.
+	var plan: Dictionary = SessionScript.make_plan(rec, 1)
+	var frozen: String = str(plan["config"])
+	s.set_draft_price(12000)
+	_check(str(plan["config"]) == frozen and int((plan["config"] as Dictionary)["price"]) == 9500, "계획은 레시피 스냅샷을 복사해 가져야 해요")
+	_end()
+
+
+func test_service_lifecycle_order() -> void:
+	var s: GameStateScript = _state_with_recipe(_fast_cfg())
+	var rec: Dictionary = s.get_record(s.selected_record_id)
+	var sess: SessionScript = SessionScript.new(_plan_with(rec, 1, [_arrival(10)]))
+	var seen: Array[int] = []
+	var invariant_ok: bool = true
+	var guard: int = 0
+	while sess.state == SessionScript.RUNNING and guard < 5000:
+		sess.tick()
+		guard += 1
+		var p: SessionScript.Patron = sess._patrons[0]
+		if p.spawned and (seen.is_empty() or seen[seen.size() - 1] != p.state):
+			seen.append(p.state)
+		# 완료 주문 수는 식사를 마친(퇴장 중이거나 떠난) 손님 수와 늘 같다: 식사 전에는 한 건도 완료되지 않는다.
+		var finished_orders: int = 1 if (p.state == SessionScript.P_LEAVING or p.state == SessionScript.P_GONE) else 0
+		if sess.completed.size() != finished_orders:
+			invariant_ok = false
+	_check(invariant_ok, "주문은 식사가 끝난 틱에만 완료로 기록돼야 해요")
+	_check(sess.state == SessionScript.FINISHED, "하루가 끝나야 해요")
+	# 주문 → 조리 → 서빙 → 식사 → 퇴장 순서(줄 서기와 자리 배정이 같은 틱이라 TO_SEAT 로 바로 이어진다)
+	var expected: Array[int] = [SessionScript.P_APPROACH, SessionScript.P_TO_SEAT, SessionScript.P_ORDERING,
+		SessionScript.P_WAITING, SessionScript.P_EATING, SessionScript.P_LEAVING, SessionScript.P_GONE]
+	_check(seen == expected, "손님 상태 순서가 맞아야 해요: " + str(seen))
+	_check(sess.completed.size() == 1, "손님 1명 = 완료 주문 1건")
+	var done: Dictionary = sess.completed[0]
+	# 도착 10 + 접근 40(첫 틱 포함 -1) + 자리까지 걷기 + 주문 + 조리(준비 시간) + 서빙 + 식사. 대기·병목이 없으니 정확히 일치한다.
+	var expected_done: int = 10 + (SessionScript.APPROACH_GS - 1) + SessionScript.SEAT_WALK[0] + SessionScript.ORDER_GS + sess.prep + SessionScript.SEAT_SERVE[0] + SessionScript.EAT_GS
+	_check(int(done["done_t"]) == expected_done, "완료 시각이 걷기+주문+조리+서빙+식사 합과 같아야 해요: %d vs %d" % [int(done["done_t"]), expected_done])
+	_check(int(done["seat"]) == 0 and int(done["price"]) == 9000, "빈 자리 중 가장 앞 번호에 앉고 가격은 스냅샷 값이어야 해요")
+	var sm: Dictionary = sess.summary()
+	_check(int(sm["units"]) == 1 and int(sm["revenue"]) == 9000 and int(sm["finished_at"]) >= SessionScript.SERVICE_SECONDS, "요약은 완료 주문에서만 나와요")
+	_end()
+
+
+func test_service_queue_and_seat_reuse() -> void:
+	var s: GameStateScript = _state_with_recipe(_fast_cfg())
+	var rec: Dictionary = s.get_record(s.selected_record_id)
+	var arrivals: Array = []
+	for i in 24:
+		arrivals.append(_arrival(5 + i * 2))
+	var sess: SessionScript = SessionScript.new(_plan_with(rec, 1, arrivals))
+	var max_queue: int = 0
+	var max_seated: int = 0
+	var guard: int = 0
+	while sess.state == SessionScript.RUNNING and guard < SessionScript.HARD_LIMIT + 10:
+		sess.tick()
+		guard += 1
+		var st: Dictionary = sess.stats()
+		max_queue = maxi(max_queue, int(st["queue"]))
+		max_seated = maxi(max_seated, int(st["seated"]))
+	_check(sess.state == SessionScript.FINISHED, "24명이 몰려도 하루는 끝나야 해요")
+	_check(sess.completed.size() == 24, "24명 모두 식사를 마쳐야 해요: %d" % sess.completed.size())
+	_check(max_queue > 0, "자리(8)보다 손님이 많으면 줄이 생겨야 해요")
+	_check(max_seated == SessionScript.SEAT_COUNT, "동시에 앉은 손님은 자리 수와 같아질 수 있고 넘지 않아요: %d" % max_seated)
+	_check(sess.seat_log.size() == 24, "자리 사용 기록은 손님 수와 같아야 해요")
+	var per_seat: Dictionary = {}
+	var order_ok: bool = true
+	var last_patron: int = -1
+	for e in sess.seat_log:
+		var d: Dictionary = e
+		if int(d["patron"]) < last_patron:
+			order_ok = false
+		last_patron = int(d["patron"])
+		var list: Array = per_seat.get(int(d["seat"]), [])
+		list.append(d)
+		per_seat[int(d["seat"])] = list
+	_check(order_ok, "줄은 선착순으로 자리를 받아야 해요")
+	var reused: bool = false
+	var no_overlap: bool = true
+	for seat in per_seat:
+		var uses: Array = per_seat[seat]
+		if uses.size() >= 2:
+			reused = true
+		for k in range(1, uses.size()):
+			var prev: Dictionary = uses[k - 1]
+			var cur: Dictionary = uses[k]
+			if int(prev["to"]) < 0 or int(cur["from"]) < int(prev["to"]) + SessionScript.SEAT_CLEAR_GS:
+				no_overlap = false
+		var tail: Dictionary = uses[uses.size() - 1]
+		if int(tail["to"]) < 0:
+			no_overlap = false
+	_check(reused, "한 자리를 여러 손님이 이어서 써야 해요")
+	_check(no_overlap, "한 자리에 두 손님이 겹치거나 비우지 않고 앉으면 안 돼요")
+	_end()
+
+
+func test_service_money_matches_runtime() -> void:
+	var configs: Array[Dictionary] = [_rich_cfg(), _light_cfg(), _spicy_cfg(), _fast_cfg(8000), _rich_cfg(30000)]
+	for cfg in configs:
+		var s: GameStateScript = _state_with_recipe(cfg, 200000)
+		for step in 4:
+			var day_before: int = s.day
+			var wallet_before: int = s.wallet
+			var fc: Dictionary = s.forecast()
+			var started: Dictionary = s.begin_service()
+			_check(bool(started["ok"]), "영업 시작: " + str(started["message"]))
+			if not bool(started["ok"]):
+				break
+			_check(s.day == day_before and s.wallet == wallet_before, "시작은 자금/일차를 바꾸면 안 돼요")
+			var sess: SessionScript = s.active_session()
+			_check(sess.run_to_end(), "하루는 끝나야 해요")
+			# 끝났어도 정산 전에는 자금/일차가 그대로(미정산 매출만 있음)
+			_check(s.wallet == wallet_before and s.day == day_before, "정산 전에는 자금/일차 불변")
+			var price: int = int((sess.config as Dictionary)["price"])
+			_check(sess.pending_revenue() == sess.completed.size() * price, "미정산 매출 = 완료 주문 x 가격")
+			var sm: Dictionary = sess.summary()
+			var finished_at: int = int(sm["finished_at"])
+			# 정상 배속(초당 36게임초)에서 90초 이내, 점심 피크(2400)보다는 짧을 수 없다.
+			_check(finished_at >= SessionScript.SERVICE_SECONDS and finished_at <= 3240, "하루 길이가 범위를 벗어났어요: %d" % finished_at)
+			var res: Dictionary = s.settle_service()
+			_check(bool(res["ok"]), "정산: " + str(res["message"]))
+			var rep: Dictionary = s.last_report
+			_check(int(rep["units"]) == sess.completed.size() and int(rep["units"]) == int(fc["units"]), "보고 판매량 = 완료 주문 수 = 예상 판매량")
+			var revenue_sum: int = 0
+			var cost_sum: int = 0
+			for c in sess.completed:
+				var cd: Dictionary = c
+				revenue_sum += int(cd["price"])
+				cost_sum += int(cd["unit_cost"])
+			_check(int(rep["revenue"]) == revenue_sum and int(rep["ingredient_cost"]) == cost_sum, "보고 매출/재료비 = 완료 주문 합")
+			_check(int(rep["net"]) == revenue_sum - cost_sum - Sim.OVERHEAD, "순이익 식")
+			_check(int(rep["net"]) == int(fc["net"]), "런타임 결과가 도메인 예측과 같아야 해요")
+			_check(s.wallet == wallet_before + int(rep["net"]) and int(rep["wallet_after"]) == s.wallet, "자금 = 이전 + 순이익")
+			_check(s.day == day_before + 1 and int(rep["day"]) == day_before, "영업 1회 = 정확히 1일")
+			var by_source: Dictionary = rep["by_source"]
+			var fc_by: Dictionary = fc["by_source"]
+			var sum_src: int = 0
+			for k in by_source:
+				sum_src += int(by_source[k])
+				_check(int(by_source[k]) == int(fc_by[k]), "손님별 판매 = 예측: " + str(k))
+			_check(sum_src == int(rep["units"]), "손님별 합 = 총 판매")
+			_check(not s.service_active() and sess.settled, "정산 후 세션은 닫혀야 해요")
+			# 저장 검증을 그대로 통과한다(보고서 식 검증 포함)
+			var parsed: Variant = JSON.parse_string(JSON.stringify(s.to_dict()))
+			var loaded: GameStateScript = GameStateScript.new()
+			_check(loaded.load_from_dict(parsed) == "", "정산 후 상태는 저장 검증을 통과해야 해요")
+	_end()
+
+
+func test_service_quality_changes_arrivals_and_reactions() -> void:
+	# 같은 요리를 싸게/비싸게 팔면 도착하는 손님 수가 달라진다(수요가 레시피 스냅샷에서 온다).
+	var cheap: GameStateScript = _state_with_recipe(_rich_cfg(8000))
+	var pricey: GameStateScript = _state_with_recipe(_rich_cfg(12000))
+	var plan_cheap: Dictionary = SessionScript.make_plan(cheap.get_record(cheap.selected_record_id), 2)
+	var plan_pricey: Dictionary = SessionScript.make_plan(pricey.get_record(pricey.selected_record_id), 2)
+	var n_cheap: int = 0
+	var n_pricey: int = 0
+	for x in plan_cheap["arrivals"]:
+		if bool((x as Dictionary)["will_order"]):
+			n_cheap += 1
+	for y in plan_pricey["arrivals"]:
+		if bool((y as Dictionary)["will_order"]):
+			n_pricey += 1
+	_check(n_cheap > n_pricey, "싼 가격이 더 많은 손님을 부르고 화면에도 그만큼 도착해야 해요 (%d vs %d)" % [n_cheap, n_pricey])
+
+	# 맛 점수가 높으면 만족 반응(하트), 낮으면 불만 반응(화남)이 식사 장면에서 실제로 나온다.
+	var base: GameStateScript = _state_with_recipe(_fast_cfg())
+	var rec: Dictionary = base.get_record(base.selected_record_id)
+	var bubbles_good: Dictionary = {}
+	var bubbles_bad: Dictionary = {}
+	var stars_good: Array[int] = []
+	var stars_bad: Array[int] = []
+	for variant in 2:
+		var plan: Dictionary = _plan_with(rec, 1, [_arrival(10), _arrival(400)])
+		var level: int = 100 if variant == 0 else 10
+		plan["scores"] = {"dohyun": level, "hayoung": level, "maru": level}
+		var sess: SessionScript = SessionScript.new(plan)
+		var guard: int = 0
+		while sess.state == SessionScript.RUNNING and guard < SessionScript.HARD_LIMIT + 10:
+			sess.tick()
+			guard += 1
+			for pe in sess.entities()["patrons"]:
+				var pd: Dictionary = pe
+				var kind: String = str(pd["bubble"])
+				if kind != "":
+					if variant == 0:
+						bubbles_good[kind] = true
+					else:
+						bubbles_bad[kind] = true
+		for c in sess.completed:
+			var cd: Dictionary = c
+			if variant == 0:
+				stars_good.append(int(cd["stars"]))
+			else:
+				stars_bad.append(int(cd["stars"]))
+	_check(bubbles_good.has("heart") and not bubbles_good.has("angry"), "좋은 메뉴는 하트 반응: " + str(bubbles_good.keys()))
+	_check(bubbles_bad.has("angry") and not bubbles_bad.has("heart"), "나쁜 메뉴는 불만 반응: " + str(bubbles_bad.keys()))
+	_check(str(stars_good) == "[5, 5]" and str(stars_bad) == "[1, 1]","완료 주문의 만족도는 점수에서 나와요: %s / %s" % [str(stars_good), str(stars_bad)])
+
+	# 한꺼번에 몰리면 오래 기다린 손님의 만족도가 한 단계 떨어진다.
+	var crowd_plan: Dictionary = _plan_with(rec, 1, [_arrival(5), _arrival(5), _arrival(5), _arrival(5), _arrival(5), _arrival(5)])
+	crowd_plan["scores"] = {"dohyun": 100, "hayoung": 100, "maru": 100}
+	var crowd: SessionScript = SessionScript.new(crowd_plan)
+	_check(crowd.run_to_end(), "몰린 손님도 끝나야 해요")
+	var five: int = 0
+	var four: int = 0
+	var waits_ok: bool = true
+	for c2 in crowd.completed:
+		var cd2: Dictionary = c2
+		if int(cd2["stars"]) == 5:
+			five += 1
+		elif int(cd2["stars"]) == 4:
+			four += 1
+		if int(cd2["wait"]) <= 0:
+			waits_ok = false
+	_check(five >= 1 and four >= 1 and five + four == 6, "앞 손님은 만족, 오래 기다린 손님은 한 단계 낮아야 해요 (%d/%d)" % [five, four])
+	_check(waits_ok, "대기 시간이 기록돼야 해요")
+	_end()
+
+
+func test_service_recipe_locking() -> void:
+	var s: GameStateScript = _state_with_recipe(_light_cfg())
+	var first_id: int = s.selected_record_id
+	# 두 번째 기록을 만들어 두고 첫 번째를 선택해 영업한다.
+	s.set_draft_choice("noodle", "noodle_medium")
+	var second: Dictionary = s.taste()
+	_check(bool(second["ok"]), "두 번째 레시피 시식: " + str(second["message"]))
+	_check(bool(s.select_record(first_id)["ok"]), "첫 번째 선택")
+	var before: String = _json(s)
+	var started: Dictionary = s.begin_service()
+	_check(bool(started["ok"]), "영업 시작: " + str(started["message"]))
+	_check(_json(s) == before, "영업 시작은 저장될 상태를 바꾸지 않아요")
+	var sess: SessionScript = s.active_session()
+	var captured: String = str(sess.config)
+	_check(int(sess.record_id) == first_id, "세션은 선택된 레시피를 캡처해요")
+	_check(s.service_active(), "영업 중")
+
+	var attempts: Array[Dictionary] = [
+		s.set_draft_choice("broth", "broth_tonkotsu"),
+		s.set_draft_price(12000),
+		s.set_draft_name("바꾼 이름"),
+		s.select_record(int(second["record_id"])),
+		s.delete_record(first_id),
+		s.taste(),
+		s.serve(),
+		s.begin_service(),
+	]
+	for i in attempts.size():
+		_check(not bool(attempts[i]["ok"]), "영업 중 변경은 거부돼야 해요 (#%d)" % i)
+	s.start_new_recipe()
+	_check(s.selected_record_id == first_id and s.draft_lineage_id != 0, "영업 중 새 레시피 시작도 무시돼요")
+	_check(s.load_from_dict(s.to_dict()) != "", "영업 중 불러오기 거부")
+	_check(_json(s) == before, "거부된 시도는 상태를 전혀 바꾸지 않아요")
+	_check(str(sess.config) == captured, "캡처된 레시피는 바뀌지 않아요")
+
+	# 반환된 기록 복사본을 바꿔도 세션의 스냅샷은 그대로
+	var tampered: Dictionary = s.get_record(first_id)
+	(tampered["config"] as Dictionary)["price"] = 1
+	_check(str(sess.config) == captured and int(sess.price) == 9000, "스냅샷은 외부 변경에서 분리돼요")
+
+	# 중단하면 잠금이 풀리고 새 세션은 바뀐 레시피를 캡처한다.
+	s.cancel_service()
+	_check(not s.service_active(), "중단 후 잠금 해제")
+	_check(bool(s.set_draft_price(12000)["ok"]), "중단 후에는 편집 가능")
+	_check(bool(s.select_record(int(second["record_id"]))["ok"]), "중단 후에는 선택 가능")
+	_check(bool(s.begin_service()["ok"]), "다시 시작")
+	_check(int(s.active_session().record_id) == int(second["record_id"]) and str(s.active_session().config) != captured, "새 세션은 새로 선택한 레시피를 캡처해요")
+	_end()
+
+
+func test_service_cancel_and_reload() -> void:
+	var dir: String = _case_dir("service_cancel")
+	var saver: SaveServiceScript = SaveServiceScript.new(dir)
+	saver.remove_known_files()
+	var s: GameStateScript = _state_with_recipe(_light_cfg())
+	var baseline: String = _json(s)
+	var fc: Dictionary = s.forecast()
+	_check(int(fc["units"]) > 0, "전제: 이 레시피는 손님이 있어야 해요")
+	_check(bool(s.begin_service()["ok"]), "영업 시작")
+	var sess: SessionScript = s.active_session()
+	sess.advance(1500.0)
+	_check(sess.is_running() and sess.completed.size() > 0 and sess.pending_revenue() > 0, "전제: 영업 중간에 일부 주문이 이미 완료돼 있어야 해요")
+	_check(_json(s) == baseline, "진행 중 미정산 매출이 있어도 저장될 상태는 영업 전과 같아요")
+	# 도중 저장(앱 종료/일시정지)에는 영업 전 상태가 저장된다.
+	_check(bool(saver.save_state(s)["ok"]), "도중 저장")
+	var early: Dictionary = s.settle_service()
+	_check(not bool(early["ok"]) and _json(s) == baseline and s.service_active(), "끝나지 않은 영업은 정산 거부(부분 정산 없음)")
+	s.cancel_service()
+	_check(not s.service_active() and sess.state == SessionScript.CANCELLED, "중단")
+	_check(str(sess.summary()["error"]) != "", "중단된 세션은 정산 입력을 만들지 못해요")
+	_check(not bool(s.settle_service()["ok"]) and _json(s) == baseline, "중단 뒤 정산 불가, 상태 불변")
+	# 재시작: 저장 파일을 새 상태로 불러오면 영업 전 상태이고 진행 중 세션은 없다.
+	var loaded: GameStateScript = GameStateScript.new()
+	var lr: Dictionary = saver.load_into(loaded)
+	_check(str(lr["status"]) == "ok", "재불러오기: " + str(lr["message"]))
+	_check(not loaded.service_active() and loaded.day == 1 and loaded.wallet == s.wallet, "재시작하면 영업 전 일차/자금")
+	_check(_json(loaded) == baseline, "재시작 상태 = 영업 전 상태")
+	_check(loaded.last_report.is_empty(), "저장된 보고는 없어요(영업을 끝내지 않았으므로)")
+	# 다시 시작하면 처음부터(이전 진행 이어받지 않음)
+	_check(bool(loaded.begin_service()["ok"]), "다시 시작")
+	var again: SessionScript = loaded.active_session()
+	_check(again != sess and again.time == 0 and again.completed.is_empty(), "새 세션은 처음부터 시작해요")
+	_cleanup_case(saver)
+	_end()
+
+
+func test_service_settlement_guards() -> void:
+	var s: GameStateScript = _state_with_recipe(_light_cfg())
+	_check(not bool(s.settle_service()["ok"]), "세션이 없으면 정산 불가")
+	_check(bool(s.begin_service()["ok"]), "영업 시작")
+	var sess: SessionScript = s.active_session()
+	var day0: int = s.day
+	var snap_start: String = _json(s)
+	_check(not bool(s.settle_service()["ok"]) and _json(s) == snap_start, "시작 직후 정산 거부")
+	sess.advance(400.0)
+	_check(not bool(s.settle_service()["ok"]) and _json(s) == snap_start, "진행 중 정산 거부")
+	_check(sess.run_to_end(), "끝까지 진행")
+	var snap: String = _json(s)
+	_check(sess.completed.size() > 0, "전제: 완료 주문이 있어야 해요")
+
+	# (a) 일차 불일치
+	s.day += 1
+	_check(not bool(s.settle_service()["ok"]), "일차가 달라지면 정산 거부")
+	s.day -= 1
+	_check(_json(s) == snap, "(a) 거부 후 상태 불변")
+	# (b) 선택 레시피 불일치
+	var sel: int = s.selected_record_id
+	s.selected_record_id = 0
+	_check(not bool(s.settle_service()["ok"]), "선택 레시피가 달라지면 정산 거부")
+	s.selected_record_id = sel
+	_check(_json(s) == snap, "(b) 거부 후 상태 불변")
+	# (c) 부풀린 완료 목록(주문 하나 더)
+	sess.completed.append((sess.completed[0] as Dictionary).duplicate(true))
+	_check(not bool(s.settle_service()["ok"]), "도메인 한도를 넘는 완료 목록은 정산 거부")
+	sess.completed.pop_back()
+	_check(_json(s) == snap, "(c) 거부 후 상태 불변")
+	# (d) 금액 변조
+	var original_price: int = int((sess.completed[0] as Dictionary)["price"])
+	(sess.completed[0] as Dictionary)["price"] = 1
+	_check(not bool(s.settle_service()["ok"]), "스냅샷 가격과 다른 금액은 정산 거부")
+	(sess.completed[0] as Dictionary)["price"] = original_price
+	_check(_json(s) == snap, "(d) 거부 후 상태 불변")
+	# (e) 자금이 모자라 정산 후 음수가 되는 경우(순이익이 음수일 때만 해당)
+	var net: int = int(Sim.simulate(sess.config, sess.scores, day0)["net"])
+	if net < 0:
+		var saved_wallet: int = s.wallet
+		s.wallet = maxi(0, -net - 1)
+		_check(not bool(s.settle_service()["ok"]), "자금이 모자라면 정산 거부")
+		s.wallet = saved_wallet
+		_check(_json(s) == snap, "(e) 거부 후 상태 불변")
+
+	# 정상 정산 1회
+	var wallet0: int = s.wallet
+	var ok: Dictionary = s.settle_service()
+	_check(bool(ok["ok"]), "정상 정산: " + str(ok["message"]))
+	var after: String = _json(s)
+	_check(s.day == day0 + 1 and s.wallet != wallet0 or net == 0, "정산 후 하루가 지나고 자금이 바뀌어요")
+	_check(sess.settled and not s.service_active(), "세션은 정산됨으로 표시되고 닫혀요")
+	# 반복 정산은 구조적으로 불가능하다(세션이 없고, 일차가 이미 올랐다).
+	var dup: Dictionary = s.settle_service()
+	_check(not bool(dup["ok"]) and _json(s) == after, "두 번째 정산은 거부되고 아무것도 바뀌지 않아요")
+	_check(s.day == day0 + 1, "일차가 두 번 오르지 않아요")
+	_end()
+
+
+func test_service_determinism_and_chunking() -> void:
+	var s: GameStateScript = _state_with_recipe(_spicy_cfg())
+	var rec: Dictionary = s.get_record(s.selected_record_id)
+	var plan: Dictionary = SessionScript.make_plan(rec, 4)
+	var a: SessionScript = SessionScript.new(plan)
+	var b: SessionScript = SessionScript.new(plan)
+	_check(a.run_to_end() and b.run_to_end(), "두 세션 모두 끝나야 해요")
+	_check(str(a.completed) == str(b.completed) and str(a.seat_log) == str(b.seat_log), "같은 계획은 같은 하루를 만들어요")
+	# 프레임 길이와 무관: 0.37게임초씩 쪼개 진행해도 같은 결과
+	var c: SessionScript = SessionScript.new(plan)
+	var guard: int = 0
+	while c.state == SessionScript.RUNNING and guard < 20000:
+		c.advance(0.37)
+		guard += 1
+	_check(c.state == SessionScript.FINISHED, "쪼개 진행해도 끝나야 해요")
+	_check(str(c.completed) == str(a.completed), "프레임 길이는 결과에 영향이 없어야 해요")
+	# 화면이 읽는 스냅샷은 진행 상태를 바꾸지 않는다.
+	var d: SessionScript = SessionScript.new(plan)
+	for i in 500:
+		d.entities()
+		d.stats()
+		d.tick()
+	var e: SessionScript = SessionScript.new(plan)
+	for i in 500:
+		e.tick()
+	_check(str(d.completed) == str(e.completed) and d.time == e.time and str(d.stats()) == str(e.stats()), "읽기 전용 조회는 시뮬레이션을 바꾸지 않아요")
+	_end()
+
+
+## 걷는 사람(너비 14, 높이 18, 발바닥 기준)이 선분을 따라 지나가며 쓸고 가는 영역.
+func _walk_sweep(a: Vector2, b: Vector2) -> Rect2:
+	var left: float = minf(a.x, b.x) - 7.0
+	var right: float = maxf(a.x, b.x) + 7.0
+	var top: float = minf(a.y, b.y) - 18.0
+	var bottom: float = maxf(a.y, b.y)
+	return Rect2(left, top, right - left, bottom - top)
+
+
+## 좌석·그릇·카운터·서버·화분의 위치가 서로 맞물리는지(상수 복사가 아니라 관계로) 확인한다.
+func _check_service_geometry(variant: String, layout: Dictionary) -> void:
+	var counters: Array = layout["counters"]
+	var tables: Array = layout["tables"]
+	var seats: Array = layout["seats"]
+	for i in seats.size():
+		var sd: Dictionary = seats[i]
+		var pos: Vector2 = sd["pos"]
+		var bowl: Vector2 = sd["bowl"]
+		var serve: Array = sd["serve_path"]
+		var serve_end: Vector2 = serve[serve.size() - 1]
+		var tag: String = "%s 자리 %d" % [variant, i]
+		var bowl_mid: float = bowl.x + 6.0
+		var bowl_bottom: float = bowl.y + 7.0
+		if str(sd["kind"]) == "counter":
+			var found: bool = false
+			for cr in counters:
+				var c: Rect2i = cr
+				if bowl_mid < float(c.position.x) or bowl_mid > float(c.end.x):
+					continue
+				found = true
+				# 그릇은 카운터 윗면(위쪽 5줄) 위에 앉아 있고
+				_check(bowl_bottom >= float(c.position.y + 1) and bowl_bottom <= float(c.position.y + 5), tag + ": 그릇이 카운터 윗면에 놓여야 해요")
+				# 앉은 손님의 머리는 카운터 앞면에 붙어 그릇 바로 뒤에 있다(머리 위 간격 4px 이내).
+				var head_top: float = pos.y - 18.0
+				_check(head_top >= float(c.position.y + 3) and head_top <= float(c.end.y), tag + ": 손님 머리가 카운터 앞면에 붙어야 해요")
+				_check(head_top - bowl_bottom >= 0.0 and head_top - bowl_bottom <= 4.0, tag + ": 그릇과 손님 사이가 너무 멀어요 (%.0f)" % (head_top - bowl_bottom))
+				_check(absf(bowl_mid - pos.x) <= 1.0, tag + ": 그릇이 손님 정면에 있어야 해요")
+				# 서버는 카운터 안쪽(윗면 바로 뒤)에서 그릇 쪽으로 다가간다
+				_check(absf(serve_end.x - bowl_mid) <= 8.0 and serve_end.y <= bowl.y and serve_end.y >= float(c.position.y) - 12.0, tag + ": 서버 도착점이 그릇에 닿을 수 있어야 해요 %s" % str(serve_end))
+			_check(found, tag + ": 그릇이 어느 카운터 위에도 없어요")
+			# 문에서 자리까지 가는 경로(마지막 구간 제외)는 카운터를 가로지르지 않는다.
+			var path: Array = sd["path"]
+			for k in range(1, path.size() - 1):
+				var sweep: Rect2 = _walk_sweep(path[k - 1], path[k])
+				for cr2 in counters:
+					var c2: Rect2i = cr2
+					_check(not sweep.intersects(Rect2(c2)), tag + ": 경로가 카운터를 가로질러요")
+		else:
+			var on_table: bool = false
+			for tv in tables:
+				var t: Vector2i = tv
+				if bowl_mid >= float(t.x - 10) and bowl_mid <= float(t.x + 10) and bowl_bottom >= float(t.y - 5) and bowl_bottom <= float(t.y + 5):
+					on_table = true
+			_check(on_table, tag + ": 그릇이 테이블 위에 놓여야 해요")
+			_check(serve_end.distance_to(pos) <= 12.0, tag + ": 서버가 테이블 손님에게 닿을 수 있어야 해요 %s" % str(serve_end))
+	# 화분은 어떤 걷는 경로(손님 경로, 서버 경로)도 막지 않는다.
+	for pl in layout["plants"]:
+		var pp: Vector2 = pl
+		var plant_rect: Rect2 = Rect2(pp.x - 5.0, pp.y - 15.0, 10.0, 15.0)
+		for s in seats:
+			var sd2: Dictionary = s
+			for route_key in ["path", "serve_path"]:
+				var route: Array = sd2[route_key]
+				for k2 in range(1, route.size()):
+					_check(not _walk_sweep(route[k2 - 1], route[k2]).intersects(plant_rect), "%s: 화분 %s 이(가) %s 경로를 막아요" % [variant, str(pp), route_key])
+
+
+func test_shop_layout_and_art() -> void:
+	_check(LayoutScript.variant_for(390.0, 844.0) == LayoutScript.PORTRAIT, "세로 화면은 세로 배치")
+	_check(LayoutScript.variant_for(1280.0, 800.0) == LayoutScript.LANDSCAPE, "데스크톱은 가로 배치")
+	_check(LayoutScript.SEAT_COUNT == SessionScript.SEAT_COUNT, "배치와 런타임의 자리 수가 같아야 해요")
+	for variant in [LayoutScript.PORTRAIT, LayoutScript.LANDSCAPE]:
+		var layout: Dictionary = LayoutScript.make(variant)
+		var world: Vector2i = layout["size"]
+		var bounds: Rect2 = Rect2(Vector2.ZERO, Vector2(world))
+		var seats: Array = layout["seats"]
+		_check(seats.size() == SessionScript.SEAT_COUNT, variant + ": 자리 수")
+		var seen: Dictionary = {}
+		for i in seats.size():
+			var sd: Dictionary = seats[i]
+			var pos: Vector2 = sd["pos"]
+			_check(not seen.has(str(pos)), "%s: 자리 좌표 중복 %d" % [variant, i])
+			seen[str(pos)] = true
+			_check(bounds.has_point(pos), "%s: 자리 %d가 장면 밖" % [variant, i])
+			var path: Array = sd["path"]
+			var serve: Array = sd["serve_path"]
+			_check((path[path.size() - 1] as Vector2) == pos and (path[0] as Vector2) == (layout["door_in"] as Vector2), "%s: 자리 %d 경로가 문 안쪽에서 자리까지 이어져야 해요" % [variant, i])
+			_check((serve[0] as Vector2) == (layout["pass_pos"] as Vector2), "%s: 서빙 경로는 주방 앞에서 시작" % variant)
+			var path_inside: bool = true
+			for pt in path:
+				if not bounds.has_point(pt):
+					path_inside = false
+			for pt2 in serve:
+				if not bounds.has_point(pt2):
+					path_inside = false
+			_check(path_inside, "%s: 자리 %d 경로가 장면 안" % [variant, i])
+			_check(str(sd["kind"]) == ("counter" if i < 4 else "table"), "%s: 자리 종류 구성" % variant)
+		for q in layout["queue_slots"]:
+			# 발바닥 y 가 장면 맨 아래 줄과 같을 수 있어 경계 1px 여유를 둔다(Rect2.has_point 는 끝 경계를 제외).
+			_check(bounds.grow(1.0).has_point(q), "%s: 줄 칸이 장면 안" % variant)
+		_check((layout["queue_slots"] as Array).size() >= 8, "%s: 줄 칸 수" % variant)
+		_check_service_geometry(variant, layout)
+		# 정적 배경: 크기가 맞고 모든 픽셀이 채워진다(투명 구멍 없음)
+		var bg: Image = PainterScript.paint(layout)
+		_check(bg.get_width() == world.x and bg.get_height() == world.y, "%s: 배경 크기" % variant)
+		var opaque: bool = true
+		for y in range(0, world.y, 7):
+			for x in range(0, world.x, 5):
+				if bg.get_pixel(x, y).a < 1.0:
+					opaque = false
+		_check(opaque, "%s: 배경에 투명한 구멍이 없어야 해요" % variant)
+		# 길 따라 걷기: 시작/끝점과 중간값
+		var route: Array = (seats[0] as Dictionary)["path"]
+		_check(LayoutScript.along(route, 0.0) == (route[0] as Vector2) and LayoutScript.along(route, 1.0) == (route[route.size() - 1] as Vector2), "%s: 경로 양끝" % variant)
+	# 스프라이트: 크기와 외형 다양성
+	var signatures: Dictionary = {}
+	for look in ArtScript.look_count():
+		for pose in ["stand", "walk", "sit", "carry", "cook"]:
+			var img: Image = ArtScript.person_image(look, pose, 0, false)
+			_check(img.get_width() == 14 and img.get_height() == 18, "사람 스프라이트 크기")
+		var front: Image = ArtScript.person_image(look, "stand", 0, false)
+		signatures[str(front.get_data().hex_encode())] = true
+	_check(signatures.size() == ArtScript.look_count(), "사람 외형이 서로 달라야 해요")
+	var walk0: Image = ArtScript.person_image(0, "walk", 0, false)
+	var walk1: Image = ArtScript.person_image(0, "walk", 1, false)
+	_check(walk0.get_data() != walk1.get_data(), "걷기 프레임이 달라야 해요")
+	var back: Image = ArtScript.person_image(0, "sit", 0, true)
+	_check(back.get_data() != ArtScript.person_image(0, "sit", 0, false).get_data(), "뒷모습이 앞모습과 달라야 해요")
+	for kind in ["heart", "note", "smile", "meh", "angry", "order", "wait", "impatient", "coin"]:
+		var b: Image = ArtScript.bubble_image(kind)
+		_check(b.get_width() == 13 and b.get_height() == 11, "말풍선 크기: " + kind)
+	_check(ArtScript.bubble_image("heart").get_data() != ArtScript.bubble_image("angry").get_data(), "반응 아이콘이 달라야 해요")
+	# 그릇/아이콘은 재료에 따라 달라진다(메뉴가 장면에 보인다)
+	var bowl_a: Image = ArtScript.bowl_image(_rich_cfg())
+	var bowl_b: Image = ArtScript.bowl_image(_light_cfg())
+	_check(bowl_a.get_width() == 12 and bowl_a.get_height() == 7 and bowl_a.get_data() != bowl_b.get_data(), "메뉴가 다르면 그릇 그림이 달라야 해요")
+	for slot in Catalog.SLOTS:
+		for item in Catalog.items(slot):
+			var icon: Image = ArtScript.icon_image(str((item as Dictionary)["id"]))
+			var drawn: bool = false
+			for y in icon.get_height():
+				for x in icon.get_width():
+					if icon.get_pixel(x, y).a > 0.0:
+						drawn = true
+			_check(drawn, "재료 아이콘이 비어 있어요: " + str((item as Dictionary)["id"]))
 	_end()
