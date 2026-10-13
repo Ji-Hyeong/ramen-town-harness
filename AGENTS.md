@@ -20,6 +20,7 @@
 - Record project changes in the history section immediately.
 
 ## 프로젝트 변경 이력
+- 2026-10-13: User rejected the prototype's reference fidelity. Reframed the target around an original pixel-art shop, physically connected orders/staff/customers and secondary recipe UI. Added a clearly labeled generated concept and design acceptance criteria; the concept is not implemented gameplay. Visual/play-experience acceptance is required in addition to passing tests.
 - 2026-10-13: Created isolated V0 harness instructions and file-edit connectivity fixture. Game implementation is intentionally pending user requirements. Verification results are recorded in VERIFICATION.md.
 - 2026-10-13: Added concrete version-compatible command template and independent acceptance procedure. Codex login confirmed; Claude invocation blocked by authentication error. File-tool verification remains pending login.
 - 2026-10-13: User completed login and authorized CLI updates. Installed native 2.1.296 and upgraded Homebrew 1.0.120 to 2.1.287. Explicit native invocation with Sonnet 5.5, restricted file tools and 20-turn limit passed in six turns. Independent byte comparison and before/after hashes confirmed only the fixture changed. Updated README and acceptance rules; ready for game requirements.
