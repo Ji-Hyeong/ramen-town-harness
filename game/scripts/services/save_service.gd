@@ -66,7 +66,8 @@ func load_into(state: GameStateScript) -> Dictionary:
 	if not d.has("schema_version") or not Check.is_whole(d["schema_version"]):
 		return _status("corrupt", "저장 버전 정보가 없거나 올바르지 않아요.")
 	var version: int = int(d["schema_version"])
-	if version != GameStateScript.SCHEMA_VERSION:
+	# v1(연구 도입 전)은 GameState.load_from_dict()가 빈 연구 진행으로 이행해 읽는다. 그보다 오래/새 버전만 거부한다.
+	if version < GameStateScript.MIN_SCHEMA_VERSION or version > GameStateScript.SCHEMA_VERSION:
 		if version > GameStateScript.SCHEMA_VERSION:
 			return _status("unsupported", "더 새로운 버전에서 만든 저장이에요 (v%d). 이 버전에서는 열 수 없어요." % version)
 		return _status("unsupported", "지원하지 않는 예전 저장 버전이에요 (v%d)." % version)

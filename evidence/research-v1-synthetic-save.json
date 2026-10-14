@@ -1,0 +1,103 @@
+{
+	"day": 2,
+	"draft": {
+		"config": {
+			"broth": "broth_tonkotsu",
+			"cook": "cook_firm",
+			"noodle": "noodle_thin",
+			"oil": "oil_garlic",
+			"price": 9500,
+			"tare": "tare_shoyu",
+			"topping": "topping_chashu"
+		},
+		"lineage_id": 1,
+		"name": "시제품 1"
+	},
+	"last_feedback_record_id": 2,
+	"last_report": {
+		"by_source": {
+			"dohyun": 3,
+			"hayoung": 2,
+			"maru": 1,
+			"walkin": 3
+		},
+		"day": 1,
+		"ingredient_cost": 19800,
+		"net": 62700,
+		"overhead": 3000,
+		"price": 9500,
+		"recipe_name": "시제품 1",
+		"revenue": 85500,
+		"units": 9,
+		"version": 2,
+		"wallet_after": 88300
+	},
+	"next_lineage_id": 2,
+	"next_record_id": 3,
+	"records": [
+		{
+			"comparison": {},
+			"config": {
+				"broth": "broth_tonkotsu",
+				"cook": "cook_firm",
+				"noodle": "noodle_thin",
+				"oil": "oil_garlic",
+				"price": 9000,
+				"tare": "tare_shoyu",
+				"topping": "topping_chashu"
+			},
+			"lineage_id": 1,
+			"name": "시제품 1",
+			"record_id": 1,
+			"scores": {
+				"dohyun": 87,
+				"hayoung": 86,
+				"maru": 65
+			},
+			"tasted_day": 1,
+			"version": 1
+		},
+		{
+			"comparison": {
+				"prev_config": {
+					"broth": "broth_tonkotsu",
+					"cook": "cook_firm",
+					"noodle": "noodle_thin",
+					"oil": "oil_garlic",
+					"price": 9000,
+					"tare": "tare_shoyu",
+					"topping": "topping_chashu"
+				},
+				"prev_record_id": 1,
+				"prev_scores": {
+					"dohyun": 87,
+					"hayoung": 86,
+					"maru": 65
+				},
+				"prev_version": 1
+			},
+			"config": {
+				"broth": "broth_tonkotsu",
+				"cook": "cook_firm",
+				"noodle": "noodle_thin",
+				"oil": "oil_garlic",
+				"price": 9500,
+				"tare": "tare_shoyu",
+				"topping": "topping_chashu"
+			},
+			"lineage_id": 1,
+			"name": "시제품 1",
+			"record_id": 2,
+			"scores": {
+				"dohyun": 87,
+				"hayoung": 86,
+				"maru": 65
+			},
+			"tasted_day": 1,
+			"version": 2
+		}
+	],
+	"schema_version": 1,
+	"selected_record_id": 2,
+	"wallet": 88300
+}
