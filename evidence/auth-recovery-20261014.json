@@ -1,0 +1,11 @@
+{
+  "date": "2026-10-14",
+  "check": "fresh_no_tools_auth_probe",
+  "exit_code": 0,
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 1,
+  "result": "AUTH_OK",
+  "permission_denials": [],
+  "scope": "Server authentication only; no game implementation or graphical QA."
+}
