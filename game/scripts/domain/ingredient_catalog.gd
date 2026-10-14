@@ -18,6 +18,11 @@ const AXIS_NAMES: Dictionary = {
 
 const SLOTS: Array[String] = ["broth", "tare", "oil", "noodle", "topping", "cook"]
 
+## 토핑만 여러 개를 고를 수 있다(상한은 등급 + 조리대 확장으로 정해지는 슬롯 수, 절대 상한 MAX_TOPPINGS).
+## 나머지 슬롯(육수/타레/향미유/면/익힘)은 언제나 하나만 고른다.
+const TOPPING_SLOT: String = "topping"
+const MAX_TOPPINGS: int = 3
+
 const SLOT_NAMES: Dictionary = {
 	"broth": "육수",
 	"tare": "타레(간)",
@@ -131,14 +136,97 @@ static func is_valid(slot: String, id: String) -> bool:
 	return false
 
 
+## 기본 구성은 정규(canonical) 형태다: 토핑은 "toppings" 배열 하나(카탈로그 순서).
 static func default_config() -> Dictionary:
 	var config: Dictionary = {}
 	for slot in SLOTS:
 		var list: Array = items(slot)
 		var first: Dictionary = list[0]
-		config[slot] = str(first["id"])
+		if slot == TOPPING_SLOT:
+			config["toppings"] = [str(first["id"])]
+		else:
+			config[slot] = str(first["id"])
 	config["price"] = DEFAULT_PRICE
 	return config
+
+
+# ---------- 토핑 추출/정규화 (모든 계산이 쓰는 단 하나의 경로) ----------
+##
+## 구성 딕셔너리는 두 모양을 받는다.
+##  - 정규: {"toppings": [id, ...]} (1~3개, 카탈로그 순서, 중복 없음). 메모리/기록/저장 v3의 유일한 표준 모양.
+##  - 옛 모양: {"topping": id} 하나. v1/v2 저장과 예전 시험/증인 조합이 쓴다. 읽을 때만 정규로 바꾼다.
+## 평가/원가/시간/궁합/장면 그림은 반드시 toppings_of()/item_ids()로만 토핑을 읽는다(구성["topping"]을 직접 읽지 않는다).
+## 그래서 토핑이 하나인 옛 구성은 정규 구성과 점수·원가·시간이 정확히 같고, 여러 개여도 토핑마다 정확히 한 번씩 반영된다.
+
+## 카탈로그 안에서의 토핑 순서(알 수 없는 id는 -1).
+static func topping_order(id: String) -> int:
+	var list: Array = items(TOPPING_SLOT)
+	for i in list.size():
+		if str((list[i] as Dictionary)["id"]) == id:
+			return i
+	return -1
+
+
+## 선택된 토핑 id를 입력 모양 그대로 꺼낸다(검증/정렬/중복 제거 없음). 배열이 아니면 빈 목록.
+static func toppings_of(config: Dictionary) -> Array[String]:
+	var out: Array[String] = []
+	if config.has("toppings"):
+		var raw: Variant = config["toppings"]
+		if typeof(raw) == TYPE_ARRAY:
+			for v in (raw as Array):
+				out.append(str(v))
+		return out
+	if config.has("topping"):
+		out.append(str(config["topping"]))
+	return out
+
+
+## 토핑 id를 카탈로그 순서로 정렬한 새 배열(중복은 그대로 남겨 검증이 잡게 한다). 순서만 다른 구성은 같은 구성이다.
+static func canonical_toppings(ids: Array) -> Array:
+	var out: Array = []
+	for v in ids:
+		out.append(str(v))
+	out.sort_custom(func(a: String, b: String) -> bool:
+		var oa: int = topping_order(a)
+		var ob: int = topping_order(b)
+		if oa != ob:
+			return oa < ob
+		return a < b)
+	return out
+
+
+## 옛 모양/정규 모양 어느 쪽이든 정규 구성(깊은 복사, 토핑 정렬)으로 바꾼다. 검증은 하지 않는다(Check.config_error 몫).
+static func normalize_config(config: Dictionary) -> Dictionary:
+	var out: Dictionary = {}
+	for slot in SLOTS:
+		if slot == TOPPING_SLOT:
+			out["toppings"] = canonical_toppings(toppings_of(config))
+		elif config.has(slot):
+			out[slot] = config[slot]
+	if config.has("price"):
+		out["price"] = config["price"]
+	return out
+
+
+## 구성이 고른 모든 재료 id (슬롯 순서, 토핑은 선택한 개수만큼). 평가기의 원가/시간/프로필/궁합이 모두 이것을 훑는다.
+static func item_ids(config: Dictionary) -> Array[String]:
+	var out: Array[String] = []
+	for slot in SLOTS:
+		if slot == TOPPING_SLOT:
+			for t in toppings_of(config):
+				out.append(t)
+		else:
+			out.append(str(config[slot]))
+	return out
+
+
+## 화면용: 선택한 토핑 이름들을 " + "로 이은 글.
+static func topping_names(config: Dictionary) -> String:
+	var names: Array[String] = []
+	for t in canonical_toppings(toppings_of(config)):
+		var item: Dictionary = find(str(t))
+		names.append(str(item["name"]) if not item.is_empty() else str(t))
+	return " + ".join(names)
 
 
 ## "진함 +6, 염도 +1" 형태의 맛 기여 설명.

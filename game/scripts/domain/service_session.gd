@@ -12,6 +12,7 @@ extends RefCounted
 const Customers = preload("res://scripts/domain/customer_catalog.gd")
 const Evaluator = preload("res://scripts/domain/recipe_evaluator.gd")
 const Sim = preload("res://scripts/domain/sales_simulator.gd")
+const Staffing = preload("res://scripts/domain/shop_staffing.gd")
 
 # 세션 상태
 const RUNNING: int = 0
@@ -91,8 +92,13 @@ var version: int = 0
 var config: Dictionary = {}
 var scores: Dictionary = {}
 var forecast: Dictionary = {}
+## 영업 시작 시점의 직원 구성/성장 스냅샷(불변). 세션은 이 값만 읽는다: 조리 시간, 서빙 시간, 하루 운영비가 모두 여기서 나온다.
+## 영업 중에는 고용/구매가 막혀 있고, 정산은 이 스냅샷으로 운영비를 계산하므로 도중에 달라질 수 없다.
+var staffing: Dictionary = {}
+var growth_snapshot: Dictionary = {}
 var price: int = 0
 var unit_cost: int = 0
+## 영업 중 실제 한 그릇 조리 시간(보조 직원이 있으면 기준 시간에서 줄어든 값).
 var prep: int = 1
 var state: int = RUNNING
 var settled: bool = false
@@ -133,9 +139,13 @@ func _init(plan: Dictionary) -> void:
 	scores = sc.duplicate(true)
 	var fc: Dictionary = plan["forecast"]
 	forecast = fc.duplicate(true)
+	var plan_staffing: Dictionary = plan.get("staffing", {})
+	staffing = plan_staffing.duplicate(true)
+	var plan_growth: Dictionary = plan.get("growth", {})
+	growth_snapshot = plan_growth.duplicate(true)
 	price = int(config["price"])
 	unit_cost = Evaluator.unit_cost(config)
-	prep = maxi(1, Evaluator.prep_seconds(config))
+	prep = Staffing.effective_prep(Evaluator.prep_seconds(config), staffing)
 	for i in SEAT_COUNT:
 		_seat_owner.append(-1)
 		_seat_free_at.append(0)
@@ -165,12 +175,13 @@ func _init(plan: Dictionary) -> void:
 
 ## 선택된 레시피 기록(불변 스냅샷)과 영업일에서 하루 계획을 만든다.
 ## 도착 수 = Sim의 판매 가능 수량(units), 못 파는 수요(demand - units)는 줄이 길어 돌아가는 손님으로 따로 보인다.
-static func make_plan(record: Dictionary, on_day: int) -> Dictionary:
+## staffing/growth: 시작 시점의 직원 구성(ShopStaffing.snapshot)과 성장 요약. 빈 값 = 보조 직원 없음(기준과 동일).
+static func make_plan(record: Dictionary, on_day: int, staffing: Dictionary = {}, growth: Dictionary = {}) -> Dictionary:
 	if record.is_empty():
 		return {"error": "레시피 기록이 없어요."}
 	var cfg: Dictionary = record["config"]
 	var sc: Dictionary = record["scores"]
-	var fc: Dictionary = Sim.simulate(cfg, sc, on_day)
+	var fc: Dictionary = Sim.simulate(cfg, sc, on_day, staffing)
 	if str(fc["error"]) != "":
 		return {"error": str(fc["error"])}
 	var units: int = int(fc["units"])
@@ -214,6 +225,8 @@ static func make_plan(record: Dictionary, on_day: int) -> Dictionary:
 		"config": cfg_copy,
 		"scores": sc_copy,
 		"forecast": fc.duplicate(true),
+		"staffing": staffing.duplicate(true),
+		"growth": growth.duplicate(true),
 		"arrivals": arrivals,
 	}
 
@@ -419,7 +432,8 @@ func _update_server() -> void:
 			if not _ready.is_empty():
 				_server_patron = _ready.pop_front()
 				var pt: Patron = _patrons[_server_patron]
-				_server_total = SEAT_SERVE[pt.seat]
+				# 홀 보조가 있으면 서빙 시간이 줄어든다(스냅샷 값). 없으면 SEAT_SERVE 그대로.
+				_server_total = Staffing.effective_carry(SEAT_SERVE[pt.seat], staffing)
 				_server_left = _server_total
 				_server_state = S_CARRY
 		S_CARRY:
@@ -433,7 +447,7 @@ func _update_server() -> void:
 				pt2.wait_total = (pt2.seated_t - pt2.queued_t) + (time - pt2.waiting_t)
 				if pt2.wait_total > pt2.patience:
 					pt2.stars = maxi(1, pt2.base_stars - 1)
-				_server_total = maxi(1, SEAT_SERVE[pt2.seat] * SERVE_BACK_PERCENT / 100)
+				_server_total = Staffing.effective_return(SEAT_SERVE[pt2.seat], SERVE_BACK_PERCENT, staffing)
 				_server_left = _server_total
 				_server_state = S_RETURN
 		S_RETURN:
@@ -522,7 +536,9 @@ func summary() -> Dictionary:
 		"units": count,
 		"revenue": revenue,
 		"ingredient_cost": cost,
-		"overhead": Sim.OVERHEAD,
+		# 운영비 = 기본 + 스냅샷의 보조 직원 하루 운영비. 정산(GameState.settle_service)이 이 값을 정확히 한 번 반영한다.
+		"overhead": Sim.overhead_for(staffing),
+		"staffing": staffing.duplicate(true),
 		"by_source": by_source,
 		"turned_away": turned_away,
 		"avg_stars": avg,

@@ -19,6 +19,8 @@ const SceneScript = preload("res://scripts/ui/shop_scene.gd")
 const Research = preload("res://scripts/domain/ramen_research.gd")
 const WorkScript = preload("res://scripts/ui/tasting_work.gd")
 const WorkViewScript = preload("res://scripts/ui/tasting_work_view.gd")
+const Growth = preload("res://scripts/domain/shop_growth.gd")
+const Staffing = preload("res://scripts/domain/shop_staffing.gd")
 
 const ARG: String = "--test-data-dir="
 
@@ -64,6 +66,12 @@ func _initialize() -> void:
 		test_research_persistence_after_delete, test_research_v1_migration, test_research_malformed_progress,
 		test_research_rejects_fabricated_scores, test_research_load_rejects_unmet_retained_record,
 		test_tasting_work_state, test_tasting_work_phases_and_motion, test_portraits_and_glyph_free_art,
+		# --- 가게 성장(등급/확장/다중 토핑/직원/노트 용량/스키마 v3) 도메인 시험 ---
+		# 화면(UI)/장면 그림/QA 캡처 쪽 성장 시험은 다음 단계(main.gd, 픽셀 아트, qa_capture.gd)에서 추가한다: 아직 없으므로 "보류"이며 삭제/생략이 아니다.
+		test_topping_canonical_and_legacy, test_topping_validation, test_topping_slots_and_draft_limits,
+		test_topping_tradeoff, test_rank_promotion, test_facility_purchase, test_staff_hiring,
+		test_staff_support_effects, test_staff_settlement_and_snapshot, test_record_capacity_and_grandfather,
+		test_schema_migration_v1_v2, test_growth_load_rejections, test_no_phantom_rewards_and_bounds,
 	]
 	var ran: int = 0
 	for t in tests:
@@ -529,18 +537,24 @@ func test_revision_and_immutability() -> void:
 
 
 func test_duplicate_and_bounds() -> void:
-	var s: GameStateScript = _state_with_wallet(900000)
+	# 적응: 노트 용량이 조리대 확장에서 파생되므로(기본 6) 30개 상한 시험은 실제 도메인 연산으로 만든 완전 성장 상태(용량 30)에서 한다.
+	# 이미 증인 기록 6개가 있으므로 개수 기준은 "처음 개수 + 새로 만든 개수"로 바꿨고, 검사하는 규칙(중복/가격 개정/30개 상한/삭제 후 재시식)은 그대로다.
+	var s: GameStateScript = _grown_state()
+	var base_count: int = s.record_count()
+	var w_start: int = s.wallet
 	_apply_cfg(s, _rich_cfg())
 	s.set_draft_name("중복 검사")
-	_check(bool(s.taste()["ok"]), "첫 시식")
+	var first_try: Dictionary = s.taste()
+	_check(bool(first_try["ok"]), "첫 시식: " + str(first_try["message"]))
+	var first_id: int = int(first_try["record_id"])
 	var dup: Dictionary = s.taste()
-	_check(not bool(dup["ok"]) and s.record_count() == 1, "같은 구성으로 연속 시식하면 새 기록이 생기면 안 돼요")
-	_check(s.wallet == 900000 - Evaluator.unit_cost(_rich_cfg()), "중복 거부 시 자금이 차감되면 안 돼요")
+	_check(not bool(dup["ok"]) and s.record_count() == base_count + 1, "같은 구성으로 연속 시식하면 새 기록이 생기면 안 돼요")
+	_check(s.wallet == w_start - Evaluator.unit_cost(_rich_cfg()), "중복 거부 시 자금이 차감되면 안 돼요")
 	s.start_new_recipe()
 	s.set_draft_name("다른 이름 같은 구성")
-	_check(not bool(s.taste()["ok"]) and s.record_count() == 1, "이름만 달라도 같은 구성은 거부")
+	_check(not bool(s.taste()["ok"]) and s.record_count() == base_count + 1, "이름만 달라도 같은 구성은 거부")
 	# 가격을 올려가며 개정해 30개를 채운다.
-	s.select_record(1)
+	s.select_record(first_id)
 	var price: int = 9500
 	var guard: int = 0
 	while s.record_count() < GameStateScript.MAX_RECORDS and guard < 100:
@@ -556,7 +570,8 @@ func test_duplicate_and_bounds() -> void:
 	_check(not bool(over["ok"]) and s.record_count() == GameStateScript.MAX_RECORDS, "30개를 넘기면 거부")
 	_check(s.wallet == wallet_before, "거부 시 자금 불변")
 	# 삭제 후에는 다시 시식 가능
-	_check(bool(s.delete_record(30)["ok"]), "삭제")
+	var last_id: int = int((s.records().back() as Dictionary)["record_id"])
+	_check(bool(s.delete_record(last_id)["ok"]), "삭제")
 	_check(bool(s.taste()["ok"]) and s.record_count() == GameStateScript.MAX_RECORDS, "삭제 후 시식 가능")
 	_end()
 
@@ -1059,6 +1074,9 @@ func test_research_check_values() -> void:
 func test_research_rejections_do_not_mutate() -> void:
 	var s: GameStateScript = _research_state()
 	var rec: Dictionary = _record_all_witnesses(s)
+	# 적응: 기본 노트 용량이 6이라 일곱 번째 기록(미달 시험)을 위해 이 시험이 쓰지 않는 증인 기록(마루 입문) 하나를 먼저 지운다.
+	# 아래 거부 사례는 도윤 입문/하영 심화 기록과 미달 기록만 사용하므로 검사 내용은 그대로다.
+	_check(bool(s.delete_record(int(rec["maru_basic"]))["ok"]), "시험 준비: 쓰지 않는 기록 삭제")
 	var weak: int = _taste_as(s, _cfg("broth_tonkotsu", "tare_shoyu", "oil_garlic", "noodle_thin", "topping_chashu", "cook_firm", 9000), "미달 시험")
 	var snap: String = _json(s)
 	var cases: Array = [
@@ -1145,9 +1163,8 @@ func test_research_v1_migration() -> void:
 	var saver: SaveServiceScript = SaveServiceScript.new(dir)
 	saver.remove_known_files()
 	var src: GameStateScript = _populated_state()
-	var v1: Dictionary = src.to_dict()
-	v1["schema_version"] = 1
-	v1.erase("research")
+	# 적응: to_dict()는 이제 v3(toppings 배열 + growth)라서, 진짜 v1 파일 모양(topping 문자열, research/growth 없음)을 _as_legacy()로 만든다.
+	var v1: Dictionary = _as_legacy(src.to_dict(), 1)
 	var v1_text: String = JSON.stringify(v1, "\t", true)
 	_write_text(saver.main_path(), v1_text)
 	var loaded: GameStateScript = GameStateScript.new()
@@ -1161,7 +1178,7 @@ func test_research_v1_migration() -> void:
 	_check(bool(saver.save_state(loaded)["ok"]), "이행 후 저장")
 	_check(FileAccess.get_file_as_string(saver.bak_path()) == v1_text, "첫 v2 저장 때 기존 v1 파일이 백업에 보존돼요")
 	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(saver.main_path()))
-	_check(typeof(parsed) == TYPE_DICTIONARY and int((parsed as Dictionary)["schema_version"]) == GameStateScript.SCHEMA_VERSION and (parsed as Dictionary).has("research"), "새 저장은 v2 + research")
+	_check(typeof(parsed) == TYPE_DICTIONARY and int((parsed as Dictionary)["schema_version"]) == GameStateScript.SCHEMA_VERSION and (parsed as Dictionary).has("research") and (parsed as Dictionary).has("growth"), "새 저장은 v3 + research + growth")
 	# v1 이행 뒤 연구가 정상 동작한다.
 	var rid: int = _taste_as(loaded, Research.WITNESSES["hayoung_basic"], "이행 시험")
 	_check(bool(loaded.submit_research("hayoung_basic", rid)["ok"]), "이행한 저장에서 연구 제출")
@@ -1170,7 +1187,7 @@ func test_research_v1_migration() -> void:
 	bad_v1["research"] = {"completed": []}
 	var probe1: GameStateScript = GameStateScript.new()
 	_check(probe1.load_from_dict(bad_v1) != "", "research가 있는 v1은 거부")
-	var bad_v2: Dictionary = JSON.parse_string(JSON.stringify(_populated_state().to_dict()))
+	var bad_v2: Dictionary = _as_legacy(_populated_state().to_dict(), 2)
 	bad_v2.erase("research")
 	var probe2: GameStateScript = GameStateScript.new()
 	_check(probe2.load_from_dict(bad_v2) != "", "research가 없는 v2는 거부")
