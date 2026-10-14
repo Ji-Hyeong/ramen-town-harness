@@ -24,6 +24,8 @@ const Staffing = preload("res://scripts/domain/shop_staffing.gd")
 const Exploration = preload("res://scripts/domain/ingredient_exploration.gd")
 const ShopViewScript = preload("res://scripts/ui/shop_view.gd")
 const TravelScript = preload("res://scripts/ui/expedition_travel.gd")
+const Contest = preload("res://scripts/domain/ramen_contest.gd")
+const ContestProgress = preload("res://scripts/domain/contest_progress.gd")
 
 const ARG: String = "--test-data-dir="
 
@@ -85,6 +87,10 @@ func _initialize() -> void:
 		test_exploration_schema_migration_v3, test_exploration_load_rejections, test_exploration_history_bound_and_counters,
 		test_exploration_full_region_and_repeat, test_exploration_defensive_copies_and_no_phantom,
 		test_exploration_travel_presentation, test_discovery_pixel_art,
+		test_contest_gating, test_contest_prize_deltas, test_contest_busy_and_bounds,
+		test_magazine_once_and_deleted_record, test_contest_load_rejections,
+		test_contest_migration_v4, test_contest_history_limit, test_contest_art,
+		test_contest_review_regressions,
 	]
 	var ran: int = 0
 	for t in tests:
@@ -113,6 +119,256 @@ func _check(cond: bool, message: String) -> void:
 
 func _end() -> void:
 	_finished = true
+
+
+## 콘테스트 시험은 실제 시식/영업으로 일차를 열며 정상 저장을 건드리지 않는다.
+func _contest_config(band: int) -> Dictionary:
+	for broth in Catalog.items("broth"):
+		for tare in Catalog.items("tare"):
+			for oil in Catalog.items("oil"):
+				for noodle in Catalog.items("noodle"):
+					for topping in Catalog.items("topping"):
+						for cook in Catalog.items("cook"):
+							var cfg: Dictionary = _cfg(broth["id"], tare["id"], oil["id"], noodle["id"], topping["id"], cook["id"], 9000)
+							if int(Contest.evaluate("clear_bowl", cfg)["band"]) == band:
+								return cfg
+	_check(false, "수상 등급 증인 구성이 없어요: %d" % band)
+	return {}
+
+
+func _contest_record(s: GameStateScript, cfg: Dictionary, name: String = "대회 메뉴") -> int:
+	s.start_new_recipe()
+	_apply_cfg(s, cfg)
+	s.set_draft_name(name)
+	var r: Dictionary = s.taste()
+	_check(bool(r["ok"]), "대회 준비 시식: " + str(r["message"]))
+	return s.selected_record_id
+
+
+func _contest_state(band: int = 1) -> GameStateScript:
+	var s: GameStateScript = GameStateScript.new()
+	_contest_record(s, _contest_config(band))
+	_next_day(s)
+	_next_day(s)
+	return s
+
+
+func test_contest_gating() -> void:
+	var fresh: GameStateScript = GameStateScript.new()
+	var snapshot: String = _json(fresh)
+	_check(not bool(fresh.enter_contest("clear_bowl", 0)["ok"]), "출품 일차 잠금")
+	_unchanged(fresh, snapshot, "잠긴 출품")
+	var s: GameStateScript = _contest_state()
+	snapshot = _json(s)
+	for id in ["unknown", "deep_bowl", "regional_bowl"]:
+		_check(not bool(s.enter_contest(id, s.selected_record_id)["ok"]), "없는/높은 등급 대회 거부")
+		_unchanged(s, snapshot, id)
+	_check(not bool(s.enter_contest("clear_bowl", 99999)["ok"]), "없는 메뉴 거부")
+	_unchanged(s, snapshot, "없는 메뉴")
+	s.wallet = 1999
+	snapshot = _json(s)
+	_check(not bool(s.enter_contest("clear_bowl", s.selected_record_id)["ok"]), "출품료 부족")
+	_unchanged(s, snapshot, "출품료 부족")
+	_end()
+
+
+func test_contest_prize_deltas() -> void:
+	var s: GameStateScript = _contest_state(1)
+	var cash: int = s.wallet
+	_check(bool(s.enter_contest("clear_bowl", s.selected_record_id)["ok"]) and s.wallet == cash - 2000 + 4000, "첫 동메달만 4000 지급")
+	var snapshot: String = _json(s)
+	_check(not bool(s.enter_contest("clear_bowl", s.selected_record_id)["ok"]), "당일 중복 출품 거부")
+	_unchanged(s, snapshot, "당일 출품")
+	_next_day(s)
+	cash = s.wallet
+	_check(bool(s.enter_contest("clear_bowl", s.selected_record_id)["ok"]) and s.wallet == cash - 2000, "같은 메달 재도전 상금 없음")
+	_next_day(s)
+	_contest_record(s, _contest_config(2), "은 메뉴")
+	cash = s.wallet
+	_check(bool(s.enter_contest("clear_bowl", s.selected_record_id)["ok"]) and s.wallet == cash - 2000 + 6000, "은메달은 차액 6000")
+	_next_day(s)
+	_contest_record(s, _contest_config(3), "금 메뉴")
+	cash = s.wallet
+	_check(bool(s.enter_contest("clear_bowl", s.selected_record_id)["ok"]) and s.wallet == cash - 2000 + 8000, "금메달은 차액 8000")
+	_next_day(s)
+	snapshot = _json(s)
+	_check(not bool(s.enter_contest("clear_bowl", s.selected_record_id)["ok"]), "금메달 완료는 재출품료 없음")
+	_unchanged(s, snapshot, "금메달 재도전")
+	var restored: GameStateScript = GameStateScript.new()
+	_check(restored.load_from_dict(JSON.parse_string(_json(s))) == "" and _json(restored) == _json(s), "메달 개선/재도전 왕복")
+	var exposed: Dictionary = s.contest_progress()
+	exposed["bests"].clear()
+	_check(s.contest_best("clear_bowl")["band"] == 3, "콘테스트 진행 방어적 복사")
+	_end()
+
+
+func test_contest_busy_and_bounds() -> void:
+	var s: GameStateScript = _contest_state(3)
+	_check(bool(s.begin_service()["ok"]), "영업 중 출품 시험")
+	var snapshot: String = _json(s)
+	_check(not bool(s.enter_contest("clear_bowl", s.selected_record_id)["ok"]) and not bool(s.claim_magazine("clear_bowl")["ok"]), "영업 중 모든 거래 거부")
+	_unchanged(s, snapshot, "영업 중 출품/잡지")
+	s.cancel_service()
+	_check(bool(s.start_expedition("market")["ok"]), "탐색 중 출품 시험")
+	snapshot = _json(s)
+	_check(not bool(s.enter_contest("clear_bowl", s.selected_record_id)["ok"]) and not bool(s.claim_magazine("clear_bowl")["ok"]), "탐색 중 모든 거래 거부")
+	_unchanged(s, snapshot, "탐색 중 출품/잡지")
+	s.retire_expedition()
+	s.wallet = GameStateScript.MAX_WALLET
+	snapshot = _json(s)
+	_check(not bool(s.enter_contest("clear_bowl", s.selected_record_id)["ok"]), "출품 후 자금 상한 거부")
+	_unchanged(s, snapshot, "상한 출품")
+	s.wallet = 30000
+	_check(bool(s.enter_contest("clear_bowl", s.selected_record_id)["ok"]), "정상 금메달")
+	s.wallet = GameStateScript.MAX_WALLET
+	snapshot = _json(s)
+	_check(not bool(s.claim_magazine("clear_bowl")["ok"]), "협조비 상한 거부")
+	_unchanged(s, snapshot, "협조비 상한")
+	_end()
+
+
+func test_magazine_once_and_deleted_record() -> void:
+	var s: GameStateScript = _contest_state(3)
+	_check(bool(s.enter_contest("clear_bowl", s.selected_record_id)["ok"]), "잡지 제안 준비")
+	var cash: int = s.wallet
+	_check(bool(s.claim_magazine("clear_bowl")["ok"]) and s.wallet == cash + 3000, "소개 수락 협조비 1회")
+	var snapshot: String = _json(s)
+	_check(not bool(s.claim_magazine("clear_bowl")["ok"]), "중복 잡지 수락 거부")
+	_unchanged(s, snapshot, "중복 잡지")
+	_check(bool(s.delete_record(s.selected_record_id)["ok"]), "소개된 메뉴 삭제")
+	var restored: GameStateScript = GameStateScript.new()
+	_check(restored.load_from_dict(JSON.parse_string(_json(s))) == "" and _json(restored) == _json(s), "삭제된 출품/잡지 원본 영수증 보존")
+	_check(restored.contest_progress()["articles"].size() == 1 and not bool(restored.claim_magazine("clear_bowl")["ok"]), "재시작도 협조비 중복 없음")
+	_end()
+
+
+func test_contest_load_rejections() -> void:
+	var s: GameStateScript = _contest_state(3)
+	s.enter_contest("clear_bowl", s.selected_record_id)
+	s.claim_magazine("clear_bowl")
+	var base: Dictionary = s.to_dict()
+	var target: GameStateScript = _populated_state()
+	var before: String = _json(target)
+	for kind in ["missing", "shape", "extra", "attempt_fraction", "attempt_excess", "last_day", "history_count", "score", "fee", "prize", "prior", "recipe", "duplicate_best", "missing_best", "article_cash", "article_day", "article_duplicate", "article_entry"]:
+		var d: Dictionary = base.duplicate(true)
+		var c: Dictionary = d["contests"]
+		match kind:
+			"missing": d.erase("contests")
+			"shape": d["contests"] = []
+			"extra": c["free_reward"] = 99999
+			"attempt_fraction": c["attempts"] = 1.5
+			"attempt_excess": c["attempts"] = 10
+			"last_day": c["last_entry_day"] = 0
+			"history_count": c["history"].clear()
+			"score": c["history"][0]["score"] = 100
+			"fee": c["history"][0]["fee"] = 0
+			"prize": c["history"][0]["prize"] = 99999
+			"prior": c["history"][0]["prior_band"] = 3
+			"recipe": c["history"][0]["recipe_name"] = "가짜 메뉴"
+			"duplicate_best": c["bests"].append(c["bests"][0].duplicate(true))
+			"missing_best": c["bests"].clear()
+			"article_cash": c["articles"][0]["cash"] = 0
+			"article_day": c["articles"][0]["day"] = s.day + 1
+			"article_duplicate": c["articles"].append(c["articles"][0].duplicate(true))
+			"article_entry": c["articles"][0]["entry"]["contest_id"] = "deep_bowl"
+		_check(target.load_from_dict(d) != "", "불가능한 콘테스트 저장 거부: " + kind)
+		_unchanged(target, before, "출품 저장 " + kind)
+	_end()
+
+
+func test_contest_migration_v4() -> void:
+	var s: GameStateScript = _explorer_state()
+	_trip(s, "market", "m_ask", "m_buy_pickle")
+	var v4: Dictionary = s.to_dict()
+	v4["schema_version"] = 4
+	v4.erase("contests")
+	var dir: String = _case_dir("contest_v4")
+	var saver: SaveServiceScript = SaveServiceScript.new(dir)
+	saver.remove_known_files()
+	var text: String = JSON.stringify(v4, "\t", true)
+	_write_text(saver.main_path(), text)
+	var loaded: GameStateScript = GameStateScript.new()
+	_check(str(saver.load_into(loaded)["status"]) == "ok", "v4 이행 불러오기")
+	_check(loaded.wallet == s.wallet and loaded.day == s.day and _json(loaded) == _json(s), "v4 모든 기존 값/탐색 결과 보존, 대회 보상 없음")
+	_check(bool(saver.save_state(loaded)["ok"]) and FileAccess.get_file_as_string(saver.legacy_bak_path(4)) == text, "v4 원본 영구 백업")
+	loaded.wallet += 1
+	_check(bool(saver.save_state(loaded)["ok"]) and FileAccess.get_file_as_string(saver.legacy_bak_path(4)) == text, "v4 백업 덮어쓰지 않음")
+	_cleanup_case(saver)
+	_end()
+
+
+func test_contest_history_limit() -> void:
+	var s: GameStateScript = _contest_state(1)
+	for i in range(14):
+		_check(bool(s.enter_contest("clear_bowl", s.selected_record_id)["ok"]), "14회 재도전: %d" % i)
+		_next_day(s)
+	var progress: Dictionary = s.contest_progress()
+	_check(progress["history"].size() == 12 and int(progress["attempts"]) == 14 and int(s.contest_best("clear_bowl")["band"]) == 1, "최근12/누적14/잘린 최고메달 보존")
+	var restored: GameStateScript = GameStateScript.new()
+	_check(restored.load_from_dict(JSON.parse_string(_json(s))) == "" and _json(restored) == _json(s), "잘린 출품 이력 정상 왕복")
+	_end()
+
+
+## Claude 정적 리뷰의 최소 변조를 실제 로더로 재현한다. 유효한 은상 소개→나중 금상은 계속 보존해야 한다.
+func test_contest_review_regressions() -> void:
+	var s: GameStateScript = _contest_state(2)
+	s.enter_contest("clear_bowl", s.selected_record_id)
+	s.claim_magazine("clear_bowl")
+	_next_day(s)
+	_contest_record(s, _contest_config(3), "더 높은 메달")
+	s.enter_contest("clear_bowl", s.selected_record_id)
+	_check(GameStateScript.new().load_from_dict(JSON.parse_string(_json(s))) == "", "과거 은상 소개는 나중 금상을 받아도 유효")
+	var base: Dictionary = s.to_dict()
+	var target: GameStateScript = _populated_state()
+	var before: String = _json(target)
+	for kind in ["non_improving_article", "old_article_after_gold", "silver_article_without_silver"]:
+		var d: Dictionary = base.duplicate(true)
+		var c: Dictionary = d["contests"]
+		match kind:
+			"non_improving_article":
+				c["articles"][0]["entry"]["prior_band"] = 2
+				c["articles"][0]["entry"]["prize"] = 0
+			"old_article_after_gold":
+				c["articles"][0]["day"] = s.day
+			"silver_article_without_silver":
+				var gold: Dictionary = c["bests"][0].duplicate(true)
+				gold["prior_band"] = 0
+				gold["prize"] = 18000
+				c["bests"] = [gold.duplicate(true)]
+				c["history"] = [gold.duplicate(true)]
+				c["attempts"] = 1
+		_check(target.load_from_dict(d) != "", "리뷰 재현 거부: " + kind)
+		_unchanged(target, before, "리뷰 저장 " + kind)
+	# 삭제한 메뉴도 출품 영수증으로 남으므로, 잡지 스냅샷과 남은 출품 이력의 동일성을 따로 확인한다.
+	s.delete_record(int(base["contests"]["articles"][0]["entry"]["record_id"]))
+	var swapped: Dictionary = s.to_dict()
+	swapped["contests"]["articles"][0]["entry"]["recipe_name"] = "바꿔치기 메뉴"
+	_check(target.load_from_dict(swapped) != "", "남은 개선 영수증과 다른 잡지 스냅샷 거부")
+	_unchanged(target, before, "잡지 메뉴 바꿔치기")
+	var pruned: GameStateScript = _contest_state(1)
+	for i in 14:
+		pruned.enter_contest("clear_bowl", pruned.selected_record_id)
+		_next_day(pruned)
+	_contest_record(pruned, _contest_config(2), "최신 은상")
+	pruned.enter_contest("clear_bowl", pruned.selected_record_id)
+	pruned.delete_record(pruned.selected_record_id)
+	_check(GameStateScript.new().load_from_dict(JSON.parse_string(_json(pruned))) == "", "가지치기 후 새 개선 기록은 정상")
+	var changed: Dictionary = pruned.to_dict()
+	changed["contests"]["bests"][0]["day"] = 3
+	changed["contests"]["bests"][0]["prior_band"] = 0
+	changed["contests"]["bests"][0]["prize"] = 10000
+	_check(target.load_from_dict(changed) != "", "최신 개선 영수증을 가지치기된 과거 기록으로 바꾸면 거부")
+	_unchanged(target, before, "최고 영수증 바꿔치기")
+	_end()
+
+
+func test_contest_art() -> void:
+	for band in range(4):
+		var image: Image = ArtScript.contest_badge_image(band)
+		_check(image.get_size() == Vector2i(32, 24) and not image.is_invisible(), "원본 메달 그림")
+	_check(ArtScript.magazine_image().get_size() == Vector2i(48, 28) and not ArtScript.magazine_image().is_invisible(), "글자 없는 원본 잡지 그림")
+	_check(ArtScript.contest_badge_image(1).get_data() != ArtScript.contest_badge_image(3).get_data(), "메달 색 구분")
+	_end()
 
 
 func _cfg(broth: String, tare: String, oil: String, noodle: String, topping: String, cook: String, price: int) -> Dictionary:
@@ -2214,6 +2470,7 @@ func _as_legacy(src: Dictionary, version: int) -> Dictionary:
 	# 탐험(스키마 v4)이 생기기 전 파일에는 "exploration" 키가 없다. 이 변환은 v4 키를 항상 지워 v1~v3 모양을 만든다
 	# (v3 진짜 파일은 _as_v3()가 growth 를 남기는 쪽을 따로 만든다).
 	d.erase("exploration")
+	d.erase("contests")
 	if version == 1:
 		d.erase("research")
 	for r in d["records"]:
@@ -2946,6 +3203,7 @@ func test_schema_migration_v1_v2() -> void:
 	v2_new_cfg["schema_version"] = 2
 	v2_new_cfg.erase("growth")
 	v2_new_cfg.erase("exploration")
+	v2_new_cfg.erase("contests")
 	_check(GameStateScript.new().load_from_dict(v2_new_cfg) != "", "toppings 배열을 쓴 v2 거부")
 	var v3_old_cfg: Dictionary = _as_legacy(_populated_state().to_dict(), 3)
 	v3_old_cfg["growth"] = v3["growth"]
@@ -3202,6 +3460,7 @@ func _as_v3(src: Dictionary) -> Dictionary:
 	var d: Dictionary = JSON.parse_string(JSON.stringify(src))
 	d["schema_version"] = 3
 	d.erase("exploration")
+	d.erase("contests")
 	return d
 
 
@@ -3916,7 +4175,7 @@ func test_exploration_schema_migration_v3() -> void:
 	_check(bool(saver.save_state(loaded)["ok"]), "v3: 이행 뒤 첫 저장")
 	_check(FileAccess.get_file_as_string(saver.bak_path()) == legacy_text and FileAccess.get_file_as_string(saver.legacy_bak_path(3)) == legacy_text, "v3 원본이 백업과 영구 보관본에 보존")
 	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(saver.main_path()))
-	_check(typeof(parsed) == TYPE_DICTIONARY and int((parsed as Dictionary)["schema_version"]) == 4 and (parsed as Dictionary).has("exploration") and (parsed as Dictionary).has("growth"), "새 파일은 v4")
+	_check(typeof(parsed) == TYPE_DICTIONARY and int((parsed as Dictionary)["schema_version"]) == GameStateScript.SCHEMA_VERSION and (parsed as Dictionary).has("exploration") and (parsed as Dictionary).has("growth"), "새 파일은 v4")
 	loaded.wallet += 1
 	_check(bool(saver.save_state(loaded)["ok"]), "두 번째 저장")
 	_check(FileAccess.get_file_as_string(saver.legacy_bak_path(3)) == legacy_text and FileAccess.get_file_as_string(saver.bak_path()) != legacy_text, "v3 보관본은 다시 만들거나 덮어쓰지 않고, 일반 백업만 갱신")

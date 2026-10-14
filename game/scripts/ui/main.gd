@@ -25,6 +25,7 @@ const WorkScript = preload("res://scripts/ui/tasting_work.gd")
 const WorkViewScript = preload("res://scripts/ui/tasting_work_view.gd")
 const Exploration = preload("res://scripts/domain/ingredient_exploration.gd")
 const TravelScript = preload("res://scripts/ui/expedition_travel.gd")
+const Contest = preload("res://scripts/domain/ramen_contest.gd")
 
 const INK: Color = Color(0.17, 0.12, 0.08)
 const PAPER: Color = Color(0.96, 0.92, 0.82)
@@ -178,6 +179,11 @@ var _flash_until: int = 0
 var _last_status_text: String = ""
 var _last_save_message: String = ""
 var _save_error_shown: bool = false
+var _contest_summary: Label
+var _contest_message: Label
+var _contest_box: VBoxContainer
+var _contest_left: float = 0.0
+var _contest_buttons: Array[Button] = []
 
 
 func _ready() -> void:
@@ -231,6 +237,8 @@ func _process(delta: float) -> void:
 		advance_work(minf(delta, 0.1))
 	if _travel.running():
 		advance_travel(minf(delta, 0.1))
+	if _contest_left > 0.0:
+		advance_contest(minf(delta, 0.1))
 	if not state.service_active():
 		return
 	var session: SessionScript = state.active_session()
@@ -650,6 +658,7 @@ func _build_overlay() -> void:
 	_build_research(_make_tab("TabResearch", "연구"))
 	_build_growth(_make_tab("TabGrowth", "성장"))
 	_build_exploration(_make_tab("TabExploration", "탐색"))
+	_build_contests(_make_tab("TabContests", "대회"))
 	var link_group: ButtonGroup = ButtonGroup.new()
 	for i in tabs.get_tab_count():
 		var link: Button = _button(tabs.get_tab_title(i), "TabLink_" + str(i))
@@ -1019,7 +1028,7 @@ func _place_status() -> void:
 
 func _apply_layout() -> void:
 	var portrait: bool = _is_portrait()
-	_tab_navigation.columns = 4 if portrait else 7
+	_tab_navigation.columns = 4 if portrait else 8
 	_place_status()
 	var side: int = 6 if portrait else maxi(6, int((size.x - 820.0) * 0.5))
 	_drawer_margin.add_theme_constant_override("margin_left", side)
@@ -1146,6 +1155,7 @@ func _on_tab_changed(_index: int) -> void:
 	_refresh_notebook()
 	_refresh_growth()
 	_refresh_exploration()
+	_refresh_contests()
 
 
 func _on_tab_link(index: int) -> void:
@@ -1303,6 +1313,9 @@ func _on_result_ok() -> void:
 ## 시식 준비 중 잠금 판정. 버튼을 꺼 두는 것과 별개로 모든 상태 변경 핸들러가 맨 앞에서 이 함수를 불러 막는다
 ## (버튼 비활성만 믿으면 직접 호출/단축 입력으로 초안이 시작 때 복사한 스냅샷과 어긋날 수 있다). 막았으면 true.
 func _work_blocked(action: String, allow_trip: bool = false) -> bool:
+	if _contest_left > 0.0 and not allow_trip:
+		_flash("심사 결과를 정리하는 중에는 %s 수 없어요. 잠시 기다려 주세요." % action)
+		return true
 	if _work.is_running():
 		_work_reject("시식 준비 중에는 %s 수 없어요. 끝나길 기다리거나 [준비 취소]를 누르세요." % action)
 		return true
@@ -1379,6 +1392,8 @@ func _on_taste() -> void:
 ## 거부 사유: 이미 준비 중(중복 시작), 영업 중, 또는 시식해도 도메인이 거부할 초안(이름/중복 구성/자금 등 — 복제본으로 미리 확인한다).
 func start_tasting() -> Dictionary:
 	_pending_delete_id = 0
+	if _contest_left > 0.0:
+		return _taste_refused("심사 결과를 정리한 뒤 시식할 수 있어요.")
 	if _work.is_running():
 		return _work_reject("이미 시식을 준비하고 있어요. 하나씩만 준비할 수 있어요.")
 	if state.service_active():
@@ -1767,7 +1782,7 @@ func _refresh_exploration() -> void:
 
 
 func _sync_exploration_lock() -> void:
-	var busy: bool = _work.is_running() or state.service_active()
+	var busy: bool = _work.is_running() or state.service_active() or _contest_left > 0.0
 	for button in _exploration_buttons:
 		if is_instance_valid(button):
 			button.disabled = busy or bool(button.get_meta("locked")) or (_travel.running() and bool(button.get_meta("travel_guard")))
@@ -1775,7 +1790,9 @@ func _sync_exploration_lock() -> void:
 
 func _exploration_guard(moving_action: bool = false) -> bool:
 	var reason: String = ""
-	if _work.is_running():
+	if _contest_left > 0.0:
+		reason = "심사 결과를 정리한 뒤 탐색할 수 있어요."
+	elif _work.is_running():
 		reason = "시식 준비 중에는 탐색할 수 없어요. 준비를 마치거나 취소하세요."
 	elif state.service_active():
 		reason = "영업 중에는 탐색할 수 없어요. 정산을 마친 뒤 출발하세요."
@@ -1856,6 +1873,153 @@ func _update_travel_picture() -> void:
 	if _travel_label != null:
 		_travel_label.text = "이동 중… %d%%" % int(_travel.progress() * 100.0)
 
+func _build_contests(box: VBoxContainer) -> void:
+	_contest_summary = _label("", 18, VERMILION)
+	_contest_summary.name = "ContestSummary"
+	box.add_child(_contest_summary)
+	var rules: Label = _label("시식한 메뉴로 하루 한 번 출품해요. 대회 기준 70% + 단골 평가 30%로 심사해요. 처음 얻거나 더 높은 메달의 상금 차액만 지급하며, 금메달 대회는 완료돼요. 은메달부터 잡지 소개 제안이 와요.", 14, MUTED)
+	rules.name = "ContestRules"
+	box.add_child(rules)
+	_contest_message = _label("", 15, TEAL)
+	_contest_message.name = "ContestMessage"
+	box.add_child(_contest_message)
+	_contest_box = _vbox(12)
+	box.add_child(_contest_box)
+
+
+func _contest_picture(band: int, magazine: bool = false) -> TextureRect:
+	var picture: TextureRect = TextureRect.new()
+	picture.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	picture.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
+	picture.texture = ArtScript.scaled_tex(ArtScript.magazine_image() if magazine else ArtScript.contest_badge_image(band), 4)
+	picture.custom_minimum_size = Vector2(0.0, 96.0 if not magazine else 112.0)
+	picture.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	return picture
+
+
+func _refresh_contests() -> void:
+	if _contest_box == null:
+		return
+	_clear(_contest_box)
+	_contest_buttons.clear()
+	var progress: Dictionary = state.contest_progress()
+	_contest_summary.text = "라멘 대회 · 출품 %d회 · 잡지 %d편\n%d일차 · 자금 %s" % [int(progress["attempts"]), progress["articles"].size(), state.day, _won(state.wallet)]
+	_contest_message.visible = _contest_message.text != ""
+	var judging: bool = _contest_left > 0.0
+	if judging:
+		var note: Label = _label("심사위원들이 한 그릇을 살펴보고 있어요… 결과 정리 중", 16, VERMILION)
+		note.name = "ContestJudging"
+		_contest_box.add_child(note)
+		var bar: ProgressBar = ProgressBar.new()
+		bar.name = "ContestProgressBar"
+		bar.value = 100.0 * (1.0 - _contest_left / 1.5)
+		bar.custom_minimum_size.y = 18.0
+		_contest_box.add_child(bar)
+	elif not progress["history"].is_empty():
+		var last: Dictionary = progress["history"][-1]
+		var result_card: PanelContainer = _card("ContestResultCard")
+		var rb: VBoxContainer = _vbox(6)
+		result_card.add_child(rb)
+		_contest_box.add_child(result_card)
+		rb.add_child(_contest_picture(int(last["band"])))
+		var result: Label = _label("%s · %d점\n'%s v%d' · %s\n출품료 %s · 이번 상금 %s" % [str(Contest.find(str(last["contest_id"]))["title"]), int(last["score"]), str(last["recipe_name"]), int(last["version"]), Contest.band_name(int(last["band"])), _won(int(last["fee"])), _won(int(last["prize"]))], 16, INK)
+		result.name = "ContestResult"
+		rb.add_child(result)
+		var evaluated: Dictionary = Contest.evaluate(str(last["contest_id"]), last["config"])
+		var hints: PackedStringArray = []
+		for axis in evaluated["feedback"]:
+			hints.append(str(axis["hint"]))
+		var feedback: Label = _label("대회 기준 %d · 단골 평가 %d\n%s\n노트에서 이 메뉴를 불러와 고친 뒤 다시 시식하세요." % [int(evaluated["theme_score"]), int(evaluated["audience_score"]), "\n".join(hints)], 14, MUTED)
+		feedback.name = "ContestFeedback"
+		rb.add_child(feedback)
+	for review in state.contest_reviews():
+		var def: Dictionary = review
+		var id: String = str(def["id"])
+		var card: PanelContainer = _card("ContestCard_" + id)
+		var col: VBoxContainer = _vbox(6)
+		card.add_child(col)
+		_contest_box.add_child(card)
+		var best: Dictionary = def["best"]
+		var title: Label = _label(str(def["title"]), 18, VERMILION)
+		title.name = "ContestTitle_" + id
+		col.add_child(title)
+		var targets: PackedStringArray = []
+		for axis in Catalog.AXES:
+			targets.append("%s %d" % [str(Catalog.AXIS_NAMES[axis]), int(def["targets"][axis])])
+		col.add_child(_label("%s\n%s\n목표: %s\n등급 %d · %d일차 · 출품료 %s\n동 55점/4,000원 · 은 70점/10,000원 · 금 85점/18,000원 (누적 상금 상한)\n최고 메달: %s" % [str(def["description"]), str(def["criteria"]), " · ".join(targets), int(def["rank"]), int(def["min_day"]), _won(int(def["fee"])), "없음" if best.is_empty() else Contest.band_name(int(best["band"]))], 14, MUTED))
+		var reason: Label = _label(str(def["reason"]), 14, VERMILION)
+		reason.name = "ContestLock_" + id
+		col.add_child(reason)
+		var enter: Button = _button("선택한 시식 메뉴로 출품 · " + _won(int(def["fee"])), "ContestEnter_" + id)
+		enter.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		enter.disabled = not bool(def["can_enter"]) or judging or work_active()
+		enter.pressed.connect(_on_contest_enter.bind(id))
+		_contest_buttons.append(enter)
+		col.add_child(enter)
+		if bool(def["article_pending"]) or not def["article"].is_empty():
+			var magazine: Dictionary = def["article"]
+			var featured: Dictionary = best if magazine.is_empty() else magazine["entry"]
+			col.add_child(_contest_picture(0, true))
+			var story: Label = _label("골목 한 그릇 · %s\n%s" % [str(def["article_title"]) % str(featured["recipe_name"]), str(def["article_text"]) % str(featured["recipe_name"])], 15, INK)
+			story.name = "MagazineStory_" + id
+			col.add_child(story)
+			var published: Label = _label("소개 제안 도착 · 촬영 협조비 %s (한 번)" % _won(int(def["article_cash"])) if magazine.is_empty() else "%d일차 잡지 게재 완료 · 협조비 수령 완료" % int(magazine["day"]), 14, TEAL)
+			published.name = "MagazineStatus_" + id
+			col.add_child(published)
+			if magazine.is_empty():
+				var accept: Button = _button("잡지 소개 수락", "MagazineAccept_" + id)
+				accept.disabled = judging or work_active() or state.service_active() or state.exploration_active()
+				accept.pressed.connect(_on_magazine_accept.bind(id))
+				_contest_buttons.append(accept)
+				col.add_child(accept)
+
+
+## 심사 연출 이전에 도메인 거래와 저장을 확정한다. 끄거나 재시작해도 비용/결과가 반복되지 않는다.
+func _on_contest_enter(id: String) -> void:
+	if _work_blocked("출품할") or state.service_active():
+		# 일시적인 입력 거부가 직전 거래의 저장 성공/실패 안내를 덮지 않게 한다.
+		_flash("영업·탐색·시식·심사를 마친 뒤 출품하세요.")
+		return
+	var result: Dictionary = state.enter_contest(id, state.selected_record_id)
+	_finish_contest_action(result, true)
+
+
+func _on_magazine_accept(id: String) -> void:
+	if _work_blocked("잡지 소개를 수락할") or state.service_active():
+		_flash("영업·탐색·시식·심사를 마친 뒤 수락하세요.")
+		return
+	_finish_contest_action(state.claim_magazine(id), false)
+
+
+func _finish_contest_action(result: Dictionary, present: bool) -> void:
+	if not bool(result["ok"]):
+		_contest_message.text = str(result["message"])
+		_refresh_contests()
+		return
+	var saved: bool = _persist()
+	_contest_message.text = str(result["message"]) + (" 저장했어요." if saved else "\n⚠ 저장하지 못했어요: %s 지금 변화는 이 게임 안에만 남아 있어요." % _last_save_message)
+	_contest_left = 1.5 if present else 0.0
+	_refresh_all()
+	var scroll: ScrollContainer = tabs.find_child("TabContests", true, false) as ScrollContainer
+	if scroll != null:
+		scroll.scroll_vertical = 0
+
+
+func advance_contest(seconds: float) -> Dictionary:
+	if not is_finite(seconds) or seconds < 0.0:
+		return {"ok": false, "message": "심사 시간은 유한한 0 이상의 값이어야 해요."}
+	if _contest_left <= 0.0:
+		return {"ok": false, "message": "정리 중인 심사 결과가 없어요."}
+	_contest_left = maxf(0.0, _contest_left - seconds)
+	if _contest_left == 0.0:
+		_refresh_all()
+	else:
+		var bar: ProgressBar = find_child("ContestProgressBar", true, false) as ProgressBar
+		if bar != null:
+			bar.value = 100.0 * (1.0 - _contest_left / 1.5)
+	return {"ok": true, "message": "심사 연출만 진행했어요."}
+
+
 func _refresh_all() -> void:
 	_trip_notice.visible = state.exploration_active()
 	_refresh_header()
@@ -1866,6 +2030,7 @@ func _refresh_all() -> void:
 	_refresh_research()
 	_refresh_growth()
 	_refresh_exploration()
+	_refresh_contests()
 	_refresh_guide()
 	_refresh_status()
 	_refresh_nav()
@@ -1900,7 +2065,7 @@ func _refresh_work_ui() -> void:
 func _apply_work_lock() -> void:
 	if _work_card == null:
 		return
-	var busy: bool = _work.is_running() or state.exploration_active() or state.service_active()
+	var busy: bool = _work.is_running() or state.exploration_active() or state.service_active() or _contest_left > 0.0
 	for id in _buttons.keys():
 		(_buttons[id] as Button).disabled = busy or not state.ingredient_unlocked(str(id))
 	for b in _price_buttons:
@@ -1909,7 +2074,7 @@ func _apply_work_lock() -> void:
 	_taste_button.disabled = busy
 	_taste_button.text = "시식 준비 중…" if _work.is_running() else ("탐색을 먼저 마치세요" if state.exploration_active() else "시식하기")
 	_close_button.disabled = _work.is_running()
-	_open_button.disabled = _work.is_running()
+	_open_button.disabled = _work.is_running() or _contest_left > 0.0
 	_name_edit.editable = (not busy) and state.draft_lineage_id == 0
 	_sync_growth_lock()
 	_sync_exploration_lock()
@@ -1939,6 +2104,7 @@ func _refresh_guide() -> void:
 
 func _refresh_nav() -> void:
 	var active: bool = state.service_active()
+	_start_button.disabled = _contest_left > 0.0
 	_speed_button.visible = active
 	_speed_button.text = "속도 ×2" if _fast else "속도 ×1"
 	_dev_button.text = "메뉴 개발"
@@ -2452,7 +2618,7 @@ func _refresh_growth() -> void:
 
 ## 시식 준비 중이거나 영업 중이면 성장 행동 버튼을 모두 끈다. 나머지 이유(조건/자금/자리)로 꺼진 버튼은 메타 "locked" 로 구분한다.
 func _sync_growth_lock() -> void:
-	var busy: bool = _work.is_running() or (state != null and (state.service_active() or state.exploration_active()))
+	var busy: bool = _work.is_running() or _contest_left > 0.0 or (state != null and (state.service_active() or state.exploration_active()))
 	for b in _growth_buttons:
 		if is_instance_valid(b):
 			b.disabled = busy or bool(b.get_meta("locked", false))

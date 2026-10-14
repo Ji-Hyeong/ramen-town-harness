@@ -166,7 +166,11 @@ func archive_corrupt() -> Dictionary:
 
 ## 테스트용: 이 서비스가 만드는 고정 이름 파일만 지운다(폴더 스캔 없음).
 func remove_known_files() -> void:
-	for p in [main_path(), tmp_path(), bak_path(), legacy_bak_path(1), legacy_bak_path(2), legacy_bak_path(3)]:
+	var known: Array = [main_path(), tmp_path(), bak_path()]
+	# 새 이행 시험도 자신의 v4 보관본을 정리한다. 디렉터리 검색이나 알 수 없는 사용자 파일 삭제는 하지 않는다.
+	for version in range(GameStateScript.MIN_SCHEMA_VERSION, GameStateScript.SCHEMA_VERSION):
+		known.append(legacy_bak_path(version))
+	for p in known:
 		if FileAccess.file_exists(str(p)):
 			DirAccess.remove_absolute(str(p))
 

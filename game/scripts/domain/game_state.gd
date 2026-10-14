@@ -17,6 +17,8 @@ const Research = preload("res://scripts/domain/ramen_research.gd")
 const Growth = preload("res://scripts/domain/shop_growth.gd")
 const Staffing = preload("res://scripts/domain/shop_staffing.gd")
 const Exploration = preload("res://scripts/domain/ingredient_exploration.gd")
+const Contest = preload("res://scripts/domain/ramen_contest.gd")
+const ContestProgress = preload("res://scripts/domain/contest_progress.gd")
 
 ## 스키마 v2: 최상위에 "research"(완료한 연구 의뢰 영수증 목록)가 추가됐다.
 ## v1 저장은 "research" 키가 없는 것이 정상이며, 불러올 때 빈 연구 진행(완료 없음)으로 이행한다(load_from_dict 참고).
@@ -29,7 +31,8 @@ const Exploration = preload("res://scripts/domain/ingredient_exploration.gd")
 ## v1~v3 저장은 이 키가 없는 것이 정상이며(있으면 변조), 불러올 때 "발견 없음, 진행 중 탐험 없음"으로 이행한다. 이행은 자금/일차/기록/점수/연구/성장을
 ## 전혀 건드리지 않고 아무것도 새로 주지 않는다. 진행 중 탐험은 모든 만남 단계와 결과 단계에서 그대로 저장돼 다시 열어도 같은 만남이 이어진다
 ## (만남은 카탈로그와 경로로만 정해지므로 불러올 때 새로 뽑지 않는다). 저장 서비스가 v4 첫 저장 전에 v3 원본을 보존한다.
-const SCHEMA_VERSION: int = 4
+## v5에는 출품 영수증·최고 메달·잡지 영수증을 보존한다. v1~v4 이행은 보상 없이 빈 진행으로 시작한다.
+const SCHEMA_VERSION: int = 5
 const MIN_SCHEMA_VERSION: int = 1
 const MAX_RECORDS: int = 30
 const START_WALLET: int = 30000
@@ -43,8 +46,9 @@ const TOP_KEYS_V2: Array = ["schema_version", "day", "wallet", "next_record_id",
 	"records", "selected_record_id", "last_feedback_record_id", "draft", "last_report", "research"]
 const TOP_KEYS_V3: Array = ["schema_version", "day", "wallet", "next_record_id", "next_lineage_id",
 	"records", "selected_record_id", "last_feedback_record_id", "draft", "last_report", "research", "growth"]
-const TOP_KEYS: Array = ["schema_version", "day", "wallet", "next_record_id", "next_lineage_id",
+const TOP_KEYS_V4: Array = ["schema_version", "day", "wallet", "next_record_id", "next_lineage_id",
 	"records", "selected_record_id", "last_feedback_record_id", "draft", "last_report", "research", "growth", "exploration"]
+const TOP_KEYS: Array = TOP_KEYS_V4 + ["contests"]
 const RECORD_KEYS: Array = ["record_id", "lineage_id", "name", "version", "tasted_day", "config", "scores", "comparison"]
 const COMPARISON_KEYS: Array = ["prev_record_id", "prev_version", "prev_scores", "prev_config"]
 const DRAFT_KEYS: Array = ["config", "name", "lineage_id"]
@@ -71,6 +75,7 @@ var _hired: Array = []
 ## 재료 탐험 상태(저장). 발견한 재료(영구), 마지막 출발일(하루 1번 규칙), 누적 완료/포기 횟수, 진행 중 탐험, 최근 영수증. 구조는 ingredient_exploration.gd 참고.
 ## 이 값은 항상 Exploration 의 전이 함수가 돌려준 "새 딕셔너리"로 통째로 교체한다(부분 수정 없음). 외부에는 deep copy만 내보낸다.
 var _exploration: Dictionary = Exploration.empty_state()
+var _contests: Dictionary = ContestProgress.empty_state()
 ## 진행 중인 영업 런타임. 저장하지 않는다(재시작하면 영업 전 상태로 돌아온다). 있는 동안은 레시피/초안/일차를 잠근다.
 var _active_session: Session = null
 
@@ -984,6 +989,72 @@ func retire_expedition() -> Dictionary:
 
 # ---------- 저장 직렬화 ----------
 
+func contest_progress() -> Dictionary:
+	return _contests.duplicate(true)
+
+
+func contest_best(id: String) -> Dictionary:
+	return ContestProgress.best(_contests, id)
+
+
+func contest_reviews() -> Array:
+	var out: Array = []
+	for def in Contest.catalog():
+		var d: Dictionary = def
+		var id: String = str(d["id"])
+		var best: Dictionary = contest_best(id)
+		var selected: Dictionary = get_record(selected_record_id)
+		var reason: String = ""
+		if _busy():
+			reason = "영업·탐색을 마친 뒤 출품할 수 있어요."
+		elif _rank < int(d["rank"]) or day < int(d["min_day"]):
+			reason = "가게 등급 %d · %d일차부터 열려요." % [int(d["rank"]), int(d["min_day"])]
+		elif int(best.get("band", 0)) == 3:
+			reason = "금메달 획득 완료 · 재출품료를 받지 않아요."
+		elif int(_contests["last_entry_day"]) == day:
+			reason = "오늘 출품 완료 · 영업 후 다시 도전해요."
+		elif wallet < int(d["fee"]):
+			reason = "출품료가 부족해요."
+		elif selected.is_empty():
+			reason = "시식한 메뉴를 노트에서 선택하세요."
+		else:
+			var judged: Dictionary = Contest.evaluate(id, selected["config"])
+			reason = str(judged["error"])
+		d["best"] = best
+		d["reason"] = reason
+		d["can_enter"] = reason == ""
+		d["article"] = ContestProgress.article(_contests, id)
+		d["article_pending"] = int(best.get("band", 0)) >= 2 and d["article"].is_empty()
+		out.append(d)
+	return out
+
+
+## 영수증과 잔액을 한 번에 반영한다. 심사 애니메이션의 프레임/재시작은 이 거래를 다시 실행하지 않는다.
+func enter_contest(id: String, record_id: int) -> Dictionary:
+	if _busy():
+		return _locked_fail()
+	var result: Dictionary = ContestProgress.enter(_contests, id, get_record(record_id), day, _rank, wallet)
+	if str(result["error"]) != "":
+		return _fail(str(result["error"]))
+	_contests = result["state"]
+	wallet = int(result["wallet"])
+	var res: Dictionary = _ok("출품 기록과 비용·상금을 반영했어요.")
+	res["receipt"] = result["receipt"].duplicate(true)
+	return res
+
+
+func claim_magazine(id: String) -> Dictionary:
+	if _busy():
+		return _locked_fail()
+	var result: Dictionary = ContestProgress.claim_article(_contests, id, day, wallet)
+	if str(result["error"]) != "":
+		return _fail(str(result["error"]))
+	_contests = result["state"]
+	wallet = int(result["wallet"])
+	var res: Dictionary = _ok("잡지 소개와 협조비를 반영했어요.")
+	res["receipt"] = result["receipt"].duplicate(true)
+	return res
+
 func to_dict() -> Dictionary:
 	return {
 		"schema_version": SCHEMA_VERSION,
@@ -1004,6 +1075,7 @@ func to_dict() -> Dictionary:
 		"growth": {"rank": _rank, "facilities": _facilities.duplicate(), "staff": _hired.duplicate()},
 		# 진행 중 탐험은 어느 단계에서든 그대로 저장한다(경로와 이미 낸 비용 포함). 영수증은 최대 MAX_HISTORY개.
 		"exploration": _exploration.duplicate(true),
+		"contests": _contests.duplicate(true),
 	}
 
 
@@ -1025,7 +1097,9 @@ func load_from_dict(raw: Variant) -> String:
 		expected_keys = TOP_KEYS_V2
 	elif version == 3:
 		expected_keys = TOP_KEYS_V3
-	elif version >= 4:
+	elif version == 4:
+		expected_keys = TOP_KEYS_V4
+	elif version >= 5:
 		expected_keys = TOP_KEYS
 	var key_err: String = Check.keys_error(d, expected_keys, "저장")
 	if key_err != "":
@@ -1166,11 +1240,23 @@ func load_from_dict(raw: Variant) -> String:
 	if Catalog.toppings_of(dcfg["config"]).size() > slot_limit:
 		return "초안의 토핑 수가 열린 슬롯 수를 넘었어요."
 
+	# 기존 구성을 포함한 출품/잡지 기록도 임시로 완전히 검증한다. 이행은 상금을 주지 않는다.
+	var contests_parsed: Dictionary = ContestProgress.empty_state()
+	if version >= 5:
+		var contest_records: Dictionary = {}
+		for pe in parsed:
+			contest_records[int(pe["record_id"])] = pe
+		var contest_result: Dictionary = ContestProgress.parse(d["contests"], int(d["day"]), growth_rank,
+			n_record, contest_records, exploration_parsed["discovered"], slot_limit)
+		if str(contest_result["error"]) != "":
+			return str(contest_result["error"])
+		contests_parsed = contest_result["state"]
 	# 모든 검증 통과 후 반영
 	_rank = growth_rank
 	_facilities = growth_facilities
 	_hired = growth_staff
 	_exploration = exploration_parsed
+	_contests = contests_parsed
 	_research_done = research_parsed
 	day = int(d["day"])
 	wallet = int(d["wallet"])
