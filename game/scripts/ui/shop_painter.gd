@@ -829,17 +829,28 @@ static func _facade_high(img: Image, L: Dictionary) -> void:
 		_pq(img, L, "Y", 10.4, s, s + 0.25, 18.0, 19.0, ROOF.darkened(0.2))
 		s += 0.5
 	Art.poly(img, [_p(L, x1, y1, 26.0), _p(L, x1, 10.4, 21.0), _p(L, x1, 10.4, 19.0), _p(L, x1, y1, 24.0)], ROOF.darkened(0.35))
-	# 간판: 지붕 위 나무판(글씨는 ShopView), 받침 두 개, 오른쪽 끝의 붉은 그릇 문양
+	# 간판: 지붕 위 나무판 + 받침 두 개. 글씨는 쓰지 않고 가운데 김 나는 붉은 그릇(젓가락 한 쌍), 양끝 붉은 인장 문양만 둔다.
+	# 움직이는 김은 ShopView 가 sign_emblem_anchor() 위치에 얹는다(이 이미지에는 짧은 정적 김만 있다).
 	for t in [1.4, 6.6]:
 		_pq(img, L, "Y", 9.85, float(t), float(t) + 0.15, 26.0, 30.0, WOOD_D)
 	_pq(img, L, "Y", 9.85, 0.8, 7.2, 29.0, 41.0, WOOD_D)
 	_pq(img, L, "Y", 9.85, 0.95, 7.05, 30.0, 40.0, WOOD_LL)
 	_pq(img, L, "Y", 9.85, 0.95, 7.05, 39.0, 40.0, Color(0.92, 0.74, 0.50))
-	var bp: Vector2 = _p(L, 6.6, 9.85, 35.0)
-	Art.rect(img, int(bp.x) - 3, int(bp.y), 7, 3, RED)
-	Art.rect(img, int(bp.x) - 2, int(bp.y) - 1, 5, 1, Color(0.96, 0.78, 0.40))
-	Art.px(img, int(bp.x) - 1, int(bp.y) - 3, WHITE)
-	Art.px(img, int(bp.x) + 1, int(bp.y) - 4, WHITE)
+	_pq(img, L, "Y", 9.85, 0.95, 7.05, 30.0, 31.0, RED_D)
+	for seal_x in [1.2, 6.0]:
+		var sx: float = float(seal_x)
+		_pq(img, L, "Y", 9.85, sx, sx + 0.8, 32.0, 38.0, RED)
+		_pq(img, L, "Y", 9.85, sx + 0.2, sx + 0.6, 33.5, 36.5, PAPER)
+		_pq(img, L, "Y", 9.85, sx + 0.3, sx + 0.5, 34.5, 35.5, RED)
+	_pq(img, L, "Y", 9.85, 3.65, 4.35, 31.0, 32.0, INK)
+	_pq(img, L, "Y", 9.85, 3.2, 4.8, 32.0, 35.0, RED)
+	_pq(img, L, "Y", 9.85, 3.2, 4.8, 32.0, 33.0, RED_D)
+	_pq(img, L, "Y", 9.85, 3.1, 4.9, 35.0, 36.0, WARM)
+	_pq(img, L, "Y", 9.85, 3.1, 4.9, 35.0, 35.5, Color(0.92, 0.74, 0.40))
+	_pl(img, L, "Y", 9.85, 4.55, 36.0, 5.8, 39.0, WOOD_D)
+	_pl(img, L, "Y", 9.85, 4.85, 36.0, 6.0, 38.5, WOOD_D)
+	for wx in [3.5, 4.0]:
+		_pq(img, L, "Y", 9.85, float(wx), float(wx) + 0.1, 37.0, 38.5, WHITE)
 	# 처마 밑 등롱
 	_lantern_up(img, _p(L, 2.9, 10.15, 18.0) - Vector2(0, 0))
 	_lantern_up(img, _p(L, 5.3, 10.15, 18.0))

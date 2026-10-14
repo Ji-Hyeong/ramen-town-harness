@@ -19,6 +19,8 @@ const LocationScript = preload("res://scripts/services/data_location.gd")
 const StarMeterScript = preload("res://scripts/ui/star_meter.gd")
 const ShopViewScript = preload("res://scripts/ui/shop_view.gd")
 const ArtScript = preload("res://scripts/ui/pixel_art.gd")
+const WorkScript = preload("res://scripts/ui/tasting_work.gd")
+const WorkViewScript = preload("res://scripts/ui/tasting_work_view.gd")
 
 const INK: Color = Color(0.17, 0.12, 0.08)
 const PAPER: Color = Color(0.96, 0.92, 0.82)
@@ -54,6 +56,8 @@ const TAB_RESEARCH: int = 4
 
 const NOT_SAVED_NOTE: String = "영업은 끝까지 진행해야 정산·저장돼요. 도중에 끄면 저장되지 않고 영업 전으로 돌아가요."
 const RUNNING_NOTE: String = "정산 전이에요. 끝까지 진행해야 반영·저장되고, 도중에 닫으면 저장되지 않아요."
+const AUTOSAVE_NOTE: String = "자동 저장: 시식 완료, 연구 제출, 노트 정리, 영업 정산, 서랍을 닫거나 탭을 옮길 때 저장 파일에 바로 써요. 영업이나 시식 준비가 끝나기 전의 진행은 저장하지 않아요."
+const WORK_NOTE: String = "아직 재료비가 나가지 않았고 기록도 없어요. 끝까지 준비되면 시식 기록이 한 번만 만들어지고 그때 저장돼요. 도중에 닫으면 사라져요."
 
 ## 테스트/QA가 ready 전에 주입할 수 있다. 비어 있으면 명령줄에서 결정한다.
 var data_location: Dictionary = {}
@@ -117,6 +121,23 @@ var _research_target: Label
 var _research_message: Label
 var _research_box: VBoxContainer
 
+## 시식 준비 작업(국물→면→시식). 진행 상태만 가지며, 끝났을 때 한 번만 state.taste()를 부른다.
+var _work: WorkScript = WorkScript.new()
+var _work_card: PanelContainer
+var _work_title: Label
+var _work_percent: Label
+var _work_progress: ProgressBar
+var _work_notice: Label
+var _work_view: WorkViewScript
+var _work_phase_labels: Array[Label] = []
+var _work_cancel_button: Button
+var _close_button: Button
+var _new_button: Button
+var _price_buttons: Array[Button] = []
+var _autosave_label: Label
+var _manual_save_button: Button
+var _manual_save_result: Label
+
 var _pending_delete_id: int = 0
 var _fast: bool = false
 var _stop_armed_until: int = 0
@@ -145,7 +166,11 @@ func _ready() -> void:
 func _notification(what: int) -> void:
 	if state == null:
 		return
-	# 저장되는 것은 항상 "영업 전" 상태다: 진행 중 세션은 자금/일차를 바꾸지 않았고 레시피 편집도 잠겨 있다.
+	# 저장되는 것은 항상 "영업 전/시식 준비 전" 상태다: 진행 중 세션과 시식 준비는 자금/일차/기록을 바꾸지 않았고 편집도 잠겨 있다.
+	# 닫기 요청이면 끝나지 않은 시식 준비를 먼저 버린다(완료로 처리하지 않고, 저장 파일에도 어떤 흔적도 남기지 않는다).
+	# 앱이 잠깐 멈추는(PAUSED) 경우는 작업을 버리지 않고 확정된 상태만 저장한다.
+	if what == NOTIFICATION_WM_CLOSE_REQUEST:
+		_work.cancel()
 	if what == NOTIFICATION_WM_CLOSE_REQUEST or what == NOTIFICATION_APPLICATION_PAUSED:
 		_persist()
 
@@ -161,6 +186,10 @@ func _process(delta: float) -> void:
 		_flash_until = 0
 		_flash_text = ""
 		_refresh_status()
+	# 시식 준비는 화면 시간으로만 진행한다. 프레임이 튀어도 한 번에 0.1초까지만 반영해 연출이 건너뛰어지지 않는다.
+	# (검사용으로 시간을 앞당기는 길은 advance_work()를 직접 부르는 것뿐이고, 실행 중인 게임에는 그런 설정이 없다.)
+	if _work.is_running():
+		advance_work(minf(delta, 0.1))
 	if not state.service_active():
 		return
 	var session: SessionScript = state.active_session()
@@ -351,6 +380,14 @@ static func _won(n: int) -> String:
 	return ("-" if n < 0 else "") + out + "원"
 
 
+## 단골 초상 텍스처(24x24 도트를 정수 배율로 확대, 캐시).
+func _portrait_tex(customer_id: String, factor: int) -> ImageTexture:
+	var key: String = "portrait|%s|%d" % [customer_id, factor]
+	if not _icon_cache.has(key):
+		_icon_cache[key] = ArtScript.scaled_tex(ArtScript.portrait_image(customer_id), factor)
+	return _icon_cache[key] as ImageTexture
+
+
 func _icon(id: String, factor: int) -> ImageTexture:
 	var key: String = "%s|%d" % [id, factor]
 	if not _icon_cache.has(key):
@@ -539,13 +576,15 @@ func _build_overlay() -> void:
 	header.add_child(title)
 	var close: Button = _button("닫기", "CloseButton")
 	close.custom_minimum_size = Vector2(88.0, MIN_TOUCH)
-	close.pressed.connect(_close_overlay)
+	close.pressed.connect(_on_close_pressed)
+	_close_button = close
 	header.add_child(close)
 	col.add_child(header)
 
 	_guide_label = _label("", 15, TEAL)
 	_guide_label.name = "GuideLabel"
 	col.add_child(_guide_label)
+	_build_work_card(col)
 
 	tabs = TabContainer.new()
 	tabs.name = "MainTabs"
@@ -564,6 +603,60 @@ func _build_overlay() -> void:
 	_open_button.custom_minimum_size = Vector2(0.0, MIN_TOUCH)
 	col.add_child(_open_button)
 	add_child(_overlay)
+
+
+## 시식 준비 카드: 작업 중에만 보이는 서랍 맨 위 카드(탭 위라서 어느 탭에서나 보인다).
+## 왼쪽은 솥/면/그릇 연출, 오른쪽은 단계 이름·진행 막대, 아래는 취소 버튼과 안내.
+func _build_work_card(col: VBoxContainer) -> void:
+	_work_card = _card("TastingWorkCard")
+	_work_card.add_theme_stylebox_override("panel", _box(PAPER_LIGHT, VERMILION, 3, 0, 10.0, 6.0))
+	_work_card.visible = false
+	var wb: VBoxContainer = _vbox(4)
+	_work_card.add_child(wb)
+	var row: HBoxContainer = HBoxContainer.new()
+	row.add_theme_constant_override("separation", 10)
+	wb.add_child(row)
+	_work_view = WorkViewScript.new()
+	_work_view.name = "TastingWorkView"
+	_work_view.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	row.add_child(_work_view)
+	var side: VBoxContainer = _vbox(2)
+	row.add_child(side)
+	_work_title = _label("", 17, VERMILION)
+	_work_title.name = "WorkTitle"
+	side.add_child(_work_title)
+	for ph in WorkScript.PHASES:
+		var pd: Dictionary = ph
+		var pl: Label = _label("", 14, MUTED)
+		pl.name = "WorkPhase_" + str(pd["id"])
+		pl.autowrap_mode = TextServer.AUTOWRAP_OFF
+		_work_phase_labels.append(pl)
+		side.add_child(pl)
+	var bar_row: HBoxContainer = HBoxContainer.new()
+	bar_row.add_theme_constant_override("separation", 8)
+	side.add_child(bar_row)
+	_work_progress = ProgressBar.new()
+	_work_progress.name = "WorkProgress"
+	_work_progress.show_percentage = false
+	_work_progress.min_value = 0.0
+	_work_progress.max_value = 100.0
+	_work_progress.custom_minimum_size = Vector2(60.0, 16.0)
+	_work_progress.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_work_progress.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	_work_progress.add_theme_stylebox_override("background", _box(WOOD_D, INK, 2, 0, 0.0, 0.0))
+	_work_progress.add_theme_stylebox_override("fill", _box(VERMILION, VERMILION, 0, 0, 0.0, 0.0))
+	bar_row.add_child(_work_progress)
+	_work_percent = _plain_label("WorkPercent", 15, INK)
+	_work_percent.custom_minimum_size = Vector2(44.0, 0.0)
+	_work_percent.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	bar_row.add_child(_work_percent)
+	_work_notice = _label(WORK_NOTE, 13, MUTED)
+	_work_notice.name = "WorkNotice"
+	wb.add_child(_work_notice)
+	_work_cancel_button = _button("준비 취소", "WorkCancelButton")
+	_work_cancel_button.pressed.connect(_on_work_cancel)
+	wb.add_child(_work_cancel_button)
+	col.add_child(_work_card)
 
 
 func _build_lab(box: VBoxContainer) -> void:
@@ -598,6 +691,7 @@ func _build_lab(box: VBoxContainer) -> void:
 	nb.add_child(_mode_label)
 	var new_button: Button = _button("새 레시피 시작", "NewRecipeButton")
 	new_button.pressed.connect(_on_new_recipe)
+	_new_button = new_button
 	nb.add_child(new_button)
 	box.add_child(name_card)
 
@@ -637,6 +731,7 @@ func _build_lab(box: VBoxContainer) -> void:
 		var pbtn: Button = _button(str(arr[1]), str(arr[0]))
 		pbtn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		pbtn.pressed.connect(_on_price_step.bind(int(arr[2])))
+		_price_buttons.append(pbtn)
 		price_row.add_child(pbtn)
 	pb.add_child(price_row)
 	pb.add_child(_label("비싸게 팔면 마진은 늘지만 손님이 줄어요. 손님마다 기대 가격이 달라요.", 14, MUTED))
@@ -737,6 +832,16 @@ func _build_serve(box: VBoxContainer) -> void:
 	_save_label = _label("", 13, MUTED)
 	_save_label.name = "SaveStatusLabel"
 	sb.add_child(_save_label)
+	_autosave_label = _label(AUTOSAVE_NOTE, 13, MUTED)
+	_autosave_label.name = "AutoSaveInfo"
+	sb.add_child(_autosave_label)
+	_manual_save_button = _button("지금 저장", "ManualSaveButton")
+	_manual_save_button.custom_minimum_size = Vector2(0.0, 44.0)
+	_manual_save_button.pressed.connect(_on_manual_save_pressed)
+	sb.add_child(_manual_save_button)
+	_manual_save_result = _label("", 13, MUTED)
+	_manual_save_result.name = "ManualSaveResult"
+	sb.add_child(_manual_save_result)
 	_dev_label = _label("", 12, MUTED)
 	_dev_label.name = "DevSaveLabel"
 	_dev_label.visible = false
@@ -833,6 +938,7 @@ func _load_save() -> void:
 	match status:
 		"ok":
 			_load_label.text = "불러오기: 저장된 연구소를 열었어요 · 기록 %d개 · %d일차" % [state.record_count(), state.day]
+			_save_label.text = "자동 저장 켜짐 · 이번 실행에서는 아직 저장하지 않았어요."
 		"missing":
 			_load_label.text = "불러오기: 첫 방문이에요. 새 연구소를 열었어요."
 			_persist()
@@ -851,14 +957,16 @@ func _show_banner(message: String, can_reset: bool) -> void:
 
 ## 저장하고 실제 결과를 돌려준다(true = 파일에 기록됨). 실패/저장 꺼짐이면 서랍이 닫혀 있어도 보이는
 ## 가게 화면의 배너로 알리고, 마지막 저장 결과를 _last_save_message 에 남겨 호출자가 거짓 성공을 말하지 않게 한다.
-func _persist() -> bool:
+## source 는 "자동"(행동 경계의 자동 저장) 또는 "직접"(수동 저장 버튼). 마지막 저장 상태 글에 어느 쪽이었는지와 시각을 남긴다.
+## 저장되는 것은 항상 확정된 상태뿐이다(진행 중인 영업/시식 준비는 상태에 들어 있지 않다).
+func _persist(source: String = "자동") -> bool:
 	if save_locked:
 		_last_save_message = "저장이 꺼져 있어요: 기존 저장 파일을 보호하는 중이에요."
 		_save_label.text = _last_save_message
 		return false
 	var res: Dictionary = saver.save_state(state)
 	if bool(res["ok"]):
-		_save_label.text = "저장됨 · 기록 %d개 · %d일차" % [state.record_count(), state.day]
+		_save_label.text = "%s 저장됨 · 기록 %d개 · %d일차 · %s" % [source, state.record_count(), state.day, Time.get_time_string_from_system()]
 		_last_save_message = ""
 		if _save_error_shown:
 			_save_error_shown = false
@@ -871,7 +979,36 @@ func _persist() -> bool:
 	return false
 
 
+## 수동 저장. 영업 중이거나 시식 준비 중이면 거부한다(끝나지 않은 일은 저장하지 않는다는 기존 정책과 같다).
+## 저장 꺼짐(손상 파일 보호 중)이면 파일을 건드리지 않고 이유를 알린다. 결과는 실제 저장 결과 그대로이며 거짓 성공을 말하지 않는다.
+func manual_save() -> Dictionary:
+	var ok: bool = false
+	var message: String = ""
+	if state.service_active():
+		message = "영업 중에는 직접 저장할 수 없어요. 영업을 끝까지 마쳐 정산되면 자동으로 저장돼요."
+	elif _work.is_running():
+		message = "시식 준비 중에는 직접 저장할 수 없어요. 준비가 끝나 기록되면 자동으로 저장돼요."
+	elif save_locked:
+		_persist("직접")
+		message = "저장하지 못했어요: %s 저장 파일은 지우거나 덮어쓰지 않았어요." % _last_save_message
+	elif _persist("직접"):
+		ok = true
+		message = "직접 저장했어요 · 기록 %d개 · %d일차 · %s" % [state.record_count(), state.day, Time.get_time_string_from_system()]
+	else:
+		message = "저장하지 못했어요: %s" % _last_save_message
+	_manual_save_result.text = message
+	_manual_save_result.add_theme_color_override("font_color", TEAL if ok else VERMILION)
+	return {"ok": ok, "message": message}
+
+
+func _on_manual_save_pressed() -> void:
+	manual_save()
+
+
 func _on_reset_save() -> void:
+	# 시식 준비 중에는 상태 교체를 막는다(교체되면 준비 중인 스냅샷과 어긋난다).
+	if _work_blocked("손상 파일을 정리"):
+		return
 	var res: Dictionary = saver.archive_corrupt()
 	if not bool(res["ok"]):
 		_banner_label.text = str(res["message"])
@@ -893,7 +1030,9 @@ func _sync_guide_visibility() -> void:
 func _on_tab_changed(_index: int) -> void:
 	_sync_guide_visibility()
 	_pending_delete_id = 0
-	_persist()
+	# 탭 이동은 읽기 전용 보기이므로 시식 준비 중에도 허용하지만, 준비 중에는 자동 저장하지 않는다(확정된 변화가 없다).
+	if not _work.is_running():
+		_persist()
 	_refresh_notebook()
 
 
@@ -908,6 +1047,9 @@ func _flash(text: String) -> void:
 func _on_dev_pressed() -> void:
 	if state.service_active():
 		_flash("영업 중에는 메뉴를 바꿀 수 없어요. 영업이 끝난 뒤 개발하세요.")
+		return
+	# 시식 준비 중에는 서랍을 닫지 못한다(보이지 않는 곳에서 끝나 기록이 생기는 일을 막는다). 먼저 [준비 취소]를 누른다.
+	if _overlay.visible and _work_blocked("서랍을 닫"):
 		return
 	if _overlay.visible:
 		_close_overlay()
@@ -935,13 +1077,24 @@ func _close_overlay() -> void:
 	_refresh_nav()
 
 
+func _on_close_pressed() -> void:
+	if _work_blocked("서랍을 닫"):
+		return
+	_close_overlay()
+
+
 func _on_overlay_open_pressed() -> void:
+	if _work_blocked("영업을 시작"):
+		return
 	_close_overlay()
 	if not state.get_record(state.selected_record_id).is_empty():
 		_start_service()
 
 
 func _on_start_pressed() -> void:
+	# 시식 준비 중에는 영업 시작/서랍 열기 모두 거부한다. 영업 중 중단 흐름과는 겹치지 않는다(둘은 동시에 있을 수 없다).
+	if _work_blocked("영업을 시작"):
+		return
 	if state.service_active():
 		# 실수로 누르기 쉬운 위치라 두 번 눌러야 중단된다.
 		var now: int = Time.get_ticks_msec()
@@ -958,6 +1111,8 @@ func _on_start_pressed() -> void:
 
 
 func _start_service() -> void:
+	if _work_blocked("영업을 시작"):
+		return
 	var res: Dictionary = state.begin_service()
 	if not bool(res["ok"]):
 		_flash(str(res["message"]))
@@ -1018,13 +1173,34 @@ func _on_result_ok() -> void:
 
 # ---------- 개발 서랍 입력 ----------
 
+## 시식 준비 중 잠금 판정. 버튼을 꺼 두는 것과 별개로 모든 상태 변경 핸들러가 맨 앞에서 이 함수를 불러 막는다
+## (버튼 비활성만 믿으면 직접 호출/단축 입력으로 초안이 시작 때 복사한 스냅샷과 어긋날 수 있다). 막았으면 true.
+func _work_blocked(action: String) -> bool:
+	if not _work.is_running():
+		return false
+	_work_reject("시식 준비 중에는 %s 수 없어요. 끝나길 기다리거나 [준비 취소]를 누르세요." % action)
+	return true
+
+
+func _work_reject(message: String) -> Dictionary:
+	_work_notice.text = message
+	_flash(message)
+	return {"ok": false, "message": message}
+
+
 func _on_name_changed(text: String) -> void:
+	if _work_blocked("이름을 바꿀"):
+		# 입력창에 이미 들어간 글자는 되돌린다(프로그램으로 바꾼 text 는 text_changed 를 다시 부르지 않는다).
+		_name_edit.text = state.draft_name
+		return
 	var res: Dictionary = state.set_draft_name(text)
 	if not bool(res["ok"]):
 		_taste_message.text = str(res["message"])
 
 
 func _on_new_recipe() -> void:
+	if _work_blocked("새 레시피를 시작할"):
+		return
 	_pending_delete_id = 0
 	state.start_new_recipe()
 	_taste_message.text = "새 레시피를 시작했어요. 이름을 정하고 시식해 보세요."
@@ -1033,6 +1209,9 @@ func _on_new_recipe() -> void:
 
 
 func _on_option_pressed(slot: String, id: String) -> void:
+	if _work_blocked("재료를 바꿀"):
+		_refresh_lab()  # 눌린 토글 모양을 실제 초안 값으로 되돌린다
+		return
 	_pending_delete_id = 0
 	var res: Dictionary = state.set_draft_choice(slot, id)
 	if not bool(res["ok"]):
@@ -1041,6 +1220,8 @@ func _on_option_pressed(slot: String, id: String) -> void:
 
 
 func _on_price_step(delta: int) -> void:
+	if _work_blocked("가격을 바꿀"):
+		return
 	var current: int = int(state.draft_config["price"])
 	var target: int = clampi(current + delta, Catalog.PRICE_MIN, Catalog.PRICE_MAX)
 	var res: Dictionary = state.set_draft_price(target)
@@ -1050,18 +1231,118 @@ func _on_price_step(delta: int) -> void:
 
 
 func _on_taste() -> void:
+	start_tasting()
+
+
+## 시식 시작: 곧바로 기록하지 않고 약 4초짜리 준비 작업(국물→면→시식)을 시작한다.
+## 이 시점에는 자금/기록/보상이 전혀 바뀌지 않는다(도메인 taste()는 완료 때 정확히 한 번만 부른다).
+## 거부 사유: 이미 준비 중(중복 시작), 영업 중, 또는 시식해도 도메인이 거부할 초안(이름/중복 구성/자금 등 — 복제본으로 미리 확인한다).
+func start_tasting() -> Dictionary:
 	_pending_delete_id = 0
+	if _work.is_running():
+		return _work_reject("이미 시식을 준비하고 있어요. 하나씩만 준비할 수 있어요.")
+	if state.service_active():
+		return _taste_refused("영업 중에는 시식할 수 없어요. 영업이 끝난 뒤 시도하세요.")
+	# 미리 확인(드라이런): 저장용 직렬화로 복제한 상태에서 taste()를 해 본다. 원본 state 는 전혀 건드리지 않는다.
+	# 복제에 실패하면 상태가 저장 규칙과 어긋난 것이므로 시작하지 않는다(재료비/기록 변화 없음).
+	var probe: GameStateScript = GameStateScript.new()
+	var probe_err: String = probe.load_from_dict(state.to_dict())
+	if probe_err != "":
+		return _taste_refused("시식 전 상태 확인에 실패해서 시작하지 않았어요: " + probe_err)
+	var dry: Dictionary = probe.taste()
+	if not bool(dry["ok"]):
+		return _taste_refused(str(dry["message"]))
+	# 시작 시점 스냅샷: 이후 초안이 이것과 달라지면(막아 두었지만 우회된 경우) 완료하지 않고 취소한다.
+	var snap: Dictionary = {
+		"config": state.draft_config.duplicate(true),
+		"name": state.draft_name,
+		"lineage_id": state.draft_lineage_id,
+		"wallet": state.wallet,
+		"day": state.day,
+		"records": state.record_count(),
+	}
+	if not _work.start(snap):
+		return _work_reject("이미 시식을 준비하고 있어요.")
+	_work_notice.text = WORK_NOTE
+	_taste_message.add_theme_color_override("font_color", TEAL)
+	_taste_message.text = "시식을 준비하고 있어요. 국물 → 면 → 시식 순서로 잠깐 걸려요."
+	_refresh_work_ui()
+	_refresh_lab()
+	return {"ok": true, "message": "시식 준비를 시작했어요."}
+
+
+func _taste_refused(message: String) -> Dictionary:
+	_taste_message.text = message
+	_taste_message.add_theme_color_override("font_color", VERMILION)
+	_refresh_lab()
+	return {"ok": false, "message": message}
+
+
+## 시간을 seconds 만큼 진행하는 단 하나의 진행 함수. _process(delta)가 실제 프레임 시간으로 부르고,
+## 격리된 QA 인스턴스는 이 함수를 직접 불러 앞당긴다. 이번 호출로 끝났으면 true(= _complete_work 가 정확히 한 번 실행됨).
+func advance_work(seconds: float) -> bool:
+	if not _work.is_running():
+		return false
+	if _work.advance(seconds):
+		_complete_work()
+		return true
+	_refresh_work_ui()
+	return false
+
+
+## 완료 처리(진행 함수가 완료 신호를 한 번 낸 직후에만 불린다). 이 시점에 작업은 이미 IDLE 이라 같은 작업의 두 번째 완료는 없다.
+## 도메인 taste() 호출은 이 함수 안의 단 한 곳이다: 기록 1개·재료비 1회·자동 저장 1회가 여기서만 일어난다.
+func _complete_work() -> void:
+	var snap: Dictionary = _work.take_snapshot()
+	if snap.is_empty() or not _snapshot_still_valid(snap):
+		_taste_message.text = "준비하는 동안 구성이나 자금이 달라져서 시식을 취소했어요. 재료비는 나가지 않았고 기록도 그대로예요."
+		_taste_message.add_theme_color_override("font_color", VERMILION)
+		_refresh_all()
+		return
 	var res: Dictionary = state.taste()
 	_taste_message.text = str(res["message"])
 	if not bool(res["ok"]):
 		_taste_message.add_theme_color_override("font_color", VERMILION)
-		_refresh_lab()
+		_refresh_all()
 		return
 	_taste_message.add_theme_color_override("font_color", TEAL)
-	_persist()
+	var saved: bool = _persist()
+	if not saved:
+		# 기록은 메모리에는 있고 파일에는 없다. 저장했다고 말하지 않는다.
+		_taste_message.text += "\n⚠ 저장하지 못했어요: %s 지금 닫으면 이 시식 기록은 사라질 수 있어요." % _last_save_message
+		_taste_message.add_theme_color_override("font_color", VERMILION)
 	_refresh_all()
 	tabs.current_tab = TAB_FEEDBACK
 	_play_reveal()
+
+
+func _snapshot_still_valid(snap: Dictionary) -> bool:
+	if state.service_active():
+		return false
+	return Check.same_config(state.draft_config, snap["config"]) and state.draft_name == str(snap["name"]) \
+		and state.draft_lineage_id == int(snap["lineage_id"]) and state.wallet == int(snap["wallet"]) \
+		and state.day == int(snap["day"]) and state.record_count() == int(snap["records"])
+
+
+func _on_work_cancel() -> void:
+	cancel_work()
+
+
+## 명시적 취소: 작업만 버린다. 자금/기록/보상/저장 파일은 그대로이고 조작이 다시 풀린다.
+func cancel_work(message: String = "") -> bool:
+	if not _work.is_running():
+		return false
+	_work.cancel()
+	_taste_message.text = message if message != "" else "시식 준비를 취소했어요. 재료비는 나가지 않았고 기록도 그대로예요."
+	_taste_message.add_theme_color_override("font_color", MUTED)
+	_flash_text = ""
+	_flash_until = 0
+	_refresh_all()
+	return true
+
+
+func work_active() -> bool:
+	return _work.is_running()
 
 
 ## 시식 연출: 그릇이 한 번 튀고 손님 카드가 차례로 나타남. 전체 약 1초 이내이며 조작을 막지 않는다.
@@ -1082,6 +1363,8 @@ func _play_reveal() -> void:
 
 
 func _on_select_record(id: int) -> void:
+	if _work_blocked("레시피를 불러올"):
+		return
 	_pending_delete_id = 0
 	var res: Dictionary = state.select_record(id)
 	if not bool(res["ok"]):
@@ -1096,6 +1379,8 @@ func _on_select_record(id: int) -> void:
 
 
 func _on_delete_record(id: int) -> void:
+	if _work_blocked("기록을 삭제할"):
+		return
 	if _pending_delete_id != id:
 		_pending_delete_id = id
 		_refresh_notebook()
@@ -1109,6 +1394,8 @@ func _on_delete_record(id: int) -> void:
 ## 연구 제출: 검증/보상은 전부 GameState.submit_research()가 한다. 여기서는 선택된 기록 번호를 넘기고 결과를 보여 줄 뿐이다.
 ## 제출 대상은 영업 메뉴로 선택된 "시식 기록"이며, 개발 탭의 편집 중인 초안은 대상이 아니다.
 func _on_research_submit(request_id: String) -> void:
+	if _work_blocked("연구를 제출할"):
+		return
 	_pending_delete_id = 0
 	var res: Dictionary = state.submit_research(request_id, state.selected_record_id)
 	if not bool(res["ok"]):
@@ -1138,6 +1425,46 @@ func _refresh_all() -> void:
 	_refresh_guide()
 	_refresh_status()
 	_refresh_nav()
+	_refresh_work_ui()
+
+
+## 시식 준비 카드/단계/진행 막대를 현재 작업 상태로 맞추고, 준비 중이면 편집 조작을 꺼서 보여 준다(실제 차단은 각 핸들러의 _work_blocked).
+func _refresh_work_ui() -> void:
+	if _work_card == null:
+		return
+	var active: bool = _work.is_running()
+	_work_card.visible = active
+	if active:
+		var p: float = _work.progress()
+		var phase: int = _work.phase_index()
+		_work_progress.value = p * 100.0
+		_work_percent.text = "%d%%" % int(floor(p * 100.0))
+		_work_title.text = "시식 준비 중 (%d/%d)" % [phase + 1, WorkScript.PHASES.size()]
+		var marks: Array[String] = ["①", "②", "③"]
+		for i in _work_phase_labels.size():
+			var lab: Label = _work_phase_labels[i]
+			var done: bool = i < phase
+			lab.text = "%s %s%s" % [marks[i], WorkScript.phase_name(i), " · 끝" if done else (" · 진행 중" if i == phase else "")]
+			lab.add_theme_color_override("font_color", TEAL if done else (VERMILION if i == phase else MUTED))
+		var snap: Dictionary = _work.snapshot()
+		_work_view.set_state(p, snap["config"] if snap.has("config") else {})
+	_apply_work_lock()
+
+
+func _apply_work_lock() -> void:
+	if _work_card == null:
+		return
+	var busy: bool = _work.is_running()
+	for id in _buttons.keys():
+		(_buttons[id] as Button).disabled = busy
+	for b in _price_buttons:
+		b.disabled = busy
+	_new_button.disabled = busy
+	_taste_button.disabled = busy
+	_taste_button.text = "시식 준비 중…" if busy else "시식하기"
+	_close_button.disabled = busy
+	_open_button.disabled = busy
+	_name_edit.editable = (not busy) and state.draft_lineage_id == 0
 
 
 func _refresh_header() -> void:
@@ -1245,7 +1572,6 @@ func _refresh_lab() -> void:
 
 	if _name_edit.text != state.draft_name:
 		_name_edit.text = state.draft_name
-	_name_edit.editable = state.draft_lineage_id == 0
 	if state.draft_lineage_id == 0:
 		_mode_label.text = "새 레시피로 기록돼요."
 	else:
@@ -1267,7 +1593,8 @@ func _refresh_lab() -> void:
 		var ad: Dictionary = a
 		lines.append("%s %s" % ["+%d" % int(ad["score"]) if int(ad["score"]) > 0 else str(int(ad["score"])), str(ad["note"])])
 	_compat_label.text = "재료 궁합 메모\n" + "\n".join(lines) if not lines.is_empty() else "재료 궁합 메모: 특별히 눈에 띄는 조합은 없어요."
-	_taste_button.text = "시식하기"
+	# 시식 버튼 글/이름 입력/재료 버튼의 켜짐은 시식 준비 상태에 따라 한곳에서 정한다.
+	_apply_work_lock()
 
 	_bowl_rect.texture = ArtScript.scaled_tex(ArtScript.bowl_image(state.draft_config), 8)
 	_bowl_caption.text = "%s\n원가 %s · 준비 %d초 · 판매가 %s" % [state.draft_name, _won(cost), prep, _won(price)]
@@ -1303,8 +1630,24 @@ func _customer_card(cd: Dictionary) -> PanelContainer:
 	var card: PanelContainer = _card("Card_" + str(cd["id"]))
 	# 카드 한 장이 서랍 스크롤 영역(세로 휴대폰에서 가장 작음) 안에 통째로 들어오도록 여백을 줄였다.
 	card.add_theme_stylebox_override("panel", _box(PAPER_LIGHT, LINE, 2, 0, 10.0, 6.0))
+	# 윗줄 = 왼쪽 48x48 초상(24x24 도트 x2) + 오른쪽(이름·별·점수, 소개). 본문(헤드라인/이유)은 카드 전체 폭을 써서
+	# 초상 때문에 줄 수가 늘지 않는다. 초상은 고정 크기라 이름/점수 칸을 줄이지 않는다.
 	var cb: VBoxContainer = _vbox(2)
 	card.add_child(cb)
+	var head: HBoxContainer = HBoxContainer.new()
+	head.add_theme_constant_override("separation", 10)
+	cb.add_child(head)
+	var portrait: TextureRect = TextureRect.new()
+	portrait.name = "Portrait_" + str(cd["id"])
+	portrait.texture = _portrait_tex(str(cd["id"]), 2)
+	portrait.stretch_mode = TextureRect.STRETCH_KEEP
+	portrait.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	portrait.custom_minimum_size = Vector2(48.0, 48.0)
+	portrait.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	portrait.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	head.add_child(portrait)
+	var side: VBoxContainer = _vbox(2)
+	head.add_child(side)
 	# 이름·별·점수를 한 줄에 둬 손님 식별과 평가를 먼저 보여 준다.
 	var row: HBoxContainer = HBoxContainer.new()
 	row.add_theme_constant_override("separation", 8)
@@ -1324,8 +1667,8 @@ func _customer_card(cd: Dictionary) -> PanelContainer:
 	score.size_flags_horizontal = Control.SIZE_SHRINK_END
 	score.custom_minimum_size = Vector2(score.get_theme_font("font").get_string_size(score.text, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 17).x + 4.0, 0.0)
 	row.add_child(score)
-	cb.add_child(row)
-	cb.add_child(_label(str(cd["persona"]), 13, MUTED))
+	side.add_child(row)
+	side.add_child(_label(str(cd["persona"]), 13, MUTED))
 	var headline: Label = _label(str(cd["headline"]), 17, INK)
 	headline.name = "Headline_" + str(cd["id"])
 	cb.add_child(headline)
@@ -1424,11 +1767,13 @@ func _notebook_row(rec: Dictionary) -> PanelContainer:
 	var sel_btn: Button = _button("불러오기", "SelectRecord_%d" % id)
 	sel_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	sel_btn.pressed.connect(_on_select_record.bind(id))
+	sel_btn.disabled = _work.is_running()
 	buttons.add_child(sel_btn)
 	var del_text: String = "한 번 더 눌러 삭제" if id == _pending_delete_id else "삭제"
 	var del_btn: Button = _button(del_text, "DeleteRecord_%d" % id)
 	del_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	del_btn.pressed.connect(_on_delete_record.bind(id))
+	del_btn.disabled = _work.is_running()
 	buttons.add_child(del_btn)
 	rb.add_child(buttons)
 	return row
@@ -1541,7 +1886,7 @@ func _research_card(req: Dictionary, rec: Dictionary) -> PanelContainer:
 		"locked":
 			submit.text = "잠김"
 	# 버튼은 "제출할 수 있는 상태"에서만 켠다. 조건 미충족은 눌러서 이유를 보게 두고(도메인이 거부), 기록 없음/잠김/완료/영업 중은 끈다.
-	submit.disabled = status != "open" or rec.is_empty() or state.service_active()
+	submit.disabled = status != "open" or rec.is_empty() or state.service_active() or _work.is_running()
 	submit.pressed.connect(_on_research_submit.bind(id))
 	cb.add_child(submit)
 	return card

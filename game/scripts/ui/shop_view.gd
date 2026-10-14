@@ -4,7 +4,7 @@ extends Control
 ## 픽셀 규칙: 장면은 논리 픽셀(세로 176x264, 가로 320x152) 하나의 좌표계이고 화면에는 정수 배율 S 로만 확대한다
 ## (세로 390x844 → 배율 2 = 352x528, 가로 1280x800 → 배율 4 = 1280x608). 모든 텍스처는 최근접 필터이며 위치는 논리 픽셀로 내림해서 그린다.
 ## 가구와 사람은 하나의 목록에 담겨 깊이(gx+gy)로 정렬된다: 투영/깊이의 근거는 shop_layout.gd, 항목 만들기는 shop_scene.gd 에 있다.
-## 이 클래스에는 주문/돈 규칙이 없다.
+## 이 클래스에는 주문/돈 규칙이 없다. 장면 캔버스에는 어떤 글자도 그리지 않는다(문양/김/도트만).
 
 const Layouts = preload("res://scripts/ui/shop_layout.gd")
 const Art = preload("res://scripts/ui/pixel_art.gd")
@@ -39,13 +39,11 @@ var _origin: Vector2 = Vector2.ZERO
 var _vis: Dictionary = {}
 var _popups: Array = []
 var _seen_completed: int = 0
-var _font: Font = null
 
 
 func _ready() -> void:
 	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_font = load("res://assets/fonts/GowunDodum-Regular.ttf") as Font
 	set_process(true)
 
 
@@ -214,28 +212,27 @@ func _draw_steam(ent: Dictionary) -> void:
 			draw_rect(Rect2(tl, Vector2(2.0, 1.0) * float(_scale)), Color(1.0, 1.0, 1.0, a))
 
 
-## 벽 면의 글씨: 면을 따라 8px 가면 4px 내려가므로 같은 기울기(y = 0.5x)로 비스듬히 쓴다.
-func _draw_wall_text(text: String, spec: Dictionary, fs: int, col: Color) -> void:
-	var left: Vector2 = spec["left"]
-	var width: float = float(spec["width"])
-	var anchor: Vector2 = _origin + left * float(_scale)
-	draw_set_transform_matrix(Transform2D(Vector2(1.0, 0.5), Vector2(0.0, 1.0), anchor))
-	draw_string(_font, Vector2(0.0, float(fs) * 0.36), text, HORIZONTAL_ALIGNMENT_CENTER, width * float(_scale), fs, col)
-	draw_set_transform_matrix(Transform2D.IDENTITY)
-
-
+## 장면 안에는 글자를 그리지 않는다(저해상도 도트 위 글씨는 읽기 어렵다). 간판의 붉은 그릇 문양은 ShopPainter 가 바탕에 찍었고,
+## 여기서는 그 위로 오르는 움직이는 김과 영업 여부를 보여 주는 작은 도트 등(영업 중 = 붉은 등+노란 불, 아니면 회색 등)만 얹는다.
+## 정확한 글(영업 상태/대기 인원)은 일반 UI 라벨(상태 띠)이 담당한다.
 func _draw_signs() -> void:
-	if _font == null:
-		return
-	_draw_wall_text("라멘 골목", _layout["sign"], int(float(_scale) * 6.0), INK)
+	var sign_spec: Dictionary = _layout["sign"]
+	var left: Vector2 = sign_spec["left"]
+	# 간판 판자는 격자 x 1.0~7.0(8px당 4px 기울어짐)이고 그릇은 가운데(격자 x 4.0) = left + (24, 12).
+	var bowl_top: Vector2 = left + Vector2(24.0, 12.0) + Vector2(0.0, -7.0)
+	for k in 3:
+		var phase: float = fposmod(_anim * 0.55 + float(k) / 3.0, 1.0)
+		var wx: float = bowl_top.x - 3.0 + float(k) * 3.0 + sin(phase * 6.28 + float(k) * 1.7) * 0.8
+		var wy: float = bowl_top.y - phase * 7.0
+		var tl: Vector2 = _origin + Vector2(floor(wx), floor(wy)) * float(_scale)
+		draw_rect(Rect2(tl, Vector2(1.0, 2.0) * float(_scale)), Color(1.0, 1.0, 1.0, 0.8 * (1.0 - phase)))
 	var is_open: bool = session != null and session.is_running()
-	_draw_wall_text("영업중" if is_open else "준비중", _layout["open_sign"], maxi(8, int(float(_scale) * 3.6)), RED if is_open else INK)
+	var lamp: Vector2 = _layout["open_sign"]["left"]
+	_blit(_tex_for("open_lamp|" + ("1" if is_open else "0"), Art.open_lamp_image(is_open)), lamp - Vector2(5.0, 4.0))
 
 
-## 보이는 줄 칸보다 대기자가 많으면 마지막 칸 옆에 남은 인원을 적는다.
+## 보이는 줄 칸보다 대기자가 많으면 마지막 칸 옆에 남은 인원을 작은 점(최대 6개)으로 보여 준다. 숫자는 상태 띠의 "줄 N"에 있다.
 func _draw_overflow(ent: Dictionary, slots: Array) -> void:
-	if _font == null:
-		return
 	var queued: int = 0
 	for p in ent["patrons"]:
 		var d: Dictionary = p
@@ -243,6 +240,9 @@ func _draw_overflow(ent: Dictionary, slots: Array) -> void:
 			queued += 1
 	if queued <= slots.size():
 		return
+	var extra: int = mini(queued - slots.size(), 6)
 	var last: Vector2 = slots[slots.size() - 1]
-	var tl: Vector2 = _origin + (last + Vector2(8.0, -20.0)) * float(_scale)
-	draw_string(_font, tl, "+%d" % (queued - slots.size()), HORIZONTAL_ALIGNMENT_LEFT, -1.0, int(float(_scale) * 5.0), Color(1, 1, 1))
+	for i in extra:
+		var tl: Vector2 = _origin + (last + Vector2(8.0 + float(i) * 3.0, -20.0)).floor() * float(_scale)
+		draw_rect(Rect2(tl - Vector2(float(_scale), float(_scale)), Vector2(3.0, 3.0) * float(_scale)), INK)
+		draw_rect(Rect2(tl, Vector2(1.0, 1.0) * float(_scale)), Color(1, 1, 1))

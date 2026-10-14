@@ -170,7 +170,7 @@ static func _add_patron(layout: Dictionary, p: Dictionary, items: Array, bubbles
 
 
 ## 검사용 CPU 합성: base + 가구 + (세션이 있으면) 사람/그릇, 말풍선. 그리기와 같은 build() 를 쓴다.
-## 글씨(간판/영업중)와 김은 ShopView 가 그릴 때만 들어가므로 이 이미지에는 없다. 전체 UI 스크린샷이 아니다.
+## 움직이는 김과 영업 등(도트 등)은 ShopView 가 그릴 때만 들어가므로 이 이미지에는 없다. 장면에는 글자가 없다. 전체 UI 스크린샷이 아니다.
 static func compose_for(layout: Dictionary, session: Session, anim: float = 0.0) -> Image:
 	var cache: Dictionary = {}
 	var ent: Dictionary = {}

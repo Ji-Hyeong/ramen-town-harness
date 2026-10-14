@@ -277,6 +277,48 @@ func _check_score_line(app: Node, id: String, tag: String) -> void:
 			_check(lab.get_line_count() == 1, "%s: %s 이름이 한 줄이 아니에요" % [tag, id])
 
 
+## 시식 버튼을 눌러 준비 작업을 시작하고, 격리된 이 인스턴스에서만 advance_work()로 끝까지 앞당긴다(실제 게임에는 이런 길이 없다).
+## 옛 즉시 시식 흐름을 대체한다: 시작 직후에는 작업 중이어야 하고, 끝나면 작업이 없어야 한다.
+func _finish_tasting(app: Node) -> void:
+	_press(app, "TasteButton")
+	_check(bool(app.call("work_active")), "시식 버튼은 준비 작업을 시작해야 해요")
+	var completed: bool = bool(app.call("advance_work", 10.0))
+	_check(completed, "준비 작업이 한 번에 완료돼야 해요")
+	await create_timer(1.2).timeout
+	_check(not bool(app.call("work_active")), "완료 뒤에는 작업이 없어야 해요")
+
+
+func _read_file(path: String) -> String:
+	# FileAccess.get_file_as_text 는 정적 API 가 아니므로 인스턴스로 연다. 열 수 없으면 명시적으로 "<없음>" 표식.
+	if not FileAccess.file_exists(path):
+		return "<없음>"
+	var f: FileAccess = FileAccess.open(path, FileAccess.READ)
+	if f == null:
+		return "<읽기 실패:%d>" % FileAccess.get_open_error()
+	var text: String = f.get_as_text()
+	f.close()
+	return text
+
+
+## 초상 한 장: 카드 안에 들어오고 48x48 이상이며 이름/별/점수와 겹치지 않는다(점수와 이름 폭은 _check_score_line 이 따로 본다).
+func _check_portrait(app: Node, id: String, tag: String) -> void:
+	var card: Control = _find(app, "Card_" + id) as Control
+	var portrait: Control = _find(app, "Portrait_" + id) as Control
+	var score: Control = _find(app, "Score_" + id) as Control
+	var stars: Control = _find(app, "Stars_" + id) as Control
+	_check(card != null and portrait != null and score != null and stars != null, "%s: %s 초상 구성요소 없음" % [tag, id])
+	if card == null or portrait == null or score == null or stars == null:
+		return
+	var pr: Rect2 = portrait.get_global_rect()
+	_check(card.get_global_rect().encloses(pr), "%s: %s 초상이 카드 밖 %s vs %s" % [tag, id, str(pr), str(card.get_global_rect())])
+	_check(pr.size.x >= 47.5 and pr.size.y >= 47.5, "%s: %s 초상이 너무 작아요 %s" % [tag, id, str(pr.size)])
+	_check(not pr.intersects(score.get_global_rect()) and not pr.intersects(stars.get_global_rect()), "%s: %s 초상이 별/점수와 겹쳐요" % [tag, id])
+	for child in card.find_children("*", "Label", true, false):
+		var lab: Label = child
+		if lab.get_theme_font_size("font_size") == 19:
+			_check(not pr.intersects(lab.get_global_rect()), "%s: %s 초상이 이름과 겹쳐요" % [tag, id])
+
+
 ## 세션 게임초를 앞당긴다(렌더링은 실제 프레임이 한다).
 func _advance(app: Node, game_seconds: float) -> void:
 	var st: Object = _state(app)
@@ -349,12 +391,14 @@ func _run_profile(tag: String, vp: Vector2i, expect_scale: int) -> void:
 	await _shot(holder, tag + "_3_lab_selected.png")
 
 	# 4) 시식
-	_press(app, "TasteButton")
-	await create_timer(1.2).timeout
+	# 4a) 시식 준비 작업 진행 중: 단계/진행률 표시, 중복 시작·편집·이동 거부, 취소/완료(상세는 _run_tasting_work).
+	await _finish_tasting(app)
 	_check(tabs.current_tab == 1, tag + ": 시식 후 피드백 탭으로 이동")
 	for id in ["dohyun", "hayoung", "maru"]:
 		await _reachable(app, vp, "Card_" + id)
+		await _reachable(app, vp, "Portrait_" + id)
 		_check_score_line(app, id, tag)
+		_check_portrait(app, id, tag)
 	_check(_text_of(app, "FeedbackTitle").find("QA 맑은 라멘 v1") >= 0, tag + ": 제목 v1")
 	_check(_text_of(app, "Headline_dohyun") != _text_of(app, "Headline_hayoung"), tag + ": 손님별 피드백이 다름")
 	_check(_text_of(app, "ComparisonLabel").find("첫 시식") >= 0, tag + ": 첫 시식은 비교 없음 안내")
@@ -370,8 +414,7 @@ func _run_profile(tag: String, vp: Vector2i, expect_scale: int) -> void:
 	_check(not (_find(app, "RecipeNameEdit") as LineEdit).editable, tag + ": 개정 중에는 이름 고정")
 	_press(app, "Opt_noodle_medium")
 	_press(app, "Opt_cook_normal")
-	_press(app, "TasteButton")
-	await create_timer(1.2).timeout
+	await _finish_tasting(app)
 	_check(tabs.current_tab == 1, tag + ": 개정 시식 후 피드백 탭")
 	_check(_text_of(app, "FeedbackTitle").find("v2") >= 0, tag + ": 제목 v2")
 	var cmp_text: String = _text_of(app, "ComparisonLabel")
@@ -510,6 +553,8 @@ func _run_profile(tag: String, vp: Vector2i, expect_scale: int) -> void:
 	await _frames(2)
 	await _run_save_failure(holder, tag, vp)
 	await _run_research(holder, tag, vp)
+	await _run_tasting_work(holder, tag, vp)
+	await _run_manual_save(holder, tag, vp)
 
 	holder.queue_free()
 	await _frames(2)
@@ -529,8 +574,7 @@ func _taste_via_ui(app: Node, options: Array, recipe_name: String, price_buttons
 		edit.text_changed.emit(edit.text)
 	for pb in price_buttons:
 		_press(app, str(pb))
-	_press(app, "TasteButton")
-	await create_timer(1.2).timeout
+	await _finish_tasting(app)
 
 
 ## 연구 탭(보조 서랍 탭): 열기/미시식 거부/조건 미충족 거부/제출 보상/재제출·잠금/해금/저장 후 복원을 실제 UI 핸들러로 밟는다.
@@ -584,8 +628,7 @@ func _run_research(holder: SubViewport, tag: String, vp: Vector2i) -> void:
 	app.call("_on_new_recipe")
 	for opt in ["Opt_tare_shoyu", "Opt_oil_garlic", "Opt_noodle_thin", "Opt_topping_chashu", "Opt_cook_firm"]:
 		_press(app, opt)
-	_press(app, "TasteButton")
-	await create_timer(1.2).timeout
+	await _finish_tasting(app)
 	var wallet_a: int = int(st.get("wallet"))
 	tabs.current_tab = 4
 	await _settle()
@@ -719,5 +762,294 @@ func _run_save_failure(holder: SubViewport, tag: String, vp: Vector2i) -> void:
 	app.queue_free()
 	await _frames(2)
 	DirAccess.remove_absolute(conflict)
+	saver.remove_known_files()
+	DirAccess.remove_absolute(dir)
+
+
+func _load_probe(dir: String) -> Dictionary:
+	var probe: Object = load("res://scripts/domain/game_state.gd").new()
+	var res: Dictionary = SaveServiceScript.new(dir).load_into(probe)
+	return {"status": str(res["status"]), "state": probe}
+
+
+## 시식 준비 작업: 시작/진행 표시/중복 거부/편집·이동·저장·연구 차단/취소/완료 1회/자동 저장/도중 종료.
+## 시간은 이 격리 인스턴스에서 advance_work()를 직접 불러 앞당긴다(실제 프레임 진행도 함께 확인). --layout-only 에서도 실행된다.
+func _run_tasting_work(holder: SubViewport, tag: String, vp: Vector2i) -> void:
+	var dir: String = _data_root.path_join(tag + "_work")
+	DirAccess.make_dir_recursive_absolute(dir)
+	var saver: SaveServiceScript = SaveServiceScript.new(dir)
+	saver.remove_known_files()
+	var app: Node = await _spawn(holder, dir)
+	var st: Object = _state(app)
+	var tabs: TabContainer = _find(app, "MainTabs") as TabContainer
+	var overlay: Control = _find(app, "Overlay") as Control
+	_press(app, "DevButton")
+	await _settle()
+	tabs.current_tab = 0
+	await _settle()
+	var edit: LineEdit = _find(app, "RecipeNameEdit") as LineEdit
+	edit.text = "QA 준비 라멘"
+	edit.text_changed.emit(edit.text)
+	var cost: int = int(st.call("trial_cost"))
+	var wallet0: int = int(st.get("wallet"))
+	var file_before: String = _read_file(saver.main_path())
+	_check(not bool(app.call("work_active")) and not (_find(app, "TastingWorkCard") as Control).visible, tag + ": 시작 전에는 준비 카드가 없어요")
+
+	# 1) 시작: 즉시 기록되지 않고 준비 중이 된다. 단계/진행률이 보이고 자금·기록은 그대로.
+	_press(app, "TasteButton")
+	var bar: ProgressBar = _find(app, "WorkProgress") as ProgressBar
+	var view: Control = _find(app, "TastingWorkView") as Control
+	_check(bool(app.call("work_active")), tag + ": 시식 누름 → 준비 중")
+	# 2) 실제 프레임 진행 관찰(격리된 빨리감기 없이): 먼저 두 번 읽어 0보다 크고 100 미만으로 늘어나는지, 연출이 움직이는지 본다.
+	#    이 관찰은 4초 작업 중 약 0.6초만 쓰고 바로 끝난다. 이후의 긴 검사는 이 격리 인스턴스의 _process 를 끈 채 advance_work() 로만 진행한다.
+	await _frames(2)
+	var first_value: float = bar.value
+	var sig_a: String = str(view.call("signature"))
+	await create_timer(0.3).timeout
+	var real_value: float = bar.value
+	_check(first_value >= 0.0 and real_value > first_value and real_value > 0.0 and real_value < 100.0, tag + ": 실제 프레임 진행 %.1f%% → %.1f%%" % [first_value, real_value])
+	_check(bool(app.call("work_active")), tag + ": 관찰 중 아직 준비 중")
+	# 이 인스턴스만 자동 진행을 멈춘다(Node.set_process; 엔진 전체 시간/상용 게임에는 영향 없음). 이후 진행은 전부 명시적이다.
+	app.set_process(false)
+	await _settle()
+	var frozen_value: float = bar.value
+	await create_timer(0.3).timeout
+	_check(bar.value == frozen_value and bool(app.call("work_active")), tag + ": 자동 진행을 끈 인스턴스는 시간이 지나도 진행하지 않아요")
+	_check(int(st.call("record_count")) == 0 and int(st.get("wallet")) == wallet0, tag + ": 시작만으로는 기록/재료비가 없어요")
+	_check((_find(app, "TastingWorkCard") as Control).visible, tag + ": 준비 카드 표시")
+	_check(_text_of(app, "WorkTitle").find("1/3") >= 0 and _text_of(app, "WorkPhase_broth").find("진행 중") >= 0, tag + ": 1단계(국물) 표시: " + _text_of(app, "WorkTitle"))
+	_check(_text_of(app, "WorkPhase_noodle").find("면") >= 0 and _text_of(app, "WorkPhase_taste").find("시식") >= 0, tag + ": 세 단계 이름 표시")
+	_check(_text_of(app, "TasteButton").find("준비 중") >= 0 and (_find(app, "TasteButton") as BaseButton).disabled, tag + ": 시식 버튼은 준비 중 표시/비활성")
+	for name in ["TastingWorkCard", "TastingWorkView", "WorkTitle", "WorkProgress", "WorkPercent", "WorkNotice", "WorkCancelButton"]:
+		await _reachable(app, vp, name)
+	for pid in ["broth", "noodle", "taste"]:
+		await _reachable(app, vp, "WorkPhase_" + pid)
+	_check(bool(app.call("work_active")) and not bool(app.call("advance_work", -1.0)) and bar.value >= real_value, tag + ": 음수 시간은 무시")
+	# 3) 중복 시작은 거부되고 진행이 되돌아가지 않는다.
+	var dup: Dictionary = app.call("start_tasting")
+	_check(not bool(dup["ok"]) and bar.value >= real_value, tag + ": 중복 시작 거부: " + str(dup["message"]))
+	# 4) 명시 진행: 한 번에 +0.3초 → 진행률 상승, 연출 서명 변화
+	app.call("advance_work", 0.3)
+	await _settle()
+	_check(bar.value > real_value and str(view.call("signature")) != sig_a, tag + ": 진행하면 막대와 연출이 달라져요")
+	_check(_text_of(app, "WorkPercent").find("%") >= 0, tag + ": 퍼센트 표시")
+	# 5) 차단: 모든 변경 핸들러를 직접 불러도 초안/기록/자금/연구/서비스가 안 바뀐다.
+	var draft_before: Dictionary = (st.get("draft_config") as Dictionary).duplicate(true)
+	app.call("_on_option_pressed", "broth", "broth_dashi")
+	app.call("_on_price_step", 500)
+	edit.text = "바뀐 이름"
+	edit.text_changed.emit(edit.text)
+	app.call("_on_new_recipe")
+	app.call("_on_select_record", 1)
+	app.call("_on_delete_record", 1)
+	app.call("_on_research_submit", "dohyun_basic")
+	app.call("_on_overlay_open_pressed")
+	app.call("_on_start_pressed")
+	app.call("_on_dev_pressed")
+	app.call("_on_close_pressed")
+	await _settle()
+	_check(str(st.get("draft_config")) == str(draft_before), tag + ": 준비 중 초안(재료/가격)이 안 바뀌어요")
+	_check(str(st.get("draft_name")) == "QA 준비 라멘" and edit.text == "QA 준비 라멘", tag + ": 준비 중 이름이 안 바뀌고 입력창이 되돌려져요")
+	_check(not bool(st.call("service_active")) and overlay.visible, tag + ": 준비 중 영업 시작/서랍 닫기 거부")
+	_check(int(st.call("record_count")) == 0 and int(st.get("wallet")) == wallet0 and int(st.call("research_points")) == 0, tag + ": 차단 시도가 기록/자금/연구를 안 바꿔요")
+	_check(_text_of(app, "WorkNotice").find("시식 준비 중에는") >= 0, tag + ": 거부 이유가 서랍 안에 보여요: " + _text_of(app, "WorkNotice"))
+	for name in ["Opt_broth_dashi", "PriceUp500", "NewRecipeButton", "CloseButton", "OverlayOpenButton"]:
+		_check((_find(app, name) as BaseButton).disabled, tag + ": 준비 중 비활성: " + name)
+	_check(not edit.editable, tag + ": 준비 중 이름 입력 잠김")
+	# 6) 수동 저장 거부 + 탭 이동에도 자동 저장 안 함 → 파일 그대로
+	tabs.current_tab = 3
+	await _settle()
+	await _reachable(app, vp, "ManualSaveButton")
+	_press(app, "ManualSaveButton")
+	await _settle()
+	_check(_text_of(app, "ManualSaveResult").find("시식 준비 중에는 직접 저장할 수 없어요") >= 0, tag + ": 준비 중 수동 저장 거부 이유: " + _text_of(app, "ManualSaveResult"))
+	_check(_read_file(saver.main_path()) == file_before, tag + ": 준비 중에는 저장 파일이 그대로예요")
+	tabs.current_tab = 0
+	await _settle()
+	_check_shop_layout_drawer(app, vp, tag + " 준비 중")
+	_overflow(app, vp, tag + " 시식 준비 중")
+	await _shot(holder, tag + "_14_tasting_work.png")
+
+	# 7) 취소: 자금/기록/보상/파일 그대로, 조작 복구, 이후 진행/완료 없음
+	_press(app, "WorkCancelButton")
+	await _settle()
+	_check(not bool(app.call("work_active")) and not (_find(app, "TastingWorkCard") as Control).visible, tag + ": 취소하면 준비 카드가 사라져요")
+	_check(int(st.call("record_count")) == 0 and int(st.get("wallet")) == wallet0 and int(st.call("research_points")) == 0, tag + ": 취소는 기록/재료비/보상 없음")
+	_check(_read_file(saver.main_path()) == file_before, tag + ": 취소는 저장 파일을 바꾸지 않아요")
+	_check(_text_of(app, "TasteMessage").find("취소") >= 0, tag + ": 취소 안내: " + _text_of(app, "TasteMessage"))
+	_check(not bool(app.call("advance_work", 10.0)) and int(st.call("record_count")) == 0, tag + ": 취소된 작업은 더 이상 완료되지 않아요")
+	for name in ["Opt_broth_dashi", "PriceUp500", "NewRecipeButton", "CloseButton", "OverlayOpenButton", "TasteButton"]:
+		_check(not (_find(app, name) as BaseButton).disabled, tag + ": 취소 뒤 조작 복구: " + name)
+	_check(edit.editable and _text_of(app, "TasteButton") == "시식하기", tag + ": 취소 뒤 입력/버튼 글 복구")
+
+	# 8) 완료: 기록 1개·재료비 1회·자동 저장 1회. 진행 함수를 또 불러도 늘지 않는다.
+	# 여기서부터 자동 진행을 다시 켠다. 시작 뒤 곧바로(약 0.3초 안에) 명시 진행으로 끝내므로 4초 경쟁은 없다.
+	app.set_process(true)
+	_press(app, "TasteButton")
+	await _settle()
+	_check(bool(app.call("work_active")), tag + ": 취소 뒤 다시 시작 가능")
+	var done: bool = bool(app.call("advance_work", 10.0))
+	await create_timer(1.2).timeout
+	_check(done and not bool(app.call("work_active")), tag + ": 완료 신호 한 번")
+	_check(not bool(app.call("advance_work", 10.0)), tag + ": 완료 뒤 두 번째 완료 없음")
+	_check(int(st.call("record_count")) == 1 and int(st.get("wallet")) == wallet0 - cost, tag + ": 기록 1개, 재료비 한 번만: 자금 %d (기대 %d)" % [int(st.get("wallet")), wallet0 - cost])
+	var reloaded: Dictionary = _load_probe(dir)
+	var rs: Object = reloaded["state"]
+	_check(str(reloaded["status"]) == "ok" and int(rs.call("record_count")) == 1 and int(rs.get("wallet")) == wallet0 - cost, tag + ": 완료 직후 자동 저장이 파일에 반영")
+	_check(_text_of(app, "SaveStatusLabel").find("자동 저장됨") >= 0, tag + ": 자동 저장 상태 표시: " + _text_of(app, "SaveStatusLabel"))
+	_check(tabs.current_tab == 1 and _text_of(app, "FeedbackTitle").find("QA 준비 라멘 v1") >= 0, tag + ": 완료 후 피드백 탭")
+	# 세 초상: 모두 도달 가능하고 서로 다른 그림이다.
+	var pixel_sets: Array = []
+	for id in ["dohyun", "hayoung", "maru"]:
+		await _reachable(app, vp, "Card_" + id)
+		await _reachable(app, vp, "Portrait_" + id)
+		await _reachable(app, vp, "Headline_" + id)
+		_check_score_line(app, id, tag)
+		_check_portrait(app, id, tag)
+		var tr: TextureRect = _find(app, "Portrait_" + id) as TextureRect
+		pixel_sets.append(tr.texture.get_image().get_data())
+	_check(pixel_sets[0] != pixel_sets[1] and pixel_sets[1] != pixel_sets[2] and pixel_sets[0] != pixel_sets[2], tag + ": 세 초상이 서로 달라요")
+	_overflow(app, vp, tag + " 초상 피드백")
+	(tabs.get_child(1) as ScrollContainer).scroll_vertical = 0
+	await _shot(holder, tag + "_14b_feedback_portraits.png")
+	# 같은 구성을 다시 시식하면 시작 단계에서 거부된다(작업/재료비 없음).
+	tabs.current_tab = 0
+	await _settle()
+	var wallet1: int = int(st.get("wallet"))
+	var again_res: Dictionary = app.call("start_tasting")
+	_check(not bool(again_res["ok"]) and not bool(app.call("work_active")) and int(st.get("wallet")) == wallet1, tag + ": 이미 기록된 구성은 시작 거부: " + str(again_res["message"]))
+
+	# 9) 도중 종료: 다른 가격으로 준비를 시작하고 닫으면 기록/자금/파일에 흔적이 없다.
+	_press(app, "PriceUp500")
+	_press(app, "TasteButton")
+	await _settle()
+	_check(bool(app.call("work_active")), tag + ": 두 번째 준비 시작")
+	app.call("advance_work", 2.0)
+	var file_mid: String = _read_file(saver.main_path())
+	app.notification(Node.NOTIFICATION_WM_CLOSE_REQUEST)
+	_check(not bool(app.call("work_active")), tag + ": 닫기 요청이 준비를 취소")
+	app.queue_free()
+	await _frames(2)
+	var after_close: Dictionary = _load_probe(dir)
+	var cs: Object = after_close["state"]
+	_check(int(cs.call("record_count")) == 1 and int(cs.get("wallet")) == wallet1, tag + ": 닫은 뒤 파일에는 미완료 시식이 없어요")
+	_check(file_mid != "<없음>", tag + ": 저장 파일이 남아 있어요")
+	var app2: Node = await _spawn(holder, dir)
+	_check(not bool(app2.call("work_active")) and int(_state(app2).call("record_count")) == 1, tag + ": 재시작 후 준비 중인 작업은 없어요")
+	app2.queue_free()
+	await _frames(2)
+	saver.remove_known_files()
+	DirAccess.remove_absolute(dir)
+
+
+## 서랍 안 레이아웃 검사(서랍이 열린 상태에서 가게 장면이 아니라 서랍 틀과 카드가 화면 안에 들어오는지).
+func _check_shop_layout_drawer(app: Node, vp: Vector2i, tag: String) -> void:
+	var drawer: Control = _find(app, "Drawer") as Control
+	_check(drawer != null and Rect2(Vector2(-1.0, -1.0), Vector2(vp) + Vector2(2.0, 2.0)).encloses(drawer.get_global_rect()), tag + ": 서랍이 화면 안에 있어요")
+	var card: Control = _find(app, "TastingWorkCard") as Control
+	if card != null and card.visible and drawer != null:
+		_check(drawer.get_global_rect().grow(1.0).encloses(card.get_global_rect()), tag + ": 준비 카드가 서랍 안에 있어요")
+		var tabs_node: Control = _find(app, "MainTabs") as Control
+		_check(tabs_node.size.y >= 160.0, tag + ": 준비 카드 아래 탭 영역이 최소 160px 남아요 (%.0f)" % tabs_node.size.y)
+
+
+## 수동 저장: 성공/재시작 복원/강제 실패 배너와 복구/손상 파일 보호/영업 중 거부. 실제 저장 결과만 표시되는지 본다.
+func _run_manual_save(holder: SubViewport, tag: String, vp: Vector2i) -> void:
+	# A) 성공 + 복원
+	var dir: String = _data_root.path_join(tag + "_manual")
+	DirAccess.make_dir_recursive_absolute(dir)
+	var saver: SaveServiceScript = SaveServiceScript.new(dir)
+	saver.remove_known_files()
+	var app: Node = await _spawn(holder, dir)
+	var st: Object = _state(app)
+	var tabs: TabContainer = _find(app, "MainTabs") as TabContainer
+	_press(app, "DevButton")
+	await _settle()
+	tabs.current_tab = 3
+	await _settle()
+	for name in ["SaveStatusLabel", "AutoSaveInfo", "ManualSaveButton", "ManualSaveResult"]:
+		await _reachable(app, vp, name)
+	_check(_text_of(app, "AutoSaveInfo").find("자동 저장") >= 0, tag + ": 자동 저장 안내가 보여요")
+	_check((_find(app, "ManualSaveButton") as Control).size.y >= 44.0, tag + ": 수동 저장 버튼 44px 이상")
+	var edit_state: Dictionary = st.call("set_draft_price", 10000)
+	_check(bool(edit_state["ok"]), tag + ": 초안 가격 변경(저장 안 된 변경)")
+	_press(app, "ManualSaveButton")
+	await _settle()
+	_check(_text_of(app, "ManualSaveResult").find("직접 저장했어요") >= 0, tag + ": 수동 저장 성공 표시: " + _text_of(app, "ManualSaveResult"))
+	_check(_text_of(app, "SaveStatusLabel").find("직접 저장됨") >= 0, tag + ": 저장 상태에 직접 저장 표시: " + _text_of(app, "SaveStatusLabel"))
+	var probe: Dictionary = _load_probe(dir)
+	_check(str(probe["status"]) == "ok" and int((probe["state"] as Object).get("draft_config")["price"]) == 10000, tag + ": 수동 저장이 실제 파일에 반영")
+	_check(not (_find(app, "SaveBanner") as Control).visible, tag + ": 성공 때 경고 배너 없음")
+	_overflow(app, vp, tag + " 수동 저장")
+	(tabs.get_child(3) as ScrollContainer).scroll_vertical = 100000
+	await _shot(holder, tag + "_15_manual_save.png")
+	app.notification(Node.NOTIFICATION_WM_CLOSE_REQUEST)
+	app.queue_free()
+	await _frames(2)
+	var back: Node = await _spawn(holder, dir)
+	_check(int(_state(back).get("draft_config")["price"]) == 10000, tag + ": 재시작 후 수동 저장한 값 복원")
+	back.queue_free()
+	await _frames(2)
+
+	# B) 강제 실패: 임시 파일 자리에 폴더 → 실패 보고 + 배너, 폴더를 치우면 성공하고 배너가 사라진다.
+	saver.remove_known_files()
+	var conflict: String = saver.tmp_path()
+	var app3: Node = await _spawn(holder, dir)
+	_check(DirAccess.make_dir_recursive_absolute(conflict) == OK, tag + ": 저장 충돌 준비")
+	var good_file: String = _read_file(saver.main_path())
+	_press(app3, "DevButton")
+	await _settle()
+	(_find(app3, "MainTabs") as TabContainer).current_tab = 3
+	await _settle()
+	_press(app3, "ManualSaveButton")
+	await _settle()
+	var fail_text: String = _text_of(app3, "ManualSaveResult")
+	_check(fail_text.find("저장하지 못했") >= 0 and fail_text.find("직접 저장했어요") < 0, tag + ": 수동 저장 실패를 실제로 보고: " + fail_text)
+	_check((_find(app3, "SaveBanner") as Control).visible and _text_of(app3, "SaveStatusLabel").find("저장 실패") >= 0, tag + ": 실패 배너/상태")
+	_check(_read_file(saver.main_path()) == good_file, tag + ": 실패한 저장이 기존 파일을 망가뜨리지 않아요")
+	await _reachable(app3, vp, "ManualSaveResult")
+	_overflow(app3, vp, tag + " 수동 저장 실패")
+	await _shot(holder, tag + "_16_manual_save_failed.png")
+	DirAccess.remove_absolute(conflict)
+	_press(app3, "ManualSaveButton")
+	await _settle()
+	_check(_text_of(app3, "ManualSaveResult").find("직접 저장했어요") >= 0 and not (_find(app3, "SaveBanner") as Control).visible, tag + ": 문제를 치우면 저장되고 배너가 사라져요: " + _text_of(app3, "ManualSaveResult"))
+	# C) 영업 중 거부: 시식 기록을 만들고 영업을 시작한 상태
+	var s3: Object = _state(app3)
+	_check(bool(s3.call("taste")["ok"]), tag + ": 영업 준비용 시식")
+	app3.call("_refresh_all")
+	app3.call("_on_overlay_open_pressed")
+	await _settle()
+	_check(bool(s3.call("service_active")), tag + ": 영업 시작")
+	var saved_before_service: String = _read_file(saver.main_path())
+	var refused: Dictionary = app3.call("manual_save")
+	_check(not bool(refused["ok"]) and str(refused["message"]).find("영업 중에는 직접 저장할 수 없어요") >= 0, tag + ": 영업 중 수동 저장 거부: " + str(refused["message"]))
+	_check(_read_file(saver.main_path()) == saved_before_service, tag + ": 영업 중 거부는 파일을 안 바꿔요")
+	app3.queue_free()
+	await _frames(2)
+
+	# D) 손상 파일 보호: 잠금 상태에서는 수동 저장이 파일을 건드리지 않는다.
+	saver.remove_known_files()
+	DirAccess.remove_absolute(conflict)
+	var garbage: String = "{ 손상된 저장 파일"
+	var gf: FileAccess = FileAccess.open(saver.main_path(), FileAccess.WRITE)
+	_check(gf != null, tag + ": 손상 파일 준비")
+	if gf != null:
+		gf.store_string(garbage)
+		gf.close()
+	var app4: Node = await _spawn(holder, dir)
+	_check(bool(app4.get("save_locked")) and (_find(app4, "SaveBanner") as Control).visible, tag + ": 손상 저장은 잠기고 배너가 떠요")
+	_press(app4, "DevButton")
+	await _settle()
+	(_find(app4, "MainTabs") as TabContainer).current_tab = 3
+	await _settle()
+	_press(app4, "ManualSaveButton")
+	await _settle()
+	_check(_text_of(app4, "ManualSaveResult").find("저장하지 못했") >= 0, tag + ": 잠금 상태 수동 저장 거부 보고: " + _text_of(app4, "ManualSaveResult"))
+	_check(_read_file(saver.main_path()) == garbage, tag + ": 손상 파일이 지워지거나 덮어써지지 않았어요")
+	app4.notification(Node.NOTIFICATION_WM_CLOSE_REQUEST)
+	app4.queue_free()
+	await _frames(2)
+	_check(_read_file(saver.main_path()) == garbage, tag + ": 닫은 뒤에도 손상 파일 그대로")
 	saver.remove_known_files()
 	DirAccess.remove_absolute(dir)

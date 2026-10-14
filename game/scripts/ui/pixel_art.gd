@@ -319,6 +319,119 @@ static func bubble_image(kind: String) -> Image:
 	return img
 
 
+## 11x8 작은 등(영업 여부 표시). 글자 대신 쓴다: 영업 중 = 붉은 등 + 노란 불, 아니면 회색 등 + 꺼진 불.
+static func open_lamp_image(is_open: bool) -> Image:
+	var img: Image = new_image(11, 8)
+	var body: Color = RED if is_open else Color(0.45, 0.45, 0.50)
+	var glow: Color = Color(1.0, 0.86, 0.50) if is_open else Color(0.30, 0.30, 0.34)
+	px(img, 5, 0, INK)
+	rect(img, 2, 1, 7, 6, body)
+	rect(img, 2, 1, 7, 1, INK)
+	rect(img, 2, 6, 7, 1, INK)
+	rect(img, 3, 2, 1, 4, body.lightened(0.18))
+	rect(img, 4, 2, 4, 4, glow)
+	if is_open:
+		px(img, 5, 3, Color(1.0, 0.97, 0.80))
+		px(img, 6, 3, Color(1.0, 0.97, 0.80))
+	px(img, 5, 7, INK)
+	return img
+
+
+# ---------- 단골 초상 (24x24) ----------
+
+const PORTRAIT_IDS: Array = ["dohyun", "hayoung", "maru"]
+const PORTRAIT_BG: Array = ["#9fb0c4", "#f0c9d0", "#b8d8b0"]
+
+
+static func portrait_ids() -> Array:
+	return PORTRAIT_IDS
+
+
+## 단골 세 분의 가슴 위 초상. 색은 LOOKS(장면 속 사람과 같은 머리/옷 색)에서 가져오고 얼굴 특징은 각자 다르다:
+## 도윤 = 짧은 머리 + 안경 + 무표정 + 가방끈, 하영 = 긴 머리 + 머리핀 + 웃음 + 교사증 목걸이, 마루 = 모자 + 굵은 눈썹 + 활짝 웃음 + 배낭끈.
+## 알 수 없는 id 는 도윤 모양이 아니라 빈 틀(테두리 + 배경)만 돌려준다.
+static func portrait_image(customer_id: String) -> Image:
+	var img: Image = new_image(24, 24)
+	var idx: int = PORTRAIT_IDS.find(customer_id)
+	rect(img, 0, 0, 24, 24, INK)
+	if idx < 0:
+		rect(img, 1, 1, 22, 22, Color(0.80, 0.78, 0.72))
+		return img
+	var look: Dictionary = LOOKS[idx]
+	var hair: Color = _c(str(look["hair"]))
+	var shirt: Color = _c(str(look["shirt"]))
+	rect(img, 1, 1, 22, 22, _c(str(PORTRAIT_BG[idx])))
+	var skin_d: Color = SKIN.darkened(0.12)
+	# 어깨/셔츠와 목
+	rect(img, 3, 18, 18, 5, shirt)
+	rect(img, 2, 20, 20, 3, shirt)
+	rect(img, 10, 15, 4, 4, skin_d)
+	rect(img, 10, 18, 4, 1, WHITE)
+	px(img, 11, 19, WHITE)
+	px(img, 12, 19, WHITE)
+	# 머리(둥근 얼굴)와 귀
+	rect(img, 7, 5, 10, 11, SKIN)
+	rect(img, 6, 7, 12, 7, SKIN)
+	px(img, 5, 10, SKIN)
+	px(img, 18, 10, SKIN)
+	match idx:
+		0:
+			rect(img, 6, 3, 12, 3, hair)
+			rect(img, 5, 5, 2, 5, hair)
+			rect(img, 17, 5, 2, 5, hair)
+			rect(img, 7, 6, 10, 1, hair)
+			rect(img, 14, 18, 2, 5, Color(0.23, 0.25, 0.30))
+		1:
+			rect(img, 6, 3, 12, 3, hair)
+			rect(img, 6, 5, 12, 2, hair)
+			px(img, 12, 6, SKIN)
+			rect(img, 4, 5, 3, 15, hair)
+			rect(img, 17, 5, 3, 15, hair)
+			rect(img, 15, 5, 2, 1, Color(0.96, 0.77, 0.26))
+			px(img, 16, 4, RED)
+			rect(img, 11, 18, 1, 5, Color(0.25, 0.50, 0.48))
+			rect(img, 10, 21, 3, 2, WHITE)
+			px(img, 11, 21, INK)
+		2:
+			var cap: Color = _c(str(look["cap"]))
+			rect(img, 5, 3, 14, 3, cap)
+			rect(img, 6, 2, 12, 1, cap)
+			rect(img, 12, 6, 10, 2, cap.darkened(0.25))
+			rect(img, 5, 6, 2, 4, hair)
+			rect(img, 17, 6, 1, 3, hair)
+			var strap: Color = _c("#7a4a2a")
+			rect(img, 5, 18, 2, 5, strap)
+			rect(img, 17, 18, 2, 5, strap)
+	# 눈/볼/코/입
+	rect(img, 9, 10, 1, 2, INK)
+	rect(img, 14, 10, 1, 2, INK)
+	px(img, 8, 12, BLUSH)
+	px(img, 15, 12, BLUSH)
+	px(img, 12, 12, skin_d)
+	match idx:
+		0:
+			var frame: Color = Color(0.20, 0.20, 0.26)
+			for gx in [8, 13]:
+				rect(img, int(gx), 9, 4, 1, frame)
+				rect(img, int(gx), 12, 4, 1, frame)
+				rect(img, int(gx), 9, 1, 4, frame)
+				rect(img, int(gx) + 3, 9, 1, 4, frame)
+			px(img, 12, 10, frame)
+			rect(img, 11, 14, 3, 1, RED_D)
+		1:
+			px(img, 9, 9, INK)
+			px(img, 14, 9, INK)
+			px(img, 10, 13, RED_D)
+			px(img, 14, 13, RED_D)
+			rect(img, 11, 14, 3, 1, RED_D)
+		2:
+			rect(img, 8, 8, 3, 1, INK)
+			rect(img, 13, 8, 3, 1, INK)
+			rect(img, 10, 13, 5, 2, RED_D)
+			rect(img, 10, 13, 5, 1, WHITE)
+	return img
+
+
 # ---------- 그릇 ----------
 
 static func broth_color(config: Dictionary) -> Color:
