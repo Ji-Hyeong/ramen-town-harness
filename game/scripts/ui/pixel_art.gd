@@ -48,6 +48,64 @@ static func px(img: Image, x: int, y: int, c: Color) -> void:
 	img.set_pixel(x, y, c)
 
 
+## 볼록 다각형 채우기(점은 화면 픽셀 좌표). 픽셀 중심이 안에 들어오면 칠한다.
+## 이 규칙이면 변을 공유하는 두 면(윗면/옆면)이 틈도 겹침도 없이 붙는다. 등각 가구의 면 채우기에 쓴다.
+static func poly(img: Image, pts: Array, c: Color) -> void:
+	var n: int = pts.size()
+	if n < 3:
+		return
+	var min_y: float = 1.0e9
+	var max_y: float = -1.0e9
+	for p in pts:
+		var v: Vector2 = p
+		min_y = minf(min_y, v.y)
+		max_y = maxf(max_y, v.y)
+	for y in range(int(floor(min_y)), int(ceil(max_y))):
+		var cy: float = float(y) + 0.5
+		var lo: float = 1.0e9
+		var hi: float = -1.0e9
+		for i in n:
+			var a: Vector2 = pts[i]
+			var b: Vector2 = pts[(i + 1) % n]
+			if (a.y <= cy and b.y > cy) or (b.y <= cy and a.y > cy):
+				var x: float = a.x + (cy - a.y) / (b.y - a.y) * (b.x - a.x)
+				lo = minf(lo, x)
+				hi = maxf(hi, x)
+		if hi > lo:
+			var xs: int = int(ceil(lo - 0.5))
+			var xe: int = int(ceil(hi - 0.5))
+			rect(img, xs, y, xe - xs, 1, c)
+
+
+## 1픽셀 직선(브레젠험): 가구 모서리, 널 무늬, 난간.
+static func line(img: Image, a: Vector2, b: Vector2, c: Color) -> void:
+	var x0: int = int(roundf(a.x))
+	var y0: int = int(roundf(a.y))
+	var x1: int = int(roundf(b.x))
+	var y1: int = int(roundf(b.y))
+	var dx: int = absi(x1 - x0)
+	var dy: int = -absi(y1 - y0)
+	var sx: int = 1 if x0 < x1 else -1
+	var sy: int = 1 if y0 < y1 else -1
+	var err: int = dx + dy
+	while true:
+		px(img, x0, y0, c)
+		if x0 == x1 and y0 == y1:
+			break
+		var e2: int = 2 * err
+		if e2 >= dy:
+			err += dy
+			x0 += sx
+		if e2 <= dx:
+			err += dx
+			y0 += sy
+
+
+## src 를 dst 의 pos 에 알파 합성(범위 밖은 잘림). 가구 조각 합성과 검사용 CPU 장면 합성에 쓴다.
+static func blit(dst: Image, src: Image, pos: Vector2i) -> void:
+	dst.blend_rect(src, Rect2i(Vector2i.ZERO, src.get_size()), pos)
+
+
 static func tex(img: Image) -> ImageTexture:
 	return ImageTexture.create_from_image(img)
 

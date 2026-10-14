@@ -15,6 +15,7 @@ const SessionScript = preload("res://scripts/domain/service_session.gd")
 const LayoutScript = preload("res://scripts/ui/shop_layout.gd")
 const ArtScript = preload("res://scripts/ui/pixel_art.gd")
 const PainterScript = preload("res://scripts/ui/shop_painter.gd")
+const SceneScript = preload("res://scripts/ui/shop_scene.gd")
 
 const ARG: String = "--test-data-dir="
 
@@ -1285,71 +1286,290 @@ func test_service_determinism_and_chunking() -> void:
 	_end()
 
 
-## 걷는 사람(너비 14, 높이 18, 발바닥 기준)이 선분을 따라 지나가며 쓸고 가는 영역.
-func _walk_sweep(a: Vector2, b: Vector2) -> Rect2:
-	var left: float = minf(a.x, b.x) - 7.0
-	var right: float = maxf(a.x, b.x) + 7.0
-	var top: float = minf(a.y, b.y) - 18.0
-	var bottom: float = maxf(a.y, b.y)
-	return Rect2(left, top, right - left, bottom - top)
+## 걷는 점이 선분 a-b 를 따라가며 쓸고 가는 바닥 영역(사람 몸 반경 0.25칸). 격자 좌표에서 가구 발자국과 비교한다.
+func _grid_sweep(a: Vector2, b: Vector2) -> Rect2:
+	var lo: Vector2 = Vector2(minf(a.x, b.x), minf(a.y, b.y))
+	var hi: Vector2 = Vector2(maxf(a.x, b.x), maxf(a.y, b.y))
+	return Rect2(lo, hi - lo).grow(0.25)
 
 
-## 좌석·그릇·카운터·서버·화분의 위치가 서로 맞물리는지(상수 복사가 아니라 관계로) 확인한다.
+## 발자국과 겹치는지(경계만 닿는 것은 겹침이 아님).
+func _hits(sweep: Rect2, rect: Rect2) -> bool:
+	return sweep.intersects(rect, false)
+
+
+## 격자 경로(grid)와 화면 경로(screen)가 같은 투영으로 이어졌는지.
+func _check_projected(layout: Dictionary, grid: Array, screen: Array, tag: String) -> void:
+	_check(grid.size() == screen.size(), tag + ": 격자/화면 경로 길이")
+	for i in mini(grid.size(), screen.size()):
+		_check((screen[i] as Vector2) == LayoutScript.proj(layout, grid[i]), tag + ": 화면 경로가 격자 투영과 달라요 #%d" % i)
+
+
+## 좌석·그릇·카운터·서버·가구의 물리 관계를 격자(논리 바닥)와 투영(화면) 양쪽에서 확인한다. 상수 복사가 아니라 관계로 본다.
 func _check_service_geometry(variant: String, layout: Dictionary) -> void:
 	var counters: Array = layout["counters"]
 	var tables: Array = layout["tables"]
 	var seats: Array = layout["seats"]
+	var kitchen: Rect2 = layout["kitchen"]
 	for i in seats.size():
 		var sd: Dictionary = seats[i]
+		var g: Vector2 = sd["grid"]
+		var bowl_g: Vector2 = sd["bowl_grid"]
+		var bowl_h: float = float(sd["bowl_h"])
 		var pos: Vector2 = sd["pos"]
-		var bowl: Vector2 = sd["bowl"]
-		var serve: Array = sd["serve_path"]
-		var serve_end: Vector2 = serve[serve.size() - 1]
+		var serve_g: Array = sd["serve_grid"]
+		var serve_end: Vector2 = serve_g[serve_g.size() - 1]
 		var tag: String = "%s 자리 %d" % [variant, i]
-		var bowl_mid: float = bowl.x + 6.0
-		var bowl_bottom: float = bowl.y + 7.0
+		_check(pos == LayoutScript.proj(layout, g), tag + ": 발 위치는 격자 투영이어야 해요")
+		_check_projected(layout, sd["path_grid"], sd["path"], tag + " 손님 경로")
+		_check_projected(layout, sd["serve_grid"], sd["serve_path"], tag + " 서빙 경로")
+		# 그릇 그림(12x7)의 접지점(아래 가운데)이 상판 위 격자점의 투영과 같다.
+		var bowl_screen: Vector2 = sd["bowl"]
+		_check(bowl_screen + Vector2(6.0, 6.0) == LayoutScript.proj(layout, bowl_g, bowl_h), tag + ": 그릇은 상판 높이에서 투영돼야 해요")
 		if str(sd["kind"]) == "counter":
-			var found: bool = false
-			for cr in counters:
-				var c: Rect2i = cr
-				if bowl_mid < float(c.position.x) or bowl_mid > float(c.end.x):
-					continue
-				found = true
-				# 그릇은 카운터 윗면(위쪽 5줄) 위에 앉아 있고
-				_check(bowl_bottom >= float(c.position.y + 1) and bowl_bottom <= float(c.position.y + 5), tag + ": 그릇이 카운터 윗면에 놓여야 해요")
-				# 앉은 손님의 머리는 카운터 앞면에 붙어 그릇 바로 뒤에 있다(머리 위 간격 4px 이내).
-				var head_top: float = pos.y - 18.0
-				_check(head_top >= float(c.position.y + 3) and head_top <= float(c.end.y), tag + ": 손님 머리가 카운터 앞면에 붙어야 해요")
-				_check(head_top - bowl_bottom >= 0.0 and head_top - bowl_bottom <= 4.0, tag + ": 그릇과 손님 사이가 너무 멀어요 (%.0f)" % (head_top - bowl_bottom))
-				_check(absf(bowl_mid - pos.x) <= 1.0, tag + ": 그릇이 손님 정면에 있어야 해요")
-				# 서버는 카운터 안쪽(윗면 바로 뒤)에서 그릇 쪽으로 다가간다
-				_check(absf(serve_end.x - bowl_mid) <= 8.0 and serve_end.y <= bowl.y and serve_end.y >= float(c.position.y) - 12.0, tag + ": 서버 도착점이 그릇에 닿을 수 있어야 해요 %s" % str(serve_end))
-			_check(found, tag + ": 그릇이 어느 카운터 위에도 없어요")
-			# 문에서 자리까지 가는 경로(마지막 구간 제외)는 카운터를 가로지르지 않는다.
-			var path: Array = sd["path"]
-			for k in range(1, path.size() - 1):
-				var sweep: Rect2 = _walk_sweep(path[k - 1], path[k])
-				for cr2 in counters:
-					var c2: Rect2i = cr2
-					_check(not sweep.intersects(Rect2(c2)), tag + ": 경로가 카운터를 가로질러요")
+			var c: Rect2 = (counters[0] as Dictionary)["rect"]
+			_check(is_equal_approx(bowl_h, float((counters[0] as Dictionary)["h"])), tag + ": 그릇 높이가 카운터 높이와 같아야 해요")
+			# 그릇은 카운터 윗면 안, 손님은 카운터 앞(큰 gy)에서 0.4~1.0칸 떨어져 주방(작은 gy)을 향해 앉는다.
+			_check(c.grow(-0.05).has_point(bowl_g), tag + ": 그릇이 카운터 윗면 위에 있어야 해요")
+			_check(g.y - c.end.y >= 0.4 and g.y - c.end.y <= 1.0, tag + ": 손님이 카운터 앞에 붙어 앉아야 해요 (%.2f)" % (g.y - c.end.y))
+			_check(absf(bowl_g.x - g.x) <= 0.05, tag + ": 그릇이 손님 정면에 있어야 해요")
+			_check(bool(sd["back"]), tag + ": 카운터 손님은 등을 보이고 앉아요")
+			# 서버는 카운터 뒤쪽 주방 바닥에서 그릇 정면으로 다가간다.
+			_check(kitchen.has_point(serve_end) and serve_end.y < c.position.y - 0.25 and absf(serve_end.x - bowl_g.x) <= 0.1, tag + ": 서버 도착점이 카운터 안쪽 그릇 정면이어야 해요 %s" % str(serve_end))
+			# 화면 관계: 앉은 머리 윗점(발-18)과 그릇 아랫면이 이웃해 그릇이 머리 위로 보인다(간격 0~6px).
+			var head_top: float = pos.y - 18.0
+			var gap: float = head_top - (bowl_screen.y + 7.0)
+			_check(gap >= -2.0 and gap <= 6.0, tag + ": 그릇과 손님 머리 간격이 어긋나요 (%.0f)" % gap)
+			# 깊이: 그릇은 앉은 손님과 같은 열의 카운터 조각 모두보다 늦게 그려진다.
+			_check(float(sd["bowl_depth"]) > g.x + g.y, tag + ": 카운터 그릇 깊이는 손님보다 뒤(큼)여야 해요")
 		else:
-			var on_table: bool = false
-			for tv in tables:
-				var t: Vector2i = tv
-				if bowl_mid >= float(t.x - 10) and bowl_mid <= float(t.x + 10) and bowl_bottom >= float(t.y - 5) and bowl_bottom <= float(t.y + 5):
-					on_table = true
-			_check(on_table, tag + ": 그릇이 테이블 위에 놓여야 해요")
-			_check(serve_end.distance_to(pos) <= 12.0, tag + ": 서버가 테이블 손님에게 닿을 수 있어야 해요 %s" % str(serve_end))
-	# 화분은 어떤 걷는 경로(손님 경로, 서버 경로)도 막지 않는다.
-	for pl in layout["plants"]:
-		var pp: Vector2 = pl
-		var plant_rect: Rect2 = Rect2(pp.x - 5.0, pp.y - 15.0, 10.0, 15.0)
-		for s in seats:
-			var sd2: Dictionary = s
-			for route_key in ["path", "serve_path"]:
-				var route: Array = sd2[route_key]
-				for k2 in range(1, route.size()):
-					_check(not _walk_sweep(route[k2 - 1], route[k2]).intersects(plant_rect), "%s: 화분 %s 이(가) %s 경로를 막아요" % [variant, str(pp), route_key])
+			var tbl: Dictionary = tables[int(sd["table"])]
+			var trect: Rect2 = tbl["rect"]
+			var tc: Vector2 = trect.get_center()
+			_check(is_equal_approx(bowl_h, float(tbl["h"])), tag + ": 그릇 높이가 테이블 높이와 같아야 해요")
+			_check(trect.has_point(bowl_g), tag + ": 그릇이 테이블 위에 놓여야 해요")
+			# 손님은 테이블 양끝(gy 쪽) 1.5칸, 서버는 옆 통로에서 1.6칸 안으로 닿는다.
+			_check(absf(g.x - tc.x) <= 0.05 and absf(absf(g.y - tc.y) - 1.5) <= 0.05, tag + ": 테이블 끝에 앉아야 해요")
+			_check(serve_end.distance_to(g) <= 1.6, tag + ": 서버가 테이블 손님에게 닿을 수 있어야 해요 %s" % str(serve_end))
+			_check(bool(sd["back"]) == (g.y > tc.y), tag + ": 앞쪽(gy 큰) 손님만 등을 보여요")
+			# 그릇은 자기 손님 쪽 절반 상판에 있다.
+			_check((bowl_g.y - tc.y) * (g.y - tc.y) > 0.0, tag + ": 그릇이 손님 쪽 상판에 있어야 해요")
+			var bd: float = float(sd["bowl_depth"])
+			_check(bd > tc.x + trect.end.y - 0.01 and bd < tc.x + tc.y + 1.5, tag + ": 테이블 그릇 깊이는 테이블 앞 가장자리와 앞쪽 손님 사이여야 해요")
+		# 문에서 자리까지 가는 경로(마지막 구간 제외)는 어떤 단단한 가구 발자국도 가로지르지 않는다.
+		var path_g: Array = sd["path_grid"]
+		for k in range(1, path_g.size()):
+			var sweep: Rect2 = _grid_sweep(path_g[k - 1], path_g[k])
+			for f in layout["furniture"]:
+				var fd: Dictionary = f
+				if not bool(fd["solid"]):
+					continue
+				for fr in fd["rects"]:
+					_check(not _hits(sweep, fr), "%s: 경로 %d 구간이 %s 에 걸려요" % [tag, k, str(fd["id"])])
+		for k in range(1, serve_g.size()):
+			var sweep2: Rect2 = _grid_sweep(serve_g[k - 1], serve_g[k])
+			for f2 in layout["furniture"]:
+				var fd2: Dictionary = f2
+				if not bool(fd2["solid"]):
+					continue
+				for fr2 in fd2["rects"]:
+					_check(not _hits(sweep2, fr2), "%s: 서빙 구간 %d 가 %s 에 걸려요" % [tag, k, str(fd2["id"])])
+	# 줄/등장/퇴장 길(인도)에도 소품이 없다: 줄 칸, 문 앞, 스폰과 퇴장 사이 직선.
+	var lane: Array = [layout["spawn_grid"], layout["exit_grid"]]
+	for qg in layout["queue_grid"]:
+		lane.append(qg)
+	lane.append(Vector2(LayoutScript.DOOR_X, LayoutScript.LANE_Y))
+	for pt in lane:
+		var cell: Rect2 = Rect2((pt as Vector2) - Vector2(0.05, 0.05), Vector2(0.1, 0.1)).grow(0.25)
+		for f3 in layout["furniture"]:
+			var fd3: Dictionary = f3
+			if not bool(fd3["solid"]):
+				continue
+			for fr3 in fd3["rects"]:
+				_check(not _hits(cell, fr3), "%s: 줄/통행 점 %s 가 %s 에 걸려요" % [variant, str(pt), str(fd3["id"])])
+	var lane_sweep: Rect2 = _grid_sweep(layout["spawn_grid"], layout["exit_grid"])
+	for f4 in layout["furniture"]:
+		var fd4: Dictionary = f4
+		if not bool(fd4["solid"]):
+			continue
+		for fr4 in fd4["rects"]:
+			_check(not _hits(lane_sweep, fr4), "%s: 인도 통행로가 %s 에 막혀요" % [variant, str(fd4["id"])])
+	# 굳은 가구끼리 겹치지 않고(발자국), 모두 장면 안에 걸친다(화면 투영 기준 일부라도 보여야 함).
+	var solids: Array = []
+	for f5 in layout["furniture"]:
+		var fd5: Dictionary = f5
+		if bool(fd5["solid"]):
+			solids.append(fd5)
+	for a in solids.size():
+		for b in range(a + 1, solids.size()):
+			var fa: Dictionary = solids[a]
+			var fb: Dictionary = solids[b]
+			_check(not (fa["rect"] as Rect2).intersects(fb["rect"], false), "%s: 가구 발자국이 겹쳐요 %s / %s" % [variant, str(fa["id"]), str(fb["id"])])
+
+
+## 접두사 조각 전체의 가로 범위가 [lo, hi](투영된 모서리 x) 와 2px 안에서 일치하고 장면 안(>=0)에 머무는지.
+func _check_slice_extent(its: Array, variant: String, prefix: String, lo_raw: float, hi_raw: float, world_w: int) -> void:
+	# 그림은 장면 이미지 크기로 잘리므로(예: 세로 파사드 왼쪽 모서리는 x=-5.6 이라 이미지 밖) 기대 범위도 이미지 범위와 교집합으로 비교한다.
+	var lo: float = maxf(lo_raw, 0.0)
+	var hi: float = minf(hi_raw, float(world_w))
+	var min_x: float = 1.0e9
+	var max_x: float = -1.0e9
+	var count: int = 0
+	for it in its:
+		var d: Dictionary = it
+		if not str(d["id"]).begins_with(prefix):
+			continue
+		var p: Vector2 = d["pos"]
+		min_x = minf(min_x, p.x)
+		max_x = maxf(max_x, p.x + float((d["img"] as Image).get_width()))
+		count += 1
+	_check(count >= 6, "%s: %s 조각이 너무 적어요 (%d)" % [variant, prefix, count])
+	_check(min_x >= lo - 6.0 and min_x <= lo + 2.0, "%s: %s 조각 왼쪽 끝 %.0f, 기대 %.0f" % [variant, prefix, min_x, lo])
+	_check(max_x >= hi - 2.0 and max_x <= hi + 8.0, "%s: %s 조각 오른쪽 끝 %.0f, 기대 %.0f" % [variant, prefix, max_x, hi])
+
+
+## id 접두사가 맞고 화면 열 x 를 덮는 가구 조각 하나(없으면 빈 Dictionary).
+func _slice_at(its: Array, prefix: String, col_x: float) -> Dictionary:
+	for it in its:
+		var d: Dictionary = it
+		if not str(d["id"]).begins_with(prefix):
+			continue
+		var p: Vector2 = d["pos"]
+		var w: int = (d["img"] as Image).get_width()
+		if col_x >= p.x and col_x < p.x + float(w):
+			return d
+	return {}
+
+
+## 투영/깊이/화면 배치: 모서리가 정수 격자에 맞고, 가구 조각의 깊이가 사람과 같은 눈금에서 맞게 가려지는지 본다.
+func _check_projection_and_depth(variant: String, layout: Dictionary) -> void:
+	var world: Vector2i = layout["size"]
+	var bounds: Rect2 = Rect2(Vector2.ZERO, Vector2(world)).grow(1.0)
+	# 투영: 2:1 마름모. +gx 는 (+8,+4), +gy 는 (-8,+4), 높이 h 는 y 를 h 만큼 올린다.
+	var o: Vector2 = LayoutScript.proj(layout, Vector2.ZERO)
+	_check(LayoutScript.proj(layout, Vector2(1.0, 0.0)) - o == Vector2(8.0, 4.0), variant + ": +gx 투영")
+	_check(LayoutScript.proj(layout, Vector2(0.0, 1.0)) - o == Vector2(-8.0, 4.0), variant + ": +gy 투영")
+	_check(LayoutScript.proj(layout, Vector2(2.0, 3.0), 10.0) == LayoutScript.proj(layout, Vector2(2.0, 3.0)) + Vector2(0.0, -10.0), variant + ": 높이는 세로로만 올라가요")
+	var probe: Vector2 = LayoutScript.proj(layout, Vector2(5.5, 6.25))
+	_check(absf(LayoutScript.depth_of_screen(layout, probe) - 11.75) <= 0.13, variant + ": 화면 y 에서 구한 깊이는 gx+gy 와 같아요")
+	# 방 네 모서리와 벽 윗점이 장면 안에 있다(앞 모서리는 화면 아래쪽으로 잘리지 않음).
+	var room: Rect2 = layout["room"]
+	for corner in [room.position, Vector2(room.end.x, room.position.y), Vector2(room.position.x, room.end.y), room.end]:
+		_check(bounds.has_point(LayoutScript.proj(layout, corner)), "%s: 방 모서리 %s 가 장면 밖" % [variant, str(corner)])
+	_check(bounds.has_point(LayoutScript.proj(layout, room.position, LayoutScript.WALL_H)), variant + ": 벽 윗점이 장면 밖")
+	# 가구/소품 항목: 크기와 깊이 순서
+	var its: Array = PainterScript.items(layout)
+	_check(its.size() >= 40, "%s: 가구 항목이 너무 적어요 (%d)" % [variant, its.size()])
+	var shown: int = 0
+	for it in its:
+		var d: Dictionary = it
+		var img: Image = d["img"]
+		var p: Vector2 = d["pos"]
+		if Rect2(p, Vector2(img.get_size())).intersects(Rect2(Vector2.ZERO, Vector2(world))):
+			shown += 1
+	_check(shown >= 35, "%s: 화면에 걸치는 가구 항목 수 %d" % [variant, shown])
+	# 카운터 조각은 가로로 이어지고, 같은 열의 깊이는 오른쪽(화면 오른쪽 아래)으로 갈수록 커진다.
+	var counter_depths: Array = []
+	for it2 in its:
+		var d2: Dictionary = it2
+		if str(d2["id"]).begins_with("counter@"):
+			counter_depths.append([(d2["pos"] as Vector2).x, float(d2["depth"])])
+	_check(counter_depths.size() >= 8, variant + ": 카운터가 조각나야 해요")
+	counter_depths.sort_custom(func(a: Array, b: Array) -> bool: return float(a[0]) < float(b[0]))
+	for k in range(1, counter_depths.size()):
+		_check(float((counter_depths[k] as Array)[1]) >= float((counter_depths[k - 1] as Array)[1]), variant + ": 카운터 조각 깊이 순서")
+	# 서버(카운터 뒤, 발 gy 2.35)는 같은 열 카운터 조각보다 먼저, 앉은 손님(gy 4.5)은 나중에 그려진다.
+	var seats: Array = layout["seats"]
+	for i in 4:
+		var sd: Dictionary = seats[i]
+		var sg: Vector2 = sd["grid"]
+		var behind: Vector2 = Vector2(sg.x, LayoutScript.SERVE_Y)
+		var back_slice: Dictionary = _slice_at(its, "counter@", LayoutScript.proj(layout, behind).x)
+		var front_slice: Dictionary = _slice_at(its, "counter@", LayoutScript.proj(layout, sg).x)
+		_check(not back_slice.is_empty() and not front_slice.is_empty(), "%s 자리 %d: 서버/손님 열의 카운터 조각 없음" % [variant, i])
+		if not back_slice.is_empty():
+			_check(float(back_slice["depth"]) > behind.x + behind.y, "%s 자리 %d: 카운터 조각이 뒤쪽 서버보다 늦게 그려져야 해요" % [variant, i])
+		if not front_slice.is_empty():
+			_check(float(front_slice["depth"]) < sg.x + sg.y, "%s 자리 %d: 앞쪽 손님이 카운터 조각보다 늦게 그려져야 해요" % [variant, i])
+	# 문 열림: 파사드 낮은 벽 조각은 문틈 열(문 가운데 gx)에 그려지지 않는다.
+	var door_col: float = LayoutScript.proj(layout, Vector2(LayoutScript.DOOR_X, LayoutScript.FACADE.end.y), 5.0).x
+	for it4 in its:
+		var d4: Dictionary = it4
+		if str(d4["id"]).begins_with("facade:low@"):
+			var q: Vector2 = d4["pos"]
+			var im: Image = d4["img"]
+			if door_col >= q.x and door_col < q.x + float(im.get_width()):
+				# 같은 열에 낮은 벽(높이 11 이하)이 문 높이 5 위치를 칠하고 있으면 문이 막힌 것이다.
+				var lx: int = int(door_col - q.x)
+				var ly: int = int(LayoutScript.proj(layout, Vector2(LayoutScript.DOOR_X, LayoutScript.FACADE.end.y), 5.0).y - q.y)
+				if ly >= 0 and ly < im.get_height():
+					_check(im.get_pixel(lx, ly).a < 0.5, variant + ": 문틈이 벽으로 막혔어요")
+	# 앉은 손님/스툴: 같은 깊이 근처에서 스툴이 사람보다 먼저(작은 깊이)
+	for i2 in seats.size():
+		var sg2: Vector2 = (seats[i2] as Dictionary)["grid"]
+		for it5 in its:
+			var d5: Dictionary = it5
+			if str(d5["id"]) == "seat%d" % i2:
+				_check(float(d5["depth"]) < sg2.x + sg2.y, "%s: 좌석 %d 의 스툴/의자는 앉은 사람보다 먼저 그려져야 해요" % [variant, i2])
+	# 사람 스프라이트 위치: 발바닥이 투영된 발 위치와 일치한다(앉은 사람 이미지는 14x18, 맨 아래 줄이 발).
+	var ent: Dictionary = {"patrons": [{"id": 1, "state": SessionScript.P_ORDERING, "p": 0.0, "look": 3, "slot": 0, "seat": 0, "bubble": ""}], "chef_cooking": false}
+	var scene: Dictionary = SceneScript.build(layout, ent, {}, 0.0, {}, {})
+	var sat_found: bool = false
+	for it6 in scene["items"]:
+		var d6: Dictionary = it6
+		if str(d6["key"]).begins_with("p|3|sit"):
+			sat_found = true
+			var feet: Vector2 = (d6["pos"] as Vector2) + Vector2(7.0, 18.0)
+			_check(feet == ((seats[0] as Dictionary)["pos"] as Vector2), variant + ": 앉은 손님 발이 좌석 투영과 달라요")
+			_check(absf(float(d6["depth"]) - LayoutScript.depth_of_screen(layout, feet)) < 0.001, variant + ": 사람 깊이는 발 y 에서 나와야 해요")
+	_check(sat_found, variant + ": 주문 중 손님이 앉은 모습이어야 해요")
+	# 조각의 전역 좌표 보존: 카운터/파사드 조각 묶음의 가로 범위가 실제 투영된 가구 모서리와 맞아야 한다(x=0 으로 뭉치지 않음).
+	var counter_rect: Rect2 = (layout["counters"] as Array)[0]["rect"]
+	_check_slice_extent(its, variant, "counter@", LayoutScript.proj(layout, Vector2(counter_rect.position.x, counter_rect.end.y)).x, LayoutScript.proj(layout, Vector2(counter_rect.end.x, counter_rect.position.y)).x, world.x)
+	_check_slice_extent(its, variant, "facade:low@", LayoutScript.proj(layout, Vector2(LayoutScript.FACADE.position.x, LayoutScript.FACADE.end.y)).x, LayoutScript.proj(layout, Vector2(LayoutScript.FACADE.end.x, LayoutScript.FACADE.position.y)).x, world.x)
+	# 퇴장: 실제 Scene.build 가 주는 P_LEAVING 위치를 진행률대로 훑어 바닥 격자로 되돌려 본다. 문을 나선 뒤 인도(gy>=ROOM_D)를 벗어나지 않고
+	# 방/벽 쪽으로 다시 들어가지 않으며 어떤 단단한 가구에도 겹치지 않아야 한다.
+	var o2: Vector2 = layout["origin"]
+	for si in seats.size():
+		var outside: bool = false
+		for step in 81:
+			var lent: Dictionary = {"patrons": [{"id": 7, "state": SessionScript.P_LEAVING, "p": float(step) / 80.0, "look": 3, "slot": 0, "seat": si, "bubble": ""}]}
+			var lscene: Dictionary = SceneScript.build(layout, lent, {}, 0.0, {}, {})
+			var feet2: Vector2 = Vector2.ZERO
+			for lit in lscene["items"]:
+				var ld: Dictionary = lit
+				if str(ld["key"]).begins_with("p|3|"):
+					feet2 = (ld["pos"] as Vector2) + Vector2(7.0, 18.0)
+			var u2: float = (feet2.x - o2.x) / LayoutScript.HALF_W
+			var v2: float = (feet2.y - o2.y) / LayoutScript.HALF_H
+			var gp: Vector2 = Vector2((u2 + v2) * 0.5, (v2 - u2) * 0.5)
+			var tagp: String = "%s 퇴장 자리 %d 진행 %d: %s" % [variant, si, step, str(gp)]
+			if gp.y > LayoutScript.DOOR_OUT.y - 0.05:
+				outside = true
+			if outside:
+				_check(gp.y >= LayoutScript.DOOR_OUT.y - 0.05, tagp + " 문 밖에서 다시 들어왔어요")
+			else:
+				_check(gp.x > 0.0 and gp.x < LayoutScript.ROOM_W and gp.y > 0.0, tagp + " 방 밖(벽)으로 나갔어요")
+			for f6 in layout["furniture"]:
+				var fd6: Dictionary = f6
+				if not bool(fd6["solid"]):
+					continue
+				for fr6 in fd6["rects"]:
+					_check(not (fr6 as Rect2).grow(-0.0).has_point(gp), tagp + " 가구 %s 와 겹쳐요" % str(fd6["id"]))
+		_check(outside, "%s 퇴장 자리 %d: 끝까지 문 밖 인도에 도착해야 해요" % [variant, si])
+	# 닫힌 가게/손님이 없는 장면에는 직원 둘(요리사, 서버)만 있다: 꾸며 낸 손님 없음.
+	var empty_scene: Dictionary = SceneScript.build(layout, {}, {}, 0.0, {}, {})
+	_check((empty_scene["items"] as Array).size() == 2 and (empty_scene["bubbles"] as Array).is_empty(), variant + ": 손님이 없으면 직원만 그려져요")
+	var cpu: Image = SceneScript.compose_for(layout, null)
+	_check(cpu.get_width() == world.x and cpu.get_height() == world.y, variant + ": CPU 합성 이미지 크기")
+	# 바닥이 한 가지 색의 넓은 띠로 비지 않는다: 방 안쪽 표본 픽셀이 여러 색으로 채워진다(타일 선/널/가구/깔개).
+	var colors: Dictionary = {}
+	var room_a: Vector2 = LayoutScript.proj(layout, Vector2(1.0, 4.5))
+	var room_b: Vector2 = LayoutScript.proj(layout, Vector2(11.0, 8.0))
+	for sy in range(int(room_a.y) - 10, int(room_b.y) + 1, 2):
+		for sx in range(int(minf(room_a.x, room_b.x)), int(maxf(room_a.x, room_b.x)), 2):
+			colors[cpu.get_pixel(clampi(sx, 0, world.x - 1), clampi(sy, 0, world.y - 1)).to_html()] = true
+	_check(colors.size() >= 25, "%s: 방 안쪽 색이 너무 단조로워요 (%d색)" % [variant, colors.size()])
 
 
 func test_shop_layout_and_art() -> void:
@@ -1387,6 +1607,9 @@ func test_shop_layout_and_art() -> void:
 			_check(bounds.grow(1.0).has_point(q), "%s: 줄 칸이 장면 안" % variant)
 		_check((layout["queue_slots"] as Array).size() >= 8, "%s: 줄 칸 수" % variant)
 		_check_service_geometry(variant, layout)
+		_check_projection_and_depth(variant, layout)
+		# 캔버스: 의도한 크기(세로 176x264 배율 2, 가로 320x152 배율 4)
+		_check(world == (Vector2i(176, 264) if variant == LayoutScript.PORTRAIT else Vector2i(320, 152)), variant + ": 캔버스 크기")
 		# 정적 배경: 크기가 맞고 모든 픽셀이 채워진다(투명 구멍 없음)
 		var bg: Image = PainterScript.paint(layout)
 		_check(bg.get_width() == world.x and bg.get_height() == world.y, "%s: 배경 크기" % variant)

@@ -10,9 +10,11 @@ extends SceneTree
 
 const SaveServiceScript = preload("res://scripts/services/save_service.gd")
 
+# scale: 장면 정수 배율의 하한. 등각 장면의 의도한 캔버스에 맞춘 값이다 — 가로 320x152 → 1280x608 (배율 4),
+# 세로 176x264 → 352x528 (배율 2, 이전 128x208 프론탈 장면은 배율 3). 화면 55% 이상/뷰포트 포함/HUD 비겹침 검사는 그대로다.
 const PROFILES: Array = [
 	{"tag": "desktop", "w": 1280, "h": 800, "scale": 4},
-	{"tag": "portrait", "w": 390, "h": 844, "scale": 3},
+	{"tag": "portrait", "w": 390, "h": 844, "scale": 2},
 ]
 
 var _out_dir: String = ""
@@ -222,6 +224,57 @@ func _check_shop_layout(app: Node, vp: Vector2i, tag: String, expect_scale: int)
 			var cr: Rect2 = c.get_global_rect()
 			_check(Rect2(Vector2(-1.0, -1.0), Vector2(vp) + Vector2(2.0, 2.0)).encloses(cr), "%s: %s 가 화면 밖 %s" % [tag, name, str(cr)])
 			_check(not cr.intersects(rect), "%s: %s 가 장면을 가려요 %s vs %s" % [tag, name, str(cr), str(rect)])
+	_check_status_text(app, tag)
+
+
+## 글 줄 전체가 라벨 사각형 안에 들어오는지: 실제 줄바꿈 줄 수(get_line_count) x 글꼴 높이 + 줄 간격 <= 라벨 높이.
+func _text_height_fits(label: Label) -> bool:
+	var fs: int = label.get_theme_font_size("font_size")
+	var font: Font = label.get_theme_font("font")
+	var lines: int = label.get_line_count()
+	var needed: float = float(lines) * font.get_height(fs) + float(maxi(0, lines - 1)) * float(label.get_theme_constant("line_spacing"))
+	return needed <= label.size.y + 1.0
+
+
+## 상태/안내 글이 전부 보이고(라벨·띠 높이 안) 하단 바와 겹치지 않는지.
+func _check_status_text(app: Node, tag: String) -> void:
+	var strip: Control = _find(app, "StatusStrip") as Control
+	var nav: Control = _find(app, "NavBar") as Control
+	if strip == null or nav == null:
+		return
+	var sr: Rect2 = strip.get_global_rect()
+	_check(sr.end.y <= nav.get_global_rect().position.y + 0.5, "%s: 상태 띠가 하단 바와 겹쳐요 %s vs %s" % [tag, str(sr), str(nav.get_global_rect())])
+	for name in ["ServiceStatusLabel", "ServiceNoteLabel"]:
+		var label: Label = _find(app, name) as Label
+		if label == null or label.text == "":
+			continue
+		var lr: Rect2 = label.get_global_rect()
+		_check(_text_height_fits(label), "%s: %s 글이 라벨 높이를 넘쳐요 (줄 %d, 높이 %.0f)" % [tag, name, label.get_line_count(), label.size.y])
+		_check(lr.position.y >= sr.position.y - 0.5 and lr.end.y <= sr.end.y + 0.5, "%s: %s 가 상태 띠 밖 %s vs %s" % [tag, name, str(lr), str(sr)])
+		_check(lr.end.y <= nav.get_global_rect().position.y + 0.5, "%s: %s 가 하단 바 아래로 내려가요" % [tag, name])
+
+
+## 피드백 카드 한 장: 점수는 한 줄이고 카드 안에 들어오며, 이름 전체와 별도 카드 안에 있다.
+func _check_score_line(app: Node, id: String, tag: String) -> void:
+	var card: Control = _find(app, "Card_" + id) as Control
+	var score: Label = _find(app, "Score_" + id) as Label
+	var stars: Control = _find(app, "Stars_" + id) as Control
+	_check(card != null and score != null and stars != null, "%s: %s 카드 구성요소 없음" % [tag, id])
+	if card == null or score == null or stars == null:
+		return
+	var cr: Rect2 = card.get_global_rect()
+	_check(score.get_line_count() == 1, "%s: %s 점수가 한 줄이 아니에요 (%d줄: %s)" % [tag, id, score.get_line_count(), score.text])
+	_check(cr.encloses(score.get_global_rect()), "%s: %s 점수가 카드 밖 %s vs %s" % [tag, id, str(score.get_global_rect()), str(cr)])
+	_check(cr.encloses(stars.get_global_rect()), "%s: %s 별이 카드 밖" % [tag, id])
+	var fs: int = score.get_theme_font_size("font_size")
+	var text_w: float = score.get_theme_font("font").get_string_size(score.text, HORIZONTAL_ALIGNMENT_LEFT, -1.0, fs).x
+	_check(score.size.x >= text_w - 0.5, "%s: %s 점수 폭 %.0f 이 글자 폭 %.0f 보다 좁아요" % [tag, id, score.size.x, text_w])
+	for child in card.find_children("*", "Label", true, false):
+		var lab: Label = child
+		if lab.get_theme_font_size("font_size") == 19:
+			var nw: float = lab.get_theme_font("font").get_string_size(lab.text, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 19).x
+			_check(lab.size.x >= nw - 0.5, "%s: %s 이름 폭 %.0f 이 글자 폭 %.0f 보다 좁아요" % [tag, id, lab.size.x, nw])
+			_check(lab.get_line_count() == 1, "%s: %s 이름이 한 줄이 아니에요" % [tag, id])
 
 
 ## 세션 게임초를 앞당긴다(렌더링은 실제 프레임이 한다).
@@ -301,6 +354,7 @@ func _run_profile(tag: String, vp: Vector2i, expect_scale: int) -> void:
 	_check(tabs.current_tab == 1, tag + ": 시식 후 피드백 탭으로 이동")
 	for id in ["dohyun", "hayoung", "maru"]:
 		await _reachable(app, vp, "Card_" + id)
+		_check_score_line(app, id, tag)
 	_check(_text_of(app, "FeedbackTitle").find("QA 맑은 라멘 v1") >= 0, tag + ": 제목 v1")
 	_check(_text_of(app, "Headline_dohyun") != _text_of(app, "Headline_hayoung"), tag + ": 손님별 피드백이 다름")
 	_check(_text_of(app, "ComparisonLabel").find("첫 시식") >= 0, tag + ": 첫 시식은 비교 없음 안내")

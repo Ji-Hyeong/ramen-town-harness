@@ -743,13 +743,43 @@ func _is_portrait() -> bool:
 	return size.x < WIDE_BREAKPOINT
 
 
-func _apply_layout() -> void:
+## 줄바꿈된 글의 실제 높이: 글꼴이 주는 여러 줄 크기에 줄 간격을 더한다(고정값을 베끼지 않고 현재 글/폭으로 계산).
+func _wrapped_text_height(label: Label, width: float, headroom: bool) -> float:
+	if label.text == "":
+		return 0.0
+	var fs: int = label.get_theme_font_size("font_size")
+	var font: Font = label.get_theme_font("font")
+	var h: float = font.get_multiline_string_size(label.text, HORIZONTAL_ALIGNMENT_LEFT, maxf(8.0, width), fs).y
+	var lines: int = maxi(1, int(roundf(h / font.get_height(fs))))
+	# headroom: 글자 높이의 절반을 더한다(단어 경계 줄바꿈이 계산과 한 줄 다르게 나뉠 때 대비). 세로 화면은 장면 아래 여유가 커서 쓰고,
+	# 가로 데스크톱은 장면(320x152 배율 4 = 608)이 들어갈 높이가 빠듯해 쓰지 않는다(글이 한두 줄로 넓게 펴지므로 줄바꿈 차이 위험이 작다).
+	var extra: float = float(fs) * 0.5 if headroom else 0.0
+	return h + float(lines - 1) * float(label.get_theme_constant("line_spacing")) + extra
+
+
+## 상태 띠 높이 = 현재 상태 글 + 안내 글이 띠 폭에서 줄바꿈된 높이 + 위아래 여백(최소는 이전 고정 높이). 하단 바 위에 통째로 놓는다.
+func _status_height() -> float:
 	var portrait: bool = _is_portrait()
-	# 세로: 상태 두 줄이 줄바꿈돼도 들어가는 높이(장면은 남은 영역에 3배율로 맞는다: 844-60-150 >= 624).
-	var status_h: float = 76.0 if portrait else 52.0
+	if size.x < 200.0:
+		return 76.0 if portrait else 52.0
+	# 데스크톱 폭에서는 두 글이 각 한 줄이라 필요 높이가 이전 고정 높이(52) 이하로 나와 장면(1280x608)이 그대로 들어간다.
+	var inner_w: float = size.x - 2.0 * GAP - 2.0 * 10.0
+	var needed: float = _wrapped_text_height(_status_label, inner_w, portrait) + _wrapped_text_height(_note_label, inner_w, portrait) + 2.0 * 3.0 + (4.0 if portrait else 0.0)
+	return maxf(76.0 if portrait else 52.0, ceilf(needed))
+
+
+func _place_status() -> void:
+	if _status == null or _shop == null:
+		return
+	var status_h: float = _status_height()
 	_anchor(_status, 0.0, 1.0, 1.0, 1.0, GAP, -(GAP + NAV_H + 4.0 + status_h), -GAP, -(GAP + NAV_H + 4.0))
 	_shop.inset_top = GAP + HUD_H + 4.0
 	_shop.inset_bottom = GAP + NAV_H + 4.0 + status_h + 4.0
+
+
+func _apply_layout() -> void:
+	var portrait: bool = _is_portrait()
+	_place_status()
 	var side: int = 6 if portrait else maxi(6, int((size.x - 820.0) * 0.5))
 	_drawer_margin.add_theme_constant_override("margin_left", side)
 	_drawer_margin.add_theme_constant_override("margin_right", side)
@@ -1128,6 +1158,7 @@ func _refresh_status() -> void:
 		_last_status_text = combined
 		_status_label.text = text
 		_note_label.text = note
+		_place_status()
 
 
 func _idle_status_text() -> String:
@@ -1229,6 +1260,8 @@ func _customer_card(cd: Dictionary) -> PanelContainer:
 	var row: HBoxContainer = HBoxContainer.new()
 	row.add_theme_constant_override("separation", 8)
 	var name_label: Label = _label(str(cd["name"]), 19, VERMILION)
+	# 이름은 한 줄로(이름이 길면 별/점수 폭을 뺀 나머지에서 줄어든다). 점수 칸은 아래에서 글자 폭만큼 보장한다.
+	name_label.autowrap_mode = TextServer.AUTOWRAP_OFF
 	row.add_child(name_label)
 	var meter: StarMeterScript = StarMeterScript.new()
 	meter.name = "Stars_" + str(cd["id"])
@@ -1237,7 +1270,10 @@ func _customer_card(cd: Dictionary) -> PanelContainer:
 	row.add_child(meter)
 	var score: Label = _label("%d점" % int(cd["score"]), 17, INK)
 	score.name = "Score_" + str(cd["id"])
+	# 점수는 줄바꿈 없이 한 줄: 자동 줄바꿈 라벨은 최소 폭이 거의 0 이라 "71점"이 세로로 쪼개졌다.
+	score.autowrap_mode = TextServer.AUTOWRAP_OFF
 	score.size_flags_horizontal = Control.SIZE_SHRINK_END
+	score.custom_minimum_size = Vector2(score.get_theme_font("font").get_string_size(score.text, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 17).x + 4.0, 0.0)
 	row.add_child(score)
 	cb.add_child(row)
 	cb.add_child(_label(str(cd["persona"]), 13, MUTED))
