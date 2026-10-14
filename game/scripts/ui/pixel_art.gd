@@ -124,6 +124,39 @@ static func scaled_tex(img: Image, factor: int) -> ImageTexture:
 	return ImageTexture.create_from_image(big)
 
 
+## 원본 저해상도 그림에는 글자를 넣지 않는다. 메달과 잡지는 형태/색으로 읽히게 한다.
+static func contest_badge_image(band: int) -> Image:
+	var img: Image = Image.create(32, 24, false, Image.FORMAT_RGBA8)
+	img.fill(Color.TRANSPARENT)
+	var metal: Color = _c("bd8051") if band == 1 else (_c("c7d4dc") if band == 2 else _c("e9b846"))
+	if band == 0:
+		metal = _c("a7a18b")
+	img.fill_rect(Rect2i(7, 3, 6, 7), _c("c6573d"))
+	img.fill_rect(Rect2i(19, 3, 6, 7), _c("376e70"))
+	img.fill_rect(Rect2i(10, 8, 12, 12), _c("543b2c"))
+	img.fill_rect(Rect2i(9, 10, 14, 8), metal)
+	img.fill_rect(Rect2i(12, 9, 8, 10), metal)
+	img.fill_rect(Rect2i(12, 12, 8, 3), _c("faf0cf"))
+	img.fill_rect(Rect2i(13, 15, 6, 2), _c("a65138"))
+	if band == 0:
+		img.fill_rect(Rect2i(12, 19, 8, 2), _c("a7a18b"))
+	return img
+
+
+static func magazine_image() -> Image:
+	var img: Image = Image.create(48, 28, false, Image.FORMAT_RGBA8)
+	img.fill(Color.TRANSPARENT)
+	img.fill_rect(Rect2i(4, 2, 40, 24), _c("6b5340"))
+	img.fill_rect(Rect2i(5, 2, 37, 22), _c("f7eac8"))
+	img.fill_rect(Rect2i(8, 5, 30, 3), _c("a65035"))
+	img.fill_rect(Rect2i(8, 11, 13, 10), _c("c3d1b5"))
+	img.fill_rect(Rect2i(10, 12, 9, 4), _c("aa5b41"))
+	img.fill_rect(Rect2i(12, 16, 6, 5), _c("e5b965"))
+	for y in [11, 14, 17, 20]:
+		img.fill_rect(Rect2i(25, y, 13 if y != 20 else 8, 1), _c("b5a38a"))
+	return img
+
+
 static func _c(hex: String) -> Color:
 	return Color.html(hex)
 

@@ -11,6 +11,8 @@ extends SceneTree
 const SaveServiceScript = preload("res://scripts/services/save_service.gd")
 const ResearchScript = preload("res://scripts/domain/ramen_research.gd")
 const ExplorationScript = preload("res://scripts/domain/ingredient_exploration.gd")
+const ContestScript = preload("res://scripts/domain/ramen_contest.gd")
+const IngredientCatalog = preload("res://scripts/domain/ingredient_catalog.gd")
 
 # scale: 장면 정수 배율의 하한. 등각 장면의 의도한 캔버스에 맞춘 값이다 — 가로 320x152 → 1280x608 (배율 4),
 # 세로 176x264 → 352x528 (배율 2, 이전 128x208 프론탈 장면은 배율 3). 화면 55% 이상/뷰포트 포함/HUD 비겹침 검사는 그대로다.
@@ -564,6 +566,8 @@ func _run_profile(tag: String, vp: Vector2i, expect_scale: int) -> void:
 	await _run_growth_failure(holder, tag, vp)
 	await _run_exploration(holder, tag, vp)
 	await _run_exploration_failure(holder, tag, vp)
+	await _run_contests(holder, tag, vp)
+	await _run_contest_failure(holder, tag, vp)
 
 	holder.queue_free()
 	await _frames(2)
@@ -600,7 +604,7 @@ func _run_research(holder: SubViewport, tag: String, vp: Vector2i) -> void:
 
 	# 1) 기존 탭 순서/제목은 그대로고 연구 탭이 5번째로 붙는다. 개발 버튼으로 서랍을 열고 연구 탭을 연다.
 	# 적응(성장 단계): 여섯 번째 "성장" 탭이 붙었다. 기존 0~4번 탭의 순서/제목/동작은 그대로 검사한다.
-	_check(tabs.get_tab_count() == 7, tag + ": 기존 여섯 탭과 탐색 탭")
+	_check(tabs.get_tab_count() == 8, tag + ": 기존 탭 번호 유지와 새 대회 탭")
 	var titles: Array = ["개발", "시식", "노트", "영업", "연구", "성장"]
 	for i in titles.size():
 		_check(tabs.get_tab_title(i) == str(titles[i]), "%s: 탭 %d 제목 %s" % [tag, i, tabs.get_tab_title(i)])
@@ -1012,7 +1016,7 @@ func _run_exploration(holder: SubViewport, tag: String, vp: Vector2i) -> void:
 	var app: Node = await _spawn(holder, dir)
 	var st: Object = _state(app)
 	await _open_exploration(app)
-	_check(tabs_of(app).get_tab_count() == 7 and tabs_of(app).get_tab_title(6) == "탐색", tag + ": 탐색 탭 번호")
+	_check(tabs_of(app).get_tab_count() == 8 and tabs_of(app).get_tab_title(6) == "탐색", tag + ": 탐색 탭 번호")
 	_check(_btn_disabled(app, "ExpeditionDepart_harbor") and _btn_disabled(app, "ExpeditionDepart_mountain"), tag + ": 등급 1에서 항구/산지 잠금")
 	_check(not _btn_disabled(app, "ExpeditionDepart_market") and _text_of(app, "RegionInfo_market").contains("3,000"), tag + ": 실제 장터 가격과 출발")
 	await _exploration_reach(app, vp)
@@ -1185,6 +1189,7 @@ func _run_exploration(holder: SubViewport, tag: String, vp: Vector2i) -> void:
 	app.call("_on_exploration_depart", "market")
 	_check(_dict_str(app) == before and _text_of(app, "ExplorationMessage").contains("시식"), tag + ": 시식 준비 중 탐색 거부")
 	app.call("_on_work_cancel")
+	await _run_high_contests(app, holder, tag, vp)
 	app.queue_free()
 	await _frames(2)
 	saver.remove_known_files()
@@ -1248,6 +1253,216 @@ func _run_exploration_failure(holder: SubViewport, tag: String, vp: Vector2i) ->
 	app.queue_free()
 	await _frames(2)
 	_check(_read_file(saver.main_path()) == garbage, tag + ": 닫아도 원본 손상 저장 보존")
+	saver.remove_known_files()
+	DirAccess.remove_absolute(dir)
+
+
+func _open_contests(app: Node) -> void:
+	app.call("_open_overlay", 7)
+	await _settle()
+	(tabs_of(app).get_child(7) as ScrollContainer).scroll_vertical = 0
+	await _settle()
+
+
+func _contest_cfg(band: int) -> Dictionary:
+	for broth in IngredientCatalog.items("broth"):
+		for tare in IngredientCatalog.items("tare"):
+			for oil in IngredientCatalog.items("oil"):
+				for noodle in IngredientCatalog.items("noodle"):
+					for topping in IngredientCatalog.items("topping"):
+						for cook in IngredientCatalog.items("cook"):
+							var cfg: Dictionary = {"broth": broth["id"], "tare": tare["id"], "oil": oil["id"], "noodle": noodle["id"], "topping": topping["id"], "cook": cook["id"], "price": 9000}
+							if int(ContestScript.evaluate("clear_bowl", cfg)["band"]) == band:
+								return cfg
+	_check(false, "대회 QA 증인 구성이 없어요: %d" % band)
+	return {}
+
+
+func _contest_reach(app: Node, vp: Vector2i) -> void:
+	for name in ["ContestSummary", "ContestRules"]:
+		await _reachable(app, vp, name)
+	for i in 8:
+		await _reachable(app, vp, "TabLink_" + str(i))
+	for id in ContestScript.ids():
+		for prefix in ["ContestTitle_", "ContestLock_", "ContestEnter_"]:
+			await _reachable(app, vp, prefix + id)
+	_overflow(app, vp, "콘테스트 조건/탭/출품 버튼")
+
+
+func _run_contests(holder: SubViewport, tag: String, vp: Vector2i) -> void:
+	var dir: String = _data_root.path_join(tag + "_contests")
+	DirAccess.make_dir_recursive_absolute(dir)
+	var saver: SaveServiceScript = SaveServiceScript.new(dir)
+	saver.remove_known_files()
+	var app: Node = await _spawn(holder, dir)
+	app.set_process(false)
+	var st: Object = _state(app)
+	await _open_contests(app)
+	_check(tabs_of(app).get_tab_count() == 8 and tabs_of(app).get_tab_title(7) == "대회", tag + ": 기존7 탭 번호 유지 + 대회8")
+	await _contest_reach(app, vp)
+	(tabs_of(app).get_child(7) as ScrollContainer).scroll_vertical = 0
+	await _settle()
+	await _shot(holder, tag + "_42_contest_locked.png")
+	var before: String = _dict_str(app)
+	app.call("_on_contest_enter", "clear_bowl")
+	_check(_dict_str(app) == before and _btn_disabled(app, "ContestEnter_clear_bowl"), tag + ": 첫날 직접 출품도 거부")
+	_domain_taste(app, _contest_cfg(1), "동메달 후보")
+	# 이 인스턴스에서 정지한 심사 시계는 영업 종료 프레임을 처리할 때만 잠시 다시 켠다.
+	app.set_process(true)
+	await _service_day_via_ui(app, tag)
+	app.set_process(false)
+	# 이 인스턴스에서 정지한 심사 시계는 영업 종료 프레임을 처리할 때만 잠시 다시 켠다.
+	app.set_process(true)
+	await _service_day_via_ui(app, tag)
+	app.set_process(false)
+	await _open_contests(app)
+	await _reachable(app, vp, "ContestEnter_clear_bowl")
+	var cash: int = int(st.get("wallet"))
+	_press(app, "ContestEnter_clear_bowl")
+	await _settle()
+	_check(int(st.get("wallet")) == cash - 2000 + 4000 and float(app.get("_contest_left")) > 0.0, tag + ": 동메달 비용/상금1회, 심사 연출")
+	app.call("advance_contest", 0.5)
+	await _settle()
+	await _reachable(app, vp, "ContestJudging")
+	await _shot(holder, tag + "_43_contest_judging.png")
+	before = _dict_str(app)
+	app.call("_on_contest_enter", "clear_bowl")
+	app.call("_on_exploration_depart", "market")
+	var taste: Dictionary = app.call("start_tasting")
+	app.call("_on_price_step", 100)
+	_check(_dict_str(app) == before and not bool(taste["ok"]), tag + ": 심사 연출 중 중복 출품/탐색/시식/편집 잠금")
+	_check(not bool((app.call("advance_contest", NAN) as Dictionary)["ok"]), tag + ": 잘못된 심사 시간 거부")
+	app.call("advance_contest", 2.0)
+	await _settle()
+	await _reachable(app, vp, "ContestResult")
+	await _reachable(app, vp, "ContestFeedback")
+	(tabs_of(app).get_child(7) as ScrollContainer).scroll_vertical = 0
+	await _settle()
+	_overflow(app, vp, "동메달 결과/재개발 힌트")
+	await _shot(holder, tag + "_44_contest_result.png")
+	app.call("_on_contest_enter", "clear_bowl")
+	_check(_dict_str(app) == before, tag + ": 연출 완료도 당일 중복 출품 불변")
+	# 이 인스턴스에서 정지한 심사 시계는 영업 종료 프레임을 처리할 때만 잠시 다시 켠다.
+	app.set_process(true)
+	await _service_day_via_ui(app, tag)
+	app.set_process(false)
+	_domain_taste(app, _contest_cfg(3), "잡지 한 그릇")
+	await _open_contests(app)
+	await _reachable(app, vp, "ContestEnter_clear_bowl")
+	cash = int(st.get("wallet"))
+	_press(app, "ContestEnter_clear_bowl")
+	app.call("advance_contest", 2.0)
+	await _settle()
+	_check(int(st.get("wallet")) == cash - 2000 + 14000, tag + ": 동→금 상금 차액14000")
+	await _reachable(app, vp, "MagazineStory_clear_bowl")
+	await _reachable(app, vp, "MagazineAccept_clear_bowl")
+	_overflow(app, vp, "수상 메뉴 잡지 제안")
+	await _shot(holder, tag + "_45_magazine_offer.png")
+	cash = int(st.get("wallet"))
+	_press(app, "MagazineAccept_clear_bowl")
+	await _settle()
+	_check(int(st.get("wallet")) == cash + 3000 and _text_of(app, "MagazineStory_clear_bowl").contains("잡지 한 그릇"), tag + ": 실제 메뉴 소개/협조비1회")
+	await _reachable(app, vp, "MagazineStory_clear_bowl")
+	await _reachable(app, vp, "MagazineStatus_clear_bowl")
+	await _shot(holder, tag + "_46_magazine_published.png")
+	before = _dict_str(app)
+	app.call("_on_magazine_accept", "clear_bowl")
+	_check(_dict_str(app) == before, tag + ": 중복 잡지 수락 불변")
+	app.notification(Node.NOTIFICATION_WM_CLOSE_REQUEST)
+	app.queue_free()
+	await _frames(2)
+	app = await _spawn(holder, dir)
+	app.set_process(false)
+	st = _state(app)
+	await _open_contests(app)
+	_check(_dict_str(app) == before and float(app.get("_contest_left")) == 0.0, tag + ": 재시작 메달/소개/비용 유지, 연출은 보상 아님")
+	await _reachable(app, vp, "ContestResult")
+	_overflow(app, vp, "출품/잡지 재시작")
+	await _shot(holder, tag + "_47_contest_reloaded.png")
+	app.queue_free()
+	await _frames(2)
+	saver.remove_known_files()
+	DirAccess.remove_absolute(dir)
+
+
+## 앞선 탐색 QA가 실제 승급/선택으로 얻은 상태를 재사용한다. 새 메뉴는 실제 시식하고 출품은 UI로 한다.
+func _run_high_contests(app: Node, holder: SubViewport, tag: String, vp: Vector2i) -> void:
+	var st: Object = _state(app)
+	var deep: Dictionary = {"broth": "broth_tonkotsu", "tare": "tare_shio", "oil": "oil_garlic", "noodle": "noodle_thick", "topping": "topping_egg", "cook": "cook_normal", "price": 9000}
+	_domain_taste(app, deep, "진국 대회")
+	await _open_contests(app)
+	await _reachable(app, vp, "ContestEnter_deep_bowl")
+	_press(app, "ContestEnter_deep_bowl")
+	app.call("advance_contest", 2.0)
+	await _settle()
+	_check(int((st.call("contest_best", "deep_bowl") as Dictionary).get("band", 0)) == 3, tag + ": 진한 대회 실제 금메달")
+	await _reachable(app, vp, "MagazineAccept_deep_bowl")
+	_press(app, "MagazineAccept_deep_bowl")
+	await _settle()
+	await _reachable(app, vp, "MagazineStory_deep_bowl")
+	_overflow(app, vp, "진한 대회/잡지")
+	await _shot(holder, tag + "_48_contest_deep.png")
+	_check(bool((st.call("serve") as Dictionary)["ok"]), tag + ": 다음 출품일 실제 정산")
+	var regional: Dictionary = {"broth": "broth_clam", "tare": "tare_plum", "oil": "oil_pepper", "noodle": "noodle_medium", "topping": "topping_mushroom", "cook": "cook_normal", "price": 9000}
+	_domain_taste(app, regional, "산과 바다 라멘")
+	await _open_contests(app)
+	await _reachable(app, vp, "ContestEnter_regional_bowl")
+	_press(app, "ContestEnter_regional_bowl")
+	app.call("advance_contest", 2.0)
+	await _settle()
+	_check(int((st.call("contest_best", "regional_bowl") as Dictionary).get("band", 0)) == 3, tag + ": 발견한 재료 출품/지역 금메달")
+	await _reachable(app, vp, "MagazineAccept_regional_bowl")
+	_press(app, "MagazineAccept_regional_bowl")
+	await _settle()
+	await _reachable(app, vp, "MagazineStory_regional_bowl")
+	_overflow(app, vp, "지역 대회/잡지")
+	await _shot(holder, tag + "_49_contest_regional.png")
+	var probe: Dictionary = _load_probe(str((app.get("data_location") as Dictionary)["dir"]))
+	_check(str(probe["status"]) == "ok" and JSON.stringify((probe["state"] as Object).call("to_dict"), "", true) == _dict_str(app), tag + ": 높은 등급2 대회/잡지 실제 파일 왕복")
+
+
+func _run_contest_failure(holder: SubViewport, tag: String, vp: Vector2i) -> void:
+	var dir: String = _data_root.path_join(tag + "_contest_failure")
+	DirAccess.make_dir_recursive_absolute(dir)
+	var saver: SaveServiceScript = SaveServiceScript.new(dir)
+	saver.remove_known_files()
+	var app: Node = await _spawn(holder, dir)
+	app.set_process(false)
+	var st: Object = _state(app)
+	_domain_taste(app, _contest_cfg(3), "저장 확인 메뉴")
+	_check(bool((st.call("serve") as Dictionary)["ok"]) and bool((st.call("serve") as Dictionary)["ok"]), tag + ": 실패 시험 정상 일차 준비")
+	_check(bool(app.call("_persist")), tag + ": 거래 전 파일 저장")
+	var old_file: String = _read_file(saver.main_path())
+	DirAccess.make_dir_recursive_absolute(saver.tmp_path())
+	await _open_contests(app)
+	_press(app, "ContestEnter_clear_bowl")
+	var pending: String = _dict_str(app)
+	app.call("_on_contest_enter", "clear_bowl")
+	app.call("_on_magazine_accept", "clear_bowl")
+	_check(_dict_str(app) == pending and _text_of(app, "ContestMessage").contains("저장하지 못했"), tag + ": 심사 중 중복 입력이 저장 실패 안내/잔액을 덮지 않음")
+	app.call("advance_contest", 2.0)
+	await _settle()
+	_check(_read_file(saver.main_path()) == old_file and _text_of(app, "ContestMessage").contains("저장하지 못했"), tag + ": 실제 파일 쓰기 실패/원본 보존/거짓 성공 없음")
+	await _reachable(app, vp, "ContestMessage")
+	_overflow(app, vp, "출품 저장 실패")
+	await _shot(holder, tag + "_50_contest_save_failed.png")
+	var snapshot: String = _dict_str(app)
+	app.call("_on_contest_enter", "clear_bowl")
+	_check(_dict_str(app) == snapshot, tag + ": 저장 실패 뒤 재출품도 비용 중복 없음")
+	DirAccess.remove_absolute(saver.tmp_path())
+	await _open_contests(app)
+	var saved: Dictionary = app.call("manual_save")
+	_check(bool(saved["ok"]), tag + ": 막힌 경로 제거 뒤 수동 저장 회복")
+	app.queue_free()
+	await _frames(2)
+	app = await _spawn(holder, dir)
+	app.set_process(false)
+	await _open_contests(app)
+	_check(_dict_str(app) == snapshot, tag + ": 저장 회복/재시작 상태 보존")
+	await _reachable(app, vp, "ContestResult")
+	await _shot(holder, tag + "_51_contest_save_recovered.png")
+	app.queue_free()
+	await _frames(2)
 	saver.remove_known_files()
 	DirAccess.remove_absolute(dir)
 
@@ -1336,7 +1551,7 @@ func _run_growth(holder: SubViewport, tag: String, vp: Vector2i) -> void:
 	var witnesses: Dictionary = ResearchScript.WITNESSES
 
 	# 1) 잠긴 첫 화면: 탭 6개(0~4 그대로 + 성장), 등급 1, 승급/구매/고용 모두 꺼짐 + 이유 표시.
-	_check(tabs.get_tab_count() == 7 and tabs.get_tab_title(5) == "성장", tag + ": 성장 번호 유지 + 탐색 탭")
+	_check(tabs.get_tab_count() == 8 and tabs.get_tab_title(5) == "성장", tag + ": 성장 번호 유지 + 탐색 탭")
 	_press(app, "DevButton")
 	await _settle()
 	await _open_growth_tab(app)

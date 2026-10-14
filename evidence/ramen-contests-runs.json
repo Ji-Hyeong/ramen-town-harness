@@ -1,0 +1,120 @@
+{
+  "date": "2026-10-15",
+  "scope": "Feedback10/11:3 themed paid contests, improvement-only awards and3 finite magazine articles, schema5",
+  "roles": {
+    "Claude Code": "Bounded scoring/catalog implementation + focused scoring tests; short read-only persistence review",
+    "Codex": "Transactions/parser/migration, UI/art/integration tests, actual verification, reproduced review findings and corrected code, publication"
+  },
+  "runs": [
+    {
+      "phase": "contest-scoring-v1",
+      "max_turns": 16,
+      "actual_exit_status": 1,
+      "observed_turns": 1,
+      "subtype": "success",
+      "is_error": true,
+      "report_present": true,
+      "permission_denials": [],
+      "duration_ms": 300,
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0
+      },
+      "reported_total_cost_usd": 0
+    },
+    {
+      "phase": "contest-scoring-v2",
+      "max_turns": 16,
+      "actual_exit_status": 0,
+      "observed_turns": 11,
+      "subtype": "success",
+      "is_error": false,
+      "report_present": true,
+      "permission_denials": [],
+      "duration_ms": 112799,
+      "usage": {
+        "input_tokens": 12,
+        "output_tokens": 17272,
+        "cache_creation_input_tokens": 44790,
+        "cache_read_input_tokens": 132835
+      },
+      "reported_total_cost_usd": 0.36518750000000005
+    },
+    {
+      "phase": "contest-review-v1",
+      "max_turns": 8,
+      "actual_exit_status": 0,
+      "observed_turns": 6,
+      "subtype": "success",
+      "is_error": false,
+      "report_present": true,
+      "permission_denials": [],
+      "duration_ms": 68970,
+      "usage": {
+        "input_tokens": 8,
+        "output_tokens": 8067,
+        "cache_creation_input_tokens": 19688,
+        "cache_read_input_tokens": 46710
+      },
+      "reported_total_cost_usd": 0.164109
+    }
+  ],
+  "usage_note": "Observed response fields only. API cost estimates are not subscription charges or quota percentages; no guaranteed50:50 allocation. Raw reports/session/account data are excluded.",
+  "checks": {
+    "scoring": {
+      "checks": 100,
+      "failures": 0,
+      "exit_status": 0
+    },
+    "full": {
+      "tests": 88,
+      "checks": 50092,
+      "failures": 0,
+      "exit_status": 0
+    },
+    "layout": {
+      "checks": 10122,
+      "failures": 0,
+      "exit_status": 0
+    },
+    "native": {
+      "checks": 10330,
+      "failures": 0,
+      "exit_status": 0,
+      "engine_errors": 0,
+      "images": 104,
+      "new_images_published": 20,
+      "pack_sha256": "b457a143035eb449d44c3293c60f827a07a4aaea55dd9b350b232f6cb17008cd",
+      "source_files_identical": 63
+    },
+    "actual_old_code_v4_fixtures": {
+      "generated_fixtures": 6,
+      "generation_checks": 109,
+      "migration_backup_roundtrip_checks": 36,
+      "complete_semantic_comparisons": 6,
+      "failures": 0
+    },
+    "packed_main": {
+      "frames": 60,
+      "exit_status": 0,
+      "engine_errors": 0,
+      "save_path": "isolated scratch"
+    }
+  },
+  "failure_history": [
+    "Initial Claude request failed OAuth session refresh; scoped existing-login refresh restored the same contract without new credentials.",
+    "Read-only review found article best-at-claim chronology/source and pruned-best receipt mismatches. Codex reproduced5 invalid saves (10 failing assertions), then retained regressions passed.",
+    "First layout QA40 failures were caused by its own frozen process suppressing service-completion frames; fixed QA clock handling, game service rules unchanged.",
+    "First native10328/104/0 passed, but visual review found transient duplicate-input guidance overwriting saved-result guidance. UI now retains save status; new regression and final native10330/104/0 passed.",
+    "First app preparation used a relative project path and correctly refused it. Corrected absolute path, fresh import/export/build succeeded."
+  ],
+  "limitations": [
+    "Local plaintext histories are not cryptographically authenticated; pruned old attempt counts cannot independently be proven.",
+    "iPhone export/physical-device behavior and new milestone user play feel remain unverified.",
+    "Magazine stories are three fixed contest-linked articles; other magazine/festival/random event systems and staff training remain future work."
+  ],
+  "live_save_written_by_tests": false,
+  "original_duplicates_preserved": 47
+}
