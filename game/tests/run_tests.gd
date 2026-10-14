@@ -17,6 +17,8 @@ const ArtScript = preload("res://scripts/ui/pixel_art.gd")
 const PainterScript = preload("res://scripts/ui/shop_painter.gd")
 const SceneScript = preload("res://scripts/ui/shop_scene.gd")
 const Research = preload("res://scripts/domain/ramen_research.gd")
+const WorkScript = preload("res://scripts/ui/tasting_work.gd")
+const WorkViewScript = preload("res://scripts/ui/tasting_work_view.gd")
 
 const ARG: String = "--test-data-dir="
 
@@ -61,6 +63,7 @@ func _initialize() -> void:
 		test_research_rejections_do_not_mutate, test_research_service_lock, test_research_overflow,
 		test_research_persistence_after_delete, test_research_v1_migration, test_research_malformed_progress,
 		test_research_rejects_fabricated_scores, test_research_load_rejects_unmet_retained_record,
+		test_tasting_work_state, test_tasting_work_phases_and_motion, test_portraits_and_glyph_free_art,
 	]
 	var ran: int = 0
 	for t in tests:
@@ -1287,6 +1290,142 @@ func test_research_load_rejects_unmet_retained_record() -> void:
 
 
 ## 준비 시간 73초(가장 빠른 축)인 레시피: 서버/자리 병목 없이 요리사 속도만 보게 하는 기준.
+# ---------- 시식 준비 작업 / 초상 / 글자 없는 장면 ----------
+
+func test_tasting_work_state() -> void:
+	var w: WorkScript = WorkScript.new()
+	_check(WorkScript.DURATION >= 3.0 and WorkScript.DURATION <= 5.0, "준비 시간은 3~5초")
+	_check(not w.is_running() and not w.advance(1.0) and w.progress() == 0.0, "시작 전 진행은 무시")
+	var snap: Dictionary = {"config": _rich_cfg(), "name": "원본", "lineage_id": 0}
+	_check(w.start(snap), "시작")
+	_check(w.is_running() and w.progress() == 0.0, "시작 직후 진행률 0")
+	# 시작 스냅샷은 호출자 사본과 분리된다(바깥 딕셔너리를 바꿔도, 꺼낸 사본을 바꿔도 안 변함).
+	(snap["config"] as Dictionary)["price"] = 1
+	snap["name"] = "바뀜"
+	_check(int((w.snapshot()["config"] as Dictionary)["price"]) == 9500 and str(w.snapshot()["name"]) == "원본", "시작 뒤 원본 변경이 스냅샷에 영향 없음")
+	var copy: Dictionary = w.snapshot()
+	(copy["config"] as Dictionary)["price"] = 2
+	copy["name"] = "사본변경"
+	_check(int((w.snapshot()["config"] as Dictionary)["price"]) == 9500 and str(w.snapshot()["name"]) == "원본", "snapshot() 사본의 중첩 변경이 내부 스냅샷에 영향 없음")
+	# 중복 시작 거부: 진행/스냅샷이 그대로
+	_check(w.advance(1.0) == false and absf(w.progress() - 0.25) < 0.0001, "1초 진행 = 25%")
+	_check(not w.start({"config": _light_cfg(), "name": "다른", "lineage_id": 0}), "작업 중 중복 시작 거부")
+	_check(absf(w.progress() - 0.25) < 0.0001 and str(w.snapshot()["name"]) == "원본", "중복 시작이 진행/스냅샷을 바꾸지 않음")
+	# 비정상 시간: NaN/무한대/음수/0 은 진행도 완료도 만들지 않는다.
+	for bad in [NAN, INF, -INF, -1.0, 0.0]:
+		_check(w.advance(float(bad)) == false and w.is_running() and absf(w.progress() - 0.25) < 0.0001, "비정상 시간 무시: " + str(bad))
+	# 완료는 정확히 한 번
+	var done_count: int = 0
+	for i in 20:
+		if w.advance(0.5):
+			done_count += 1
+	_check(done_count == 1, "완료 신호는 정확히 한 번: %d" % done_count)
+	_check(not w.is_running() and w.advance(5.0) == false, "완료 뒤 추가 진행은 무시")
+	var taken: Dictionary = w.take_snapshot()
+	_check(str(taken["name"]) == "원본" and w.take_snapshot().is_empty(), "스냅샷은 한 번만 꺼낼 수 있어요")
+	# 큰 값 한 번에 완료
+	_check(w.start(snap) and w.advance(100.0) and not w.is_running(), "완료 뒤 다시 시작 가능, 큰 시간은 한 번에 완료")
+	# 취소: 완료 신호 없음, 상태 초기화
+	var c: WorkScript = WorkScript.new()
+	c.start(snap)
+	c.advance(1.0)
+	c.cancel()
+	_check(not c.is_running() and c.progress() == 0.0 and c.snapshot().is_empty(), "취소하면 초기화")
+	_check(c.advance(100.0) == false and c.take_snapshot().is_empty(), "취소 뒤 진행/완료 없음")
+	c.cancel()
+	_check(not c.is_running(), "취소 반복은 무해")
+	_end()
+
+
+func test_tasting_work_phases_and_motion() -> void:
+	var ends: Array = []
+	for ph in WorkScript.PHASES:
+		ends.append(float((ph as Dictionary)["end"]))
+	_check(WorkScript.PHASES.size() == 3 and float(ends[2]) == 1.0 and float(ends[0]) < float(ends[1]) and float(ends[1]) < float(ends[2]), "세 단계, 경계는 증가하고 마지막은 1.0")
+	_check(WorkScript.phase_for(0.0) == 0 and WorkScript.phase_for(0.44) == 0 and WorkScript.phase_for(0.45) == 1 and WorkScript.phase_for(0.79) == 1 and WorkScript.phase_for(0.8) == 2 and WorkScript.phase_for(1.0) == 2, "진행률별 단계")
+	var w: WorkScript = WorkScript.new()
+	w.start({"config": _rich_cfg()})
+	var seen: Array[int] = []
+	for i in 16:
+		w.advance(0.25)
+		var ph: int = w.phase_index()
+		if seen.is_empty() or seen[seen.size() - 1] != ph:
+			seen.append(ph)
+	_check(str(seen) == "[0, 1, 2]","단계가 국물→면→시식 순서로 한 번씩: " + str(seen))
+	# 연출 계산: 결정적이고, 진행/시간에 따라 실제로 달라진다.
+	var a: Dictionary = WorkViewScript.frame_params(0.3, 0.1)
+	_check(a == WorkViewScript.frame_params(0.3, 0.1), "같은 입력은 같은 연출 값")
+	var prev_level: float = -1.0
+	for i in 10:
+		var lv: float = float(WorkViewScript.frame_params(float(i) * 0.05, 0.0)["level"])
+		_check(lv >= prev_level, "국물 높이는 줄지 않아요")
+		prev_level = lv
+	_check(float(WorkViewScript.frame_params(0.0, 0.0)["level"]) == 0.0 and float(WorkViewScript.frame_params(0.45, 0.0)["level"]) == 1.0, "국물은 빈 솥에서 가득까지")
+	_check(float(WorkViewScript.frame_params(0.2, 0.0)["depth"]) == 0.0 and float(WorkViewScript.frame_params(0.625, 0.0)["depth"]) > 0.5 and float(WorkViewScript.frame_params(0.9, 0.0)["depth"]) == 0.0, "면 건지개는 면 단계에서만 잠겨요")
+	_check(float(WorkViewScript.frame_params(0.7, 0.0)["transfer"]) == 0.0 and float(WorkViewScript.frame_params(0.9, 0.0)["transfer"]) > 0.0, "면 옮기기는 시식 단계에서만")
+	_check(float(WorkViewScript.frame_params(0.9, 0.0)["bowl_alpha"]) > float(WorkViewScript.frame_params(0.5, 0.0)["bowl_alpha"]), "그릇은 시식 단계에서 또렷해져요")
+	_check(int(WorkViewScript.frame_params(0.3, 0.0)["flame"]) != int(WorkViewScript.frame_params(0.3, 0.13)["flame"]), "불꽃이 시간에 따라 일렁여요")
+	var view: WorkViewScript = WorkViewScript.new()
+	view.set_state(0.3, _rich_cfg())
+	var sig_a: String = view.signature()
+	view.set_state(0.6, _rich_cfg())
+	_check(sig_a != view.signature(), "진행이 달라지면 연출 서명이 달라져요")
+	view.free()
+	_end()
+
+
+func _diff_pixels(a: Image, b: Image) -> int:
+	var n: int = 0
+	for y in a.get_height():
+		for x in a.get_width():
+			if a.get_pixel(x, y) != b.get_pixel(x, y):
+				n += 1
+	return n
+
+
+func test_portraits_and_glyph_free_art() -> void:
+	var ids: Array = ArtScript.portrait_ids()
+	_check(str(ids) == str(Customers.ids()), "초상은 단골 세 분과 같은 id: " + str(ids))
+	var imgs: Array[Image] = []
+	for id in ids:
+		var img: Image = ArtScript.portrait_image(str(id))
+		_check(img.get_width() == 24 and img.get_height() == 24, "초상 크기 24x24: " + str(id))
+		var colors: Dictionary = {}
+		for y in 24:
+			for x in 24:
+				colors[img.get_pixel(x, y).to_html()] = true
+		_check(colors.size() >= 8, "초상 색 수 %d: %s" % [colors.size(), str(id)])
+		# 이미지는 RGBA8 이라 get_pixel 이 8비트로 양자화된 값을 돌려준다(부동소수 INK 와 직접 비교하면 어긋남).
+		# 기대값도 같은 RGBA8 1x1 이미지에 넣었다 읽어 같은 표현으로 비교한다.
+		var ink_probe: Image = ArtScript.new_image(1, 1)
+		ink_probe.set_pixel(0, 0, ArtScript.INK)
+		var ink8: Color = ink_probe.get_pixel(0, 0)
+		_check(img.get_pixel(0, 0) == ink8 and img.get_pixel(23, 0) == ink8 and img.get_pixel(0, 23) == ink8 and img.get_pixel(23, 23) == ink8, "초상 테두리(RGBA8 INK): " + str(id))
+		imgs.append(img)
+	for i in imgs.size():
+		for j in range(i + 1, imgs.size()):
+			_check(_diff_pixels(imgs[i], imgs[j]) >= 150, "초상 %s/%s 가 충분히 달라요: %d픽셀" % [str(ids[i]), str(ids[j]), _diff_pixels(imgs[i], imgs[j])])
+	_check(ArtScript.portrait_image("nobody").get_pixel(12, 12) != ArtScript.SKIN, "알 수 없는 id 는 얼굴 없는 빈 틀")
+	_check(ArtScript.open_lamp_image(true).get_data() != ArtScript.open_lamp_image(false).get_data(), "영업 등 켜짐/꺼짐이 달라요")
+	var lamp: Image = ArtScript.open_lamp_image(true)
+	_check(lamp.get_width() == 11 and lamp.get_height() == 8, "영업 등 크기")
+	# 장면 코드에는 글자 그리기가 없다(간판/대기 인원/영업 등 모두 도트).
+	for path in ["res://scripts/ui/shop_view.gd", "res://scripts/ui/shop_painter.gd", "res://scripts/ui/shop_scene.gd", "res://scripts/ui/tasting_work_view.gd"]:
+		if not FileAccess.file_exists(path):
+			continue
+		var f: FileAccess = FileAccess.open(path, FileAccess.READ)
+		_check(f != null, "코드 파일을 읽을 수 있어요: " + path)
+		if f == null:
+			continue
+		var src: String = f.get_as_text()
+		_check(src.find("draw_string") < 0 and src.find("draw_multiline_string") < 0 and src.find("GowunDodum") < 0, "장면 그리기 코드에 글자 그리기가 없어야 해요: " + path)
+	# 간판이 있는 세로/가로 배경 모두 여전히 그려지고 불투명하다.
+	for variant in [LayoutScript.PORTRAIT, LayoutScript.LANDSCAPE]:
+		var bg: Image = PainterScript.paint(LayoutScript.make(variant))
+		_check(bg.get_pixel(bg.get_width() / 2, bg.get_height() / 2).a == 1.0, variant + ": 간판 문양을 넣은 배경이 그려져요")
+	_end()
+
+
 func _fast_cfg(price: int = 9000) -> Dictionary:
 	return _cfg("broth_chicken", "tare_shio", "oil_scallion", "noodle_thin", "topping_nori", "cook_firm", price)
 

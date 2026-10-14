@@ -1,0 +1,215 @@
+{
+  "date": "2026-10-14",
+  "mode": "capture",
+  "renderer": "OpenGL 4.1 Metal, Apple M3 Pro",
+  "checks": 3852,
+  "failures": 0,
+  "exit_code": 0,
+  "engine_errors": 0,
+  "images": [
+    {
+      "file": "desktop_10_save_failed.png",
+      "width": 1280,
+      "height": 800,
+      "sha256": "556c9f5771e895d9894216b9f13c163923866c3bd9e3de2cb91e703c26de453b"
+    },
+    {
+      "file": "desktop_11_research_open.png",
+      "width": 1280,
+      "height": 800,
+      "sha256": "1b94a43eba5daf69b5bc39969b69e0ee9f79c24f91df61821ca218ea315e72d8"
+    },
+    {
+      "file": "desktop_12_research_progress.png",
+      "width": 1280,
+      "height": 800,
+      "sha256": "8c22f02307f448f05dca8e49e429b5d8dd042fc93f7298b3f794d11b945e58bb"
+    },
+    {
+      "file": "desktop_13_research_reloaded.png",
+      "width": 1280,
+      "height": 800,
+      "sha256": "c1bcfa3b2aa458bbe20a47422a100ab8f4cc68746e08c8724c52d169f3c8079d"
+    },
+    {
+      "file": "desktop_14_tasting_work.png",
+      "width": 1280,
+      "height": 800,
+      "sha256": "f044cbfeb6e7bbab4463f6f4d71e329a487de517d90aa849893e12fcf035d65b"
+    },
+    {
+      "file": "desktop_14b_feedback_portraits.png",
+      "width": 1280,
+      "height": 800,
+      "sha256": "e9e9216705fef9e4b54c089ddafd970aef1a634b43933d28bac5f4773d19dae9"
+    },
+    {
+      "file": "desktop_15_manual_save.png",
+      "width": 1280,
+      "height": 800,
+      "sha256": "f98e19f2ec88095df202ace92e0e2719d75095e825296251122c20cc9973564f"
+    },
+    {
+      "file": "desktop_16_manual_save_failed.png",
+      "width": 1280,
+      "height": 800,
+      "sha256": "78a42c5a1ad36696326e0d96127c15acd5d62523cb4029be9562cb41a20a7912"
+    },
+    {
+      "file": "desktop_1_shop_closed.png",
+      "width": 1280,
+      "height": 800,
+      "sha256": "5b5ba2c9d899d5083439ccbac1ae051e2167350155cf84254ab889fbf464c9d7"
+    },
+    {
+      "file": "desktop_2_dev_overlay.png",
+      "width": 1280,
+      "height": 800,
+      "sha256": "2885e49a8906f833fec51630c25fafb7ded90179cf5d8f8bb350c7b9285ca4b7"
+    },
+    {
+      "file": "desktop_3_lab_selected.png",
+      "width": 1280,
+      "height": 800,
+      "sha256": "008158d29a4f4b9f7b075f0fe41c24e3b8d43c264794c418bbc0f10f97029ccd"
+    },
+    {
+      "file": "desktop_4_feedback_v1.png",
+      "width": 1280,
+      "height": 800,
+      "sha256": "0e82cc7db13b3d149dcb063e4545043de200d2af7cd42d141be82bb51332fcc5"
+    },
+    {
+      "file": "desktop_5_comparison_v2.png",
+      "width": 1280,
+      "height": 800,
+      "sha256": "7cb7b8d329df7eec467c443569fc0c679a596f0764343b2e66a5dc5b0e54fb65"
+    },
+    {
+      "file": "desktop_6_notebook.png",
+      "width": 1280,
+      "height": 800,
+      "sha256": "cf6a1296488db42d354cb872b506714e0debfa6840b6adf47b539605c0b2f553"
+    },
+    {
+      "file": "desktop_7_service_mid.png",
+      "width": 1280,
+      "height": 800,
+      "sha256": "977992ea5ab1b43741b86d8c0ab3bd70cd8fffb2badd4b1965a4ac0941b01723"
+    },
+    {
+      "file": "desktop_8_result.png",
+      "width": 1280,
+      "height": 800,
+      "sha256": "bf23e8f8944e97cbd44dd6e5dbefb98685e4acb512b97d800edb35317392c24e"
+    },
+    {
+      "file": "desktop_9_reloaded.png",
+      "width": 1280,
+      "height": 800,
+      "sha256": "57b7343f92fbb4216f2502b8f6ad5129394e744109affc7b5a58e6872213a543"
+    },
+    {
+      "file": "portrait_10_save_failed.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "18e5a42ee4c9595b6e8ed74e7fdbfeccbfbd608382483ed3abb04c5fe99a653f"
+    },
+    {
+      "file": "portrait_11_research_open.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "2392ba9a41ef0f411b972b9d9528f9759adfd85c4bc591bb2ce8a83e7daf1022"
+    },
+    {
+      "file": "portrait_12_research_progress.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "41c8b3cb2603d3f6ab1026e76c79250484d6d39017e3c0216b5b08b8ea8ade50"
+    },
+    {
+      "file": "portrait_13_research_reloaded.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "d25200440720cafe7c9b4080c67d82c7d0acfb962f3eff0d2fafc6787cc04cb0"
+    },
+    {
+      "file": "portrait_14_tasting_work.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "a4dbf444ea5a570dff97a962ab99e3fb64cc2337e36d4f9b7e699928cc711139"
+    },
+    {
+      "file": "portrait_14b_feedback_portraits.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "71959c7c8c98a1dece078dbd85aa7e419d3f2c030b6fb30bd0ccd6ab0b937411"
+    },
+    {
+      "file": "portrait_15_manual_save.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "f3f26f8ebf580ef9f04a96042ef5c899c2b2909eafc7da5b92b6a007330abdad"
+    },
+    {
+      "file": "portrait_16_manual_save_failed.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "8ab109093788ab996ad2d78da563d7f27a52ba457d39d27417672326aeee1034"
+    },
+    {
+      "file": "portrait_1_shop_closed.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "87a96efb3146eff24dc838c8652472c861c47dfd2f934619f9c4d0e848257030"
+    },
+    {
+      "file": "portrait_2_dev_overlay.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "b99c1b8f2e8eea27228f88c9f8459a298663a54f768957da52730a47cfe0b57c"
+    },
+    {
+      "file": "portrait_3_lab_selected.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "c8e93f5c9430602e2f0c50fb3522636b631b84041ff45fa93bbb7a8c9437d855"
+    },
+    {
+      "file": "portrait_4_feedback_v1.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "5872df8b2bc2a19d906a848b9e31df458d19aa653824bfd3e865bd36888d058d"
+    },
+    {
+      "file": "portrait_5_comparison_v2.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "916079013cccc94a8a5f3df0feaccbf82ec7efc3814e0c7cc34b7a7375e4a321"
+    },
+    {
+      "file": "portrait_6_notebook.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "a9231f7da12b03b08ee06000e4ab3df470f415c7e9d25ac42d890a07b9136cce"
+    },
+    {
+      "file": "portrait_7_service_mid.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "b6d94034a431ae8a0de5002bd242adc6da0436922de8ca7322e5a217607cdb21"
+    },
+    {
+      "file": "portrait_8_result.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "84c45c8d192c507f927f6f583e76e209d8a262f19e2914a3c8124a063cad8440"
+    },
+    {
+      "file": "portrait_9_reloaded.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "8b101d53d23fe0df5cd600d7aa8007c923ce61a50a2a6c3c06a52d5bf78c1bb6"
+    }
+  ]
+}

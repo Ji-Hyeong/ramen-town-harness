@@ -1,0 +1,161 @@
+{
+  "date": "2026-10-14",
+  "dependency_commit": "fec299c0ce36d5c2b15bd9b73c26417241251115",
+  "scope": "Feedback items 1,2,5,6 only; Claude writes code/tests, Codex independently verifies. No rank/expansion/toppings/exploration/contests/events yet.",
+  "runs": [
+    {
+      "subtype": "error_max_turns",
+      "is_error": true,
+      "num_turns": 31,
+      "duration_ms": 437793,
+      "total_cost_usd": 1.6464491999999997,
+      "permission_denials": [],
+      "usage": {
+        "input_tokens": 60,
+        "cache_creation_input_tokens": 177305,
+        "cache_read_input_tokens": 3490092,
+        "output_tokens": 58810
+      },
+      "run": "feedback-play-feel-20261014",
+      "requested_max_turns": 30,
+      "observed_exit_code": 1,
+      "report_present": false,
+      "auth_failure": false,
+      "tool_counts": {
+        "Glob": 1,
+        "Read": 16,
+        "Grep": 8,
+        "Edit": 39,
+        "Write": 2
+      }
+    },
+    {
+      "subtype": "success",
+      "is_error": false,
+      "num_turns": 33,
+      "duration_ms": 255778,
+      "total_cost_usd": 3.1911639999999992,
+      "permission_denials": [],
+      "usage": {
+        "input_tokens": 30,
+        "cache_creation_input_tokens": 225288,
+        "cache_read_input_tokens": 2812228,
+        "output_tokens": 36228
+      },
+      "run": "feedback-play-feel-complete-20261014",
+      "requested_max_turns": 20,
+      "observed_exit_code": 0,
+      "report_present": true,
+      "auth_failure": false,
+      "tool_counts": {
+        "Read": 5,
+        "Edit": 26,
+        "Grep": 1
+      }
+    },
+    {
+      "subtype": "success",
+      "is_error": true,
+      "num_turns": 1,
+      "duration_ms": 3700,
+      "total_cost_usd": 3.1911639999999992,
+      "permission_denials": [],
+      "usage": {
+        "input_tokens": 0,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "output_tokens": 0
+      },
+      "run": "feedback-play-feel-correction-20261014",
+      "requested_max_turns": 10,
+      "observed_exit_code": 1,
+      "report_present": true,
+      "auth_failure": true,
+      "tool_counts": {}
+    },
+    {
+      "subtype": "success",
+      "is_error": false,
+      "num_turns": 9,
+      "duration_ms": 48753,
+      "total_cost_usd": 3.4417204999999993,
+      "permission_denials": [],
+      "usage": {
+        "input_tokens": 12,
+        "cache_creation_input_tokens": 11877,
+        "cache_read_input_tokens": 1402945,
+        "output_tokens": 6273
+      },
+      "run": "feedback-play-feel-correction-reauthed-20261014",
+      "requested_max_turns": 10,
+      "observed_exit_code": 0,
+      "report_present": true,
+      "auth_failure": false,
+      "tool_counts": {
+        "Grep": 1,
+        "Edit": 6,
+        "Read": 1
+      }
+    }
+  ],
+  "usage_note": "Observed CLI fields only. Resumed total_cost_usd may be cumulative; do not sum these as per-call subscription charges or derive quota percentages.",
+  "independent_verification": {
+    "first_tests": {
+      "exit_code": 1,
+      "tests": 45,
+      "checks": 41101,
+      "failures": 3,
+      "cause": "RGBA8 expectation mismatch"
+    },
+    "first_layout": {
+      "exit_code": 0,
+      "qa_executed": false,
+      "accepted": false,
+      "cause": "QA FileAccess parse error"
+    },
+    "final_tests": {
+      "exit_code": 0,
+      "tests": 45,
+      "checks": 41101,
+      "failures": 0
+    },
+    "final_layout": {
+      "exit_code": 0,
+      "checks": 3784,
+      "failures": 0,
+      "screenshots": 0
+    },
+    "native": {
+      "exit_code": 0,
+      "checks": 3852,
+      "failures": 0,
+      "png_count": 34,
+      "engine_errors": 0,
+      "manifest": "game/docs/feedback-screenshots/manifest.json",
+      "pack_sha256": "614ce2d58af263620ebde9819cce7c2d338398605f843a1f8cf57c0f5f37535a"
+    },
+    "player_save_copy": {
+      "exit_code": 0,
+      "schema_version": 2,
+      "values_preserved": true,
+      "live_file_written_by_test": false
+    },
+    "player_pack_main_smoke": {
+      "exit_code": 0,
+      "frames": 60,
+      "isolated_save": true
+    }
+  },
+  "limitations": [
+    "Real manual play feel for this milestone and iPhone unverified.",
+    "Preparation duration is fixed; no separate ingredient-production system.",
+    "Unexplained identical scene duplicate and empty directories preserved, excluded from public changes; no creator identified.",
+    "Native QA had a prolonged pause; cause unknown."
+  ],
+  "private_exclusions": [
+    "raw sessions/accounts/auth logs",
+    "live player saves and their private test copies",
+    "native engines/apps",
+    "unexpected duplicate paths"
+  ]
+}
