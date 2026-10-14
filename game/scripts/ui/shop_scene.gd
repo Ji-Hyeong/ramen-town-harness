@@ -51,7 +51,8 @@ static func _item(layout: Dictionary, key: String, img: Image, top_left: Vector2
 
 ## ent: ServiceSession.entities()(없으면 빈 Dictionary), vis: 줄 선 손님의 부드러운 화면 위치(ShopView 가 관리), cache: 이미지 캐시.
 ## 반환: {"items": 정렬 전 사람/그릇 항목, "bubbles": [{kind,pos}]}. 가구는 호출한 쪽이 섞어서 Painter.sort_items 로 정렬한다.
-static func build(layout: Dictionary, ent: Dictionary, bowl_config: Dictionary, anim: float, vis: Dictionary, cache: Dictionary) -> Dictionary:
+## staff: 그릴 보조 직원 id 목록(영업 중에는 세션의 불변 직원 스냅샷, 영업 전에는 실제 고용 목록). 비어 있으면 요리사/서버만 그린다.
+static func build(layout: Dictionary, ent: Dictionary, bowl_config: Dictionary, anim: float, vis: Dictionary, cache: Dictionary, staff: Array = []) -> Dictionary:
 	var items: Array = []
 	var bubbles: Array = []
 	var n: int = 100000
@@ -93,6 +94,29 @@ static func build(layout: Dictionary, ent: Dictionary, bowl_config: Dictionary, 
 	n += 1
 	if carrying:
 		items.append(_item(layout, "bowl", _bowl_img(cache, bowl_config), server_pos + Vector2(-6.0, -9.0), sdepth + 0.05, n))
+		n += 1
+	# 보조 직원: 고용했을 때만. 위치는 ShopLayout.staff_spots(안전 자리), 깊이는 발 위치(다른 사람과 같은 눈금)다.
+	# 모션은 지원 역할만 보여 준다: 조리 보조는 요리사가 조리 중일 때 같이 손을 움직이고, 홀 보조는 서버가 서빙 중일 때 쟁반을 들고 거든다.
+	# 주문 순서/조리/서빙 일정은 요리사·서버 그대로이며 여기서는 아무것도 계산하지 않는다.
+	var spots: Dictionary = layout.get("staff_spots", {})
+	for sid in staff:
+		var staff_id: String = str(sid)
+		if not spots.has(staff_id):
+			continue
+		var spot: Dictionary = spots[staff_id]
+		var spos: Vector2 = spot["pos"]
+		var is_prep: bool = staff_id == "prep_assistant"
+		var look_idx: int = Art.LOOK_PREP_ASSISTANT if is_prep else Art.LOOK_FLOOR_ASSISTANT
+		var spose: String = "stand"
+		var sframe: int = int(anim * 1.2) % 2
+		if is_prep and cooking:
+			spose = "cook"
+			sframe = int(anim * 3.5) % 2
+		elif not is_prep and int(ent.get("server_state", Session.S_IDLE)) != Session.S_IDLE:
+			spose = "carry"
+			sframe = int(anim * 2.0) % 2
+		var sback: bool = bool(spot["back"])
+		items.append(_item(layout, "staff|%s|%s|%d" % [staff_id, spose, sframe], _person_img(cache, look_idx, spose, sframe, sback), spos - foot, Layouts.depth_of_screen(layout, spos), n))
 		n += 1
 	# 주방 작업대 위에서 서빙을 기다리는 그릇(최대 3개)
 	var ready: int = int(ent.get("ready", 0))
@@ -171,14 +195,17 @@ static func _add_patron(layout: Dictionary, p: Dictionary, items: Array, bubbles
 
 ## 검사용 CPU 합성: base + 가구 + (세션이 있으면) 사람/그릇, 말풍선. 그리기와 같은 build() 를 쓴다.
 ## 움직이는 김과 영업 등(도트 등)은 ShopView 가 그릴 때만 들어가므로 이 이미지에는 없다. 장면에는 글자가 없다. 전체 UI 스크린샷이 아니다.
-static func compose_for(layout: Dictionary, session: Session, anim: float = 0.0) -> Image:
+static func compose_for(layout: Dictionary, session: Session, anim: float = 0.0, idle_staff: Array = []) -> Image:
 	var cache: Dictionary = {}
 	var ent: Dictionary = {}
 	var config: Dictionary = {}
+	var staff: Array = idle_staff
 	if session != null:
 		ent = session.entities()
 		config = session.config
-	var scene: Dictionary = build(layout, ent, config, anim, {}, cache)
+		var snap_hired: Array = session.staffing.get("hired", [])
+		staff = snap_hired
+	var scene: Dictionary = build(layout, ent, config, anim, {}, cache, staff)
 	var all: Array = Painter.items(layout)
 	all.append_array(scene["items"])
 	var img: Image = Painter.compose(Painter.base(layout), all)

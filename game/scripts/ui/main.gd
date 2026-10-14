@@ -14,6 +14,8 @@ const Sim = preload("res://scripts/domain/sales_simulator.gd")
 const SessionScript = preload("res://scripts/domain/service_session.gd")
 const GameStateScript = preload("res://scripts/domain/game_state.gd")
 const Research = preload("res://scripts/domain/ramen_research.gd")
+const Growth = preload("res://scripts/domain/shop_growth.gd")
+const Staffing = preload("res://scripts/domain/shop_staffing.gd")
 const SaveServiceScript = preload("res://scripts/services/save_service.gd")
 const LocationScript = preload("res://scripts/services/data_location.gd")
 const StarMeterScript = preload("res://scripts/ui/star_meter.gd")
@@ -53,6 +55,9 @@ const TAB_FEEDBACK: int = 1
 const TAB_NOTEBOOK: int = 2
 const TAB_SERVE: int = 3
 const TAB_RESEARCH: int = 4
+const TAB_GROWTH: int = 5
+## 등급 심사 신청은 실수로 누르기 쉬우므로 두 번 눌러야 확정된다(첫 누름 후 이 시간 안에 다시 눌러야 함).
+const PROMOTE_CONFIRM_MS: int = 4000
 
 const NOT_SAVED_NOTE: String = "영업은 끝까지 진행해야 정산·저장돼요. 도중에 끄면 저장되지 않고 영업 전으로 돌아가요."
 const RUNNING_NOTE: String = "정산 전이에요. 끝까지 진행해야 반영·저장되고, 도중에 닫으면 저장되지 않아요."
@@ -121,6 +126,18 @@ var _research_target: Label
 var _research_message: Label
 var _research_box: VBoxContainer
 
+## "성장" 탭(5): 가게 등급 / 유료 확장 / 보조 직원 고용. 위쪽 요약·메시지 라벨은 고정이고 카드 목록은 갱신 때마다 다시 만든다.
+var _growth_summary: Label
+var _growth_capacity: Label
+var _growth_message: Label
+var _growth_box: VBoxContainer
+## 갱신 때 다시 만든 성장 행동 버튼(승급/구매/고용). 시식 준비 중에는 일괄로 꺼서 보여 준다(실제 차단은 각 핸들러의 _work_blocked + 도메인).
+var _growth_buttons: Array[Button] = []
+var _promote_armed_until: int = 0
+var _notebook_note: Label
+var _topping_count: Label
+var _topping_hint: Label
+
 ## 시식 준비 작업(국물→면→시식). 진행 상태만 가지며, 끝났을 때 한 번만 state.taste()를 부른다.
 var _work: WorkScript = WorkScript.new()
 var _work_card: PanelContainer
@@ -182,6 +199,9 @@ func _process(delta: float) -> void:
 	if _stop_armed_until != 0 and now > _stop_armed_until:
 		_stop_armed_until = 0
 		_refresh_nav()
+	if _promote_armed_until != 0 and now > _promote_armed_until:
+		_promote_armed_until = 0
+		_refresh_growth()
 	if _flash_until != 0 and now > _flash_until:
 		_flash_until = 0
 		_flash_text = ""
@@ -596,6 +616,7 @@ func _build_overlay() -> void:
 	_build_notebook(_make_tab("TabNotebook", "노트"))
 	_build_serve(_make_tab("TabServe", "영업"))
 	_build_research(_make_tab("TabResearch", "연구"))
+	_build_growth(_make_tab("TabGrowth", "성장"))
 
 	_open_button = _button("영업하러 가기", "OverlayOpenButton")
 	_primary(_open_button)
@@ -705,11 +726,22 @@ func _build_lab(box: VBoxContainer) -> void:
 		flow.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		flow.add_theme_constant_override("h_separation", 8)
 		flow.add_theme_constant_override("v_separation", 8)
-		var group: ButtonGroup = ButtonGroup.new()
-		_groups[slot] = group
+		# 토핑만 여러 개를 고를 수 있어 버튼 그룹(하나만 눌림)을 쓰지 않는다. 눌린 상태는 도메인 초안에서 읽어 맞춘다.
+		var group: ButtonGroup = null
+		if slot != Catalog.TOPPING_SLOT:
+			group = ButtonGroup.new()
+			_groups[slot] = group
 		for item in Catalog.items(slot):
 			var d: Dictionary = item
 			flow.add_child(_make_option(slot, d, group))
+		if slot == Catalog.TOPPING_SLOT:
+			# 선택 개수/한도/해금 방법. 슬롯이 하나일 때는 "고르면 바뀌는" 단순 선택, 둘 이상일 때는 눌러서 넣고 빼는 다중 선택이다.
+			_topping_count = _label("", 16, TEAL)
+			_topping_count.name = "ToppingCount"
+			sb.add_child(_topping_count)
+			_topping_hint = _label("", 14, MUTED)
+			_topping_hint.name = "ToppingHint"
+			sb.add_child(_topping_hint)
 		sb.add_child(flow)
 		var desc: Label = _label("", 15, INK)
 		desc.name = "Desc_" + slot
@@ -762,7 +794,8 @@ func _make_option(slot: String, item: Dictionary, group: ButtonGroup) -> Button:
 	var b: Button = Button.new()
 	b.name = "Opt_" + id
 	b.toggle_mode = true
-	b.button_group = group
+	if group != null:
+		b.button_group = group
 	b.custom_minimum_size = Vector2(150.0, 64.0)
 	b.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	b.add_theme_font_size_override("font_size", 15)
@@ -785,6 +818,10 @@ func _build_notebook(box: VBoxContainer) -> void:
 	_notebook_count = _label("", 18, INK)
 	_notebook_count.name = "NotebookCount"
 	box.add_child(_notebook_count)
+	# 노트 한 칸 = 메뉴 "개정 기록" 하나(동시에 파는 메뉴 칸이 아니다). 용량/다음 확장/초과 보관 안내가 여기 보인다.
+	_notebook_note = _label("", 14, MUTED)
+	_notebook_note.name = "NotebookNote"
+	box.add_child(_notebook_note)
 	_notebook_box = _vbox(10)
 	_notebook_box.name = "NotebookList"
 	box.add_child(_notebook_box)
@@ -868,6 +905,27 @@ func _build_research(box: VBoxContainer) -> void:
 	_research_box = _vbox(12)
 	_research_box.name = "ResearchList"
 	box.add_child(_research_box)
+
+
+## "성장" 탭: 가게 등급 심사 / 유료 확장 / 보조 직원 고용. 화면은 GameState 의 review 결과를 보여 줄 뿐 판단하지 않는다.
+func _build_growth(box: VBoxContainer) -> void:
+	var sum_card: PanelContainer = _card("GrowthSummaryCard")
+	var sb: VBoxContainer = _vbox(6)
+	sum_card.add_child(sb)
+	sb.add_child(_label("가게 성장", 20, VERMILION))
+	_growth_summary = _label("", 17, INK)
+	_growth_summary.name = "GrowthSummary"
+	sb.add_child(_growth_summary)
+	_growth_capacity = _label("", 15, INK)
+	_growth_capacity.name = "GrowthCapacity"
+	sb.add_child(_growth_capacity)
+	_growth_message = _label("", 15, TEAL)
+	_growth_message.name = "GrowthMessage"
+	sb.add_child(_growth_message)
+	box.add_child(sum_card)
+	_growth_box = _vbox(12)
+	_growth_box.name = "GrowthList"
+	box.add_child(_growth_box)
 
 
 # ---------- 레이아웃 ----------
@@ -1030,10 +1088,12 @@ func _sync_guide_visibility() -> void:
 func _on_tab_changed(_index: int) -> void:
 	_sync_guide_visibility()
 	_pending_delete_id = 0
+	_promote_armed_until = 0
 	# 탭 이동은 읽기 전용 보기이므로 시식 준비 중에도 허용하지만, 준비 중에는 자동 저장하지 않는다(확정된 변화가 없다).
 	if not _work.is_running():
 		_persist()
 	_refresh_notebook()
+	_refresh_growth()
 
 
 # ---------- 가게 화면 입력 ----------
@@ -1213,9 +1273,19 @@ func _on_option_pressed(slot: String, id: String) -> void:
 		_refresh_lab()  # 눌린 토글 모양을 실제 초안 값으로 되돌린다
 		return
 	_pending_delete_id = 0
-	var res: Dictionary = state.set_draft_choice(slot, id)
+	var res: Dictionary
+	if slot == Catalog.TOPPING_SLOT:
+		# 토핑 슬롯이 하나면 예전처럼 "고르면 바뀌는" 단순 선택, 둘 이상이면 눌러서 넣고 빼는 다중 선택이다.
+		# 꽉 찼을 때 다른 토핑을 누르면 몰래 바꾸지 않고 거부 이유(해금 방법)를 보여 준다. 마지막 하나는 뺄 수 없다.
+		if state.topping_slots() <= 1:
+			res = state.set_draft_toppings([id])
+		else:
+			res = state.toggle_draft_topping(id)
+	else:
+		res = state.set_draft_choice(slot, id)
 	if not bool(res["ok"]):
 		_taste_message.text = str(res["message"])
+		_taste_message.add_theme_color_override("font_color", VERMILION)
 	_refresh_lab()
 
 
@@ -1413,6 +1483,77 @@ func _on_research_submit(request_id: String) -> void:
 	_research_message.add_theme_color_override("font_color", TEAL if saved else VERMILION)
 
 
+# ---------- 가게 성장 입력 (승급 / 확장 구매 / 고용) ----------
+##
+## 경계 규칙: 이 핸들러들은 (1) 시식 준비 중이면 아무것도 바꾸기 전에 거부하고(_work_blocked, 버튼을 꺼 두는 것과 별개),
+## (2) 거래 자체는 GameState 의 apply_promotion/purchase_facility/hire_staff 가 검증하고 실행한다(영업 중 거부, 자금/등급/자리/선행 검사 포함).
+## 화면은 도메인이 돌려준 결과만 보여 준다: 실패하면 상태가 그대로이고, 성공하면 메모리가 이미 바뀐 것이므로 저장을 시도해
+## 실제 저장 결과를 그대로 알린다(저장 실패/잠김이면 "저장하지 못했어요" 경고, 거짓 성공 없음). 불러오기/갱신/탭 이동은 어떤 보상도 만들지 않는다.
+
+func _on_promote_pressed() -> void:
+	if _work_blocked("등급 심사를 신청할"):
+		return
+	_pending_delete_id = 0
+	var review: Dictionary = state.promotion_review()
+	if bool(review["top"]):
+		_growth_fail("이미 가장 높은 등급이에요.")
+		return
+	var target: int = int(review["next"])
+	if not bool(review["eligible"]) or state.service_active():
+		# 버튼은 꺼져 있지만 직접 호출돼도 도메인이 이유와 함께 거부한다(상태 불변).
+		_promote_armed_until = 0
+		_finish_growth_action(state.apply_promotion(target))
+		return
+	var now: int = Time.get_ticks_msec()
+	if _promote_armed_until == 0 or now > _promote_armed_until:
+		# 첫 누름은 확인만: 한 번 더 눌러야 실제로 신청한다.
+		_promote_armed_until = now + PROMOTE_CONFIRM_MS
+		_growth_message.text = "「%s」 심사를 신청할까요? 보상은 없고 등급만 올라요. 한 번 더 누르면 확정돼요." % str(review["next_title"])
+		_growth_message.add_theme_color_override("font_color", TEAL)
+		_refresh_growth()
+		return
+	_promote_armed_until = 0
+	_finish_growth_action(state.apply_promotion(target))
+
+
+func _on_facility_buy(id: String) -> void:
+	if _work_blocked("확장을 살"):
+		return
+	_pending_delete_id = 0
+	_finish_growth_action(state.purchase_facility(id))
+
+
+func _on_staff_hire(id: String) -> void:
+	if _work_blocked("직원을 고용할"):
+		return
+	_pending_delete_id = 0
+	_finish_growth_action(state.hire_staff(id))
+
+
+func _growth_fail(message: String) -> void:
+	_growth_message.text = message
+	_growth_message.add_theme_color_override("font_color", VERMILION)
+	_refresh_growth()
+
+
+## 도메인 결과를 화면에 반영한다. 성공이면 저장을 시도하고 그 실제 결과를 메시지에 붙인다.
+func _finish_growth_action(res: Dictionary) -> void:
+	_promote_armed_until = 0
+	if not bool(res["ok"]):
+		_growth_fail(str(res["message"]))
+		return
+	var saved: bool = _persist()
+	var text: String = str(res["message"])
+	if saved:
+		text += " 저장했어요."
+	else:
+		# 변화는 메모리에는 있고 파일에는 없다. 저장됐다고 말하지 않는다.
+		text += "\n⚠ 저장하지 못했어요: %s 지금 닫으면 이 변화는 사라질 수 있어요." % _last_save_message
+	_refresh_all()
+	_growth_message.text = text
+	_growth_message.add_theme_color_override("font_color", TEAL if saved else VERMILION)
+
+
 # ---------- 화면 갱신 ----------
 
 func _refresh_all() -> void:
@@ -1422,10 +1563,13 @@ func _refresh_all() -> void:
 	_refresh_notebook()
 	_refresh_serve()
 	_refresh_research()
+	_refresh_growth()
 	_refresh_guide()
 	_refresh_status()
 	_refresh_nav()
 	_refresh_work_ui()
+	# 닫힌 가게에는 실제 고용 목록을 보여 준다(영업 중에는 ShopView 가 세션의 직원 스냅샷을 쓴다).
+	_shop.set_idle_staff(state.hired_staff())
 
 
 ## 시식 준비 카드/단계/진행 막대를 현재 작업 상태로 맞추고, 준비 중이면 편집 조작을 꺼서 보여 준다(실제 차단은 각 핸들러의 _work_blocked).
@@ -1465,6 +1609,7 @@ func _apply_work_lock() -> void:
 	_close_button.disabled = busy
 	_open_button.disabled = busy
 	_name_edit.editable = (not busy) and state.draft_lineage_id == 0
+	_sync_growth_lock()
 
 
 func _refresh_header() -> void:
@@ -1560,15 +1705,31 @@ func _next_version(lineage: int) -> int:
 
 func _refresh_lab() -> void:
 	for slot in Catalog.SLOTS:
-		var chosen: String = str(state.draft_config[slot])
+		# 선택된 재료 id 목록: 토핑은 여러 개일 수 있다(Catalog.toppings_of 하나의 읽기 경로), 나머지는 하나.
+		var chosen_ids: Array[String] = []
+		if slot == Catalog.TOPPING_SLOT:
+			chosen_ids = Catalog.toppings_of(state.draft_config)
+		else:
+			chosen_ids.append(str(state.draft_config[slot]))
 		for item in Catalog.items(slot):
 			var d: Dictionary = item
 			var id: String = str(d["id"])
 			var b: Button = _buttons[id]
-			b.set_pressed_no_signal(id == chosen)
-		var sel: Dictionary = Catalog.find(chosen)
+			b.set_pressed_no_signal(chosen_ids.has(id))
+		var desc_lines: Array[String] = []
+		for cid in chosen_ids:
+			var sel: Dictionary = Catalog.find(cid)
+			desc_lines.append("%s — %s\n비용 %s · 준비 %d초 · %s" % [str(sel["name"]), str(sel["desc"]), _won(int(sel["cost"])), int(sel["seconds"]), Catalog.axes_text(sel)])
 		var desc: Label = _desc_labels[slot]
-		desc.text = "%s — %s\n비용 %s · 준비 %d초 · %s" % [str(sel["name"]), str(sel["desc"]), _won(int(sel["cost"])), int(sel["seconds"]), Catalog.axes_text(sel)]
+		desc.text = "\n".join(desc_lines)
+	var slots: int = state.topping_slots()
+	var picked: int = Catalog.toppings_of(state.draft_config).size()
+	_topping_count.text = "토핑 %d/%d개 선택" % [picked, slots]
+	var unlock: String = Growth.topping_unlock_hint(state.rank(), state.facilities_owned())
+	if slots <= 1:
+		_topping_hint.text = "지금은 토핑을 1개만 올릴 수 있어요. 다른 토핑을 누르면 바뀌어요. " + unlock
+	else:
+		_topping_hint.text = "누르면 넣고, 다시 누르면 빼요(최소 1개, 최대 %d개). 가득 찼을 때는 먼저 하나를 빼세요. %s" % [slots, unlock]
 
 	if _name_edit.text != state.draft_name:
 		_name_edit.text = state.draft_name
@@ -1587,6 +1748,9 @@ func _refresh_lab() -> void:
 	for axis in Catalog.AXES:
 		parts.append("%s %d" % [str(Catalog.AXIS_NAMES[axis]), int(profile[axis])])
 	_profile_label.text = "맛 프로필(0~10): " + " · ".join(parts) + "\n원가 %s · 준비 %d초\n시식하면 시제품 재료비 %s가 자금에서 빠져요." % [_won(cost), prep, _won(cost)]
+	var staffed_prep: int = Staffing.effective_prep(prep, state.current_staffing())
+	if staffed_prep != prep:
+		_profile_label.text += "\n영업 중 실제 준비 %d초 (조리 보조 효과, 맛 점수는 그대로)" % staffed_prep
 	var applied: Array = Evaluator.applied_compat(state.draft_config)
 	var lines: Array[String] = []
 	for a in applied:
@@ -1618,6 +1782,9 @@ func _refresh_feedback() -> void:
 	title.name = "FeedbackTitle"
 	tcb.add_child(title)
 	tcb.add_child(_label("평균 %d점 · 판매가 %s · 원가 %s · 준비 %d초" % [int(evaluation["average_score"]), _won(int(config["price"])), _won(int(evaluation["unit_cost"])), int(evaluation["prep_seconds"])], 15, MUTED))
+	var tops_label: Label = _label("토핑 %d개: %s" % [Catalog.toppings_of(config).size(), Catalog.topping_names(config)], 14, MUTED)
+	tops_label.name = "FeedbackToppings"
+	tcb.add_child(tops_label)
 	_feedback_box.add_child(title_card)
 
 	for c in evaluation["customers"]:
@@ -1696,7 +1863,11 @@ func _comparison_card(rec: Dictionary, evaluation: Dictionary) -> PanelContainer
 	var lines: Array[String] = ["v%d → v%d" % [int(cmp["prev_version"]), int(rec["version"])]]
 	var changes: Array[String] = []
 	for slot in Catalog.SLOTS:
-		if str(prev_cfg[slot]) != str(cfg[slot]):
+		if slot == Catalog.TOPPING_SLOT:
+			# 토핑은 여러 개일 수 있어 선택 집합을 비교한다(카탈로그 순서로 정규화돼 있어 순서만 다른 경우는 "바뀐 점"이 아니다).
+			if str(Catalog.toppings_of(prev_cfg)) != str(Catalog.toppings_of(cfg)):
+				changes.append("%s: %s → %s" % [str(Catalog.SLOT_NAMES[slot]), Catalog.topping_names(prev_cfg), Catalog.topping_names(cfg)])
+		elif str(prev_cfg[slot]) != str(cfg[slot]):
 			var old_item: Dictionary = Catalog.find(str(prev_cfg[slot]))
 			var new_item: Dictionary = Catalog.find(str(cfg[slot]))
 			changes.append("%s: %s → %s" % [str(Catalog.SLOT_NAMES[slot]), str(old_item["name"]), str(new_item["name"])])
@@ -1729,7 +1900,16 @@ func _comparison_card(rec: Dictionary, evaluation: Dictionary) -> PanelContainer
 func _refresh_notebook() -> void:
 	_clear(_notebook_box)
 	var all_records: Array = state.records()
-	_notebook_count.text = "레시피 노트 %d/%d" % [all_records.size(), GameStateScript.MAX_RECORDS]
+	var cap: int = state.record_capacity()
+	_notebook_count.text = "레시피 노트 %d/%d (메뉴 개정 기록)" % [all_records.size(), cap]
+	# 한 칸 = 메뉴 개정 기록 하나. 동시에 파는 메뉴가 아니라 영업 메뉴는 선택한 기록 하나다.
+	var note: String = "노트 한 칸은 시식한 메뉴 개정 기록 하나예요. 동시에 파는 메뉴 칸이 아니라 영업 메뉴는 고른 기록 하나예요."
+	if all_records.size() > cap:
+		note += "\n예전 저장의 기록이 지금 용량보다 많아 모두 보관 중이에요. 삭제로 %d개 아래가 되거나 조리대를 확장하기 전에는 새 시식을 만들 수 없어요." % cap
+	elif cap < GameStateScript.MAX_RECORDS:
+		var nxt: Dictionary = Growth.facility_review("bench_1" if not state.facilities_owned().has("bench_1") else "bench_2", state.rank(), state.facilities_owned(), state.wallet)
+		note += "\n다음 확장 「%s」(%s)으로 늘려요: %s" % [str(nxt["name"]), str(nxt["price_text"]), str(nxt["effect_text"])]
+	_notebook_note.text = note
 	if all_records.is_empty():
 		var empty: PanelContainer = _card("EmptyNotebookCard")
 		empty.add_child(_label("노트가 비어 있어요. 시식한 레시피가 이곳에 기록돼요.", 16, INK))
@@ -1752,9 +1932,10 @@ func _notebook_row(rec: Dictionary) -> PanelContainer:
 	if selected:
 		title += " · 영업 메뉴"
 	rb.add_child(_label(title, 20, TEAL if selected else VERMILION))
+	# 선택한 재료 전부(토핑 포함)를 이름으로 보여 준다.
 	var names: Array[String] = []
-	for slot in Catalog.SLOTS:
-		var item: Dictionary = Catalog.find(str(cfg[slot]))
+	for iid in Catalog.item_ids(cfg):
+		var item: Dictionary = Catalog.find(iid)
 		names.append(str(item["name"]))
 	rb.add_child(_label(" · ".join(names), 14, MUTED))
 	var ratings: Array[String] = []
@@ -1780,14 +1961,17 @@ func _notebook_row(rec: Dictionary) -> PanelContainer:
 
 
 func _refresh_serve() -> void:
-	_serve_intro.text = "영업은 가게 화면의 [영업 시작]으로 해요. 한 번은 점심 피크 %d분(게임 시간)이고 손님이 도착해 자리에 앉고 주문·조리·서빙·식사를 마친 만큼만 정산돼요. 운영비 %s는 하루마다 들어요.\n지금: %d일차 · 보유 자금 %s\n%s" % [Sim.SERVICE_SECONDS / 60, _won(Sim.OVERHEAD), state.day, _won(state.wallet), NOT_SAVED_NOTE]
+	_serve_intro.text = "영업은 가게 화면의 [영업 시작]으로 해요. 한 번은 점심 피크 %d분(게임 시간)이고 손님이 도착해 자리에 앉고 주문·조리·서빙·식사를 마친 만큼만 정산돼요. 운영비 %s는 하루마다 들어요.\n지금: %d일차 · 보유 자금 %s\n%s" % [Sim.SERVICE_SECONDS / 60, _won(Sim.overhead_for(state.current_staffing())), state.day, _won(state.wallet), NOT_SAVED_NOTE]
 	var rec: Dictionary = state.get_record(state.selected_record_id)
 	if rec.is_empty():
 		_serve_menu.text = "'노트' 탭에서 영업할 레시피를 불러오세요."
 		_serve_forecast.text = ""
 	else:
 		var cfg: Dictionary = rec["config"]
-		_serve_menu.text = "%s v%d · 판매가 %s · 원가 %s · 준비 %d초" % [str(rec["name"]), int(rec["version"]), _won(int(cfg["price"])), _won(Evaluator.unit_cost(cfg)), Evaluator.prep_seconds(cfg)]
+		_serve_menu.text = "%s v%d · 판매가 %s · 원가 %s · 준비 %d초\n토핑: %s" % [str(rec["name"]), int(rec["version"]), _won(int(cfg["price"])), _won(Evaluator.unit_cost(cfg)), Evaluator.prep_seconds(cfg), Catalog.topping_names(cfg)]
+		var staffed: int = Staffing.effective_prep(Evaluator.prep_seconds(cfg), state.current_staffing())
+		if staffed != Evaluator.prep_seconds(cfg):
+			_serve_menu.text += "\n영업 중 실제 준비 %d초 (조리 보조)" % staffed
 		var fc: Dictionary = state.forecast()
 		if str(fc["error"]) != "":
 			_serve_forecast.text = str(fc["error"])
@@ -1889,6 +2073,162 @@ func _research_card(req: Dictionary, rec: Dictionary) -> PanelContainer:
 	submit.disabled = status != "open" or rec.is_empty() or state.service_active() or _work.is_running()
 	submit.pressed.connect(_on_research_submit.bind(id))
 	cb.add_child(submit)
+	return card
+
+
+## 보조 직원 초상(24x24 도트 x2, 캐시).
+func _staff_portrait_tex(staff_id: String) -> ImageTexture:
+	var key: String = "staff_portrait|%s" % staff_id
+	if not _icon_cache.has(key):
+		_icon_cache[key] = ArtScript.scaled_tex(ArtScript.staff_portrait_image(staff_id), 2)
+	return _icon_cache[key] as ImageTexture
+
+
+## 성장 탭 갱신: 요약/용량은 라벨을 고쳐 쓰고, 등급/확장/직원 카드는 매번 다시 만든다. 읽기만 하며 상태를 바꾸지 않는다.
+func _refresh_growth() -> void:
+	if _growth_box == null:
+		return
+	var staffing: Dictionary = state.current_staffing()
+	var hired: Array = state.hired_staff()
+	var days: int = state.completed_service_days()
+	_growth_summary.text = "가게 등급 %d단계 「%s」 · 영업 %d일 마침 · 자금 %s" % [state.rank(), state.rank_title(), days, _won(state.wallet)]
+	var slots: int = state.topping_slots()
+	var picked: int = Catalog.toppings_of(state.draft_config).size()
+	var count: int = state.record_count()
+	var cap: int = state.record_capacity()
+	var cap_lines: Array[String] = []
+	cap_lines.append("토핑 슬롯 %d/%d개 (지금 레시피 %d개)" % [slots, Catalog.MAX_TOPPINGS, picked])
+	cap_lines.append("레시피 노트 %d/%d칸%s (메뉴 개정 기록, 동시에 파는 메뉴 칸이 아니에요)" % [count, cap, " · 초과 보관 중" if count > cap else ""])
+	cap_lines.append("직원 %d/%d명 (요리사·서버 + 보조 %d) · 빈 자리 %d · 보조 하루 운영비 %s" % [Staffing.BASE_STAFF + hired.size(), state.staff_capacity(), hired.size(), state.free_staff_slots(), _won(int(staffing["wage"]))])
+	_growth_capacity.text = "\n".join(cap_lines)
+
+	_growth_buttons.clear()
+	_clear(_growth_box)
+	_growth_box.add_child(_rank_card())
+	var head1: Label = _label("유료 확장 (한 번만 살 수 있고 환불은 없어요)", 18, VERMILION)
+	head1.name = "GrowthFacilityHeader"
+	_growth_box.add_child(head1)
+	for rv in state.facility_reviews():
+		_growth_box.add_child(_facility_card(rv))
+	var head2: Label = _label("보조 직원 (직원 공간을 넓혀도 자동으로 고용되지 않아요)", 18, VERMILION)
+	head2.name = "GrowthStaffHeader"
+	_growth_box.add_child(head2)
+	for sv in state.staff_reviews():
+		_growth_box.add_child(_staff_card(sv))
+	_sync_growth_lock()
+
+
+## 시식 준비 중이거나 영업 중이면 성장 행동 버튼을 모두 끈다. 나머지 이유(조건/자금/자리)로 꺼진 버튼은 메타 "locked" 로 구분한다.
+func _sync_growth_lock() -> void:
+	var busy: bool = _work.is_running() or (state != null and state.service_active())
+	for b in _growth_buttons:
+		if is_instance_valid(b):
+			b.disabled = busy or bool(b.get_meta("locked", false))
+
+
+func _growth_button(text: String, node_name: String, locked: bool) -> Button:
+	var b: Button = _button(text, node_name)
+	b.custom_minimum_size = Vector2(0.0, 48.0)
+	b.set_meta("locked", locked)
+	b.disabled = locked
+	_growth_buttons.append(b)
+	return b
+
+
+func _rank_card() -> PanelContainer:
+	var rv: Dictionary = state.promotion_review()
+	var card: PanelContainer = _card("GrowthRankCard")
+	card.add_theme_stylebox_override("panel", _box(PAPER_LIGHT, LINE, 2, 0, 10.0, 6.0))
+	var cb: VBoxContainer = _vbox(4)
+	card.add_child(cb)
+	cb.add_child(_label("가게 등급 심사", 20, VERMILION))
+	var cur: Label = _label("지금: %d단계 「%s」 — %s" % [int(rv["rank"]), str(rv["title"]), str(rv["summary"])], 15, INK)
+	cur.name = "RankCurrent"
+	cb.add_child(cur)
+	var armed: bool = _promote_armed_until != 0 and Time.get_ticks_msec() <= _promote_armed_until
+	var btn: Button
+	if bool(rv["top"]):
+		var done: Label = _label("가장 높은 등급이에요. 더 올릴 등급이 없어요.", 15, TEAL)
+		done.name = "RankConditions"
+		cb.add_child(done)
+		btn = _growth_button("최고 등급", "PromoteButton", true)
+	else:
+		var lines: Array[String] = ["다음: %d단계 「%s」 조건" % [int(rv["next"]), str(rv["next_title"])]]
+		for c in rv["conditions"]:
+			var cd: Dictionary = c
+			lines.append("%s %s — %s" % ["[달성]" if bool(cd["met"]) else "[부족]", str(cd["text"]), str(cd["measured_text"])])
+		var cond: Label = _label("\n".join(lines), 15, INK)
+		cond.name = "RankConditions"
+		cb.add_child(cond)
+		cb.add_child(_label("심사는 신청할 때 노트의 시식 기록으로 다시 계산해요. 보상은 없고 등급만 올라요.", 13, MUTED))
+		var eligible: bool = bool(rv["eligible"])
+		btn = _growth_button("한 번 더 눌러 확정" if armed else ("등급 심사 신청" if eligible else "신청 조건 부족"), "PromoteButton", not eligible)
+		btn.pressed.connect(_on_promote_pressed)
+	cb.add_child(btn)
+	return card
+
+
+func _facility_card(rv: Dictionary) -> PanelContainer:
+	var id: String = str(rv["id"])
+	var def: Dictionary = Growth.find_facility(id)
+	var card: PanelContainer = _card("Facility_" + id)
+	card.add_theme_stylebox_override("panel", _box(PAPER_LIGHT, LINE, 2, 0, 10.0, 6.0))
+	var cb: VBoxContainer = _vbox(4)
+	card.add_child(cb)
+	var owned: bool = bool(rv["owned"])
+	var title: Label = _label("%s · %s" % [str(rv["name"]), str(rv["price_text"])], 18, TEAL if owned else VERMILION)
+	title.name = "FacilityTitle_" + id
+	cb.add_child(title)
+	var req_parts: Array[String] = ["가게 등급 %d단계(%s) 이상" % [int(def["min_rank"]), Growth.rank_title(int(def["min_rank"]))]]
+	if str(def["requires"]) != "":
+		req_parts.append("먼저 「%s」" % str(Growth.find_facility(str(def["requires"]))["name"]))
+	var lines: Array[String] = [str(rv["desc"]), "효과: " + str(rv["effect_text"]), "필요: " + " + ".join(req_parts)]
+	lines.append("설치했어요." if owned else ("살 수 있어요." if bool(rv["can_buy"]) else "잠김 · " + str(rv["reason"])))
+	var info: Label = _label("\n".join(lines), 14, INK)
+	info.name = "FacilityInfo_" + id
+	cb.add_child(info)
+	var text: String = "설치 완료" if owned else ("구매 · %s" % str(rv["price_text"]) if bool(rv["can_buy"]) else "구매 불가")
+	var btn: Button = _growth_button(text, "FacilityBuy_" + id, not bool(rv["can_buy"]))
+	btn.pressed.connect(_on_facility_buy.bind(id))
+	cb.add_child(btn)
+	return card
+
+
+func _staff_card(sv: Dictionary) -> PanelContainer:
+	var id: String = str(sv["id"])
+	var card: PanelContainer = _card("Staff_" + id)
+	card.add_theme_stylebox_override("panel", _box(PAPER_LIGHT, LINE, 2, 0, 10.0, 6.0))
+	var cb: VBoxContainer = _vbox(4)
+	card.add_child(cb)
+	var head: HBoxContainer = HBoxContainer.new()
+	head.add_theme_constant_override("separation", 10)
+	cb.add_child(head)
+	var portrait: TextureRect = TextureRect.new()
+	portrait.name = "StaffPortrait_" + id
+	portrait.texture = _staff_portrait_tex(id)
+	portrait.stretch_mode = TextureRect.STRETCH_KEEP
+	portrait.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	portrait.custom_minimum_size = Vector2(48.0, 48.0)
+	portrait.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	portrait.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	head.add_child(portrait)
+	var side: VBoxContainer = _vbox(2)
+	head.add_child(side)
+	var is_hired: bool = bool(sv["hired"])
+	var title: Label = _label("%s %s" % [str(sv["role_name"]), str(sv["name"])], 18, TEAL if is_hired else VERMILION)
+	title.name = "StaffTitle_" + id
+	side.add_child(title)
+	var cost_label: Label = _label("고용비 %s (한 번) · 하루 운영비 %s (영업 정산마다)" % [_won(int(sv["hire_price"])), _won(int(sv["wage"]))], 14, INK)
+	cost_label.name = "StaffCost_" + id
+	side.add_child(cost_label)
+	var status: String = "함께 일하고 있어요." if is_hired else ("고용할 수 있어요." if bool(sv["can_hire"]) else "고용 불가 · " + str(sv["reason"]))
+	var info: Label = _label("%s\n%s" % [str(sv["desc"]), status], 14, INK)
+	info.name = "StaffInfo_" + id
+	cb.add_child(info)
+	var text: String = "고용 완료" if is_hired else ("고용 · %s" % _won(int(sv["hire_price"])) if bool(sv["can_hire"]) else "고용 불가")
+	var btn: Button = _growth_button(text, "StaffHire_" + id, not bool(sv["can_hire"]))
+	btn.pressed.connect(_on_staff_hire.bind(id))
+	cb.add_child(btn)
 	return card
 
 

@@ -47,6 +47,24 @@ func _ready() -> void:
 	set_process(true)
 
 
+## 영업 전(닫힌 가게)에 보여 줄 실제 고용 목록. 영업 중에는 이 값이 아니라 세션의 직원 스냅샷을 쓴다(영업 중 바뀌지 않는다).
+var idle_staff: Array = []
+
+
+func set_idle_staff(ids: Array) -> void:
+	if str(ids) != str(idle_staff):
+		idle_staff = ids.duplicate()
+		queue_redraw()
+
+
+## 지금 그릴 보조 직원: 영업 중 = 세션 시작 때 복사한 스냅샷, 아니면 실제 고용 목록.
+func visible_staff() -> Array:
+	if session != null:
+		var snap: Array = session.staffing.get("hired", [])
+		return snap
+	return idle_staff
+
+
 func set_session(s: Session) -> void:
 	session = s
 	_vis.clear()
@@ -72,7 +90,7 @@ func scene_info() -> Dictionary:
 ## 검사용: 지금 상태의 장면을 CPU 이미지(논리 픽셀)로 합성한다. 그리기와 같은 항목 목록을 쓴다. 글씨/김은 없고 전체 UI 도 아니다.
 func compose_image() -> Image:
 	_ensure_layout()
-	return Scene.compose_for(_layout, session, _anim)
+	return Scene.compose_for(_layout, session, _anim, idle_staff)
 
 
 func _process(delta: float) -> void:
@@ -173,7 +191,7 @@ func _draw() -> void:
 	if session != null:
 		bowl_config = session.config
 		ent = session.entities()
-	var scene: Dictionary = Scene.build(_layout, ent, bowl_config, _anim, _vis, _img_cache)
+	var scene: Dictionary = Scene.build(_layout, ent, bowl_config, _anim, _vis, _img_cache, visible_staff())
 	var all: Array = _furniture.duplicate()
 	all.append_array(scene["items"])
 	for it in Painter.sort_items(all):

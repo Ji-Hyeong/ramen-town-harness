@@ -696,10 +696,13 @@ func purchase_facility(id: String) -> Dictionary:
 	if not bool(rv["can_buy"]):
 		return _fail(str(rv["reason"]))
 	var price: int = int(rv["price"])
+	# 효과 문구("현재→새 용량")는 반드시 구매 전에 계산한 심사표(rv)에서 가져온다. 구매 뒤에 다시 계산하면 이미 새 용량이라
+	# "2→2"처럼 거짓 문구가 된다(실제 용량은 정확했고 메시지만 틀렸던 결함).
+	var effect_text: String = str(rv["effect_text"])
 	# --- 여기부터는 실패 지점이 없다 (can_buy 가 자금 >= 가격을 이미 보장) ---
 	wallet -= price
 	_facilities.append(id)
-	return _ok("「%s」을(를) 설치했어요 (%s). %s" % [str(rv["name"]), Growth._won(price), str(Growth.facility_review(id, _rank, _facilities, wallet)["effect_text"])])
+	return _ok("「%s」을(를) 설치했어요 (%s). %s" % [str(rv["name"]), Growth._won(price), effect_text])
 
 
 func staff_review(id: String) -> Dictionary:

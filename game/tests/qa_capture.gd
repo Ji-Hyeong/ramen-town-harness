@@ -9,6 +9,7 @@ extends SceneTree
 ## 영업 시간은 실제 시간을 기다리지 않고 세션 API(advance/run_to_end)로 앞당긴다(화면 갱신은 실제 프레임이 한다).
 
 const SaveServiceScript = preload("res://scripts/services/save_service.gd")
+const ResearchScript = preload("res://scripts/domain/ramen_research.gd")
 
 # scale: 장면 정수 배율의 하한. 등각 장면의 의도한 캔버스에 맞춘 값이다 — 가로 320x152 → 1280x608 (배율 4),
 # 세로 176x264 → 352x528 (배율 2, 이전 128x208 프론탈 장면은 배율 3). 화면 55% 이상/뷰포트 포함/HUD 비겹침 검사는 그대로다.
@@ -428,7 +429,10 @@ func _run_profile(tag: String, vp: Vector2i, expect_scale: int) -> void:
 	await _settle()
 	for name in ["NotebookCount", "Row_1", "Row_2", "SelectRecord_1", "DeleteRecord_1", "SelectRecord_2"]:
 		await _reachable(app, vp, name)
-	_check(_text_of(app, "NotebookCount").find("2/30") >= 0, tag + ": 노트 개수 표시")
+	# 적응(성장 단계): 노트 용량은 이제 조리대 확장에서 파생되는 값이라 처음에는 6칸이다(예전 고정 30 → "2/6"). 개수 표시 자체는 그대로 검사한다.
+	_check(_text_of(app, "NotebookCount").find("2/6") >= 0, tag + ": 노트 개수/용량 표시: " + _text_of(app, "NotebookCount"))
+	_check(_text_of(app, "NotebookNote").find("개정 기록") >= 0 and _text_of(app, "NotebookNote").find("동시에 파는 메뉴") >= 0, tag + ": 노트 한 칸은 개정 기록이라는 설명: " + _text_of(app, "NotebookNote"))
+	await _reachable(app, vp, "NotebookNote")
 	_overflow(app, vp, tag + " 노트")
 	(tabs.get_child(2) as ScrollContainer).scroll_vertical = 0
 	await _shot(holder, tag + "_6_notebook.png")
@@ -555,6 +559,8 @@ func _run_profile(tag: String, vp: Vector2i, expect_scale: int) -> void:
 	await _run_research(holder, tag, vp)
 	await _run_tasting_work(holder, tag, vp)
 	await _run_manual_save(holder, tag, vp)
+	await _run_growth(holder, tag, vp)
+	await _run_growth_failure(holder, tag, vp)
 
 	holder.queue_free()
 	await _frames(2)
@@ -590,8 +596,9 @@ func _run_research(holder: SubViewport, tag: String, vp: Vector2i) -> void:
 	var ids: Array = ["dohyun_basic", "hayoung_basic", "maru_basic", "dohyun_advanced", "hayoung_advanced", "maru_advanced"]
 
 	# 1) 기존 탭 순서/제목은 그대로고 연구 탭이 5번째로 붙는다. 개발 버튼으로 서랍을 열고 연구 탭을 연다.
-	_check(tabs.get_tab_count() == 5, tag + ": 탭은 5개")
-	var titles: Array = ["개발", "시식", "노트", "영업", "연구"]
+	# 적응(성장 단계): 여섯 번째 "성장" 탭이 붙었다. 기존 0~4번 탭의 순서/제목/동작은 그대로 검사한다.
+	_check(tabs.get_tab_count() == 6, tag + ": 탭은 6개")
+	var titles: Array = ["개발", "시식", "노트", "영업", "연구", "성장"]
 	for i in titles.size():
 		_check(tabs.get_tab_title(i) == str(titles[i]), "%s: 탭 %d 제목 %s" % [tag, i, tabs.get_tab_title(i)])
 	_press(app, "DevButton")
@@ -939,6 +946,579 @@ func _run_tasting_work(holder: SubViewport, tag: String, vp: Vector2i) -> void:
 	app2.queue_free()
 	await _frames(2)
 	saver.remove_known_files()
+	DirAccess.remove_absolute(dir)
+
+
+# =====================================================================================================
+# 가게 성장(등급 / 유료 확장 / 보조 직원 / 다중 토핑) 시나리오
+# 승급·구매·고용·토핑 선택·저장은 모두 실제 UI 핸들러(pressed 신호/핸들러 직접 호출)로 밟는다. 자격을 채우는 준비(시식/연구/영업 일수)는
+# 격리된 이 QA 인스턴스에서 실제 도메인 연산으로만 한다. 등급/확장/고용을 직접 쓰는 디버그 해금은 없다.
+# 자금만은 격리 인스턴스에서 한 번씩 채운다(주석으로 표시): 승급 조건/가격 규칙을 건너뛰는 것이 아니라 구매 가능 금액을 맞추기 위해서다.
+# 이 두 함수는 --layout-only 에서도 그대로 실행된다(스크린샷 파일만 건너뜀).
+# 프로필마다 새로 찍는 스크린샷: 17 growth_locked, 18 growth_eligible, 19 growth_purchased, 20 shop_staffed, 21 multi_topping_lab,
+# 22 multi_topping_feedback, 23 staffed_service, 24 growth_reloaded, 25 growth_save_failed, 26 growth_full, 27 full_service = 11장.
+# =====================================================================================================
+
+func _dict_str(app: Node) -> String:
+	return str(_state(app).call("to_dict"))
+
+
+## 실제 도메인 연산으로 레시피 하나를 시식한다(연구 증인 조합은 옛 모양 topping 문자열을 쓴다: 단일 토핑 경로). 기록 번호를 돌려준다.
+func _domain_taste(app: Node, cfg: Dictionary, recipe_name: String) -> int:
+	var st: Object = _state(app)
+	st.call("start_new_recipe")
+	for slot in ["broth", "tare", "oil", "noodle", "cook"]:
+		st.call("set_draft_choice", slot, str(cfg[slot]))
+	st.call("set_draft_choice", "topping", str(cfg["topping"]))
+	st.call("set_draft_price", int(cfg["price"]))
+	st.call("set_draft_name", recipe_name)
+	var r: Dictionary = st.call("taste")
+	_check(bool(r["ok"]), "준비 시식 실패(%s): %s" % [recipe_name, str(r["message"])])
+	return int(r.get("record_id", 0))
+
+
+## 실제 UI 로 하루를 영업한다: 서랍을 닫고 영업 시작 → 세션 끝까지 → 정산 → 결과 확인. 영업 시간만 세션 API 로 앞당긴다.
+func _service_day_via_ui(app: Node, tag: String) -> void:
+	if (_find(app, "Overlay") as Control).visible:
+		_press(app, "CloseButton")
+		await _settle()
+	var st: Object = _state(app)
+	var day0: int = int(st.get("day"))
+	_press(app, "StartServiceButton")
+	await _settle()
+	_check(bool(st.call("service_active")), tag + ": 성장 준비 영업 시작")
+	_advance(app, 6000.0)
+	await _settle()
+	await _frames(4)
+	_check(not bool(st.call("service_active")) and int(st.get("day")) == day0 + 1, tag + ": 성장 준비 영업 정산 1회")
+	_press(app, "ResultOkButton")
+	await _settle()
+
+
+func _open_growth_tab(app: Node) -> void:
+	if not (_find(app, "Overlay") as Control).visible:
+		_press(app, "DevButton")
+		await _settle()
+	(_find(app, "MainTabs") as TabContainer).current_tab = 5
+	await _settle()
+	var sc: ScrollContainer = (_find(app, "MainTabs") as TabContainer).get_child(5) as ScrollContainer
+	sc.scroll_vertical = 0
+	await _settle()
+
+
+func _growth_reach_all(app: Node, vp: Vector2i) -> void:
+	for name in ["GrowthSummary", "GrowthCapacity", "RankCurrent", "RankConditions", "PromoteButton"]:
+		await _reachable(app, vp, name)
+	for fid in ["bench_1", "bench_2", "staff_1", "staff_2"]:
+		for prefix in ["Facility_", "FacilityTitle_", "FacilityInfo_", "FacilityBuy_"]:
+			await _reachable(app, vp, prefix + fid)
+	for sid in ["prep_assistant", "floor_assistant"]:
+		for prefix in ["Staff_", "StaffPortrait_", "StaffTitle_", "StaffCost_", "StaffInfo_", "StaffHire_"]:
+			await _reachable(app, vp, prefix + sid)
+
+
+func _btn_disabled(app: Node, node_name: String) -> bool:
+	var b: BaseButton = _find(app, node_name) as BaseButton
+	_check(b != null, "버튼 없음: " + node_name)
+	return b == null or b.disabled
+
+
+## 노드 아래 모든 라벨 글을 이어 붙인다(카드 한 장의 글 검사용).
+func _all_text(node: Node) -> String:
+	var parts: Array[String] = []
+	for child in node.find_children("*", "Label", true, false):
+		parts.append(str((child as Label).text))
+	return "\n".join(parts)
+
+
+func _run_growth(holder: SubViewport, tag: String, vp: Vector2i) -> void:
+	var dir: String = _data_root.path_join(tag + "_growth")
+	DirAccess.make_dir_recursive_absolute(dir)
+	var saver: SaveServiceScript = SaveServiceScript.new(dir)
+	saver.remove_known_files()
+	var app: Node = await _spawn(holder, dir)
+	var st: Object = _state(app)
+	var tabs: TabContainer = _find(app, "MainTabs") as TabContainer
+	var witnesses: Dictionary = ResearchScript.WITNESSES
+
+	# 1) 잠긴 첫 화면: 탭 6개(0~4 그대로 + 성장), 등급 1, 승급/구매/고용 모두 꺼짐 + 이유 표시.
+	_check(tabs.get_tab_count() == 6 and tabs.get_tab_title(5) == "성장", tag + ": 성장 탭")
+	_press(app, "DevButton")
+	await _settle()
+	await _open_growth_tab(app)
+	var snap0: String = _dict_str(app)
+	_check(_text_of(app, "GrowthSummary").find("1단계") >= 0 and _text_of(app, "GrowthSummary").find("골목 가게") >= 0, tag + ": 현재 등급 표시: " + _text_of(app, "GrowthSummary"))
+	var cap_text: String = _text_of(app, "GrowthCapacity")
+	_check(cap_text.find("토핑 슬롯 1/3") >= 0 and cap_text.find("0/6") >= 0 and cap_text.find("직원 2/2명") >= 0 and cap_text.find("빈 자리 0") >= 0 and cap_text.find("0원") >= 0, tag + ": 용량/직원/운영비 표시: " + cap_text)
+	_check(_text_of(app, "RankConditions").find("[부족]") >= 0 and _text_of(app, "RankConditions").find("동네 맛집") >= 0, tag + ": 다음 등급 조건과 측정값: " + _text_of(app, "RankConditions"))
+	_check(_btn_disabled(app, "PromoteButton") and _text_of(app, "PromoteButton").find("조건 부족") >= 0, tag + ": 조건이 모자라면 승급 버튼은 꺼짐")
+	for fid in ["bench_1", "bench_2", "staff_1", "staff_2"]:
+		_check(_btn_disabled(app, "FacilityBuy_" + fid) and _text_of(app, "FacilityInfo_" + fid).find("잠김") >= 0, tag + ": 잠긴 확장은 이유와 함께 꺼짐: " + fid)
+		_check(_text_of(app, "FacilityInfo_" + fid).find("→") >= 0 and _text_of(app, "FacilityInfo_" + fid).find("필요:") >= 0, tag + ": 현재→새 용량/선행 조건 표시: " + _text_of(app, "FacilityInfo_" + fid))
+	for sid in ["prep_assistant", "floor_assistant"]:
+		_check(_btn_disabled(app, "StaffHire_" + sid) and _text_of(app, "StaffInfo_" + sid).find("직원 공간") >= 0, tag + ": 자리가 없으면 고용 불가 이유: " + sid)
+	_check(_text_of(app, "StaffCost_prep_assistant").find("8,000원") >= 0 and _text_of(app, "StaffCost_prep_assistant").find("600원") >= 0, tag + ": 조리 보조 고용비/운영비 공개: " + _text_of(app, "StaffCost_prep_assistant"))
+	_check(_text_of(app, "StaffCost_floor_assistant").find("7,000원") >= 0 and _text_of(app, "StaffCost_floor_assistant").find("500원") >= 0, tag + ": 홀 보조 고용비/운영비 공개: " + _text_of(app, "StaffCost_floor_assistant"))
+	_check(_text_of(app, "StaffTitle_prep_assistant").find("조리 보조") >= 0 and _text_of(app, "StaffTitle_floor_assistant").find("홀 보조") >= 0, tag + ": 직원 역할 표시")
+	var portraits: Array = []
+	for sid2 in ["prep_assistant", "floor_assistant"]:
+		var ptr: TextureRect = _find(app, "StaffPortrait_" + sid2) as TextureRect
+		_check(ptr != null and ptr.size.x >= 47.5 and ptr.size.y >= 47.5, tag + ": 직원 초상 48px 이상: " + sid2)
+		if ptr != null:
+			portraits.append(ptr.texture.get_image().get_data())
+	_check(portraits.size() == 2 and portraits[0] != portraits[1], tag + ": 두 직원 초상이 달라요")
+	await _growth_reach_all(app, vp)
+	_overflow(app, vp, tag + " 성장 잠김")
+	# 핸들러를 직접 불러도(버튼이 꺼져 있어도) 도메인이 거부하고 아무것도 바뀌지 않는다.
+	app.call("_on_promote_pressed")
+	_check(_dict_str(app) == snap0 and _text_of(app, "GrowthMessage") != "", tag + ": 잠긴 승급 신청 거부: " + _text_of(app, "GrowthMessage"))
+	app.call("_on_facility_buy", "bench_1")
+	_check(_dict_str(app) == snap0 and _text_of(app, "GrowthMessage").find("등급") >= 0, tag + ": 등급 부족 구매 거부: " + _text_of(app, "GrowthMessage"))
+	app.call("_on_facility_buy", "bench_2")
+	app.call("_on_facility_buy", "nope")
+	app.call("_on_staff_hire", "prep_assistant")
+	_check(_dict_str(app) == snap0 and _text_of(app, "GrowthMessage").find("직원 공간") >= 0, tag + ": 자리 없는 고용 거부: " + _text_of(app, "GrowthMessage"))
+	_check(_text_of(app, "GrowthMessage").find("저장했어요") < 0, tag + ": 거부 메시지가 저장했다고 말하면 안 돼요")
+	_check(int(st.get("wallet")) == 30000 and st.call("rank") == 1 and (st.call("hired_staff") as Array).is_empty(), tag + ": 탭을 열고 거부해도 보상/고용/자금 변화 없음")
+	await _open_growth_tab(app)
+	await _shot(holder, tag + "_17_growth_locked.png")
+
+	# 2) 토핑 슬롯 1개: 예전처럼 "다른 토핑을 고르면 바뀌는" 단순 선택, 개수/한도/해금 안내.
+	tabs.current_tab = 0
+	await _settle()
+	_press(app, "Opt_topping_egg")
+	_press(app, "Opt_topping_nori")
+	await _settle()
+	_check(not (_find(app, "Opt_topping_egg") as BaseButton).button_pressed and (_find(app, "Opt_topping_nori") as BaseButton).button_pressed, tag + ": 슬롯 1개는 선택이 바뀌어요")
+	_check(_text_of(app, "ToppingCount").find("1/1") >= 0 and _text_of(app, "ToppingHint").find("1개만") >= 0 and _text_of(app, "ToppingHint").find("열려요") >= 0, tag + ": 토핑 개수/한도/해금 안내: " + _text_of(app, "ToppingCount") + " / " + _text_of(app, "ToppingHint"))
+	await _reachable(app, vp, "ToppingCount")
+	await _reachable(app, vp, "ToppingHint")
+
+	# 3) 자격 채우기(실제 도메인 연산): 증인 여섯 시식 → 연구 1건 제출(UI 핸들러) → 실제 UI 영업 3일.
+	var rec: Dictionary = {}
+	for rid in ResearchScript.ids():
+		rec[rid] = _domain_taste(app, witnesses[rid], "QA " + str(rid))
+	_check(int(st.call("record_count")) == 6, tag + ": 증인 기록 6개(기본 용량 6칸)")
+	st.call("select_record", int(rec["dohyun_basic"]))
+	app.call("_refresh_all")
+	app.call("_on_research_submit", "dohyun_basic")
+	await _settle()
+	_check(int(st.call("research_points")) == 2, tag + ": 연구 1건 완료")
+	st.call("select_record", int(rec["hayoung_basic"]))
+	for i in 3:
+		await _service_day_via_ui(app, tag)
+	_check(int(st.get("day")) == 4 and int(st.call("completed_service_days")) == 3, tag + ": 영업 3일 마침")
+	await _open_growth_tab(app)
+	_check(st.call("rank") == 1, tag + ": 조건을 채워도 저절로 승급하지 않아요")
+	_check(not _btn_disabled(app, "PromoteButton") and _text_of(app, "PromoteButton").find("신청") >= 0, tag + ": 조건을 채우면 승급 버튼이 켜져요")
+	_check(_text_of(app, "RankConditions").find("[부족]") < 0 and _text_of(app, "RankConditions").find("[달성]") >= 0, tag + ": 조건이 모두 달성: " + _text_of(app, "RankConditions"))
+	await _growth_reach_all(app, vp)
+	_overflow(app, vp, tag + " 성장 승급 가능")
+	(tabs.get_child(5) as ScrollContainer).scroll_vertical = 0
+	await _shot(holder, tag + "_18_growth_eligible.png")
+
+	# 4) 명시적 승급(두 번 눌러 확정) + 실제 저장 결과.
+	var wallet_pre: int = int(st.get("wallet"))
+	_press(app, "PromoteButton")
+	await _settle()
+	_check(st.call("rank") == 1 and _text_of(app, "PromoteButton").find("한 번 더") >= 0 and _text_of(app, "GrowthMessage").find("한 번 더") >= 0, tag + ": 첫 누름은 확인만: " + _text_of(app, "GrowthMessage"))
+	_press(app, "PromoteButton")
+	await _settle()
+	_check(st.call("rank") == 2 and int(st.get("wallet")) == wallet_pre, tag + ": 승급 완료, 자금 보상 없음")
+	_check(_text_of(app, "GrowthMessage").find("동네 맛집") >= 0 and _text_of(app, "GrowthMessage").find("저장했어요") >= 0, tag + ": 승급 결과/저장 결과 표시: " + _text_of(app, "GrowthMessage"))
+	_check(_text_of(app, "GrowthSummary").find("2단계") >= 0 and _text_of(app, "GrowthSummary").find("동네 맛집") >= 0, tag + ": 등급 표시 갱신")
+	var after_rank: Dictionary = _load_probe(dir)
+	_check(str(after_rank["status"]) == "ok" and (after_rank["state"] as Object).call("rank") == 2, tag + ": 승급이 실제 파일에 저장")
+	_check(_btn_disabled(app, "PromoteButton") and _text_of(app, "RankConditions").find("이름난 라멘집") >= 0, tag + ": 3단계 조건이 다음 목표로 보이고 아직 신청 불가")
+	_check(st.call("topping_slots") == 1 and st.call("record_capacity") == 6, tag + ": 승급만으로는 용량이 늘지 않아요")
+
+	# 5) 유료 확장: 자금만 격리 인스턴스에서 채운다(가격/등급/선행 규칙은 그대로 도메인이 검증).
+	st.set("wallet", 200000)
+	app.call("_refresh_all")
+	await _open_growth_tab(app)
+	_check(not _btn_disabled(app, "FacilityBuy_bench_1") and not _btn_disabled(app, "FacilityBuy_staff_1"), tag + ": 2단계에서 I 단계 확장은 살 수 있어요")
+	_check(_btn_disabled(app, "FacilityBuy_bench_2") and _text_of(app, "FacilityInfo_bench_2").find("등급 3단계") >= 0 and _btn_disabled(app, "FacilityBuy_staff_2"), tag + ": II 단계는 아직 잠김(등급 3 필요)")
+	var w1: int = int(st.get("wallet"))
+	_press(app, "FacilityBuy_bench_1")
+	await _settle()
+	_check(int(st.get("wallet")) == w1 - 12000 and st.call("topping_slots") == 2 and st.call("record_capacity") == 12, tag + ": 조리대 I: 12,000원 한 번, 토핑 2/노트 12")
+	var buy_text: String = _text_of(app, "GrowthMessage")
+	_check(buy_text.find("토핑 슬롯 1→2 · 노트 6→12") >= 0 and buy_text.find("2→2") < 0 and buy_text.find("저장했어요") >= 0, tag + ": 구매 메시지가 구매 전→후 변화와 저장 결과를 알려요: " + buy_text)
+	app.call("_on_facility_buy", "bench_1")
+	_check(int(st.get("wallet")) == w1 - 12000 and _text_of(app, "GrowthMessage") == "이미 설치했어요.", tag + ": 같은 확장 재구매 거부: " + _text_of(app, "GrowthMessage"))
+	_check(_btn_disabled(app, "FacilityBuy_bench_1") and _text_of(app, "FacilityBuy_bench_1").find("설치 완료") >= 0, tag + ": 설치한 확장은 '설치 완료'")
+	var w2: int = int(st.get("wallet"))
+	_press(app, "FacilityBuy_staff_1")
+	await _settle()
+	_check(int(st.get("wallet")) == w2 - 15000 and st.call("staff_capacity") == 3 and (st.call("hired_staff") as Array).is_empty(), tag + ": 직원 공간 I: 15,000원, 직원 3명까지, 자동 고용 없음")
+	_check(_text_of(app, "GrowthMessage").find("직원 2→3명까지") >= 0 and _text_of(app, "GrowthCapacity").find("직원 2/3명") >= 0 and _text_of(app, "GrowthCapacity").find("빈 자리 1") >= 0, tag + ": 직원 용량 표시: " + _text_of(app, "GrowthMessage"))
+	_check(not _btn_disabled(app, "StaffHire_prep_assistant") and not _btn_disabled(app, "StaffHire_floor_assistant"), tag + ": 자리가 생기면 고용 버튼이 켜져요")
+
+	# 6) 고용(역할/고용비/운영비 공개) → 한 명만, 중복/자리 부족 거부.
+	var w3: int = int(st.get("wallet"))
+	_press(app, "StaffHire_prep_assistant")
+	await _settle()
+	_check(int(st.get("wallet")) == w3 - 8000 and str(st.call("hired_staff")) == str(["prep_assistant"]), tag + ": 조리 보조 고용: 8,000원 한 번")
+	_check(_text_of(app, "GrowthMessage").find("조리 보조") >= 0 and _text_of(app, "GrowthMessage").find("저장했어요") >= 0, tag + ": 고용 결과/저장 결과: " + _text_of(app, "GrowthMessage"))
+	_check(_text_of(app, "GrowthCapacity").find("600원") >= 0 and _text_of(app, "GrowthCapacity").find("빈 자리 0") >= 0, tag + ": 하루 운영비/빈 자리 갱신: " + _text_of(app, "GrowthCapacity"))
+	_check(_btn_disabled(app, "StaffHire_prep_assistant") and _text_of(app, "StaffHire_prep_assistant").find("고용 완료") >= 0 and _btn_disabled(app, "StaffHire_floor_assistant"), tag + ": 고용 완료/자리 없음 표시")
+	var after_hire: String = _dict_str(app)
+	app.call("_on_staff_hire", "prep_assistant")
+	app.call("_on_staff_hire", "floor_assistant")
+	_check(_dict_str(app) == after_hire, tag + ": 재고용/자리 없는 고용은 상태를 바꾸지 않아요")
+	_check(_text_of(app, "GrowthMessage").find("직원 공간") >= 0, tag + ": 자리 부족 이유: " + _text_of(app, "GrowthMessage"))
+	var shop: Node = _find(app, "ShopView")
+	_check(str(shop.call("visible_staff")) == str(["prep_assistant"]), tag + ": 가게에 고용한 조리 보조가 보여요")
+	await _growth_reach_all(app, vp)
+	_overflow(app, vp, tag + " 성장 구매 후")
+	(tabs.get_child(5) as ScrollContainer).scroll_vertical = 0
+	await _shot(holder, tag + "_19_growth_purchased.png")
+	# 서랍을 닫으면 가게 장면에 조리 보조가 서 있다.
+	_press(app, "CloseButton")
+	await _settle()
+	_check_shop_layout(app, vp, tag + " 직원 고용 후", _scale_of(tag))
+	_overflow(app, vp, tag + " 직원 있는 가게")
+	await _shot(holder, tag + "_20_shop_staffed.png")
+
+	# 7) 다중 토핑(슬롯 2개): 눌러서 넣고 빼기, 가득 찼을 때 거부, 마지막 하나 보호, 순서만 다른 중복 거부, 모든 토핑이 미리보기/피드백/노트/비교에 보인다.
+	_press(app, "DevButton")
+	await _settle()
+	tabs.current_tab = 0
+	await _settle()
+	_press(app, "NewRecipeButton")
+	for opt in ["Opt_broth_dashi", "Opt_tare_shio", "Opt_oil_scallion", "Opt_noodle_thin", "Opt_cook_firm"]:
+		_press(app, opt)
+	var edit: LineEdit = _find(app, "RecipeNameEdit") as LineEdit
+	edit.text = "QA 두 토핑"
+	edit.text_changed.emit(edit.text)
+	# 지금 토핑은 [김] 하나. 반숙란을 더하면 둘, 차슈를 더하려 하면 가득 차서 거부된다.
+	var bowl_one: PackedByteArray = (_find(app, "BowlPreview") as TextureRect).texture.get_image().get_data()
+	_press(app, "Opt_topping_egg")
+	await _settle()
+	_check(_draft_toppings_text(st).find("topping_egg") >= 0 and _draft_toppings_text(st).find("topping_nori") >= 0, tag + ": 도메인 초안에도 토핑 둘: " + _draft_toppings_text(st))
+	_check((_find(app, "Opt_topping_egg") as BaseButton).button_pressed and (_find(app, "Opt_topping_nori") as BaseButton).button_pressed and _text_of(app, "ToppingCount").find("2/2") >= 0, tag + ": 두 번째 토핑 추가: " + _text_of(app, "ToppingCount"))
+	var bowl_two: PackedByteArray = (_find(app, "BowlPreview") as TextureRect).texture.get_image().get_data()
+	_check(bowl_two != bowl_one, tag + ": 토핑을 더하면 그릇 미리보기가 달라져요")
+	_press(app, "Opt_topping_chashu")
+	await _settle()
+	_check(not (_find(app, "Opt_topping_chashu") as BaseButton).button_pressed and (_find(app, "Opt_topping_egg") as BaseButton).button_pressed and (_find(app, "Opt_topping_nori") as BaseButton).button_pressed, tag + ": 가득 찼을 때 다른 토핑을 몰래 바꾸지 않아요")
+	_check(_text_of(app, "TasteMessage").find("2개까지") >= 0, tag + ": 가득 참 거부 이유(한도/해금): " + _text_of(app, "TasteMessage"))
+	_check(_text_of(app, "ToppingHint").find("최소 1개") >= 0 and _text_of(app, "ToppingHint").find("최대 2개") >= 0, tag + ": 다중 선택 안내: " + _text_of(app, "ToppingHint"))
+	_press(app, "Opt_topping_nori")
+	await _settle()
+	_check(not (_find(app, "Opt_topping_nori") as BaseButton).button_pressed and _text_of(app, "ToppingCount").find("1/2") >= 0, tag + ": 눌러서 빼기")
+	_press(app, "Opt_topping_egg")
+	await _settle()
+	_check((_find(app, "Opt_topping_egg") as BaseButton).button_pressed and _text_of(app, "ToppingCount").find("1/2") >= 0, tag + ": 마지막 하나는 뺄 수 없어요")
+	_check(_text_of(app, "TasteMessage").find("최소 1개") >= 0, tag + ": 마지막 하나 보호 이유: " + _text_of(app, "TasteMessage"))
+	_press(app, "Opt_topping_chashu")
+	await _settle()
+	_check((_find(app, "Opt_topping_chashu") as BaseButton).button_pressed and (_find(app, "Opt_topping_egg") as BaseButton).button_pressed, tag + ": 차슈 + 반숙란")
+	_check(_text_of(app, "Desc_topping").find("차슈") >= 0 and _text_of(app, "Desc_topping").find("반숙란") >= 0, tag + ": 레시피 설명에 선택한 토핑이 모두 나와요")
+	_check(_text_of(app, "ProfileLabel").find("원가") >= 0, tag + ": 구성 요약")
+	for name in ["ToppingCount", "ToppingHint", "Opt_topping_chashu", "Opt_topping_egg", "Opt_topping_sprouts", "Opt_topping_nori", "TasteButton"]:
+		await _reachable(app, vp, name)
+	_overflow(app, vp, tag + " 다중 토핑 개발")
+	(tabs.get_child(0) as ScrollContainer).scroll_vertical = 0
+	await _shot(holder, tag + "_21_multi_topping_lab.png")
+	await _finish_tasting(app)
+	_check(tabs.current_tab == 1 and _text_of(app, "FeedbackToppings").find("차슈") >= 0 and _text_of(app, "FeedbackToppings").find("반숙란") >= 0 and _text_of(app, "FeedbackToppings").find("2개") >= 0, tag + ": 피드백에 토핑이 모두 보여요: " + _text_of(app, "FeedbackToppings"))
+	var first_id: int = int(st.get("selected_record_id"))
+	_check(_record_toppings_count(st.call("get_record", first_id)) == 2, tag + ": 기록에 토핑 2개")
+	for id2 in ["dohyun", "hayoung", "maru"]:
+		await _reachable(app, vp, "Card_" + id2)
+		_check_score_line(app, id2, tag)
+	(tabs.get_child(1) as ScrollContainer).scroll_vertical = 0
+	_overflow(app, vp, tag + " 다중 토핑 피드백")
+	await _shot(holder, tag + "_22_multi_topping_feedback.png")
+	# 같은 토핑을 다른 순서로 다시 맞춰도 새 메뉴가 생기지 않는다(순서만 다른 구성 = 같은 레시피).
+	tabs.current_tab = 0
+	await _settle()
+	# [차슈, 반숙란] → 차슈를 빼고 다시 넣어 [반숙란, 차슈] 순서로 같은 집합을 만든다.
+	_press(app, "Opt_topping_chashu")
+	await _settle()
+	_press(app, "Opt_topping_chashu")
+	await _settle()
+	_check((_find(app, "Opt_topping_chashu") as BaseButton).button_pressed and (_find(app, "Opt_topping_egg") as BaseButton).button_pressed, tag + ": 같은 토핑 집합 복원")
+	var count_before: int = int(st.call("record_count"))
+	var dup: Dictionary = app.call("start_tasting")
+	_check(not bool(dup["ok"]) and not bool(app.call("work_active")) and int(st.call("record_count")) == count_before and str(dup["message"]).find("이미 같은 구성") >= 0, tag + ": 순서만 바꾼 같은 구성은 시식 거부: " + str(dup["message"]))
+	# 개정: 토핑을 바꿔 v2 로 시식하면 비교에 토핑 변화가 보인다.
+	_press(app, "Opt_topping_chashu")
+	_press(app, "Opt_topping_nori")
+	await _settle()
+	await _finish_tasting(app)
+	_check(tabs.current_tab == 1 and _text_of(app, "FeedbackTitle").find("v2") >= 0, tag + ": 토핑 개정 v2")
+	var cmp_text: String = _text_of(app, "ComparisonLabel")
+	_check(cmp_text.find("토핑") >= 0 and cmp_text.find("차슈") >= 0 and cmp_text.find("김") >= 0 and cmp_text.find("→") >= 0, tag + ": 개정 비교에 토핑 변화: " + cmp_text)
+	tabs.current_tab = 2
+	await _settle()
+	var row_text: String = _all_text(_find(app, "Row_%d" % int(st.get("selected_record_id"))))
+	_check(row_text.find("반숙란") >= 0 and row_text.find("김") >= 0, tag + ": 노트 행에 토핑이 모두 보여요: " + row_text)
+	_check(_text_of(app, "NotebookCount").find("/12") >= 0, tag + ": 확장 후 노트 용량 12: " + _text_of(app, "NotebookCount"))
+
+	# 8) 보조 직원이 있는 영업: 세션은 시작 때 복사한 직원 스냅샷을 쓰고, 영업 중 성장 행동은 모두 거부된다. 운영비는 정산 한 번에 정확히.
+	var recipe_id: int = int(st.get("selected_record_id"))
+	_press(app, "CloseButton")
+	await _settle()
+	var wallet_s0: int = int(st.get("wallet"))
+	var day_s0: int = int(st.get("day"))
+	_press(app, "StartServiceButton")
+	await _settle()
+	_check(bool(st.call("service_active")), tag + ": 직원이 있는 영업 시작")
+	var sess: Object = st.call("active_session")
+	_check(int((sess.get("staffing") as Dictionary)["wage"]) == 600 and str((sess.get("staffing") as Dictionary)["hired"]) == str(["prep_assistant"]), tag + ": 세션의 직원 스냅샷: " + str(sess.get("staffing")))
+	_check(int(st.get("wallet")) == wallet_s0, tag + ": 영업 시작은 운영비를 선청구하지 않아요")
+	_advance(app, 900.0)
+	await _settle()
+	_check(str(shop.call("visible_staff")) == str(["prep_assistant"]), tag + ": 영업 중 장면은 직원 스냅샷")
+	var busy_snap: String = _dict_str(app)
+	app.call("_on_promote_pressed")
+	app.call("_on_facility_buy", "bench_2")
+	app.call("_on_facility_buy", "staff_2")
+	app.call("_on_staff_hire", "floor_assistant")
+	await _settle()
+	_check(_dict_str(app) == busy_snap and bool(st.call("service_active")), tag + ": 영업 중 승급/구매/고용은 거부되고 아무것도 안 바뀌어요")
+	_check(str((sess.get("staffing") as Dictionary)["hired"]) == str(["prep_assistant"]), tag + ": 영업 중 직원 스냅샷 불변")
+	_check_shop_layout(app, vp, tag + " 직원 영업 중", _scale_of(tag))
+	_overflow(app, vp, tag + " 직원 영업 중")
+	await _shot(holder, tag + "_23_staffed_service.png")
+	_advance(app, 6000.0)
+	await _settle()
+	await _frames(4)
+	var rep: Dictionary = st.get("last_report")
+	_check(not bool(st.call("service_active")) and int(st.get("day")) == day_s0 + 1, tag + ": 영업 정산 1회")
+	_check(int(rep["overhead"]) == 3600 and int(st.get("wallet")) == wallet_s0 + int(rep["net"]), tag + ": 운영비 3,000 + 보조 600 이 정산에 정확히 한 번: " + str(rep))
+	_check(_text_of(app, "ResultLabel").find("3,600원") >= 0, tag + ": 결과 창에 운영비 표시: " + _text_of(app, "ResultLabel"))
+	_press(app, "ResultOkButton")
+	await _settle()
+
+	# 9) 시식 준비 중에는 성장 핸들러도 아무것도 바꾸기 전에 거부된다.
+	_press(app, "DevButton")
+	await _settle()
+	tabs.current_tab = 0
+	await _settle()
+	_press(app, "PriceUp500")
+	_press(app, "TasteButton")
+	_check(bool(app.call("work_active")), tag + ": 시식 준비 시작")
+	var work_snap: String = _dict_str(app)
+	app.call("_on_promote_pressed")
+	app.call("_on_facility_buy", "bench_2")
+	app.call("_on_staff_hire", "floor_assistant")
+	await _settle()
+	_check(_dict_str(app) == work_snap and bool(app.call("work_active")), tag + ": 준비 중 성장 핸들러는 거부되고 상태 불변")
+	_check(_text_of(app, "WorkNotice").find("시식 준비 중에는") >= 0, tag + ": 준비 중 거부 이유: " + _text_of(app, "WorkNotice"))
+	for b in (_find(app, "GrowthList") as Node).find_children("*", "Button", true, false):
+		_check((b as Button).disabled, tag + ": 준비 중 성장 버튼은 모두 꺼져요: " + str(b.name))
+	_press(app, "WorkCancelButton")
+	await _settle()
+	_check(not bool(app.call("work_active")), tag + ": 준비 취소")
+
+	# 10) 저장/재시작: 등급/확장/고용/용량이 그대로 복원되고 저절로 늘어나는 것이 없다.
+	var wallet_r: int = int(st.get("wallet"))
+	var records_r: int = int(st.call("record_count"))
+	app.notification(Node.NOTIFICATION_WM_CLOSE_REQUEST)
+	app.queue_free()
+	await _frames(2)
+	app = await _spawn(holder, dir)
+	st = _state(app)
+	shop = _find(app, "ShopView")
+	_check(st.call("rank") == 2 and str(st.call("facilities_owned")) == str(["bench_1", "staff_1"]) and str(st.call("hired_staff")) == str(["prep_assistant"]), tag + ": 재시작 후 등급/확장/고용 복원")
+	_check(int(st.get("wallet")) == wallet_r and int(st.call("record_count")) == records_r and st.call("topping_slots") == 2 and st.call("record_capacity") == 12 and st.call("staff_capacity") == 3, tag + ": 재시작 후 자금/기록/용량 복원(공짜 성장 없음)")
+	_check(str(shop.call("visible_staff")) == str(["prep_assistant"]), tag + ": 재시작 후 가게에 직원이 서 있어요")
+	await _open_growth_tab(app)
+	_check(_text_of(app, "GrowthSummary").find("2단계") >= 0 and _text_of(app, "GrowthCapacity").find("직원 3/3명") >= 0 and _text_of(app, "StaffHire_prep_assistant").find("고용 완료") >= 0, tag + ": 재시작 후 성장 탭: " + _text_of(app, "GrowthCapacity"))
+	_check(_btn_disabled(app, "PromoteButton"), tag + ": 재시작 후에도 승급은 저절로 일어나지 않아요")
+	await _growth_reach_all(app, vp)
+	_overflow(app, vp, tag + " 성장 재시작")
+	(tabs_of(app).get_child(5) as ScrollContainer).scroll_vertical = 0
+	await _shot(holder, tag + "_24_growth_reloaded.png")
+
+	# 11) 3단계까지: 남은 자격은 실제 도메인 연산(연구 제출, 영업)으로 채우고, 승급/구매/고용/토핑 3개는 UI 로 한다.
+	for rid3 in ["hayoung_basic", "maru_basic", "dohyun_advanced", "hayoung_advanced", "maru_advanced"]:
+		var res: Dictionary = st.call("submit_research", rid3, int(rec[rid3]))
+		_check(bool(res["ok"]), tag + ": 연구 제출 " + rid3 + " " + str(res["message"]))
+	st.call("select_record", int(rec["hayoung_basic"]))
+	var guard: int = 0
+	while int(st.get("day")) < 11 and guard < 20:
+		st.call("serve")
+		guard += 1
+	_check(int(st.get("day")) >= 11 and int(st.call("research_points")) == 21, tag + ": 3단계 자격 채움(영업 10일, 연구 6건)")
+	app.call("_refresh_all")
+	await _open_growth_tab(app)
+	_check(not _btn_disabled(app, "PromoteButton"), tag + ": 3단계 승급 가능")
+	_press(app, "PromoteButton")
+	_press(app, "PromoteButton")
+	await _settle()
+	_check(st.call("rank") == 3 and _text_of(app, "GrowthMessage").find("이름난 라멘집") >= 0 and _text_of(app, "GrowthMessage").find("저장했어요") >= 0, tag + ": 3단계 승급: " + _text_of(app, "GrowthMessage"))
+	_check(_btn_disabled(app, "PromoteButton") and _text_of(app, "PromoteButton").find("최고") >= 0, tag + ": 최고 등급 표시")
+	app.call("_on_promote_pressed")
+	_check(_text_of(app, "GrowthMessage").find("가장 높은 등급") >= 0, tag + ": 최고 등급 이후 신청 거부")
+	st.set("wallet", 300000)
+	app.call("_refresh_all")
+	await _open_growth_tab(app)
+	var w4: int = int(st.get("wallet"))
+	_press(app, "FacilityBuy_bench_2")
+	await _settle()
+	_check(int(st.get("wallet")) == w4 - 30000 and st.call("topping_slots") == 3 and st.call("record_capacity") == 30, tag + ": 조리대 II: 30,000원, 토핑 3/노트 30")
+	_check(_text_of(app, "GrowthMessage").find("토핑 슬롯 2→3 · 노트 12→30") >= 0, tag + ": 조리대 II 메시지: " + _text_of(app, "GrowthMessage"))
+	_press(app, "FacilityBuy_staff_2")
+	await _settle()
+	_check(st.call("staff_capacity") == 4 and (st.call("hired_staff") as Array).size() == 1, tag + ": 직원 공간 II: 4명까지, 자동 고용 없음")
+	_press(app, "StaffHire_floor_assistant")
+	await _settle()
+	_check(str(st.call("hired_staff")) == str(["prep_assistant", "floor_assistant"]) and _text_of(app, "GrowthCapacity").find("직원 4/4명") >= 0 and _text_of(app, "GrowthCapacity").find("1,100원") >= 0, tag + ": 홀 보조 고용: " + _text_of(app, "GrowthCapacity"))
+	_check(str(shop.call("visible_staff")) == str(["prep_assistant", "floor_assistant"]), tag + ": 가게에 보조 둘")
+	await _growth_reach_all(app, vp)
+	_overflow(app, vp, tag + " 성장 전체")
+	(tabs_of(app).get_child(5) as ScrollContainer).scroll_vertical = 0
+	await _shot(holder, tag + "_26_growth_full.png")
+	# 토핑 3개: 차슈 + 반숙란 + 김. 네 번째는 거부.
+	tabs_of(app).current_tab = 0
+	await _settle()
+	_press(app, "NewRecipeButton")
+	st.call("set_draft_toppings", ["topping_chashu"])
+	app.call("_refresh_all")
+	for opt2 in ["Opt_broth_tonkotsu", "Opt_tare_shoyu", "Opt_oil_garlic", "Opt_noodle_medium", "Opt_cook_normal"]:
+		_press(app, opt2)
+	var edit3: LineEdit = _find(app, "RecipeNameEdit") as LineEdit
+	edit3.text = "QA 세 토핑"
+	edit3.text_changed.emit(edit3.text)
+	_press(app, "Opt_topping_egg")
+	_press(app, "Opt_topping_nori")
+	await _settle()
+	_check(_text_of(app, "ToppingCount").find("3/3") >= 0, tag + ": 토핑 3/3: " + _text_of(app, "ToppingCount"))
+	_press(app, "Opt_topping_sprouts")
+	await _settle()
+	_check(not (_find(app, "Opt_topping_sprouts") as BaseButton).button_pressed and _text_of(app, "TasteMessage").find("3개까지") >= 0, tag + ": 네 번째 토핑 거부: " + _text_of(app, "TasteMessage"))
+	await _finish_tasting(app)
+	_check(_text_of(app, "FeedbackToppings").find("차슈") >= 0 and _text_of(app, "FeedbackToppings").find("반숙란") >= 0 and _text_of(app, "FeedbackToppings").find("김") >= 0 and _text_of(app, "FeedbackToppings").find("3개") >= 0, tag + ": 피드백에 토핑 3개: " + _text_of(app, "FeedbackToppings"))
+	_check(_record_toppings_count(st.call("get_record", int(st.get("selected_record_id")))) == 3, tag + ": 기록에 토핑 3개")
+	# 보조 둘 + 토핑 3개 영업.
+	_press(app, "CloseButton")
+	await _settle()
+	var wallet_f0: int = int(st.get("wallet"))
+	var day_f0: int = int(st.get("day"))
+	_press(app, "StartServiceButton")
+	await _settle()
+	_check(bool(st.call("service_active")), tag + ": 완전 성장 상태 영업 시작")
+	_advance(app, 900.0)
+	await _settle()
+	_check(str(shop.call("visible_staff")) == str(["prep_assistant", "floor_assistant"]), tag + ": 영업 중 보조 둘이 보여요")
+	_check_shop_layout(app, vp, tag + " 보조 둘 영업 중", _scale_of(tag))
+	_overflow(app, vp, tag + " 보조 둘 영업 중")
+	await _shot(holder, tag + "_27_full_service.png")
+	_advance(app, 6000.0)
+	await _settle()
+	await _frames(4)
+	var rep2: Dictionary = st.get("last_report")
+	_check(int(st.get("day")) == day_f0 + 1 and int(rep2["overhead"]) == 4100 and int(st.get("wallet")) == wallet_f0 + int(rep2["net"]), tag + ": 운영비 3,000 + 1,100: " + str(rep2))
+	_press(app, "ResultOkButton")
+	await _settle()
+	app.queue_free()
+	await _frames(2)
+	saver.remove_known_files()
+	DirAccess.remove_absolute(dir)
+
+
+func tabs_of(app: Node) -> TabContainer:
+	return _find(app, "MainTabs") as TabContainer
+
+
+func _scale_of(tag: String) -> int:
+	for p in PROFILES:
+		var prof: Dictionary = p
+		if str(prof["tag"]) == tag:
+			return int(prof["scale"])
+	return 1
+
+
+## 기록 딕셔너리의 토핑 개수(없으면 0).
+func _record_toppings_count(rec: Dictionary) -> int:
+	if rec.is_empty():
+		return 0
+	var cfg: Dictionary = rec["config"]
+	return (cfg["toppings"] as Array).size()
+
+
+## 지금 초안의 토핑 id 목록 문자열(화면과 별개로 도메인 값을 읽는다).
+func _draft_toppings_text(st: Object) -> String:
+	var cfg: Dictionary = st.get("draft_config")
+	return str(cfg["toppings"])
+
+
+## 저장이 실패해도 성장 행동이 "저장했어요"라고 거짓말하지 않는지, 메모리 변화는 남는지, 문제를 치우면 다음 행동에서 복구되는지 본다.
+## 실패는 QA 전용 폴더에서 임시 저장 파일 이름과 같은 "폴더"를 만들어 유도한다.
+func _run_growth_failure(holder: SubViewport, tag: String, vp: Vector2i) -> void:
+	var dir: String = _data_root.path_join(tag + "_growthfail")
+	DirAccess.make_dir_recursive_absolute(dir)
+	var saver: SaveServiceScript = SaveServiceScript.new(dir)
+	saver.remove_known_files()
+	var conflict: String = saver.tmp_path()
+	if DirAccess.dir_exists_absolute(conflict):
+		DirAccess.remove_absolute(conflict)
+	var app: Node = await _spawn(holder, dir)
+	var st: Object = _state(app)
+	var witnesses: Dictionary = ResearchScript.WITNESSES
+	# 자격(실제 도메인 연산): 증인 둘 시식 → 연구 1건 → 영업 3일(즉시 영업 경로).
+	var rid_d: int = _domain_taste(app, witnesses["dohyun_basic"], "QA 실패 도윤")
+	var rid_h: int = _domain_taste(app, witnesses["hayoung_basic"], "QA 실패 하영")
+	_check(bool(st.call("submit_research", "dohyun_basic", rid_d)["ok"]), tag + ": 실패 시나리오 연구 제출")
+	st.call("select_record", rid_h)
+	for i in 3:
+		_check(bool(st.call("serve")["ok"]), tag + ": 실패 시나리오 영업 %d일" % (i + 1))
+	st.set("wallet", 100000)
+	app.call("_refresh_all")
+	_check(not (_find(app, "SaveBanner") as Control).visible, tag + ": 시작 때는 저장 경고가 없어요")
+	await _open_growth_tab(app)
+	_check(FileAccess.file_exists(saver.main_path()), tag + ": 첫 방문 저장 파일")
+	_check(DirAccess.make_dir_recursive_absolute(conflict) == OK, tag + ": 저장 충돌 준비")
+	_press(app, "PromoteButton")
+	_press(app, "PromoteButton")
+	await _settle()
+	var msg: String = _text_of(app, "GrowthMessage")
+	_check(st.call("rank") == 2, tag + ": 저장에 실패해도 메모리의 승급은 그대로(정직하게 알림)")
+	_check(msg.find("저장하지 못했") >= 0 and msg.find("저장했어요") < 0, tag + ": 승급 결과가 저장 실패를 알려요: " + msg)
+	_check((_find(app, "SaveBanner") as Control).visible and _text_of(app, "SaveBannerLabel").find("저장하지 못했") >= 0, tag + ": 서랍이 닫혀도 보이는 경고 배너")
+	var probe: Dictionary = _load_probe(dir)
+	_check(str(probe["status"]) == "ok" and (probe["state"] as Object).call("rank") == 1, tag + ": 실패한 저장은 파일에 반영되지 않았어요")
+	await _reachable(app, vp, "GrowthMessage")
+	_overflow(app, vp, tag + " 성장 저장 실패")
+	(tabs_of(app).get_child(5) as ScrollContainer).scroll_vertical = 0
+	await _shot(holder, tag + "_25_growth_save_failed.png")
+	# 복구: 문제를 치우고 다음 행동(구매)을 하면 앞선 승급까지 함께 저장되고 배너가 사라진다.
+	DirAccess.remove_absolute(conflict)
+	_press(app, "FacilityBuy_bench_1")
+	await _settle()
+	_check(_text_of(app, "GrowthMessage").find("저장했어요") >= 0 and not (_find(app, "SaveBanner") as Control).visible, tag + ": 복구 후 구매는 저장되고 배너가 사라져요: " + _text_of(app, "GrowthMessage"))
+	var healed: Dictionary = _load_probe(dir)
+	var hs: Object = healed["state"]
+	_check(str(healed["status"]) == "ok" and hs.call("rank") == 2 and str(hs.call("facilities_owned")) == str(["bench_1"]), tag + ": 복구 후 파일에 승급+구매가 모두 있어요")
+	# 손상 저장 잠금: 성장 행동도 파일을 지우거나 덮어쓰지 않는다(메모리 변화만, 실패를 알림).
+	app.queue_free()
+	await _frames(2)
+	var garbage: String = "{ 손상된 성장 저장"
+	var gf: FileAccess = FileAccess.open(saver.main_path(), FileAccess.WRITE)
+	_check(gf != null, tag + ": 손상 파일 준비")
+	if gf != null:
+		gf.store_string(garbage)
+		gf.close()
+	var locked_app: Node = await _spawn(holder, dir)
+	_check(bool(locked_app.get("save_locked")), tag + ": 손상 저장은 잠겨요")
+	_check(_text_of(locked_app, "ResetSaveButton") != "", tag + ": 손상 파일 보관 버튼")
+	await _open_growth_tab(locked_app)
+	locked_app.call("_on_facility_buy", "bench_1")
+	# 새 게임 상태라 실제 구매는 도메인이 거부한다. 그래서 "도메인이 성공했을 때 화면이 저장을 시도하는 경로"를 직접 불러
+	# 잠금 상태가 파일을 건드리지 않고 거짓 성공도 말하지 않는지 본다(화면 쪽 저장 경계만 검사하며 도메인 상태는 바꾸지 않는다).
+	locked_app.call("_finish_growth_action", {"ok": true, "message": "QA 잠금 시험."})
+	_check(_text_of(locked_app, "GrowthMessage").find("저장하지 못했") >= 0 and _text_of(locked_app, "GrowthMessage").find("저장했어요") < 0, tag + ": 잠금 상태 성장 결과는 저장 실패를 알려요: " + _text_of(locked_app, "GrowthMessage"))
+	_check(_read_file(saver.main_path()) == garbage, tag + ": 잠금 상태에서 성장 행동이 손상 파일을 건드리지 않아요")
+	locked_app.notification(Node.NOTIFICATION_WM_CLOSE_REQUEST)
+	locked_app.queue_free()
+	await _frames(2)
+	_check(_read_file(saver.main_path()) == garbage, tag + ": 닫은 뒤에도 손상 파일 그대로")
+	saver.remove_known_files()
+	DirAccess.remove_absolute(conflict)
 	DirAccess.remove_absolute(dir)
 
 

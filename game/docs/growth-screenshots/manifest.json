@@ -1,0 +1,346 @@
+{
+  "date": "2026-10-15",
+  "renderer": "OpenGL 4.1 Metal / Apple M3 Pro",
+  "checks": 7168,
+  "failures": 0,
+  "exit_code": 0,
+  "engine_errors": 0,
+  "images": [
+    {
+      "file": "desktop_10_save_failed.png",
+      "width": 1280,
+      "height": 800,
+      "sha256": "7b32d078bc28e12a9537f9dee081f4114f85a7f3e33112c5a2e9d3de047dbb48"
+    },
+    {
+      "file": "desktop_11_research_open.png",
+      "width": 1280,
+      "height": 800,
+      "sha256": "1b2fbc95f06244af54989a2104f87ddb695334555e9031829d16cf1920dff2d2"
+    },
+    {
+      "file": "desktop_12_research_progress.png",
+      "width": 1280,
+      "height": 800,
+      "sha256": "0f7809fb3191e4d7f31c5362f67a071f72696b77786713786d947b13ebf17753"
+    },
+    {
+      "file": "desktop_13_research_reloaded.png",
+      "width": 1280,
+      "height": 800,
+      "sha256": "0ee39ef67c721517cc80caf05b4006b7e133c7acf2b3dbfe48cdc29d856d6b80"
+    },
+    {
+      "file": "desktop_14_tasting_work.png",
+      "width": 1280,
+      "height": 800,
+      "sha256": "c17da545230cfd1a22aaa113d8ef88c11b1ac3d1494bcf5bb02d726bf325345e"
+    },
+    {
+      "file": "desktop_14b_feedback_portraits.png",
+      "width": 1280,
+      "height": 800,
+      "sha256": "34503f3c9d88523fff5299c2c8501eaea1df5dd70aee8efce41d8362ebbcf6d6"
+    },
+    {
+      "file": "desktop_15_manual_save.png",
+      "width": 1280,
+      "height": 800,
+      "sha256": "b7f77e3c78f7a06f635c1f5f62c8e1416bdea20862af57027dbf53ef655c8b6e"
+    },
+    {
+      "file": "desktop_16_manual_save_failed.png",
+      "width": 1280,
+      "height": 800,
+      "sha256": "c04133b5a6e66f4616803dee720898fabe0831478b7372cf4defeaf43d724466"
+    },
+    {
+      "file": "desktop_17_growth_locked.png",
+      "width": 1280,
+      "height": 800,
+      "sha256": "865a14cbb5a3e1d22c66d3eea2fb83a6cb4d3a640d2e7f66fd5b2ce90426e0b4"
+    },
+    {
+      "file": "desktop_18_growth_eligible.png",
+      "width": 1280,
+      "height": 800,
+      "sha256": "5f706c7695b489033f418d9d80fe8526934664abfc19cc78e3636a2636322b96"
+    },
+    {
+      "file": "desktop_19_growth_purchased.png",
+      "width": 1280,
+      "height": 800,
+      "sha256": "d8ad8c53f30424e7aa78622f3d65a70a9a9cdaf9a574f273dc169d34b74bffd3"
+    },
+    {
+      "file": "desktop_1_shop_closed.png",
+      "width": 1280,
+      "height": 800,
+      "sha256": "50e99e0dd5b5922bfa446f6904b05025fcf1e68df4492f609a4044341dca5ce2"
+    },
+    {
+      "file": "desktop_20_shop_staffed.png",
+      "width": 1280,
+      "height": 800,
+      "sha256": "57acdc7fa599ec001e2940fe869f7cb8c0c916b23bf2d02d8cc659729523e09b"
+    },
+    {
+      "file": "desktop_21_multi_topping_lab.png",
+      "width": 1280,
+      "height": 800,
+      "sha256": "7e8e3a4d064875b51834e53732910cbdad1783be1c1b370c88a02b4e97251de1"
+    },
+    {
+      "file": "desktop_22_multi_topping_feedback.png",
+      "width": 1280,
+      "height": 800,
+      "sha256": "0e7046c8ffdeab8b30deb03f68f547813e3fb36a8e4250d1dafba83673c6fa35"
+    },
+    {
+      "file": "desktop_23_staffed_service.png",
+      "width": 1280,
+      "height": 800,
+      "sha256": "a3eb849bf09c45ed40b2a8e57b90adcc9d1c6db6834ba10b22eab8bb42bb3773"
+    },
+    {
+      "file": "desktop_24_growth_reloaded.png",
+      "width": 1280,
+      "height": 800,
+      "sha256": "6a2031c0aa508dcf6e4e73fd93c6d846f2f898fb389bc082d4b2ff00dc932575"
+    },
+    {
+      "file": "desktop_25_growth_save_failed.png",
+      "width": 1280,
+      "height": 800,
+      "sha256": "5dad5e20a26dddc88ef8fb52159dee8df4b0f7bedbf38228eea2518c4b119433"
+    },
+    {
+      "file": "desktop_26_growth_full.png",
+      "width": 1280,
+      "height": 800,
+      "sha256": "c0f30ca7d05ca982de245aee8a62fe94fc0211b2f3e8c8e142c56235b288b60b"
+    },
+    {
+      "file": "desktop_27_full_service.png",
+      "width": 1280,
+      "height": 800,
+      "sha256": "83cb5854946e4ffa7935414e0ffd98eb7f594d4400c9258bd69f2690b5c66de5"
+    },
+    {
+      "file": "desktop_2_dev_overlay.png",
+      "width": 1280,
+      "height": 800,
+      "sha256": "4f41f69d1c7dc3113d38b7847fa9f424e9bbd84abe9a3dfeb28611897ecfa7a2"
+    },
+    {
+      "file": "desktop_3_lab_selected.png",
+      "width": 1280,
+      "height": 800,
+      "sha256": "154ef0b5c98b39b5c604acad8ddb08bf25c8b430142356c1fbe623e7a6933a44"
+    },
+    {
+      "file": "desktop_4_feedback_v1.png",
+      "width": 1280,
+      "height": 800,
+      "sha256": "c397dbd15cdb802056f5070070f639eb41981666f5c7514df45375848c516a09"
+    },
+    {
+      "file": "desktop_5_comparison_v2.png",
+      "width": 1280,
+      "height": 800,
+      "sha256": "972f354a5966de0ed7a46fcd528e54dfc5a2ae38cdd599749922c10893f5164a"
+    },
+    {
+      "file": "desktop_6_notebook.png",
+      "width": 1280,
+      "height": 800,
+      "sha256": "2025c665854298e004b66a0939bdf80242dfd0be7d632acf6c6997070ffa82fb"
+    },
+    {
+      "file": "desktop_7_service_mid.png",
+      "width": 1280,
+      "height": 800,
+      "sha256": "de12641b56b394939b1cb9499f989ba6418b0b75585479006889a371114d4aa5"
+    },
+    {
+      "file": "desktop_8_result.png",
+      "width": 1280,
+      "height": 800,
+      "sha256": "20953668b1a09996eacac21714375ed6784af073d9e3df2281d11aaff3190788"
+    },
+    {
+      "file": "desktop_9_reloaded.png",
+      "width": 1280,
+      "height": 800,
+      "sha256": "a99bac687f1be3461fd8ed39c1984dcd213f4cd8e4496fd591e110820c5b1fe9"
+    },
+    {
+      "file": "portrait_10_save_failed.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "18e5a42ee4c9595b6e8ed74e7fdbfeccbfbd608382483ed3abb04c5fe99a653f"
+    },
+    {
+      "file": "portrait_11_research_open.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "f3d04cd7897ffce80e9f9104a5b5e262582dab0dc7aa9b2e0da91c11f6e360d3"
+    },
+    {
+      "file": "portrait_12_research_progress.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "053667a1fb386286890682891ff2f733d13dac9ef0105c8cb7767b3adeed66f0"
+    },
+    {
+      "file": "portrait_13_research_reloaded.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "9a870a454b15b96d45c86a2e73fbd72877dfc7a403fa57901d8d113fcce630b7"
+    },
+    {
+      "file": "portrait_14_tasting_work.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "9a2233a8484f4966cb50000e22626a720e4bf824588d33a4864e8af20515373f"
+    },
+    {
+      "file": "portrait_14b_feedback_portraits.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "f25bfcd9d2fd1df4937159001301a47f1ba4306bc3c7dc91ab808426e0e3ae15"
+    },
+    {
+      "file": "portrait_15_manual_save.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "12367f946c0ab44c60658ca57038dc51122479998c984d4071690fc81ee5097d"
+    },
+    {
+      "file": "portrait_16_manual_save_failed.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "c51e2cddfe6a7c0c7f345353b14626b9fdda71f4b5e1332e8641795c7f180450"
+    },
+    {
+      "file": "portrait_17_growth_locked.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "3d337df56b2ce53c4f06789c7ccd7cd8a70c8c7831b0915366e807e4d2ed02e5"
+    },
+    {
+      "file": "portrait_18_growth_eligible.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "00177a1cf6a00eda4cfb3108ae6d6030fef1e5333c5c04c5b8c53d8e30d312ca"
+    },
+    {
+      "file": "portrait_19_growth_purchased.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "e961887a7451ebbd143f010f31c5b4214be7f9b5e43e660bde6ed0eb456d4239"
+    },
+    {
+      "file": "portrait_1_shop_closed.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "b1bf77563f842e5bdcb41e171014cd11b96b3b588cf33819dbc8979f85f2e246"
+    },
+    {
+      "file": "portrait_20_shop_staffed.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "988e8eb0b045f26fad2ecea44a7978317b1aa00dbbb56000fefa57688b17e9ff"
+    },
+    {
+      "file": "portrait_21_multi_topping_lab.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "382ff835f3805cd5b619e209a7e3a77e27bbb41404d689a2120a8ab0502c8504"
+    },
+    {
+      "file": "portrait_22_multi_topping_feedback.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "bbb8f991187a82a2830768fe793675d94dcdfcebce3203855eccdf706aff8fd9"
+    },
+    {
+      "file": "portrait_23_staffed_service.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "138c3a42758625015a8113aac7a368e96fe03d1c92e30cfe802a5cfd2a9e72f6"
+    },
+    {
+      "file": "portrait_24_growth_reloaded.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "6fcbc5f8823178d5feb44ea2c8e43359398b1f5e76d1ee54462d66c4519e13e6"
+    },
+    {
+      "file": "portrait_25_growth_save_failed.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "78d9c14f6797ee2f5f818fc10f57b1f43b9bff51d2901eec4b4d3b0454b0351b"
+    },
+    {
+      "file": "portrait_26_growth_full.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "cb5dfa292aa53b864e57bfc4be009c9b43bd28ad9f4e3340526275a92632345e"
+    },
+    {
+      "file": "portrait_27_full_service.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "b44cee213f66881a170fe0ff79f612732854a01fbb3b237aa5eeeb296d53dc26"
+    },
+    {
+      "file": "portrait_2_dev_overlay.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "77cd21621f56b4dcde415803211ff74ed0eeff09e2cda36b4525823d500a9c51"
+    },
+    {
+      "file": "portrait_3_lab_selected.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "deda896607536d3630123c7f8b604e83842272b93c10606a2b5cf812b25f0a35"
+    },
+    {
+      "file": "portrait_4_feedback_v1.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "298d5fd4ad619c7a2809e211b58ef67f4ba40701732feb000e88829fc10542bb"
+    },
+    {
+      "file": "portrait_5_comparison_v2.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "798bf6d78a597c07d0b3f12c13d1c34d8c4534a0cda0677ba754086860760371"
+    },
+    {
+      "file": "portrait_6_notebook.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "3dc678799267750d4e11be19b988ae02c7982e2a8c33fefe310ae7574541839b"
+    },
+    {
+      "file": "portrait_7_service_mid.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "79accebbd288dffc7f6c6eeb9d41bb26ec6bf5d59f8cd3661ebb75920c3ff78a"
+    },
+    {
+      "file": "portrait_8_result.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "84c45c8d192c507f927f6f583e76e209d8a262f19e2914a3c8124a063cad8440"
+    },
+    {
+      "file": "portrait_9_reloaded.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "ff35e06494dc1ebe2806ddd5380a64d92ded2db78769574541384d523c2bc4b9"
+    }
+  ]
+}

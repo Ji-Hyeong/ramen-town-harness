@@ -21,6 +21,7 @@ const WorkScript = preload("res://scripts/ui/tasting_work.gd")
 const WorkViewScript = preload("res://scripts/ui/tasting_work_view.gd")
 const Growth = preload("res://scripts/domain/shop_growth.gd")
 const Staffing = preload("res://scripts/domain/shop_staffing.gd")
+const ShopViewScript = preload("res://scripts/ui/shop_view.gd")
 
 const ARG: String = "--test-data-dir="
 
@@ -72,6 +73,8 @@ func _initialize() -> void:
 		test_topping_tradeoff, test_rank_promotion, test_facility_purchase, test_staff_hiring,
 		test_staff_support_effects, test_staff_settlement_and_snapshot, test_record_capacity_and_grandfather,
 		test_schema_migration_v1_v2, test_growth_load_rejections, test_no_phantom_rewards_and_bounds,
+		# --- 성장 UI 단계: 다중 토핑 그릇 그림, 보조 직원 초상/스프라이트, 직원 자리/장면. 화면(main.gd) 핸들러 흐름은 qa_capture.gd(--layout-only 포함)가 밟는다. ---
+		test_growth_bowl_and_portrait_art, test_staff_layout_and_scene,
 	]
 	var ran: int = 0
 	for t in tests:
@@ -2174,6 +2177,1117 @@ func _check_projection_and_depth(variant: String, layout: Dictionary) -> void:
 		for sx in range(int(minf(room_a.x, room_b.x)), int(maxf(room_a.x, room_b.x)), 2):
 			colors[cpu.get_pixel(clampi(sx, 0, world.x - 1), clampi(sy, 0, world.y - 1)).to_html()] = true
 	_check(colors.size() >= 25, "%s: 방 안쪽 색이 너무 단조로워요 (%d색)" % [variant, colors.size()])
+
+
+# =====================================================================================================
+# 가게 성장 도메인 시험 (등급 / 유료 확장 / 다중 토핑 / 보조 직원 / 노트 용량 / 스키마 v3 이행)
+# 모두 실제 도메인 연산(시식 → 연구 제출 → 영업 → 승급 → 구매 → 고용)으로 상태를 만든다. 디버그 해금은 없다.
+# 승급 조건의 점수는 연구 증인 조합(WITNESSES)을 평가기로 다시 계산한 값이다(손으로 지어낸 점수 없음).
+# 화면(UI)/장면 그림/QA 캡처 쪽 성장 시험은 다음 단계(main.gd, 픽셀 아트, qa_capture.gd)에서 추가한다(아직 없음 = 보류, 삭제 아님).
+# =====================================================================================================
+
+## 구성 하나를 v1/v2 저장의 모양("topping" 문자열 하나)으로 되돌린다. 토핑이 하나인 구성만 쓴다.
+func _to_legacy_cfg(cfg: Variant) -> Dictionary:
+	var c: Dictionary = (cfg as Dictionary).duplicate(true)
+	var tops: Array = c["toppings"]
+	c.erase("toppings")
+	c["topping"] = str(tops[0])
+	return c
+
+
+## v3 저장 딕셔너리를 진짜 v1/v2(또는 토핑만 옛 모양인 가짜 v3) 파일 모양으로 바꾼다(JSON 왕복으로 숫자도 float 로).
+## 토핑이 모두 하나인 상태에서만 쓴다.
+func _as_legacy(src: Dictionary, version: int) -> Dictionary:
+	var d: Dictionary = JSON.parse_string(JSON.stringify(src))
+	d["schema_version"] = version
+	d.erase("growth")
+	if version == 1:
+		d.erase("research")
+	for r in d["records"]:
+		var rec: Dictionary = r
+		rec["config"] = _to_legacy_cfg(rec["config"])
+		var cmp: Dictionary = rec["comparison"]
+		if not cmp.is_empty():
+			cmp["prev_config"] = _to_legacy_cfg(cmp["prev_config"])
+	var draft: Dictionary = d["draft"]
+	draft["config"] = _to_legacy_cfg(draft["config"])
+	return d
+
+
+## 증인 여섯 개를 시식하고 연구 여섯 개를 제출한 뒤 영업(즉시 정산 경로)으로 일수를 채우고, target_rank 까지 승급한다.
+## target_rank 1 은 "승급 조건은 모두 채웠지만 신청하지 않은" 상태(영업 3일)다. 확장 구매/고용은 하지 않는다.
+func _ranked_state(target_rank: int) -> GameStateScript:
+	var s: GameStateScript = _state_with_wallet(900000)
+	var rec: Dictionary = _record_all_witnesses(s)
+	for rid in Research.ids():
+		var r: Dictionary = s.submit_research(rid, int(rec[rid]))
+		_check(bool(r["ok"]), "성장 시험 준비: 연구 제출 " + rid + " " + str(r["message"]))
+	_check(bool(s.select_record(int(rec["hayoung_basic"]))["ok"]), "성장 시험 준비: 영업 메뉴 선택")
+	var goal_day: int = 11 if target_rank >= 3 else 4
+	var guard: int = 0
+	while s.day < goal_day and guard < 40:
+		var sr: Dictionary = s.serve()
+		_check(bool(sr["ok"]), "성장 시험 준비: 영업 " + str(sr["message"]))
+		guard += 1
+	for rk in range(2, target_rank + 1):
+		var pr: Dictionary = s.apply_promotion(rk)
+		_check(bool(pr["ok"]), "성장 시험 준비: 승급 %d %s" % [rk, str(pr["message"])])
+	return s
+
+
+## level 2: 등급 2 + 조리대 I + 직원 공간 I. level 3: 등급 3 + 확장 네 개 모두. 고용은 하지 않는다.
+func _grown_state(level: int = 3) -> GameStateScript:
+	var s: GameStateScript = _ranked_state(3 if level >= 3 else 2)
+	var ids: Array[String] = ["bench_1", "staff_1"]
+	if level >= 3:
+		ids.append_array(["bench_2", "staff_2"])
+	for id in ids:
+		var r: Dictionary = s.purchase_facility(id)
+		_check(bool(r["ok"]), "성장 시험 준비: 확장 구매 %s %s" % [id, str(r["message"])])
+	return s
+
+
+func _sum_waits(sess: SessionScript) -> int:
+	var total: int = 0
+	for c in sess.completed:
+		total += int((c as Dictionary)["wait"])
+	return total
+
+
+# ---------- 토핑 ----------
+
+## 토핑이 하나인 옛 구성은 정규 구성과 점수/원가/시간이 정확히 같고, 예전 공식(슬롯마다 재료 하나씩 더함)과도 같다.
+func test_topping_canonical_and_legacy() -> void:
+	var all: Array[Dictionary] = _all_configs()
+	_check(all.size() == 972, "옛 구성 전수 972개")
+	var compared: int = 0
+	for i in range(0, all.size(), 7):
+		var legacy: Dictionary = all[i]
+		var canon: Dictionary = Catalog.normalize_config(legacy)
+		_check(canon.has("toppings") and not canon.has("topping") and (canon["toppings"] as Array).size() == 1, "정규 구성은 toppings 배열 하나")
+		_check(Check.config_error(legacy) == "" and Check.config_error(canon) == "", "옛/정규 구성 모두 유효")
+		_check(str(Evaluator.evaluate(legacy)) == str(Evaluator.evaluate(canon)), "옛/정규 평가 결과(점수·피드백·궁합)가 같아야 해요: " + str(legacy))
+		var cost: int = 0
+		var secs: int = 0
+		for slot in Catalog.SLOTS:
+			var item: Dictionary = Catalog.find(str(legacy[slot]))
+			cost += int(item["cost"])
+			secs += int(item["seconds"])
+		_check(Evaluator.unit_cost(canon) == cost and Evaluator.unit_cost(legacy) == cost, "원가는 예전 공식(여섯 재료 합)과 같아야 해요")
+		_check(Evaluator.prep_seconds(canon) == secs and Evaluator.prep_seconds(legacy) == secs, "준비 시간은 예전 공식과 같아야 해요")
+		_check(Check.same_config(legacy, canon), "옛/정규 구성은 같은 구성")
+		compared += 1
+	_check(compared >= 100, "표본 수 %d" % compared)
+	var def: Dictionary = Catalog.default_config()
+	_check(Check.config_error(def) == "" and Catalog.toppings_of(def).size() == 1 and def.has("toppings"), "기본 구성은 정규, 토핑 1개")
+	_check(str(Catalog.toppings_of({"topping": "topping_egg"})) == str(["topping_egg"]), "옛 모양 토핑 추출")
+	_check(Catalog.toppings_of({"toppings": ["topping_egg", "topping_nori"]}).size() == 2, "정규 모양 토핑 추출")
+	_end()
+
+
+func test_topping_validation() -> void:
+	var base: Dictionary = Catalog.normalize_config(_rich_cfg())
+	var bad: Dictionary = {}
+	var c1: Dictionary = base.duplicate(true)
+	c1["toppings"] = []
+	bad["비어 있음"] = c1
+	var c2: Dictionary = base.duplicate(true)
+	c2["toppings"] = ["topping_egg", "topping_egg"]
+	bad["중복"] = c2
+	var c3: Dictionary = base.duplicate(true)
+	c3["toppings"] = ["topping_chashu", "topping_egg", "topping_sprouts", "topping_nori"]
+	bad["절대 상한 초과"] = c3
+	var c4: Dictionary = base.duplicate(true)
+	c4["toppings"] = ["topping_unknown"]
+	bad["알 수 없는 id"] = c4
+	var c5: Dictionary = base.duplicate(true)
+	c5["toppings"] = "topping_egg"
+	bad["배열 아님"] = c5
+	var c6: Dictionary = base.duplicate(true)
+	c6["toppings"] = [5]
+	bad["문자열 아님"] = c6
+	var c7: Dictionary = base.duplicate(true)
+	c7["topping"] = "topping_egg"
+	bad["옛 키와 정규 키 동시"] = c7
+	var c8: Dictionary = base.duplicate(true)
+	c8["toppings"] = ["broth_dashi"]
+	bad["다른 슬롯 재료"] = c8
+	var c9: Dictionary = _rich_cfg()
+	c9["topping"] = "topping_unknown"
+	bad["옛 구성의 알 수 없는 토핑"] = c9
+	for label in bad:
+		var cfg: Dictionary = bad[label]
+		_check(Check.config_error(cfg) != "", "구성 오류여야 해요: " + str(label))
+		_check(str(Evaluator.evaluate(cfg)["error"]) != "", "평가도 거부: " + str(label))
+		_check(str(Sim.simulate(cfg, {"dohyun": 80, "hayoung": 80, "maru": 80}, 1)["error"]) != "", "시뮬레이션도 거부: " + str(label))
+	# 순서만 다른 토핑 목록은 같은 레시피다: 유효하고, 같은 구성으로 비교되며, 평가가 같고, 정규화하면 카탈로그 순서가 된다.
+	var a: Dictionary = base.duplicate(true)
+	a["toppings"] = ["topping_chashu", "topping_nori"]
+	var b: Dictionary = base.duplicate(true)
+	b["toppings"] = ["topping_nori", "topping_chashu"]
+	_check(Check.config_error(a) == "" and Check.config_error(b) == "", "순서가 달라도 유효")
+	_check(Check.same_config(a, b) and Check.same_config(b, a), "순서만 다른 구성은 같은 구성")
+	_check(str(Evaluator.evaluate(a)) == str(Evaluator.evaluate(b)), "순서만 다르면 평가가 같아야 해요")
+	_check(str(Catalog.normalize_config(b)["toppings"]) == str(["topping_chashu", "topping_nori"]), "정규화는 카탈로그 순서")
+	var other: Dictionary = base.duplicate(true)
+	other["toppings"] = ["topping_chashu", "topping_egg"]
+	_check(not Check.same_config(a, other), "토핑 집합이 다르면 다른 구성")
+	# 토핑마다 정확히 한 번 반영: 토핑을 하나 더하면 원가/시간은 그 토핑의 값만큼 늘어난다.
+	var egg: Dictionary = Catalog.find("topping_egg")
+	var with_egg: Dictionary = base.duplicate(true)
+	with_egg["toppings"] = Catalog.canonical_toppings(["topping_chashu", "topping_egg"])
+	var just_chashu: Dictionary = base.duplicate(true)
+	just_chashu["toppings"] = ["topping_chashu"]
+	_check(Evaluator.unit_cost(with_egg) == Evaluator.unit_cost(just_chashu) + int(egg["cost"]), "토핑 원가는 한 번씩")
+	_check(Evaluator.prep_seconds(with_egg) == Evaluator.prep_seconds(just_chashu) + int(egg["seconds"]), "토핑 시간은 한 번씩")
+	# 저장 구성 파서: v3 는 정렬된 정규 배열만, v1/v2 는 옛 모양만.
+	_check(str(Check.parse_config(a, "t")["error"]) == "", "정렬된 정규 구성 허용")
+	_check(str(Check.parse_config(b, "t")["error"]) != "", "섞인 토핑 순서는 저장 구성에서 거부")
+	_check(str(Check.parse_config(c2, "t")["error"]) != "" and str(Check.parse_config(c3, "t")["error"]) != "" and str(Check.parse_config(c4, "t")["error"]) != "", "중복/초과/미지 거부")
+	var parsed_legacy: Dictionary = Check.parse_config(_rich_cfg(), "t", true)
+	_check(str(parsed_legacy["error"]) == "" and str((parsed_legacy["config"] as Dictionary)["toppings"]) == str(["topping_chashu"]), "옛 구성은 정규 하나짜리 배열로 읽혀요")
+	_check(str(Check.parse_config(base, "t", true)["error"]) != "" and str(Check.parse_config(_rich_cfg(), "t", false)["error"]) != "", "모양과 스키마 버전이 어긋나면 거부")
+	_end()
+
+
+func test_topping_slots_and_draft_limits() -> void:
+	# 슬롯 = min(등급, 1 + 조리대 단계): 둘 다 있어야 열린다.
+	_check(Growth.topping_slots(1, []) == 1 and Growth.topping_slots(3, []) == 1, "조리대 없이는 등급이 높아도 1개")
+	_check(Growth.topping_slots(1, ["bench_1"]) == 1, "등급 1은 조리대가 있어도 1개(등급이 한도)")
+	_check(Growth.topping_slots(2, ["bench_1"]) == 2 and Growth.topping_slots(3, ["bench_1"]) == 2, "조리대 I = 2개")
+	_check(Growth.topping_slots(3, ["bench_1", "bench_2"]) == 3 and Growth.topping_slots(2, ["bench_1", "bench_2"]) == 2, "조리대 II + 등급 3 = 3개")
+	var s: GameStateScript = _state_with_wallet(100000)
+	_check(s.topping_slots() == 1, "처음에는 토핑 1개")
+	var before: String = _json(s)
+	_check(not bool(s.set_draft_toppings(["topping_egg", "topping_nori"])["ok"]) and _json(s) == before, "슬롯을 넘는 지정은 거부, 초안 불변")
+	var over: Dictionary = s.set_draft_toppings(["topping_egg", "topping_nori"])
+	_check(str(over["message"]).find("열려요") >= 0, "해금 방법을 알려요: " + str(over["message"]))
+	_check(not bool(s.toggle_draft_topping("topping_egg")["ok"]) and _json(s) == before, "슬롯이 꽉 차면 추가 거부")
+	_check(not bool(s.toggle_draft_topping(str(Catalog.toppings_of(s.draft_config)[0]))["ok"]) and _json(s) == before, "마지막 토핑은 뺄 수 없어요")
+	var bad_lists: Array = [[], ["topping_nope"], ["topping_egg", "topping_egg"], ["broth_dashi"]]
+	for bl in bad_lists:
+		_check(not bool(s.set_draft_toppings(bl)["ok"]) and _json(s) == before, "잘못된 토핑 지정 거부: " + str(bl))
+	_check(not bool(s.toggle_draft_topping("topping_nope")["ok"]) and _json(s) == before, "알 수 없는 토글 거부")
+	# 옛 호출 모양(토핑 하나 고르기)은 그 하나로 바꾼다.
+	_check(bool(s.set_draft_choice("topping", "topping_nori")["ok"]) and str(s.draft_config["toppings"]) == str(["topping_nori"]), "예전 단일 선택 호환")
+	_check(bool(s.set_draft_toppings(["topping_egg"])["ok"]) and str(s.draft_config["toppings"]) == str(["topping_egg"]), "하나 지정")
+	# 슬롯을 우회해 초안을 망가뜨려도(변조) 시식은 거부한다.
+	var tampered: GameStateScript = _state_with_wallet(100000)
+	tampered.draft_config["toppings"] = ["topping_chashu", "topping_egg"]
+	var t_before: String = _json(tampered)
+	_check(not bool(tampered.taste()["ok"]) and _json(tampered) == t_before and tampered.record_count() == 0, "열린 슬롯보다 많은 토핑은 시식 거부, 자금 불변")
+
+	# 완전 성장 상태: 3개까지, 순서/중복/기록/불러오기.
+	var g: GameStateScript = _grown_state(3)
+	_check(g.topping_slots() == 3, "등급 3 + 조리대 II = 3개")
+	g.start_new_recipe()
+	g.set_draft_name("세 토핑 시험")
+	_check(bool(g.set_draft_toppings(["topping_nori", "topping_chashu", "topping_egg"])["ok"]), "토핑 3개 지정")
+	_check(str(g.draft_config["toppings"]) == str(["topping_chashu", "topping_egg", "topping_nori"]), "초안 토핑은 카탈로그 순서로 정규화")
+	var g_before: String = _json(g)
+	_check(not bool(g.set_draft_toppings(["topping_chashu", "topping_egg", "topping_sprouts", "topping_nori"])["ok"]) and _json(g) == g_before, "4개는 거부")
+	_check(not bool(g.toggle_draft_topping("topping_sprouts")["ok"]) and _json(g) == g_before, "꽉 찬 슬롯에 추가 거부")
+	_check(bool(g.toggle_draft_topping("topping_egg")["ok"]) and Catalog.toppings_of(g.draft_config).size() == 2, "토글로 빼기")
+	_check(bool(g.toggle_draft_topping("topping_sprouts")["ok"]) and Catalog.toppings_of(g.draft_config).size() == 3, "토글로 다른 토핑 넣기")
+	var cost: int = Evaluator.unit_cost(g.draft_config)
+	var wallet0: int = g.wallet
+	var r: Dictionary = g.taste()
+	_check(bool(r["ok"]), "세 토핑 시식: " + str(r["message"]))
+	var rec: Dictionary = g.get_record(int(r["record_id"]))
+	_check(Catalog.toppings_of(rec["config"]).size() == 3 and g.wallet == wallet0 - cost, "기록에 토핑 3개, 재료비는 세 토핑 모두 반영")
+	_check(str(rec["scores"]) == str(_scores_of(rec["config"])), "기록 점수는 세 토핑 평가 결과")
+	# 같은 토핑을 다른 순서로 넣어도 새 기록이 생기지 않는다(새 레시피 이름이라 "중복 구성" 규칙이 직접 걸린다).
+	g.start_new_recipe()
+	var count: int = g.record_count()
+	var w1: int = g.wallet
+	var reordered: Array = []
+	for t in Catalog.toppings_of(g.draft_config):
+		reordered.append(t)
+	reordered.reverse()
+	g.draft_config["toppings"] = reordered
+	var dup: Dictionary = g.taste()
+	_check(not bool(dup["ok"]) and g.record_count() == count and g.wallet == w1, "토핑 순서만 바꿔서는 새 기록을 만들 수 없어요: " + str(dup["message"]))
+	g.select_record(int(r["record_id"]))
+	_check(str(g.draft_config["toppings"]) == str((rec["config"] as Dictionary)["toppings"]), "불러온 레시피의 토핑이 기록과 같아요")
+	# 개정 비교에도 토핑이 모두 들어간다.
+	_check(bool(g.set_draft_toppings(["topping_chashu", "topping_egg"])["ok"]), "개정: 토핑 2개로")
+	var rev: Dictionary = g.taste()
+	_check(bool(rev["ok"]), "개정 시식: " + str(rev["message"]))
+	var cmp: Dictionary = g.get_record(int(rev["record_id"]))["comparison"]
+	_check(Catalog.toppings_of(cmp["prev_config"]).size() == 3, "개정 비교의 이전 구성에 토핑 3개")
+	# 저장 왕복: 세 토핑이 그대로.
+	var round_dict: Dictionary = JSON.parse_string(JSON.stringify(g.to_dict()))
+	var loaded: GameStateScript = GameStateScript.new()
+	_check(loaded.load_from_dict(round_dict) == "" and _json(loaded) == _json(g), "다중 토핑 저장/불러오기 왕복")
+	# 영업 중에는 토핑 편집도 잠긴다.
+	g.select_record(int(rev["record_id"]))
+	_check(bool(g.begin_service()["ok"]), "영업 시작")
+	var lock_before: String = _json(g)
+	_check(not bool(g.set_draft_toppings(["topping_egg"])["ok"]) and not bool(g.toggle_draft_topping("topping_egg")["ok"]) and _json(g) == lock_before, "영업 중 토핑 편집 거부")
+	g.cancel_service()
+	_end()
+
+
+## 토핑을 더하면 원가와 준비 시간이 늘고(수용량이 줄고), 모든 손님이 좋아하게 되지는 않는다.
+func test_topping_tradeoff() -> void:
+	var light: Dictionary = Catalog.normalize_config(_light_cfg())
+	var plus: Dictionary = light.duplicate(true)
+	plus["toppings"] = Catalog.canonical_toppings(["topping_egg", "topping_chashu"])
+	var chashu: Dictionary = Catalog.find("topping_chashu")
+	_check(Evaluator.unit_cost(plus) == Evaluator.unit_cost(light) + int(chashu["cost"]), "차슈를 더하면 원가가 차슈만큼 늘어요")
+	_check(Evaluator.prep_seconds(plus) == Evaluator.prep_seconds(light) + int(chashu["seconds"]), "차슈를 더하면 준비 시간이 차슈만큼 늘어요")
+	var s0: Dictionary = _scores_of(light)
+	var s1: Dictionary = _scores_of(plus)
+	_check(int(s1["hayoung"]) < int(s0["hayoung"]), "담백파 하영은 차슈를 더하면 점수가 내려가요 (%d → %d)" % [int(s0["hayoung"]), int(s1["hayoung"])])
+	_check(int(s1["dohyun"]) > int(s0["dohyun"]), "진한 맛을 원하는 도윤은 점수가 올라가요 (%d → %d)" % [int(s0["dohyun"]), int(s1["dohyun"])])
+	var f0: Dictionary = Sim.simulate(light, s0, 5)
+	var f1: Dictionary = Sim.simulate(plus, s1, 5)
+	_check(int(f1["capacity"]) < int(f0["capacity"]), "준비가 느려져 하루에 만들 수 있는 그릇이 줄어요 (%d → %d)" % [int(f0["capacity"]), int(f1["capacity"])])
+	# 전수: 어떤 구성이든 토핑을 하나 더하면 원가/시간이 반드시 늘고, 점수가 내려가는 손님이 생기는 경우와 엇갈리는 경우가 존재한다.
+	var worse_somewhere: int = 0
+	var better_somewhere: int = 0
+	var mixed: int = 0
+	var total: int = 0
+	for cfg in _all_configs():
+		var one: Dictionary = Catalog.normalize_config(cfg)
+		var base_scores: Dictionary = _scores_of(one)
+		var first_top: String = str(Catalog.toppings_of(one)[0])
+		for t in Catalog.items("topping"):
+			var tid: String = str((t as Dictionary)["id"])
+			if tid == first_top:
+				continue
+			var two: Dictionary = one.duplicate(true)
+			two["toppings"] = Catalog.canonical_toppings([first_top, tid])
+			total += 1
+			_check(Evaluator.unit_cost(two) > Evaluator.unit_cost(one) and Evaluator.prep_seconds(two) > Evaluator.prep_seconds(one), "토핑을 더하면 원가와 시간이 늘어야 해요")
+			var after: Dictionary = _scores_of(two)
+			var down: bool = false
+			var up: bool = false
+			for id in after:
+				if int(after[id]) < int(base_scores[id]):
+					down = true
+				elif int(after[id]) > int(base_scores[id]):
+					up = true
+			if down:
+				worse_somewhere += 1
+			if up:
+				better_somewhere += 1
+			if up and down:
+				mixed += 1
+	_check(total == 972 * 3, "전수 조합 수 %d" % total)
+	_check(worse_somewhere > 0 and better_somewhere > 0 and mixed > 0, "토핑 추가가 모두에게 좋지도 모두에게 나쁘지도 않아요 (나쁨 %d, 좋음 %d, 엇갈림 %d)" % [worse_somewhere, better_somewhere, mixed])
+	_check(worse_somewhere < total, "토핑을 더해도 점수가 안 내려가는 경우도 있어요")
+	_end()
+
+
+# ---------- 등급 ----------
+
+func test_rank_promotion() -> void:
+	var titles: Array[String] = []
+	for rk in Growth.RANKS:
+		titles.append(str((rk as Dictionary)["title"]))
+	_check(Growth.RANKS.size() == 3 and Growth.RANK_MAX == 3, "등급은 정확히 3단계")
+	for st in Research.STAGES:
+		_check(not titles.has(str((st as Dictionary)["title"])), "가게 등급 이름은 연구 칭호와 달라야 해요")
+	var s: GameStateScript = _state_with_wallet(300000)
+	var rv0: Dictionary = s.promotion_review()
+	_check(s.rank() == 1 and not bool(rv0["top"]) and int(rv0["next"]) == 2 and (rv0["conditions"] as Array).size() == 3 and not bool(rv0["eligible"]), "처음: 1단계, 다음 2단계, 조건 3개, 신청 불가")
+	var before: String = _json(s)
+	for target in [-1, 0, 1, 3, 4, 99]:
+		_check(not bool(s.apply_promotion(target)["ok"]) and _json(s) == before, "거부된 승급은 상태를 바꾸지 않아요: %d" % target)
+	_check(not bool(s.apply_promotion(2)["ok"]) and _json(s) == before, "조건이 모자란 신청 거부")
+	# 시식/연구/영업 어느 것도 저절로 승급시키지 않는다.
+	var rec: Dictionary = _record_all_witnesses(s)
+	_check(s.rank() == 1 and not bool(s.promotion_review()["eligible"]), "시식만으로는 승급/신청 가능이 아니에요")
+	_check(bool(s.submit_research("dohyun_basic", int(rec["dohyun_basic"]))["ok"]), "연구 1건")
+	var conds1: Array = s.promotion_review()["conditions"]
+	_check(not bool((conds1[0] as Dictionary)["met"]) and bool((conds1[1] as Dictionary)["met"]) and bool((conds1[2] as Dictionary)["met"]), "영업 일수는 부족, 연구와 점수는 달성")
+	_check(not bool(s.apply_promotion(2)["ok"]) and s.rank() == 1, "일수가 모자라면 신청 거부")
+	s.select_record(int(rec["hayoung_basic"]))
+	for i in 3:
+		_check(bool(s.serve()["ok"]), "영업 %d일" % (i + 1))
+	_check(s.rank() == 1, "조건을 채워도 신청 전에는 1단계")
+	var rv2: Dictionary = s.promotion_review()
+	_check(bool(rv2["eligible"]), "세 조건을 모두 채우면 신청 가능")
+	for c in rv2["conditions"]:
+		var cd: Dictionary = c
+		_check(bool(cd["met"]) and str(cd["measured_text"]) != "" and str(cd["text"]) != "", "조건 문구/측정값")
+	# 영업 중에는 신청할 수 없다.
+	_check(bool(s.begin_service()["ok"]), "영업 시작")
+	var busy_before: String = _json(s)
+	_check(not bool(s.apply_promotion(2)["ok"]) and _json(s) == busy_before, "영업 중 승급 신청 거부")
+	s.cancel_service()
+	# 한 단계씩만, 보상 없이.
+	var snap: String = _json(s)
+	_check(not bool(s.apply_promotion(3)["ok"]) and _json(s) == snap, "단계를 건너뛰는 신청 거부")
+	var wallet_before: int = s.wallet
+	_check(bool(s.apply_promotion(2)["ok"]) and s.rank() == 2 and s.rank_title() == "동네 맛집", "2단계 승급")
+	_check(s.wallet == wallet_before, "승급은 자금을 주지 않아요")
+	_check(not bool(s.apply_promotion(2)["ok"]), "같은 승급을 두 번 할 수 없어요")
+	var rv3: Dictionary = s.promotion_review()
+	_check(int(rv3["next"]) == 3 and not bool(rv3["eligible"]), "3단계 조건은 아직 부족")
+	_check(not bool(s.apply_promotion(3)["ok"]), "조건이 모자란 3단계 신청 거부")
+	# 3단계: 연구 4건 + 영업 10일 + 세 단골 모두 80점 이상.
+	for rid in ["hayoung_basic", "maru_basic", "dohyun_advanced"]:
+		_check(bool(s.submit_research(rid, int(rec[rid]))["ok"]), "연구 제출 " + rid)
+	_check(not bool(s.promotion_review()["eligible"]), "연구 4건이어도 영업 일수가 부족")
+	while s.day < 11:
+		_check(bool(s.serve()["ok"]), "영업 계속")
+	_check(bool(s.promotion_review()["eligible"]), "일수/연구/점수를 채우면 3단계 신청 가능(증인 여섯 기록)")
+	# 노트에서 기록을 모두 지우면 점수 조건이 다시 부족해지고, 증인을 다시 시식하면 채워진다(심사는 신청 순간의 기록만 본다).
+	for r2 in s.records():
+		s.delete_record(int((r2 as Dictionary)["record_id"]))
+	var empty_review: Dictionary = s.promotion_review()
+	_check(not bool(empty_review["eligible"]) and not bool(((empty_review["conditions"] as Array)[2] as Dictionary)["met"]), "기록이 없으면 점수 조건 부족")
+	_check(not bool(s.apply_promotion(3)["ok"]) and s.rank() == 2, "기록이 없으면 신청 거부")
+	for wid in ["dohyun_advanced", "hayoung_advanced", "maru_advanced"]:
+		_taste_as(s, Research.WITNESSES[wid], "재심사 " + wid)
+	var best: Dictionary = Growth.best_scores(s.records())
+	for cid in Customers.ids():
+		_check(int(best[cid]) >= 80, "증인 기록의 평가기 점수가 80 이상: %s %d" % [cid, int(best[cid])])
+	_check(bool(s.apply_promotion(3)["ok"]) and s.rank() == 3 and s.rank_title() == "이름난 라멘집", "3단계 승급")
+	var top: Dictionary = s.promotion_review()
+	_check(bool(top["top"]) and int(top["next"]) == 0, "최고 등급 표시")
+	var top_snap: String = _json(s)
+	for target2 in [2, 3, 4]:
+		_check(not bool(s.apply_promotion(target2)["ok"]) and _json(s) == top_snap, "최고 등급 이후 신청 거부: %d" % target2)
+	_end()
+
+
+# ---------- 유료 확장 ----------
+
+func test_facility_purchase() -> void:
+	_check(Growth.FACILITIES.size() == 4, "확장은 유한한 네 개")
+	var seen: Dictionary = {}
+	for f in Growth.FACILITIES:
+		var fd: Dictionary = f
+		_check(not seen.has(str(fd["id"])) and int(fd["price"]) > 0, "확장 id 유일/가격 양수")
+		seen[str(fd["id"])] = true
+		_check(str(fd["track"]) == "recipe" or str(fd["track"]) == "staff", "확장 줄")
+	var s: GameStateScript = _state_with_wallet(100000)
+	var before: String = _json(s)
+	for id in ["bench_1", "bench_2", "staff_1", "staff_2", "", "nope"]:
+		var res: Dictionary = s.purchase_facility(id)
+		_check(not bool(res["ok"]) and str(res["message"]) != "" and _json(s) == before, "1단계에서는 구매 불가/불변: " + id)
+	_check(str(s.facility_review("bench_1")["reason"]).find("등급") >= 0, "등급 부족 이유")
+	_check(str(s.facility_review("bench_1")["effect_text"]).find("→") >= 0, "현재→새 용량 표시")
+
+	var r2: GameStateScript = _ranked_state(2)
+	var w: int = r2.wallet
+	var snap: String = _json(r2)
+	_check(not bool(r2.purchase_facility("bench_2")["ok"]) and not bool(r2.purchase_facility("staff_2")["ok"]) and _json(r2) == snap, "앞 단계/등급 없이 II단계 구매 불가")
+	_check(r2.record_capacity() == 6 and r2.topping_slots() == 1 and r2.staff_capacity() == 2, "승급만으로는 용량이 늘지 않아요")
+	# 구매 전 심사표의 효과 문구와 성공 메시지가 같아야 한다(구매 뒤 용량으로 다시 계산해 "2→2"가 되면 안 된다).
+	var expect_text: String = str(r2.facility_review("bench_1")["effect_text"])
+	_check(expect_text == "토핑 슬롯 1→2 · 노트 6→12", "구매 전 효과 문구: " + expect_text)
+	var buy: Dictionary = r2.purchase_facility("bench_1")
+	_check(bool(buy["ok"]), "조리대 I 구매: " + str(buy["message"]))
+	_check(str(buy["message"]).find(expect_text) >= 0 and str(buy["message"]).find("2→2") < 0 and str(buy["message"]).find("12→12") < 0, "성공 메시지가 구매 전→후 변화를 그대로 알려요: " + str(buy["message"]))
+	_check(r2.wallet == w - 12000 and r2.facilities_owned() == ["bench_1"], "정확히 12,000원 한 번 차감")
+	_check(r2.topping_slots() == 2 and r2.record_capacity() == 12 and r2.staff_capacity() == 2, "조리대 I: 토핑 2, 노트 12, 직원 수는 그대로")
+	var after_buy: String = _json(r2)
+	_check(not bool(r2.purchase_facility("bench_1")["ok"]) and _json(r2) == after_buy, "같은 확장 재구매 불가, 자금 불변")
+	_check(bool(r2.facility_review("bench_1")["owned"]) and not bool(r2.facility_review("bench_1")["can_buy"]), "보유 표시")
+	# 직원 공간 확장의 성공 메시지도 구매 전→후(직원 2→3명)를 말한다. 자금이 모자라면 거부, 정확히 같으면 0원이 되고 음수는 없다.
+	r2.wallet = 14999
+	var poor: String = _json(r2)
+	_check(not bool(r2.purchase_facility("staff_1")["ok"]) and _json(r2) == poor, "자금 1원 부족 거부")
+	r2.wallet = 15000
+	var staff_text: String = str(r2.facility_review("staff_1")["effect_text"])
+	_check(staff_text.find("2→3") >= 0, "직원 공간 효과 문구: " + staff_text)
+	var staff_buy: Dictionary = r2.purchase_facility("staff_1")
+	_check(bool(staff_buy["ok"]) and r2.wallet == 0 and r2.staff_capacity() == 3, "정확한 자금으로 구매하면 0원, 음수 없음")
+	_check(str(staff_buy["message"]).find(staff_text) >= 0 and str(staff_buy["message"]).find("3→3") < 0, "직원 공간 성공 메시지: " + str(staff_buy["message"]))
+	# 영업 중에는 구매 불가.
+	r2.wallet = 500000
+	_check(bool(r2.begin_service()["ok"]), "영업 시작")
+	var busy: String = _json(r2)
+	_check(not bool(r2.purchase_facility("bench_2")["ok"]) and _json(r2) == busy, "영업 중 구매 거부")
+	r2.cancel_service()
+	_check(not bool(r2.purchase_facility("bench_2")["ok"]), "등급 2에서는 조리대 II 불가(등급 3 필요)")
+	# 등급 3: 조리대 II 는 조리대 I 이 있어야 한다.
+	var r3: GameStateScript = _ranked_state(3)
+	var r3_snap: String = _json(r3)
+	_check(not bool(r3.purchase_facility("bench_2")["ok"]) and not bool(r3.purchase_facility("staff_2")["ok"]) and _json(r3) == r3_snap, "앞 단계 없이 II 단계 거부")
+	_check(str(r3.facility_review("bench_2")["reason"]).find("먼저") >= 0, "앞 단계 이유")
+	var w3: int = r3.wallet
+	_check(bool(r3.purchase_facility("bench_1")["ok"]), "조리대 I")
+	var bench2: Dictionary = r3.purchase_facility("bench_2")
+	_check(bool(bench2["ok"]) and str(bench2["message"]).find("토핑 슬롯 2→3 · 노트 12→30") >= 0, "조리대 II 성공 메시지: " + str(bench2["message"]))
+	_check(r3.wallet == w3 - 12000 - 30000 and r3.topping_slots() == 3 and r3.record_capacity() == 30, "조리대 II: 토핑 3, 노트 30, 총 42,000원")
+	# 자금 상한 근처에서도 정확히 차감.
+	r3.wallet = GameStateScript.MAX_WALLET
+	_check(bool(r3.purchase_facility("staff_1")["ok"]) and r3.wallet == GameStateScript.MAX_WALLET - 15000, "자금 상한에서도 정확히 차감")
+	# 불러오기는 확장을 새로 주지 않는다.
+	var loaded: GameStateScript = GameStateScript.new()
+	_check(loaded.load_from_dict(JSON.parse_string(JSON.stringify(r3.to_dict()))) == "" and loaded.facilities_owned() == r3.facilities_owned() and loaded.wallet == r3.wallet, "저장/불러오기는 자금·확장을 그대로 유지")
+	_end()
+
+
+# ---------- 직원 ----------
+
+func test_staff_hiring() -> void:
+	_check(Staffing.STAFF.size() == 2 and Staffing.BASE_STAFF == 2, "기본 직원 2 + 보조 둘")
+	var roles: Dictionary = {}
+	for stf in Staffing.STAFF:
+		var sd: Dictionary = stf
+		roles[str(sd["role"])] = true
+		_check(int(sd["hire_price"]) > 0 and int(sd["wage"]) > 0 and str(sd["name"]) != "" and str(sd["desc"]) != "", "고용비/운영비/이름 공개: " + str(sd["id"]))
+	_check(roles.has("prep") and roles.has("floor") and roles.size() == 2, "조리 보조와 홀 보조")
+	var s: GameStateScript = _state_with_wallet(100000)
+	var before: String = _json(s)
+	_check(s.staff_capacity() == 2 and s.free_staff_slots() == 0, "시작 직원 2명, 빈 자리 없음")
+	_check(not bool(s.hire_staff("prep_assistant")["ok"]) and _json(s) == before, "직원 공간 없이는 고용 불가")
+	_check(not bool(s.hire_staff("nope")["ok"]) and not bool(s.hire_staff("")["ok"]) and _json(s) == before, "알 수 없는 직원 거부")
+
+	var g: GameStateScript = _grown_state(2)
+	_check(g.staff_capacity() == 3 and g.free_staff_slots() == 1 and g.hired_staff().is_empty(), "직원 공간 확장은 자동 고용을 하지 않아요")
+	var w: int = g.wallet
+	var hire: Dictionary = g.hire_staff("prep_assistant")
+	_check(bool(hire["ok"]), "조리 보조 고용: " + str(hire["message"]))
+	_check(g.wallet == w - 8000 and g.hired_staff() == ["prep_assistant"] and g.free_staff_slots() == 0, "고용비 8,000원 한 번 차감")
+	var after: String = _json(g)
+	_check(not bool(g.hire_staff("prep_assistant")["ok"]) and _json(g) == after, "같은 직원 재고용 불가")
+	_check(not bool(g.hire_staff("floor_assistant")["ok"]) and _json(g) == after, "자리가 없으면 다른 직원도 불가")
+	_check(str(g.staff_review("floor_assistant")["reason"]).find("직원 공간") >= 0, "자리 부족 이유")
+	# 자금 경계.
+	var p: GameStateScript = _grown_state(2)
+	p.wallet = 7999
+	var p_snap: String = _json(p)
+	_check(not bool(p.hire_staff("prep_assistant")["ok"]) and _json(p) == p_snap, "자금 1원 부족 거부")
+	p.wallet = 8000
+	_check(bool(p.hire_staff("prep_assistant")["ok"]) and p.wallet == 0, "정확한 자금으로 고용하면 0원")
+	# 영업 중 고용 불가.
+	var b: GameStateScript = _grown_state(2)
+	b.wallet = 500000
+	_check(bool(b.begin_service()["ok"]), "영업 시작")
+	var b_snap: String = _json(b)
+	_check(not bool(b.hire_staff("prep_assistant")["ok"]) and _json(b) == b_snap, "영업 중 고용 거부")
+	b.cancel_service()
+	# 둘 모두: 직원 공간 II 가 있어야 한다.
+	var f: GameStateScript = _grown_state(3)
+	_check(f.staff_capacity() == 4 and f.free_staff_slots() == 2 and f.hired_staff().is_empty(), "공간 II = 4명, 자동 고용 없음")
+	var fw: int = f.wallet
+	_check(bool(f.hire_staff("floor_assistant")["ok"]) and bool(f.hire_staff("prep_assistant")["ok"]), "둘 다 고용")
+	_check(f.wallet == fw - 7000 - 8000 and f.free_staff_slots() == 0, "고용비 합 15,000원")
+	var snap: Dictionary = f.current_staffing()
+	_check(str(snap["hired"]) == str(["prep_assistant", "floor_assistant"]) and int(snap["wage"]) == 1100 and int(snap["prep_percent"]) == 80 and int(snap["serve_percent"]) == 70, "스냅샷은 카탈로그 순서, 운영비 합 1,100원")
+	var none: Dictionary = Staffing.snapshot([])
+	_check(int(none["wage"]) == 0 and int(none["prep_percent"]) == 100 and int(none["serve_percent"]) == 100, "고용 없음 = 기준 스냅샷")
+	_check(Staffing.snapshot_error(snap) == "" and Staffing.snapshot_error({}) == "" and Staffing.snapshot_error(none) == "", "스냅샷 검증")
+	var forged: Dictionary = snap.duplicate(true)
+	forged["wage"] = 0
+	_check(Staffing.snapshot_error(forged) != "", "변조된 스냅샷 거부")
+	_end()
+
+
+## 보조 직원의 효과: 점수가 아니라 시간/운영비. 기준(직원 없음)은 예전과 정확히 같다.
+func test_staff_support_effects() -> void:
+	var none: Dictionary = Staffing.snapshot([])
+	var prep_only: Dictionary = Staffing.snapshot(["prep_assistant"])
+	var floor_only: Dictionary = Staffing.snapshot(["floor_assistant"])
+	var both: Dictionary = Staffing.snapshot(["prep_assistant", "floor_assistant"])
+	for base_prep in range(1, 301):
+		_check(Staffing.effective_prep(base_prep, {}) == base_prep and Staffing.effective_prep(base_prep, none) == base_prep, "직원 없음: 조리 시간 그대로")
+		var eff: int = Staffing.effective_prep(base_prep, prep_only)
+		_check(eff >= 1 and eff <= base_prep, "조리 보조는 시간을 늘리지 않아요")
+		_check(Staffing.effective_prep(base_prep, floor_only) == base_prep, "홀 보조는 조리 시간을 건드리지 않아요")
+	_check(Staffing.effective_prep(73, prep_only) == 59, "73초 → 59초(80% 올림)")
+	for seat in SessionScript.SEAT_COUNT:
+		var base_serve: int = SessionScript.SEAT_SERVE[seat]
+		var base_back: int = maxi(1, base_serve * SessionScript.SERVE_BACK_PERCENT / 100)
+		_check(Staffing.effective_carry(base_serve, {}) == base_serve and Staffing.effective_carry(base_serve, none) == base_serve, "직원 없음: 서빙 그대로")
+		_check(Staffing.effective_return(base_serve, SessionScript.SERVE_BACK_PERCENT, none) == base_back, "직원 없음: 돌아오는 시간이 예전 공식과 같아요")
+		_check(Staffing.effective_carry(base_serve, floor_only) < base_serve and Staffing.effective_return(base_serve, SessionScript.SERVE_BACK_PERCENT, floor_only) <= base_back, "홀 보조: 서빙/복귀가 빨라져요")
+		_check(Staffing.effective_carry(base_serve, prep_only) == base_serve, "조리 보조는 서빙을 건드리지 않아요")
+	# 판매 시뮬레이션: 기준 동일, 조리 보조는 수용량, 모두 운영비.
+	var cfg: Dictionary = _fast_cfg()
+	var scores: Dictionary = {"dohyun": 100, "hayoung": 100, "maru": 100}
+	var base_sim: Dictionary = Sim.simulate(cfg, scores, 5)
+	_check(str(Sim.simulate(cfg, scores, 5, none)) == str(base_sim), "직원 없음 스냅샷은 기준 시뮬레이션과 같아요")
+	_check(int(base_sim["overhead"]) == Sim.OVERHEAD, "기준 운영비")
+	var fast_sim: Dictionary = Sim.simulate(cfg, scores, 5, prep_only)
+	_check(int(fast_sim["capacity"]) > int(base_sim["capacity"]) and int(fast_sim["overhead"]) == Sim.OVERHEAD + 600, "조리 보조: 수용량 증가, 운영비 +600")
+	var floor_sim: Dictionary = Sim.simulate(cfg, scores, 5, floor_only)
+	_check(int(floor_sim["capacity"]) == int(base_sim["capacity"]) and int(floor_sim["units"]) == int(base_sim["units"]) and int(floor_sim["overhead"]) == Sim.OVERHEAD + 500, "홀 보조: 수용량/판매는 같고 운영비 +500")
+	_check(int(Sim.simulate(cfg, scores, 5, both)["overhead"]) == Sim.OVERHEAD + 1100, "둘 다: 운영비 +1,100")
+	_check(int(fast_sim["net"]) == int(fast_sim["revenue"]) - int(fast_sim["ingredient_cost"]) - int(fast_sim["overhead"]), "순이익 식에 운영비 반영")
+	_check(str(Sim.simulate(cfg, scores, 5, {"hired": [], "prep_percent": 50, "serve_percent": 100, "wage": 0})["error"]) != "", "임의로 만든 스냅샷 값은 거부")
+	# 세션 타이밍: 한 손님의 완료 시각이 (접근 + 걷기 + 주문 + 조리 + 서빙 + 식사) 합과 정확히 같다.
+	var st: GameStateScript = _state_with_recipe(_fast_cfg())
+	var rec: Dictionary = st.get_record(st.selected_record_id)
+	var kinds: Array = [["없음", none], ["조리 보조", prep_only], ["홀 보조", floor_only], ["둘 다", both]]
+	var done_times: Dictionary = {}
+	for k in kinds:
+		var label: String = str((k as Array)[0])
+		var snap: Dictionary = (k as Array)[1]
+		var plan: Dictionary = SessionScript.make_plan(rec, 1, snap)
+		_check(str(plan["error"]) == "", "계획 생성 " + label)
+		plan["arrivals"] = [_arrival(10)]
+		var sess: SessionScript = SessionScript.new(plan)
+		_check(sess.run_to_end(), "하루 종료 " + label)
+		var eff_prep: int = Staffing.effective_prep(Evaluator.prep_seconds(rec["config"]), snap)
+		var expected: int = 10 + (SessionScript.APPROACH_GS - 1) + SessionScript.SEAT_WALK[0] + SessionScript.ORDER_GS + eff_prep + Staffing.effective_carry(SessionScript.SEAT_SERVE[0], snap) + SessionScript.EAT_GS
+		var done: Dictionary = sess.completed[0]
+		_check(int(done["done_t"]) == expected, "%s: 완료 시각 %d, 기대 %d" % [label, int(done["done_t"]), expected])
+		done_times[label] = int(done["done_t"])
+		_check(sess.prep == eff_prep, label + ": 세션 조리 시간")
+		_check(int(sess.summary()["overhead"]) == Sim.OVERHEAD + int(snap["wage"]), label + ": 요약 운영비")
+	_check(int(done_times["조리 보조"]) < int(done_times["없음"]) and int(done_times["홀 보조"]) < int(done_times["없음"]) and int(done_times["둘 다"]) < int(done_times["조리 보조"]), "보조가 있으면 첫 그릇이 더 빨리 나와요")
+	# 몰리는 날: 기다린 시간의 합이 줄어든다(점수는 그대로 100).
+	var crowd: Array = []
+	for i in 6:
+		crowd.append(_arrival(5))
+	var waits: Dictionary = {}
+	for k2 in kinds:
+		var label2: String = str((k2 as Array)[0])
+		var plan2: Dictionary = SessionScript.make_plan(rec, 1, (k2 as Array)[1])
+		plan2["arrivals"] = crowd.duplicate(true)
+		plan2["scores"] = scores
+		var s2: SessionScript = SessionScript.new(plan2)
+		_check(s2.run_to_end() and s2.completed.size() == 6, "몰린 날 종료 " + label2)
+		waits[label2] = _sum_waits(s2)
+	_check(int(waits["홀 보조"]) < int(waits["없음"]), "홀 보조: 총 대기 시간이 줄어요 (%d → %d)" % [int(waits["없음"]), int(waits["홀 보조"])])
+	_check(int(waits["조리 보조"]) < int(waits["없음"]), "조리 보조: 총 대기 시간이 줄어요 (%d → %d)" % [int(waits["없음"]), int(waits["조리 보조"])])
+	_end()
+
+
+## 정산: 운영비는 끝까지 마친 영업에서 정확히 한 번. 시작만 하고 중단하면 아무 변화/청구가 없다. 스냅샷은 영업 중 바뀌지 않는다.
+func test_staff_settlement_and_snapshot() -> void:
+	var g: GameStateScript = _grown_state(3)
+	g.select_record(int((g.records()[0] as Dictionary)["record_id"]))
+	g.wallet = 500000
+	var rec: Dictionary = g.get_record(g.selected_record_id)
+	var base_fc: Dictionary = g.forecast()
+	_check(str(base_fc) == str(Sim.simulate(rec["config"], rec["scores"], g.day)), "고용 전 예측은 기준 계산과 같아요")
+	_check(int(base_fc["overhead"]) == Sim.OVERHEAD, "고용 전 운영비 3,000원")
+	_check(bool(g.hire_staff("prep_assistant")["ok"]) and bool(g.hire_staff("floor_assistant")["ok"]), "둘 고용")
+	var fc: Dictionary = g.forecast()
+	_check(int(fc["overhead"]) == Sim.OVERHEAD + 1100 and int(fc["capacity"]) >= int(base_fc["capacity"]), "고용 후 예측: 운영비 +1,100")
+	var w0: int = g.wallet
+	var day0: int = g.day
+	var before_start: String = _json(g)
+	_check(bool(g.begin_service()["ok"]), "영업 시작")
+	_check(g.wallet == w0 and g.day == day0 and _json(g) == before_start, "영업 시작은 자금/일차/저장 상태를 바꾸지 않아요(운영비 선청구 없음)")
+	var sess: SessionScript = g.active_session()
+	_check(str(sess.staffing) == str(g.current_staffing()) and int(sess.growth_snapshot["rank"]) == 3 and int(sess.growth_snapshot["topping_slots"]) == 3, "세션은 직원/성장 스냅샷을 복사해 가져요")
+	_check(sess.prep == Staffing.effective_prep(Evaluator.prep_seconds(rec["config"]), sess.staffing), "세션 조리 시간은 스냅샷 값")
+	_check(sess.run_to_end(), "하루 종료")
+	_check(g.wallet == w0, "끝나도 정산 전에는 자금 불변")
+	var res: Dictionary = g.settle_service()
+	_check(bool(res["ok"]), "정산: " + str(res["message"]))
+	var rep: Dictionary = g.last_report
+	_check(int(rep["overhead"]) == Sim.OVERHEAD + 1100, "보고 운영비 = 기본 + 보조 운영비")
+	_check(int(rep["net"]) == int(rep["revenue"]) - int(rep["ingredient_cost"]) - Sim.OVERHEAD - 1100, "순이익 식")
+	_check(g.wallet == w0 + int(rep["net"]) and int(rep["wallet_after"]) == g.wallet, "자금은 순이익만큼 정확히 한 번 바뀌어요(운영비 이중 청구 없음)")
+	_check(int(rep["net"]) == int(fc["net"]), "정산 결과 = 고용 후 예측")
+	var after: String = _json(g)
+	_check(not bool(g.settle_service()["ok"]) and _json(g) == after and g.day == day0 + 1, "두 번째 정산 불가")
+	var reloaded: GameStateScript = GameStateScript.new()
+	_check(reloaded.load_from_dict(JSON.parse_string(JSON.stringify(g.to_dict()))) == "" and _json(reloaded) == after, "운영비가 든 보고도 저장 검증을 통과")
+	# 영업 중 고용/구매/승급은 막히고 세션 스냅샷은 그대로(고용 전 스냅샷).
+	var h: GameStateScript = _grown_state(3)
+	h.select_record(int((h.records()[0] as Dictionary)["record_id"]))
+	h.wallet = 500000
+	_check(bool(h.begin_service()["ok"]), "고용 전 영업 시작")
+	var hs: SessionScript = h.active_session()
+	var frozen: String = str(hs.staffing)
+	var h_snap: String = _json(h)
+	_check(not bool(h.hire_staff("prep_assistant")["ok"]) and not bool(h.purchase_facility("bench_1")["ok"]) and not bool(h.apply_promotion(3)["ok"]), "영업 중 성장 행동 모두 거부")
+	_check(_json(h) == h_snap and str(hs.staffing) == frozen and int(hs.staffing["wage"]) == 0, "스냅샷은 영업 중에 바뀌지 않아요")
+	h.cancel_service()
+	_check(bool(h.hire_staff("prep_assistant")["ok"]), "중단 뒤에는 고용 가능")
+	_check(str(hs.staffing) == frozen, "이미 닫힌 세션의 스냅샷도 그대로")
+	# 시작 후 중단: 자금/일차/운영비 변화 없음.
+	var c: GameStateScript = _grown_state(3)
+	c.select_record(int((c.records()[0] as Dictionary)["record_id"]))
+	c.wallet = 500000
+	_check(bool(c.hire_staff("floor_assistant")["ok"]), "홀 보조 고용")
+	var c_before: String = _json(c)
+	_check(bool(c.begin_service()["ok"]), "영업 시작")
+	c.active_session().advance(1200.0)
+	_check(c.active_session().completed.size() > 0, "전제: 일부 주문 완료")
+	c.cancel_service()
+	_check(_json(c) == c_before and c.wallet == 500000 - 7000, "시작 후 중단은 아무것도 청구/지급하지 않아요")
+	# 정산 직전 고용 목록/스냅샷이 어긋나면 거부(변조 방어).
+	var t: GameStateScript = _grown_state(3)
+	t.select_record(int((t.records()[0] as Dictionary)["record_id"]))
+	t.wallet = 500000
+	_check(bool(t.hire_staff("prep_assistant")["ok"]), "변조 시험 준비: 고용")
+	_check(bool(t.begin_service()["ok"]) and t.active_session().run_to_end(), "변조 시험 준비: 영업")
+	var t_snap: String = _json(t)
+	t._hired.clear()
+	_check(not bool(t.settle_service()["ok"]), "직원 구성이 달라지면 정산 거부")
+	t._hired.append("prep_assistant")
+	_check(_json(t) == t_snap, "거부 후 상태 불변")
+	t.active_session().staffing["wage"] = 0
+	_check(not bool(t.settle_service()["ok"]) and _json(t) == t_snap, "스냅샷 운영비가 변조되면 정산 거부")
+	_end()
+
+
+# ---------- 노트 용량 / grandfather ----------
+
+func test_record_capacity_and_grandfather() -> void:
+	var s: GameStateScript = _state_with_wallet(500000)
+	_check(s.record_capacity() == 6, "기본 노트 용량 6")
+	s.set_draft_name("용량 시험")
+	for i in 6:
+		s.set_draft_price(9000 + 100 * i)
+		_check(bool(s.taste()["ok"]), "개정 시식 %d" % i)
+	_check(s.record_count() == 6, "6개")
+	var w: int = s.wallet
+	s.set_draft_price(9700)
+	var full: String = _json(s)
+	var over: Dictionary = s.taste()
+	_check(not bool(over["ok"]) and str(over["message"]).find("6") >= 0 and _json(s) == full and s.wallet == w, "7번째는 거부, 자금/기록 불변")
+	_check(_grown_state(2).record_capacity() == 12 and _grown_state(3).record_capacity() == 30, "용량 12 / 30")
+	_check(GameStateScript.MAX_RECORDS == 30 and Growth.notebook_capacity(["bench_1", "bench_2"]) == 30, "절대 상한 30")
+
+	# grandfather: 예전 저장이 새 기본 용량(6)보다 많은 기록(8개)을 가졌다. 모두 보존되고 불러와지며, 새 시식만 막힌다.
+	var g: GameStateScript = _grown_state(3)
+	g.start_new_recipe()
+	_apply_cfg(g, _rich_cfg())
+	g.set_draft_name("과거 레시피")
+	for i in 2:
+		g.set_draft_price(9500 + 100 * i)
+		_check(bool(g.taste()["ok"]), "과거 기록 추가 %d" % i)
+	_check(g.record_count() == 8, "전제: 기록 8개")
+	var src_records: String = str(g.records())
+	var legacy: Dictionary = _as_legacy(g.to_dict(), 2)
+	var keep: GameStateScript = GameStateScript.new()
+	_check(keep.load_from_dict(legacy) == "", "용량보다 많은 예전 저장도 불러와져요")
+	_check(keep.record_count() == 8 and str(keep.records()) == src_records, "기록/계통/개정/비교가 모두 그대로")
+	_check(keep.selected_record_id == g.selected_record_id and keep.wallet == g.wallet and keep.day == g.day and keep.research_points() == 21, "선택/자금/일차/연구 점수 보존")
+	_check(keep.rank() == 1 and keep.facilities_owned().is_empty() and keep.hired_staff().is_empty(), "예전 저장은 등급 1, 확장/직원 없음(공짜 성장 없음)")
+	_check(keep.record_capacity() == 6 and keep.topping_slots() == 1, "용량은 파생: 6, 토핑 1")
+	# 중복 구성 규칙에 걸리지 않도록 가격을 새로 정한 뒤 용량 규칙만 확인한다.
+	keep.set_draft_price(21000)
+	var k_snap: String = _json(keep)
+	var blocked: Dictionary = keep.taste()
+	_check(not bool(blocked["ok"]) and str(blocked["message"]).find("8/6") >= 0 and keep.record_count() == 8 and _json(keep) == k_snap, "초과 보관 중에는 새 시식 거부, 상태 불변: " + str(blocked["message"]))
+	# v3 로 저장했다 다시 불러와도 8개를 유지한다.
+	var rt: GameStateScript = GameStateScript.new()
+	_check(rt.load_from_dict(JSON.parse_string(JSON.stringify(keep.to_dict()))) == "" and rt.record_count() == 8, "v3 로 저장해도 8개 유지")
+	_check(bool(keep.select_record(int((keep.records()[7] as Dictionary)["record_id"]))["ok"]) and bool(keep.begin_service()["ok"]), "초과 보관 상태에서도 선택/영업은 정상")
+	keep.cancel_service()
+	# 삭제로 개수가 용량 아래(5개)로 내려가야 다시 시식할 수 있다.
+	for i in 3:
+		_check(bool(keep.delete_record(int((keep.records()[0] as Dictionary)["record_id"]))["ok"]), "삭제 %d" % i)
+	_check(keep.record_count() == 5, "5개")
+	keep.start_new_recipe()
+	keep.set_draft_name("새 시제품")
+	keep.set_draft_price(17000)
+	var fresh: Dictionary = keep.taste()
+	_check(bool(fresh["ok"]) and keep.record_count() == 6, "용량 아래로 내려오면 시식 가능: " + str(fresh["message"]))
+	_end()
+
+
+# ---------- 스키마 이행 / 거부 ----------
+
+func test_schema_migration_v1_v2() -> void:
+	for version in [1, 2]:
+		var dir: String = _case_dir("migrate_v%d" % version)
+		var saver: SaveServiceScript = SaveServiceScript.new(dir)
+		saver.remove_known_files()
+		var src: GameStateScript = _populated_state()
+		if version == 2:
+			# v2 는 실제 연구 영수증 하나를 가진다.
+			var rid: int = _taste_as(src, Research.WITNESSES["hayoung_basic"], "이행 연구")
+			_check(bool(src.submit_research("hayoung_basic", rid)["ok"]), "v2 픽스처: 연구 제출")
+		var legacy_text: String = JSON.stringify(_as_legacy(src.to_dict(), version), "\t", true)
+		_write_text(saver.main_path(), legacy_text)
+		var loaded: GameStateScript = GameStateScript.new()
+		var lr: Dictionary = saver.load_into(loaded)
+		_check(str(lr["status"]) == "ok", "v%d 불러오기: %s" % [version, str(lr["message"])])
+		_check(loaded.day == src.day and loaded.wallet == src.wallet and loaded.next_record_id == src.next_record_id and loaded.next_lineage_id == src.next_lineage_id, "v%d: 일차/자금/일련번호" % version)
+		_check(str(loaded.records()) == str(src.records()), "v%d: 기록(구성·점수·비교)이 의미상 같아요" % version)
+		for rr in loaded.records():
+			var rd: Dictionary = rr
+			_check(str(rd["scores"]) == str(_scores_of(rd["config"])) and (rd["config"] as Dictionary).has("toppings") and not (rd["config"] as Dictionary).has("topping"), "v%d: 점수는 그대로, 토핑은 정규 배열" % version)
+		_check(loaded.selected_record_id == src.selected_record_id and loaded.last_feedback_record_id == src.last_feedback_record_id and str(loaded.last_report) == str(src.last_report), "v%d: 선택/피드백/마지막 영업 보고" % version)
+		_check(loaded.draft_name == src.draft_name and str(loaded.draft_config) == str(src.draft_config), "v%d: 초안" % version)
+		_check(str(loaded.research_receipts()) == (str(src.research_receipts()) if version == 2 else "[]"), "v%d: 연구 영수증" % version)
+		_check(loaded.rank() == 1 and loaded.facilities_owned().is_empty() and loaded.hired_staff().is_empty(), "v%d: 등급/확장/직원은 기본(불러오기로 생기는 것 없음)" % version)
+		_check(FileAccess.get_file_as_string(saver.main_path()) == legacy_text, "v%d: 불러오기만으로 파일을 바꾸지 않아요" % version)
+		_check(not FileAccess.file_exists(saver.legacy_bak_path(version)), "v%d: 불러오기만으로 보관본을 만들지 않아요" % version)
+		# 첫 v3 저장: 원본이 .bak 와 버전별 보관본에 모두 남는다.
+		_check(bool(saver.save_state(loaded)["ok"]), "v%d: 이행 후 저장" % version)
+		_check(FileAccess.get_file_as_string(saver.bak_path()) == legacy_text and FileAccess.get_file_as_string(saver.legacy_bak_path(version)) == legacy_text, "v%d: 원본이 백업과 이행 보관본에 보존" % version)
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(saver.main_path()))
+		_check(typeof(parsed) == TYPE_DICTIONARY and int((parsed as Dictionary)["schema_version"]) == 3 and (parsed as Dictionary).has("growth"), "v%d: 새 파일은 v3" % version)
+		# 두 번째 저장은 일반 .bak 만 갱신하고 이행 보관본(원본)은 다시 만들지도 덮어쓰지도 않는다.
+		loaded.wallet += 1
+		_check(bool(saver.save_state(loaded)["ok"]), "v%d: 두 번째 저장" % version)
+		_check(FileAccess.get_file_as_string(saver.legacy_bak_path(version)) == legacy_text, "v%d: 이행 보관본은 다시 덮어쓰지 않아요" % version)
+		_check(FileAccess.get_file_as_string(saver.bak_path()) != legacy_text, "v%d: 일반 백업은 직전 v3 저장" % version)
+		var again: GameStateScript = GameStateScript.new()
+		_check(str(saver.load_into(again)["status"]) == "ok" and _json(again) == _json(loaded), "v%d: v3 왕복" % version)
+		_cleanup_case(saver)
+	# 모양과 버전이 어긋난 파일은 거부(옛 토핑 키를 v3 가 쓰거나, 새 키를 v2 가 쓰기).
+	var v3: Dictionary = JSON.parse_string(JSON.stringify(_populated_state().to_dict()))
+	var v2_with_growth: Dictionary = _as_legacy(_populated_state().to_dict(), 2)
+	v2_with_growth["growth"] = v3["growth"]
+	_check(GameStateScript.new().load_from_dict(v2_with_growth) != "", "growth 가 있는 v2 거부")
+	var v2_new_cfg: Dictionary = JSON.parse_string(JSON.stringify(_populated_state().to_dict()))
+	v2_new_cfg["schema_version"] = 2
+	v2_new_cfg.erase("growth")
+	_check(GameStateScript.new().load_from_dict(v2_new_cfg) != "", "toppings 배열을 쓴 v2 거부")
+	var v3_old_cfg: Dictionary = _as_legacy(_populated_state().to_dict(), 3)
+	v3_old_cfg["growth"] = v3["growth"]
+	_check(GameStateScript.new().load_from_dict(v3_old_cfg) != "", "topping 문자열을 쓴 v3 거부")
+	_end()
+
+
+func test_growth_load_rejections() -> void:
+	# 풍부한 v3 기준 상태: 등급 3, 확장 4개, 보조 직원 1명, 토핑 2·3개짜리 기록과 개정 비교.
+	var g: GameStateScript = _grown_state(3)
+	_check(bool(g.hire_staff("prep_assistant")["ok"]), "기준 상태: 고용")
+	g.start_new_recipe()
+	_apply_cfg(g, _rich_cfg())
+	g.set_draft_name("다중 토핑")
+	_check(bool(g.set_draft_toppings(["topping_chashu", "topping_egg", "topping_nori"])["ok"]), "기준 상태: 토핑 3개")
+	var first: Dictionary = g.taste()
+	_check(bool(first["ok"]), "기준 상태: 시식 " + str(first["message"]))
+	_check(bool(g.set_draft_toppings(["topping_chashu", "topping_egg"])["ok"]), "기준 상태: 토핑 2개")
+	_check(bool(g.taste()["ok"]), "기준 상태: 개정 시식")
+	var base: Dictionary = JSON.parse_string(JSON.stringify(g.to_dict()))
+	var ok_probe: GameStateScript = GameStateScript.new()
+	_check(ok_probe.load_from_dict(base) == "" and _json(ok_probe) == _json(g), "정상 v3 는 float 숫자여도 불러와져요")
+	var labels: Array[String] = [
+		"토핑 순서 섞임", "토핑 중복", "토핑 4개", "알 수 없는 토핑", "토핑 비어 있음", "옛 topping 키", "toppings 문자열", "비교 구성 순서 섞임",
+		"초안 토핑 순서 섞임", "슬롯 초과(등급 1)", "슬롯 초과(조리대 I 만)", "growth 누락", "growth 추가 키", "growth 구조", "등급 4", "등급 0",
+		"등급 문자열", "등급 소수", "알 수 없는 확장", "확장 중복", "확장 순서(II 먼저)", "확장 id 형식", "알 수 없는 직원", "직원 중복",
+		"직원 공간 초과", "직원 id 형식", "facilities 구조", "staff 구조", "연구 없이 승급", "확장 등급 부족",
+	]
+	for label in labels:
+		var copy: Dictionary = base.duplicate(true)
+		var crecords: Array = copy["records"]
+		var clast: Dictionary = crecords[crecords.size() - 1]
+		var cgrowth: Dictionary = {}
+		if copy.has("growth") and copy["growth"] is Dictionary:
+			cgrowth = copy["growth"]
+		match label:
+			"토핑 순서 섞임":
+				(clast["config"] as Dictionary)["toppings"] = ["topping_egg", "topping_chashu"]
+			"토핑 중복":
+				(clast["config"] as Dictionary)["toppings"] = ["topping_egg", "topping_egg"]
+			"토핑 4개":
+				(clast["config"] as Dictionary)["toppings"] = ["topping_chashu", "topping_egg", "topping_sprouts", "topping_nori"]
+			"알 수 없는 토핑":
+				(clast["config"] as Dictionary)["toppings"] = ["topping_unknown"]
+			"토핑 비어 있음":
+				(clast["config"] as Dictionary)["toppings"] = []
+			"옛 topping 키":
+				(clast["config"] as Dictionary)["topping"] = "topping_egg"
+			"toppings 문자열":
+				(clast["config"] as Dictionary)["toppings"] = "topping_egg"
+			"비교 구성 순서 섞임":
+				((clast["comparison"] as Dictionary)["prev_config"] as Dictionary)["toppings"] = ["topping_nori", "topping_egg", "topping_chashu"]
+			"초안 토핑 순서 섞임":
+				((copy["draft"] as Dictionary)["config"] as Dictionary)["toppings"] = ["topping_egg", "topping_chashu"]
+			"슬롯 초과(등급 1)":
+				cgrowth["rank"] = 1
+				cgrowth["facilities"] = []
+				cgrowth["staff"] = []
+			"슬롯 초과(조리대 I 만)":
+				cgrowth["facilities"] = ["bench_1", "staff_1", "staff_2"]
+			"growth 누락":
+				copy.erase("growth")
+			"growth 추가 키":
+				cgrowth["bonus"] = 1
+			"growth 구조":
+				copy["growth"] = []
+			"등급 4":
+				cgrowth["rank"] = 4
+			"등급 0":
+				cgrowth["rank"] = 0
+			"등급 문자열":
+				cgrowth["rank"] = "3"
+			"등급 소수":
+				cgrowth["rank"] = 2.5
+			"알 수 없는 확장":
+				cgrowth["facilities"] = ["bench_1", "bench_9"]
+			"확장 중복":
+				cgrowth["facilities"] = ["bench_1", "bench_1", "bench_2", "staff_1", "staff_2"]
+			"확장 순서(II 먼저)":
+				cgrowth["facilities"] = ["bench_2", "bench_1", "staff_1", "staff_2"]
+			"확장 id 형식":
+				cgrowth["facilities"] = [5]
+			"알 수 없는 직원":
+				cgrowth["staff"] = ["boss"]
+			"직원 중복":
+				cgrowth["staff"] = ["prep_assistant", "prep_assistant"]
+			"직원 공간 초과":
+				cgrowth["facilities"] = ["bench_1", "bench_2"]
+				cgrowth["staff"] = ["prep_assistant"]
+			"직원 id 형식":
+				cgrowth["staff"] = [1]
+			"facilities 구조":
+				cgrowth["facilities"] = "bench_1"
+			"staff 구조":
+				cgrowth["staff"] = {}
+			"연구 없이 승급":
+				(copy["research"] as Dictionary)["completed"] = []
+			"확장 등급 부족":
+				cgrowth["rank"] = 1
+				cgrowth["facilities"] = ["bench_1"]
+				cgrowth["staff"] = []
+			_:
+				_failures.append("알 수 없는 변조 이름: " + label)
+		var target: GameStateScript = GameStateScript.new()
+		target.wallet = 12345
+		var snapshot: String = _json(target)
+		var err: String = target.load_from_dict(copy)
+		_check(err != "", "거부돼야 해요: " + label)
+		_check(_json(target) == snapshot and target.rank() == 1 and target.facilities_owned().is_empty() and target.hired_staff().is_empty(), "거부된 로드는 상태를 바꾸면 안 돼요: " + label)
+	# 새 게임(일차 1)에 승급/구매/고용이 있는 저장은 파생 사실과 모순이라 거부.
+	var fresh: Dictionary = JSON.parse_string(JSON.stringify(GameStateScript.new().to_dict()))
+	var fakes: Array = [{"rank": 2, "facilities": [], "staff": []}, {"rank": 1, "facilities": ["bench_1"], "staff": []}, {"rank": 1, "facilities": [], "staff": ["floor_assistant"]}]
+	for fake in fakes:
+		var fcopy: Dictionary = fresh.duplicate(true)
+		fcopy["growth"] = fake
+		var tgt: GameStateScript = GameStateScript.new()
+		_check(tgt.load_from_dict(fcopy) != "" and tgt.rank() == 1, "일차 1에서 가짜 성장 상태 거부: " + str(fake))
+	# 저장 서비스: 변조된 v3 파일은 corrupt 로 보고하고 파일/상태를 건드리지 않는다.
+	var dir: String = _case_dir("growth_corrupt")
+	var saver: SaveServiceScript = SaveServiceScript.new(dir)
+	saver.remove_known_files()
+	var bad: Dictionary = base.duplicate(true)
+	(bad["growth"] as Dictionary)["rank"] = 4
+	var bad_text: String = JSON.stringify(bad, "\t", true)
+	_write_text(saver.main_path(), bad_text)
+	var probe: GameStateScript = GameStateScript.new()
+	var snap0: String = _json(probe)
+	var lr: Dictionary = saver.load_into(probe)
+	_check(str(lr["status"]) == "corrupt" and FileAccess.get_file_as_string(saver.main_path()) == bad_text and _json(probe) == snap0, "변조된 v3 파일: corrupt, 파일/상태 불변")
+	var future: Dictionary = base.duplicate(true)
+	future["schema_version"] = GameStateScript.SCHEMA_VERSION + 1
+	var future_text: String = JSON.stringify(future, "\t", true)
+	_write_text(saver.main_path(), future_text)
+	_check(str(saver.load_into(GameStateScript.new())["status"]) == "unsupported" and FileAccess.get_file_as_string(saver.main_path()) == future_text, "미래 버전은 unsupported 로 보존")
+	_cleanup_case(saver)
+	_end()
+
+
+## 읽기/불러오기/시식/화면 갱신에 해당하는 호출은 등급·자금·직원을 만들지 않는다. 경계값에서도 자금은 음수/초과가 되지 않는다.
+func test_no_phantom_rewards_and_bounds() -> void:
+	var s: GameStateScript = _ranked_state(1)
+	_check(s.rank() == 1 and bool(s.promotion_review()["eligible"]), "조건을 채웠어도 신청 전에는 1단계")
+	var before: String = _json(s)
+	s.promotion_review()
+	s.facility_reviews()
+	s.staff_reviews()
+	s.current_staffing()
+	s.growth_snapshot()
+	s.forecast()
+	s.records()
+	_check(_json(s) == before, "읽기 전용 호출은 상태를 바꾸지 않아요")
+	var loaded: GameStateScript = GameStateScript.new()
+	_check(loaded.load_from_dict(JSON.parse_string(JSON.stringify(s.to_dict()))) == "" and loaded.rank() == 1 and loaded.wallet == s.wallet and loaded.hired_staff().is_empty() and loaded.facilities_owned().is_empty(), "불러오기는 등급/자금/직원을 만들지 않아요")
+	_check(bool(loaded.promotion_review()["eligible"]) and loaded.rank() == 1, "불러온 뒤에도 신청 전에는 1단계")
+	# 시식/영업 어느 것도 등급을 올리지 않는다(노트가 가득이라 증인 기록 하나를 지워 자리를 만든 뒤 실제로 시식한다).
+	_check(bool(s.delete_record(int((s.records()[0] as Dictionary)["record_id"]))["ok"]), "시험 준비: 기록 하나 삭제")
+	s.start_new_recipe()
+	_apply_cfg(s, _rich_cfg(10100))
+	s.set_draft_name("승급 없음 시험")
+	_check(bool(s.taste()["ok"]), "시식")
+	_check(bool(s.serve()["ok"]), "영업")
+	_check(s.rank() == 1, "시식/영업이 승급시키지 않아요")
+	# 자금 경계.
+	var z: GameStateScript = _ranked_state(2)
+	z.wallet = 0
+	var z_snap: String = _json(z)
+	_check(not bool(z.purchase_facility("bench_1")["ok"]) and _json(z) == z_snap and z.wallet == 0, "자금 0원: 구매 거부, 음수 없음")
+	z.wallet = GameStateScript.MAX_WALLET
+	_check(not bool(z.apply_promotion(3)["ok"]) and z.wallet == GameStateScript.MAX_WALLET, "조건 부족 승급은 자금과 무관하게 거부")
+	_check(bool(z.purchase_facility("bench_1")["ok"]) and z.wallet == GameStateScript.MAX_WALLET - 12000, "자금 상한에서 구매하면 정확히 차감")
+	_check(bool(z.purchase_facility("staff_1")["ok"]) and bool(z.hire_staff("floor_assistant")["ok"]) and z.wallet == GameStateScript.MAX_WALLET - 12000 - 15000 - 7000, "연속 거래 합계가 정확")
+	# 자금이 상한이면 이익이 나는 영업은 기존 규칙대로 시작되지 않고(운영비가 있어도 상한 검사 그대로), 시작되면 순이익이 0 이하다.
+	z.select_record(int((z.records()[0] as Dictionary)["record_id"]))
+	z.wallet = GameStateScript.MAX_WALLET
+	var top_snap: String = _json(z)
+	var begin: Dictionary = z.begin_service()
+	if bool(begin["ok"]):
+		var fc_net: int = int(z.forecast()["net"])
+		z.cancel_service()
+		_check(fc_net <= 0, "자금이 상한이면 순이익이 양수인 영업은 시작되지 않아요")
+	else:
+		_check(_json(z) == top_snap, "거부된 시작은 상태를 바꾸지 않아요")
+	_end()
+
+
+# ---------- 성장 UI 단계: 그림/장면 ----------
+
+func _close(a: Color, b: Color) -> bool:
+	return absf(a.r - b.r) < 0.01 and absf(a.g - b.g) < 0.01 and absf(a.b - b.b) < 0.01 and absf(a.a - b.a) < 0.01
+
+
+## 점 p 에서 선분 a-b 까지의 거리(격자 칸).
+func _dist_to_segment(p: Vector2, a: Vector2, b: Vector2) -> float:
+	var ab: Vector2 = b - a
+	var len2: float = ab.length_squared()
+	if len2 <= 0.0:
+		return p.distance_to(a)
+	var t: float = clampf((p - a).dot(ab) / len2, 0.0, 1.0)
+	return p.distance_to(a + ab * t)
+
+
+func test_growth_bowl_and_portrait_art() -> void:
+	# 토핑 하나: 옛 모양/정규 모양이 같은 그림이고, 예전 고정 위치에 그려진다(단일 토핑의 모습이 바뀌지 않는다).
+	for tid in ["topping_chashu", "topping_egg", "topping_sprouts", "topping_nori"]:
+		var legacy: Dictionary = _cfg("broth_dashi", "tare_shio", "oil_scallion", "noodle_thin", tid, "cook_firm", 9000)
+		var canon: Dictionary = Catalog.normalize_config(legacy)
+		_check(ArtScript.bowl_image(legacy).get_data() == ArtScript.bowl_image(canon).get_data(), "옛/정규 단일 토핑 그릇이 같아야 해요: " + tid)
+	var one: Image = ArtScript.bowl_image(_rich_cfg())
+	_check(_close(one.get_pixel(2, 1), Color(0.80, 0.54, 0.44)) and _close(one.get_pixel(3, 2), Color(0.80, 0.54, 0.44)), "단일 차슈는 예전 위치(2,1)/(3,2)")
+	var nori1: Image = ArtScript.bowl_image(_cfg("broth_dashi", "tare_shio", "oil_scallion", "noodle_thin", "topping_nori", "cook_firm", 9000))
+	_check(_close(nori1.get_pixel(8, 0), Color(0.12, 0.20, 0.16)) and _close(nori1.get_pixel(9, 1), Color(0.12, 0.20, 0.16)), "단일 김은 예전 위치(8,0)")
+	# 여러 토핑: 모두 그려지고 서로 구별되며 순서와 무관하다.
+	var base: Dictionary = Catalog.normalize_config(_light_cfg())
+	var two: Dictionary = base.duplicate(true)
+	two["toppings"] = ["topping_egg", "topping_nori"]
+	var two_rev: Dictionary = base.duplicate(true)
+	two_rev["toppings"] = ["topping_nori", "topping_egg"]
+	var three: Dictionary = base.duplicate(true)
+	three["toppings"] = ["topping_chashu", "topping_egg", "topping_nori"]
+	var img2: Image = ArtScript.bowl_image(two)
+	var img3: Image = ArtScript.bowl_image(three)
+	_check(img2.get_data() == ArtScript.bowl_image(two_rev).get_data(), "토핑 순서가 달라도 같은 그릇")
+	_check(img2.get_width() == 12 and img2.get_height() == 7 and img3.get_width() == 12 and img3.get_height() == 7, "그릇 크기(12x7)는 그대로")
+	_check(_close(img2.get_pixel(2, 1), WHITE_COLOR()) and _close(img2.get_pixel(8, 0), Color(0.12, 0.20, 0.16)), "둘: 반숙란 왼쪽, 김 오른쪽")
+	_check(_close(img3.get_pixel(2, 1), Color(0.80, 0.54, 0.44)) and _close(img3.get_pixel(5, 1), WHITE_COLOR()) and _close(img3.get_pixel(8, 0), Color(0.12, 0.20, 0.16)), "셋: 차슈/반숙란/김이 왼쪽/가운데/오른쪽")
+	var only_egg: Dictionary = base.duplicate(true)
+	only_egg["toppings"] = ["topping_egg"]
+	_check(img2.get_data() != ArtScript.bowl_image(only_egg).get_data() and img3.get_data() != img2.get_data(), "토핑 수/종류가 다르면 그릇이 달라요")
+	var swapped: Dictionary = base.duplicate(true)
+	swapped["toppings"] = ["topping_sprouts", "topping_nori"]
+	_check(ArtScript.bowl_image(swapped).get_data() != img2.get_data(), "토핑 종류가 다르면 그릇이 달라요")
+	# 보조 직원 외형/초상.
+	_check(ArtScript.LOOK_PREP_ASSISTANT == 12 and ArtScript.LOOK_FLOOR_ASSISTANT == 13 and ArtScript.look_count() >= 14, "보조 직원 외형 번호")
+	var stand_sigs: Dictionary = {}
+	for look in ArtScript.look_count():
+		for pose in ["stand", "walk", "sit", "carry", "cook"]:
+			for back in [false, true]:
+				var im: Image = ArtScript.person_image(look, pose, 1, back)
+				_check(im.get_width() == 14 and im.get_height() == 18, "사람 스프라이트 크기 %d %s" % [look, pose])
+		stand_sigs[str(look)] = ArtScript.person_image(look, "stand", 0, false).get_data()
+	for staff_look in [12, 13]:
+		for other in 12:
+			_check(stand_sigs[str(staff_look)] != stand_sigs[str(other)], "보조 직원 외형 %d 이 기존 외형 %d 와 달라야 해요" % [staff_look, other])
+	_check(stand_sigs["12"] != stand_sigs["13"], "두 보조 직원 외형이 서로 달라요")
+	_check(ArtScript.person_image(12, "cook", 0, true).get_data() != ArtScript.person_image(12, "cook", 1, true).get_data(), "조리 보조 동작 프레임")
+	_check(ArtScript.person_image(13, "carry", 0, false).get_data() != ArtScript.person_image(13, "stand", 0, false).get_data(), "홀 보조 쟁반 자세")
+	var st: GameStateScript = _state_with_recipe(_fast_cfg())
+	var sess: SessionScript = SessionScript.new(SessionScript.make_plan(st.get_record(st.selected_record_id), 1))
+	for i in 120:
+		var lk: int = sess._look_of(Sim.WALKIN_ID, i)
+		_check(lk >= 3 and lk <= 9, "처음 온 손님이 직원 외형(12/13)을 쓰면 안 돼요: %d" % lk)
+	# 초상.
+	var p0: Image = ArtScript.staff_portrait_image("prep_assistant")
+	var p1: Image = ArtScript.staff_portrait_image("floor_assistant")
+	_check(p0.get_width() == 24 and p0.get_height() == 24 and p1.get_width() == 24 and p1.get_height() == 24, "직원 초상 24x24")
+	_check(p0.get_data() != p1.get_data(), "두 직원 초상이 달라요")
+	for cid in ArtScript.portrait_ids():
+		var cp: Image = ArtScript.portrait_image(str(cid))
+		_check(cp.get_data() != p0.get_data() and cp.get_data() != p1.get_data(), "직원 초상이 단골 초상과 달라요: " + str(cid))
+	for pimg in [p0, p1]:
+		var im2: Image = pimg
+		for corner in [Vector2i(0, 0), Vector2i(23, 0), Vector2i(0, 23), Vector2i(23, 23)]:
+			_check(_close(im2.get_pixelv(corner), ArtScript.INK), "직원 초상 테두리")
+		_check(im2.get_pixel(12, 8).a == 1.0, "초상에 투명한 구멍 없음")
+	var unknown: Image = ArtScript.staff_portrait_image("nobody")
+	_check(_close(unknown.get_pixel(12, 12), Color(0.80, 0.78, 0.72)) and _close(unknown.get_pixel(0, 0), ArtScript.INK), "알 수 없는 직원은 빈 틀")
+	_end()
+
+
+func WHITE_COLOR() -> Color:
+	return ArtScript.WHITE
+
+
+func test_staff_layout_and_scene() -> void:
+	for variant in [LayoutScript.PORTRAIT, LayoutScript.LANDSCAPE]:
+		var layout: Dictionary = LayoutScript.make(variant)
+		var world: Vector2i = layout["size"]
+		var spots: Dictionary = layout["staff_spots"]
+		_check(spots.size() == 2 and spots.has("prep_assistant") and spots.has("floor_assistant"), variant + ": 직원 자리 둘")
+		var room: Rect2 = layout["room"]
+		for sid in spots:
+			var sp: Dictionary = spots[sid]
+			var g: Vector2 = sp["grid"]
+			var tag: String = "%s %s" % [variant, str(sid)]
+			_check((sp["pos"] as Vector2) == LayoutScript.proj(layout, g), tag + ": 발 위치는 격자 투영")
+			_check(room.grow(-0.4).has_point(g), tag + ": 벽에서 떨어진 방 안")
+			var foot: Vector2 = sp["pos"]
+			var sprite_rect: Rect2 = Rect2(foot - Vector2(7.0, 18.0), Vector2(14.0, 18.0))
+			_check(Rect2(Vector2.ZERO, Vector2(world)).encloses(sprite_rect), tag + ": 스프라이트가 장면 안")
+			var body: Rect2 = Rect2(g - Vector2(0.25, 0.25), Vector2(0.5, 0.5))
+			for f in layout["furniture"]:
+				var fd: Dictionary = f
+				if not bool(fd["solid"]):
+					continue
+				for fr in fd["rects"]:
+					_check(not _hits(body, fr), "%s: 단단한 가구 %s 와 겹쳐요" % [tag, str(fd["id"])])
+			# 손님 경로/서빙 경로/퇴장 경로와 0.45칸 이상 떨어져 있다(몸 반경 0.25 두 개 + 여유).
+			var routes: Array = [layout["leave_grid"]]
+			for sd in layout["seats"]:
+				routes.append((sd as Dictionary)["path_grid"])
+				routes.append((sd as Dictionary)["serve_grid"])
+			for route in routes:
+				var pts: Array = route
+				for k in range(1, pts.size()):
+					_check(_dist_to_segment(g, pts[k - 1], pts[k]) >= 0.45, "%s: 걷는 경로와 너무 가까워요 (%.2f)" % [tag, _dist_to_segment(g, pts[k - 1], pts[k])])
+			for qg in layout["queue_grid"]:
+				_check(g.distance_to(qg) >= 1.0, tag + ": 줄 칸과 겹쳐요")
+			_check(g.distance_to(layout["chef_grid"]) >= 1.2 and g.distance_to(layout["pass_grid"]) >= 1.2, tag + ": 요리사/서버 자리와 겹치지 않아요")
+		# 장면 항목: 직원이 없으면 둘, 고용하면 그 수만큼 늘고 깊이는 발 위치에서 나온다. 알 수 없는 id 는 무시한다.
+		_check((SceneScript.build(layout, {}, {}, 0.0, {}, {}, [])["items"] as Array).size() == 2, variant + ": 직원 없으면 요리사/서버뿐")
+		_check((SceneScript.build(layout, {}, {}, 0.0, {}, {}, ["prep_assistant"])["items"] as Array).size() == 3, variant + ": 조리 보조 1명 추가")
+		_check((SceneScript.build(layout, {}, {}, 0.0, {}, {}, ["nobody"])["items"] as Array).size() == 2, variant + ": 알 수 없는 직원 무시")
+		var both: Dictionary = SceneScript.build(layout, {}, {}, 0.0, {}, {}, ["prep_assistant", "floor_assistant"])
+		_check((both["items"] as Array).size() == 4, variant + ": 보조 둘 추가")
+		for it in both["items"]:
+			var d: Dictionary = it
+			if str(d["key"]).begins_with("staff|"):
+				var sid2: String = str(d["key"]).split("|")[1]
+				var feet: Vector2 = (d["pos"] as Vector2) + Vector2(7.0, 18.0)
+				_check(feet == ((spots[sid2] as Dictionary)["pos"] as Vector2), variant + ": 직원 발이 자리 투영과 같아요")
+				_check(absf(float(d["depth"]) - LayoutScript.depth_of_screen(layout, feet)) < 0.001, variant + ": 직원 깊이는 발 y 에서")
+		# 지원 모션: 조리 보조는 요리사가 조리할 때, 홀 보조는 서버가 서빙할 때만 일을 한다.
+		var idle_prep: Dictionary = SceneScript.build(layout, {"chef_cooking": false}, {}, 0.0, {}, {}, ["prep_assistant"])
+		var cook_prep: Dictionary = SceneScript.build(layout, {"chef_cooking": true}, {}, 0.0, {}, {}, ["prep_assistant"])
+		var idle_keys: String = str(_staff_keys(idle_prep))
+		var cook_keys: String = str(_staff_keys(cook_prep))
+		_check(idle_keys.find("|stand|") >= 0 and cook_keys.find("|cook|") >= 0, variant + ": 조리 보조 동작 " + idle_keys + " / " + cook_keys)
+		var busy_floor: Dictionary = SceneScript.build(layout, {"server_state": SessionScript.S_CARRY, "server_seat": 0, "server_p": 0.5}, {}, 0.0, {}, {}, ["floor_assistant"])
+		var calm_floor: Dictionary = SceneScript.build(layout, {}, {}, 0.0, {}, {}, ["floor_assistant"])
+		_check(str(_staff_keys(busy_floor)).find("|carry|") >= 0 and str(_staff_keys(calm_floor)).find("|stand|") >= 0, variant + ": 홀 보조 동작")
+		# CPU 합성: 직원이 있으면 장면이 달라진다.
+		_check(SceneScript.compose_for(layout, null, 0.0, []).get_data() != SceneScript.compose_for(layout, null, 0.0, ["prep_assistant", "floor_assistant"]).get_data(), variant + ": 고용하면 장면에 보여요")
+	# 영업 중에는 세션의 불변 직원 스냅샷을 그리고, 영업 전에는 실제 고용 목록을 그린다.
+	var st: GameStateScript = _state_with_recipe(_fast_cfg())
+	var rec: Dictionary = st.get_record(st.selected_record_id)
+	var snap: Dictionary = Staffing.snapshot(["floor_assistant"])
+	var sess: SessionScript = SessionScript.new(SessionScript.make_plan(rec, 1, snap))
+	var view: ShopViewScript = ShopViewScript.new()
+	view.set_idle_staff(["prep_assistant"])
+	_check(view.visible_staff() == ["prep_assistant"], "영업 전에는 고용 목록")
+	view.set_session(sess)
+	_check(view.visible_staff() == ["floor_assistant"], "영업 중에는 세션 스냅샷(고용 목록이 바뀌어도 영업 중 장면은 그대로)")
+	view.set_idle_staff(["prep_assistant", "floor_assistant"])
+	_check(view.visible_staff() == ["floor_assistant"], "영업 중 고용 목록 갱신이 장면을 바꾸지 않아요")
+	view.set_session(null)
+	_check(view.visible_staff().size() == 2, "영업이 끝나면 다시 고용 목록")
+	view.free()
+	_end()
+
+
+func _staff_keys(scene: Dictionary) -> Array:
+	var out: Array = []
+	for it in scene["items"]:
+		var d: Dictionary = it
+		if str(d["key"]).begins_with("staff|"):
+			out.append(str(d["key"]))
+	return out
 
 
 func test_shop_layout_and_art() -> void:

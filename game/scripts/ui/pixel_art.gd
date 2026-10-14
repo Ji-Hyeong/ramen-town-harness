@@ -3,6 +3,8 @@ extends RefCounted
 ## 모든 이미지는 RGBA8 이고 작은 논리 해상도로 만든 뒤 화면에서 최근접 필터 + 정수 배율로 확대한다.
 ## 사람은 14x18, 머리가 큰 2.5등신. 좌표 기준은 왼쪽 위이며 발바닥은 맨 아래 줄(y=17)이다.
 
+const Catalog = preload("res://scripts/domain/ingredient_catalog.gd")
+
 const INK: Color = Color(0.149, 0.102, 0.071)
 const WHITE: Color = Color(0.97, 0.95, 0.90)
 const SKIN: Color = Color(0.94, 0.78, 0.63)
@@ -25,9 +27,14 @@ const LOOKS: Array = [
 	{"hair": "#2a2a2a", "shirt": "#e08a3a", "pants": "#3a5a8a", "style": "spiky", "acc": "backpack"},
 	{"hair": "#1d1d1d", "shirt": "#24242a", "pants": "#1c1c22", "style": "band", "acc": "none"},
 	{"hair": "#4a2f22", "shirt": "#f0e8e0", "pants": "#3a3a48", "style": "bandana", "acc": "apron"},
+	# 12 조리 보조(초록 두건 + 앞치마 + 국자), 13 홀 보조(보라 머리 + 앞치마 + 쟁반). 단골/손님 외형(0~9)과 색이 겹치지 않는 별도 직원 외형이다.
+	{"hair": "#3d4a2a", "shirt": "#7fae6a", "pants": "#4a4a40", "style": "cap", "acc": "apron_ladle", "cap": "#4f8f5a"},
+	{"hair": "#6a3a6a", "shirt": "#5a7fc0", "pants": "#2a2a3a", "style": "long", "acc": "apron_tray"},
 ]
 const LOOK_CHEF: int = 10
 const LOOK_SERVER: int = 11
+const LOOK_PREP_ASSISTANT: int = 12
+const LOOK_FLOOR_ASSISTANT: int = 13
 
 
 static func new_image(w: int, h: int) -> Image:
@@ -188,10 +195,18 @@ static func person_image(look_index: int, pose: String, frame: int, back: bool) 
 		rect(img, 10, arm_right_y, 1, arm_h, shirt)
 		px(img, 10, arm_right_y + arm_h, SKIN)
 	px(img, 3, arm_left_y + arm_h, SKIN)
-	if acc == "apron":
+	if acc.begins_with("apron"):
 		rect(img, 4, 10 + dy, 6, 5, WHITE if look_index == LOOK_SERVER else Color(0.9, 0.9, 0.88))
 		rect(img, 4, 10 + dy, 6, 1, RED)
 		rect(img, 5, 9 + dy, 4, 1, WHITE)
+	# 보조 직원 소품: 조리 보조는 오른손의 국자, 홀 보조는 쟁반(둘 다 14x18 안). 직원 외형을 한눈에 구분하게 한다.
+	if acc == "apron_ladle":
+		rect(img, 11, 6 + dy, 1, 6, WOOD_LL)
+		rect(img, 11, 4 + dy, 2, 2, Color(0.72, 0.75, 0.78))
+	elif acc == "apron_tray":
+		rect(img, 8, 11, 6, 1, Color(0.72, 0.75, 0.78))
+		rect(img, 9, 12, 4, 1, Color(0.44, 0.47, 0.52))
+		px(img, 12, 10, WHITE)
 	if acc == "backpack":
 		if back:
 			rect(img, 3, 9 + dy, 8, 6, _c("#7a4a2a"))
@@ -432,6 +447,63 @@ static func portrait_image(customer_id: String) -> Image:
 	return img
 
 
+# ---------- 보조 직원 초상 (24x24) ----------
+
+const STAFF_PORTRAIT_IDS: Array = ["prep_assistant", "floor_assistant"]
+const STAFF_PORTRAIT_BG: Array = ["#c8dcb4", "#c4d0ec"]
+
+
+## 보조 직원 둘의 초상(조리 보조 = 초록 두건 + 국자, 홀 보조 = 긴 보라 머리 + 쟁반). 단골 초상과 같은 24x24 틀/테두리지만
+## 색과 소품이 달라 단골 누구와도 헷갈리지 않는다. 알 수 없는 id 는 빈 틀(테두리 + 배경)만 돌려준다.
+static func staff_portrait_image(staff_id: String) -> Image:
+	var img: Image = new_image(24, 24)
+	var idx: int = STAFF_PORTRAIT_IDS.find(staff_id)
+	rect(img, 0, 0, 24, 24, INK)
+	if idx < 0:
+		rect(img, 1, 1, 22, 22, Color(0.80, 0.78, 0.72))
+		return img
+	var look: Dictionary = LOOKS[LOOK_PREP_ASSISTANT + idx]
+	var hair: Color = _c(str(look["hair"]))
+	var shirt: Color = _c(str(look["shirt"]))
+	rect(img, 1, 1, 22, 22, _c(str(STAFF_PORTRAIT_BG[idx])))
+	var skin_d: Color = SKIN.darkened(0.12)
+	# 어깨 + 앞치마 + 목
+	rect(img, 3, 18, 18, 5, shirt)
+	rect(img, 2, 20, 20, 3, shirt)
+	rect(img, 8, 19, 8, 4, Color(0.9, 0.9, 0.88))
+	rect(img, 8, 19, 8, 1, RED)
+	rect(img, 10, 15, 4, 4, skin_d)
+	# 얼굴
+	rect(img, 7, 5, 10, 11, SKIN)
+	rect(img, 6, 7, 12, 7, SKIN)
+	px(img, 5, 10, SKIN)
+	px(img, 18, 10, SKIN)
+	if idx == 0:
+		var cap: Color = _c(str(look["cap"]))
+		rect(img, 5, 3, 14, 4, cap)
+		rect(img, 6, 2, 12, 1, cap)
+		rect(img, 5, 7, 2, 3, hair)
+		rect(img, 17, 7, 2, 3, hair)
+		rect(img, 20, 8, 1, 12, WOOD_LL)
+		rect(img, 19, 6, 3, 3, Color(0.72, 0.75, 0.78))
+	else:
+		rect(img, 6, 3, 12, 3, hair)
+		rect(img, 4, 5, 3, 14, hair)
+		rect(img, 17, 5, 3, 14, hair)
+		rect(img, 7, 5, 10, 2, hair)
+		rect(img, 4, 21, 8, 2, Color(0.72, 0.75, 0.78))
+	# 눈/볼/입
+	rect(img, 9, 10, 1, 2, INK)
+	rect(img, 14, 10, 1, 2, INK)
+	px(img, 8, 12, BLUSH)
+	px(img, 15, 12, BLUSH)
+	px(img, 12, 12, skin_d)
+	rect(img, 10, 14, 4, 1, RED_D)
+	px(img, 9, 13, RED_D)
+	px(img, 14, 13, RED_D)
+	return img
+
+
 # ---------- 그릇 ----------
 
 static func broth_color(config: Dictionary) -> Color:
@@ -443,6 +515,44 @@ static func broth_color(config: Dictionary) -> Color:
 		"broth_dashi":
 			return Color(0.78, 0.74, 0.46)
 	return Color(0.88, 0.80, 0.62)
+
+
+## 토핑 하나일 때의 예전 그림(그릇 왼쪽/오른쪽 위 고정 위치). 단일 토핑 레시피의 모습을 바꾸지 않는다.
+static func _draw_topping_single(img: Image, id: String) -> void:
+	match id:
+		"topping_chashu":
+			rect(img, 2, 1, 3, 1, Color(0.80, 0.54, 0.44))
+			px(img, 3, 2, Color(0.80, 0.54, 0.44))
+		"topping_egg":
+			rect(img, 2, 1, 2, 1, WHITE)
+			px(img, 2, 2, WHITE)
+			px(img, 3, 2, Color(0.96, 0.66, 0.16))
+		"topping_sprouts":
+			px(img, 2, 1, Color(0.88, 0.95, 0.70))
+			px(img, 4, 1, Color(0.88, 0.95, 0.70))
+			px(img, 3, 2, Color(0.88, 0.95, 0.70))
+		"topping_nori":
+			rect(img, 8, 0, 2, 2, Color(0.12, 0.20, 0.16))
+
+
+## 토핑이 둘 이상일 때의 2칸 폭 작은 모양. ax 는 왼쪽 끝 x(2/5/8). 모두 국물 면 두 줄(y 1~2)과 테두리(y 0) 안에 있다.
+static func _draw_topping_compact(img: Image, id: String, ax: int) -> void:
+	match id:
+		"topping_chashu":
+			rect(img, ax, 1, 2, 1, Color(0.80, 0.54, 0.44))
+			px(img, ax, 2, Color(0.66, 0.40, 0.32))
+			px(img, ax + 1, 2, Color(0.80, 0.54, 0.44))
+		"topping_egg":
+			rect(img, ax, 1, 2, 1, WHITE)
+			px(img, ax, 2, WHITE)
+			px(img, ax + 1, 2, Color(0.96, 0.66, 0.16))
+		"topping_sprouts":
+			px(img, ax, 1, Color(0.88, 0.95, 0.70))
+			px(img, ax + 1, 1, Color(0.50, 0.75, 0.35))
+			px(img, ax, 2, Color(0.50, 0.75, 0.35))
+			px(img, ax + 1, 2, Color(0.88, 0.95, 0.70))
+		"topping_nori":
+			rect(img, ax, 0, 2, 2, Color(0.12, 0.20, 0.16))
 
 
 ## 12x7 라멘 그릇(위에서 비스듬히). 재료가 바뀌면 국물색/면/토핑/향미유 점이 바뀐다. 장면의 그릇과 미리보기가 같은 함수를 쓴다.
@@ -466,20 +576,16 @@ static func bowl_image(config: Dictionary) -> Image:
 	for x in range(3, 9, 1 if n == "noodle_thin" else 2):
 		px(img, x, 1, noodle)
 		px(img, x + 1 if n != "noodle_thin" else x, 2, noodle)
-	match str(config.get("topping", "")):
-		"topping_chashu":
-			rect(img, 2, 1, 3, 1, Color(0.80, 0.54, 0.44))
-			px(img, 3, 2, Color(0.80, 0.54, 0.44))
-		"topping_egg":
-			rect(img, 2, 1, 2, 1, WHITE)
-			px(img, 2, 2, WHITE)
-			px(img, 3, 2, Color(0.96, 0.66, 0.16))
-		"topping_sprouts":
-			px(img, 2, 1, Color(0.88, 0.95, 0.70))
-			px(img, 4, 1, Color(0.88, 0.95, 0.70))
-			px(img, 3, 2, Color(0.88, 0.95, 0.70))
-		"topping_nori":
-			rect(img, 8, 0, 2, 2, Color(0.12, 0.20, 0.16))
+	# 선택한 토핑을 모두 그린다(Catalog.toppings_of 하나의 읽기 경로, 카탈로그 순서). 하나뿐이면 예전 그림과 픽셀까지 같다.
+	var tops: Array = Catalog.canonical_toppings(Catalog.toppings_of(config))
+	if tops.size() == 1:
+		_draw_topping_single(img, str(tops[0]))
+	else:
+		# 둘 이상: 12x7 그릇 안의 국물 면(왼쪽 x2, 가운데 x5, 오른쪽 x8)에 토핑마다 2칸 폭의 작은 모양으로 나눠 얹는다.
+		# 둘이면 왼쪽/오른쪽, 셋이면 왼쪽/가운데/오른쪽. 토핑마다 색과 모양이 달라 서로 구별된다.
+		var anchors: Array = [2, 8] if tops.size() == 2 else [2, 5, 8]
+		for i in mini(tops.size(), anchors.size()):
+			_draw_topping_compact(img, str(tops[i]), int(anchors[i]))
 	var oil: Color = Color(0, 0, 0, 0)
 	match str(config.get("oil", "")):
 		"oil_garlic":
