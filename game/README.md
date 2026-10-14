@@ -26,7 +26,7 @@ Godot 4.7(타입 지정 GDScript) 프로젝트입니다. 기본 화면은 작은
 - 영업 중에는 레시피 편집·선택·삭제·시식이 모두 거부되어 캡처한 레시피와 어긋날 수 없습니다(개발 버튼은 이유를 안내).
 
 ## 라멘 연구
-> **상태**: Claude 구현 후 Codex가 테스트·저장 호환·UI 배치를 독립 검증했습니다. 아래 증인 조합과 수치는 실제 평가기로 확인했습니다. 연구 탭의 실제 캡처는 확인 대기입니다(기존 등각 캡처는 이 탭을 포함하지 않습니다).
+> **상태**: Claude 구현 후 Codex가 테스트·저장 호환·UI 배치를 독립 검증했습니다. 아래 증인 조합과 수치는 실제 평가기로 확인했습니다. 연구 탭까지 Codex 자동 실행으로 실제 렌더링을 확인했습니다: 2,698개 확인·실패 0, PNG 26장, 종료 0, 엔진 오류 없음.
 
 단골 세 분(한도윤·서하영·윤마루)이 입문 의뢰 1개 + 심화 의뢰 1개씩, 모두 6개의 고정 의뢰를 줍니다. 짧은 대사와 실용 힌트만 있고 분기 이야기는 없습니다. 데이터·판정·해금·보상은 [`ramen_research.gd`](scripts/domain/ramen_research.gd)가, 상태 변경은 `GameState.submit_research()`가 맡고 화면은 표시와 입력만 합니다.
 
@@ -103,11 +103,48 @@ python3 game/tools/build_local_apps.py --godot /절대/경로/Godot --project /�
 
 엔진을 복사하지 않고 서명도 하지 않은 로컬 전용 번들입니다. 독립 실행 가능한 Godot 내보내기 빌드와 iOS 빌드(Xcode, 서명, 실기기 검증)는 아직 하지 않았으며 이후 작업입니다.
 
-현재 도구 환경에서 생성 앱의 정상 플레이 실행은 검증하지 못했습니다. 사용자 iTerm에서 Godot를 직접 실행해 현재 등각 매장의 실제 렌더링 캡처를 확인했습니다. 우선 직접 실행 방법을 사용합니다. [구체적인 검증 범위](VERIFICATION.md)
+얇은 게임 플레이 런처의 정상 실행은 아직 미검증입니다. 그래픽 QA는 아래 자체 포함 QA 앱으로 Codex가 자동 실행·검증했습니다. [구체적인 검증 범위](VERIFICATION.md)
+
+## 자체 포함 QA 앱 (자동 그래픽 QA용, 로컬 개발 전용)
+> **상태**: Codex가 실제 앱 준비와 Computer Use 실행을 검증했습니다. 테스트 17개, 실제 렌더링 확인 2,698개·실패 0, 새 PNG 26장, 종료 0, 엔진 오류 0입니다. 서명·배포·iOS 빌드가 아닙니다. [검증 증거](../evidence/automatic-native-qa.json).
+
+위의 얇은 `Ramen QA.app`은 외부 프로젝트 폴더를 읽어야 해서 앱 실행 환경에서 `res://tests/qa_capture.gd`를 열지 못했습니다. `tools/build_qa_app.py`(표준 라이브러리만 사용)는 이를 피하려고 게임 리소스를 앱 안에 넣은 `Ramen QA.app`을 `--output-dir`에 만듭니다. 설치된 공식 Godot를 쓰며 다운로드·네트워크·전역 설정 변경·git·권한 상승·`HOME` 변경은 없습니다.
+
+**준비** (`--output-dir`은 아직 없는 새 절대 경로여야 하며, 이미 있으면 아무것도 쓰지 않고 거부합니다):
+```sh
+python3 game/tools/build_qa_app.py \
+  --godot /절대/경로/Godot.app/Contents/MacOS/Godot \
+  --project /절대/경로/game \
+  --output-dir /절대/경로/새-폴더
+```
+1. 엔진 확인: macOS 앱 번들 안 Mach-O 바이너리인지, `--version`이 프로젝트의 `config/features`(4.7)와 같은 계열인지 봅니다. 다르면 오류로 멈춥니다.
+2. `project.godot`, `scenes/`, `scripts/`, `assets/`, `tests/`만 담은 임시 스냅샷(`<output-dir>/prep/project`)을 만들고(Git, docs, tools, evidence, tasks, 숨김 파일, 자격 증명처럼 보이는 파일 제외; 심볼릭 링크는 거부), 거기서 `--headless --import` 후 `--export-pack`으로 PCK를 만듭니다. 원본 프로젝트는 읽기만 합니다. 프로젝트 폴더나 `project.godot`가 심볼릭 링크면 내용을 복사·읽기 전에 거부합니다.
+3. 엔진 설정: `HOME`·`home`·`CODEX_HOME`은 바꾸지 않습니다(호출자의 `HOME`이 있으면 그대로 전달). 대신 검증한 `Godot.app`을 먼저 `<output-dir>/Ramen QA.app`으로 통째로 복사하고 그 옆에 Godot 포터블 마커 `<output-dir>/_sc_`를 만듭니다. 버전 확인·import·export와 실행 모두 이 복사본으로 하므로 `editor_data` 등 캐시가 `<output-dir>` 안에 생기고, 원본 엔진(과 그 옆 포터블 설정)은 실행하지 않습니다. `TMPDIR`/`XDG_*` 스크래치만 `<output-dir>/prep` 안으로 돌립니다.
+4. 복사본에 PCK와 런처를 넣고 런처가 쓰도록 복사본의 `Info.plist`만 고칩니다(재서명하지 않음).
+5. 진단 기록이 실패하면(`FAILED.txt`를 쓰지 못함) 그 오류도 최종 오류 메시지에 명시합니다.
+6. 준비 로그와 `build-manifest.json`(포함/제외 파일, 해시)은 `<output-dir>/prep/`에 남고, 실패하면 `prep/FAILED.txt`와 단계별 로그(`godot-version.log`, `import.log`, `export.log`)가 보존됩니다. 준비 성공만으로는 그래픽 성공이 아닙니다.
+
+**도구 테스트** (엔진·GUI를 실행하지 않는 가짜 runner와 가짜 엔진 셸 스크립트 사용):
+```sh
+python3 -m unittest discover -s game/tools -p 'test_build_qa_app.py' -v
+```
+
+**지원되는 앱 실행**: 터미널에서 직접 실행하지 않고 Computer Use 앱 실행기로 `cua.getApp("<output-dir>/Ramen QA.app")`처럼 절대 경로를 지정해 엽니다. 실행할 때마다 런처가 새 폴더 `<output-dir>/runs/<UTC시각>-<pid>/`를 만들고(기존 폴더는 재사용하지 않음) 실제 렌더러로(`--headless`·`--layout-only` 자동 전환 없음) `tests/qa_capture.gd`를 실행합니다. 그 폴더에 `captures/`(PNG), `qa-data/`(격리된 저장 데이터), `godot.log`, `console.log`, `started.txt`, `exit-status.txt`(엔진의 실제 종료 코드)가 남습니다. 가장 최근 폴더는 `<output-dir>/latest-run.txt`가 가리키며, 실행 폴더를 만들기 전에 실패하면 `<output-dir>/launcher-errors.log`에 이유가 남습니다. `qa_capture.gd`는 수정하지 않고 그대로 쓰며 `user://`는 쓰지 않습니다.
+
+**작업 폴더 설정**: 런처는 번들 Godot를 작업 폴더 `/`(읽기 전용의 안정적인 시스템 폴더)에서 실행합니다. 앱 실행 환경에서는 `<output-dir>/runs/...`를 작업 폴더로 두면 `getcwd`를 해석하지 못했고, Godot의 `DirAccessUnix`는 절대 경로 작업 전에 `getcwd`를 호출하기 때문입니다. 일반적인 프로세스 설정이며 권한·TCC·보안 설정은 바꾸지 않습니다. 엔진/PCK/로그/QA 출력/데이터/tmp 경로는 모두 `<output-dir>` 안의 절대 경로이고 `/` 아래에는 쓰지 않습니다. `/`로 옮기지 못하거나 `pwd -P`가 `/`가 아니면 `launcher-errors.log`에 이유를 남기고 엔진을 실행하지 않은 채 종료 코드 70/76으로 끝납니다. 실제 작업 폴더는 `started.txt`의 `launch_cwd=`에 기록됩니다.
+
+**검증 결과**: 최초 자동 v4는 26장·2,698개/0·종료 0이었지만 작업 폴더와 셰이더 캐시 오류가 남았습니다. 런처 작업 폴더를 고친 뒤 새 v5 앱으로 재실행해 같은 검사와 26장을 통과했고, `getcwd`·셰이더 캐시·스크립트·엔진 오류가 모두 사라졌습니다. 로그 억제나 보안 설정 변경은 하지 않았습니다. 앱 실행 도구의 시작 대기에는 수 분이 걸릴 수 있습니다. 이후 게임 코드가 바뀌면 새 폴더에서 다시 패키징한 뒤 Codex가 직접 실행하고 결과를 확인합니다.
+
+**독립 완료 확인** (모두 만족해야 그래픽 QA 성공):
+- `exit-status.txt`가 `exit_status=0`(134 같은 값은 실패이고 그대로 보고)
+- `console.log`/`godot.log`에 `QA mode=capture`와 `failures=0`이 있고 `LAYOUT ONLY`·엔진/스크립트 오류가 없음
+- `captures/`에 이번 실행이 만든 PNG 26장(크기별 13장): 데스크톱 1280x800 13장, 세로 390x844 13장. 파일 시간과 크기를 확인
+- 이미지를 직접 열어 화면 내용(가게, 서랍, 시식, 영업, 결과, 저장 실패, 연구 3장)이 맞는지 확인
+- OS나 도구가 접근을 거부하면(예: output-dir 쓰기) 우회하지 말고 실제 막힌 지점을 보고
 
 ## 화면 미리보기
 
-현재 등각 매장의 실제 Godot 렌더링 캡처입니다. 검사 전용 메뉴와 저장 경로로 실행했습니다. [20장 전체](docs/isometric-screenshots)와 [검증 기록](VERIFICATION.md)을 확인할 수 있습니다. [AI 생성 콘셉트](docs/concepts/shop-main-v1.png)는 방향 검토용 이미지이며 구현 화면이나 에셋이 아닙니다.
+현재 등각 매장의 실제 Godot 렌더링 캡처입니다. 검사 전용 메뉴와 저장 경로로 실행했습니다. [최신 26장 전체](docs/research-screenshots)와 [검증 기록](VERIFICATION.md)을 확인할 수 있습니다. [AI 생성 콘셉트](docs/concepts/shop-main-v1.png)는 방향 검토용 이미지이며 구현 화면이나 에셋이 아닙니다.
 
 ![현재 UI: 데스크톱 영업](docs/isometric-screenshots/desktop_7_service_mid.png)
 

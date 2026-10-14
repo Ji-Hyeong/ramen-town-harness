@@ -1,0 +1,484 @@
+{
+  "date": "2026-10-14",
+  "scope": "Local self-contained QA app; no gameplay changes, no security or global permission changes",
+  "implementation_runs": [
+    {
+      "purpose": "automatic-native-qa-20261014",
+      "requested_max_turns": 30,
+      "exit_code": 0,
+      "subtype": "success",
+      "is_error": false,
+      "num_turns": 16,
+      "usage": {
+        "input_tokens": 20,
+        "cache_creation_input_tokens": 86185,
+        "cache_read_input_tokens": 479455,
+        "output_tokens": 41851,
+        "output_tokens_details": {
+          "thinking_tokens": 20465
+        },
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 86185,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "global",
+        "iterations": [
+          {
+            "input_tokens": 2,
+            "output_tokens": 1347,
+            "cache_read_input_tokens": 86731,
+            "cache_creation_input_tokens": 3147,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 3147
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard",
+        "fallback_credit": null
+      },
+      "modelUsage": {
+        "claude-sonnet-5-5": {
+          "inputTokens": 20,
+          "outputTokens": 41851,
+          "cacheReadInputTokens": 479455,
+          "cacheCreationInputTokens": 86185,
+          "webSearchRequests": 0,
+          "costUSD": 0.8112355000000001,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 20465,
+          "canonicalModel": "claude-sonnet-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "total_cost_usd": 0.8112355000000001,
+      "permission_denials": [],
+      "tool_counts": {
+        "Glob": 1,
+        "Read": 6,
+        "Grep": 2,
+        "Write": 2,
+        "Edit": 4
+      },
+      "auth_failure": false,
+      "report_present": true
+    },
+    {
+      "purpose": "automatic-native-qa-correction-20261014",
+      "requested_max_turns": 10,
+      "exit_code": 0,
+      "subtype": "success",
+      "is_error": false,
+      "num_turns": 31,
+      "usage": {
+        "input_tokens": 20,
+        "cache_creation_input_tokens": 38755,
+        "cache_read_input_tokens": 260194,
+        "output_tokens": 13989,
+        "output_tokens_details": {
+          "thinking_tokens": 1835
+        },
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 38755,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "global",
+        "iterations": [
+          {
+            "input_tokens": 2,
+            "output_tokens": 910,
+            "cache_read_input_tokens": 40701,
+            "cache_creation_input_tokens": 2666,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 2666
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard",
+        "fallback_credit": null
+      },
+      "modelUsage": {
+        "claude-sonnet-5-5": {
+          "inputTokens": 20,
+          "outputTokens": 13989,
+          "cacheReadInputTokens": 260194,
+          "cacheCreationInputTokens": 38755,
+          "webSearchRequests": 0,
+          "costUSD": 0.32096940000000007,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 1835,
+          "canonicalModel": "claude-sonnet-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "total_cost_usd": 0.32096940000000007,
+      "permission_denials": [],
+      "tool_counts": {
+        "Read": 4,
+        "Grep": 3,
+        "Edit": 23
+      },
+      "auth_failure": false,
+      "report_present": true
+    },
+    {
+      "purpose": "automatic-native-qa-cwd-20261014",
+      "requested_max_turns": 10,
+      "exit_code": 1,
+      "subtype": "success",
+      "is_error": true,
+      "num_turns": 1,
+      "usage": {
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "input_tokens": 0,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "output_tokens": 0,
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "",
+        "iterations": [],
+        "speed": "standard",
+        "fallback_credit": null
+      },
+      "modelUsage": {},
+      "total_cost_usd": 0,
+      "permission_denials": [],
+      "tool_counts": {},
+      "auth_failure": true,
+      "report_present": true
+    },
+    {
+      "purpose": "automatic-native-qa-cwd-20261014-authorized",
+      "requested_max_turns": 10,
+      "exit_code": 0,
+      "subtype": "success",
+      "is_error": false,
+      "num_turns": 18,
+      "usage": {
+        "input_tokens": 14,
+        "cache_creation_input_tokens": 38367,
+        "cache_read_input_tokens": 169555,
+        "output_tokens": 7563,
+        "output_tokens_details": {
+          "thinking_tokens": 629
+        },
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 38367,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "global",
+        "iterations": [
+          {
+            "input_tokens": 2,
+            "output_tokens": 681,
+            "cache_read_input_tokens": 36884,
+            "cache_creation_input_tokens": 2310,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 2310
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard",
+        "fallback_credit": null
+      },
+      "modelUsage": {
+        "claude-sonnet-5-5": {
+          "inputTokens": 14,
+          "outputTokens": 7563,
+          "cacheReadInputTokens": 169555,
+          "cacheCreationInputTokens": 38367,
+          "webSearchRequests": 0,
+          "costUSD": 0.24608150000000004,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 629,
+          "canonicalModel": "claude-sonnet-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "total_cost_usd": 0.24608150000000004,
+      "permission_denials": [],
+      "tool_counts": {
+        "Read": 4,
+        "Grep": 5,
+        "Edit": 8
+      },
+      "auth_failure": false,
+      "report_present": true
+    }
+  ],
+  "python_tests": {
+    "tests": 17,
+    "failures": 0,
+    "exit_code": 0
+  },
+  "preparation": {
+    "exit_code": 0,
+    "version": "4.7.2.stable.official.ed1daf0bf",
+    "godot_sha256": "c7cccbf8fb143e34e02fd6521e09be2c2b974f0d5db080b19071c9c570718ccf",
+    "pack_sha256": "5aa12c95d62ed12a168a9370f76e526fc6fa74cb583f92c0d05e0367e1d41cd5",
+    "included_files": [
+      "project.godot",
+      "scenes/main.tscn",
+      "scripts/domain/customer_catalog.gd",
+      "scripts/domain/customer_catalog.gd.uid",
+      "scripts/domain/data_check.gd",
+      "scripts/domain/data_check.gd.uid",
+      "scripts/domain/game_state.gd",
+      "scripts/domain/game_state.gd.uid",
+      "scripts/domain/ingredient_catalog.gd",
+      "scripts/domain/ingredient_catalog.gd.uid",
+      "scripts/domain/ramen_research.gd",
+      "scripts/domain/ramen_research.gd.uid",
+      "scripts/domain/recipe_evaluator.gd",
+      "scripts/domain/recipe_evaluator.gd.uid",
+      "scripts/domain/sales_simulator.gd",
+      "scripts/domain/sales_simulator.gd.uid",
+      "scripts/domain/service_session.gd",
+      "scripts/domain/service_session.gd.uid",
+      "scripts/services/data_location.gd",
+      "scripts/services/data_location.gd.uid",
+      "scripts/services/save_service.gd",
+      "scripts/services/save_service.gd.uid",
+      "scripts/ui/bowl_view.gd",
+      "scripts/ui/bowl_view.gd.uid",
+      "scripts/ui/main.gd",
+      "scripts/ui/main.gd.uid",
+      "scripts/ui/pixel_art.gd",
+      "scripts/ui/pixel_art.gd.uid",
+      "scripts/ui/shop_layout.gd",
+      "scripts/ui/shop_layout.gd.uid",
+      "scripts/ui/shop_painter.gd",
+      "scripts/ui/shop_painter.gd.uid",
+      "scripts/ui/shop_scene.gd",
+      "scripts/ui/shop_scene.gd.uid",
+      "scripts/ui/shop_view.gd",
+      "scripts/ui/shop_view.gd.uid",
+      "scripts/ui/star_meter.gd",
+      "scripts/ui/star_meter.gd.uid",
+      "assets/fonts/GowunDodum-Regular.ttf",
+      "assets/fonts/GowunDodum-Regular.ttf.import",
+      "assets/fonts/OFL.txt",
+      "tests/qa_capture.gd",
+      "tests/qa_capture.gd.uid",
+      "tests/run_tests.gd",
+      "tests/run_tests.gd.uid"
+    ]
+  },
+  "native_v4": {
+    "checks": 2698,
+    "failures": 0,
+    "exit_code": 0,
+    "png_count": 26,
+    "engine_errors": "getcwd and shader cache, corrected in launcher cwd"
+  },
+  "native_final": {
+    "launch_method": "supported Computer Use cua.getApp",
+    "checks": 2698,
+    "failures": 0,
+    "exit_code": 0,
+    "engine_errors": 0,
+    "launch_cwd": "/",
+    "png_count": 26,
+    "screenshots": [
+      {
+        "path": "game/docs/research-screenshots/desktop_10_save_failed.png",
+        "width": 1280,
+        "height": 800,
+        "sha256": "eee954af115d870ae8e44bc9f70a58e1ec6aa60b65675e7c24e5fcb9a4e886f8"
+      },
+      {
+        "path": "game/docs/research-screenshots/desktop_11_research_open.png",
+        "width": 1280,
+        "height": 800,
+        "sha256": "1b94a43eba5daf69b5bc39969b69e0ee9f79c24f91df61821ca218ea315e72d8"
+      },
+      {
+        "path": "game/docs/research-screenshots/desktop_12_research_progress.png",
+        "width": 1280,
+        "height": 800,
+        "sha256": "8c22f02307f448f05dca8e49e429b5d8dd042fc93f7298b3f794d11b945e58bb"
+      },
+      {
+        "path": "game/docs/research-screenshots/desktop_13_research_reloaded.png",
+        "width": 1280,
+        "height": 800,
+        "sha256": "c1bcfa3b2aa458bbe20a47422a100ab8f4cc68746e08c8724c52d169f3c8079d"
+      },
+      {
+        "path": "game/docs/research-screenshots/desktop_1_shop_closed.png",
+        "width": 1280,
+        "height": 800,
+        "sha256": "4b1d93d2e7d604966d179b32a7efdfcbd4fc8d57b1984f7c5f8643ac64f5d920"
+      },
+      {
+        "path": "game/docs/research-screenshots/desktop_2_dev_overlay.png",
+        "width": 1280,
+        "height": 800,
+        "sha256": "2885e49a8906f833fec51630c25fafb7ded90179cf5d8f8bb350c7b9285ca4b7"
+      },
+      {
+        "path": "game/docs/research-screenshots/desktop_3_lab_selected.png",
+        "width": 1280,
+        "height": 800,
+        "sha256": "008158d29a4f4b9f7b075f0fe41c24e3b8d43c264794c418bbc0f10f97029ccd"
+      },
+      {
+        "path": "game/docs/research-screenshots/desktop_4_feedback_v1.png",
+        "width": 1280,
+        "height": 800,
+        "sha256": "c52283f70bd6f84e4ca16f4081c53a924af5021c2d3e604253fd41eaf920be25"
+      },
+      {
+        "path": "game/docs/research-screenshots/desktop_5_comparison_v2.png",
+        "width": 1280,
+        "height": 800,
+        "sha256": "26a170a48ee9e108233feb045808c3f6410ba66669099f11b9a26254f57ed93d"
+      },
+      {
+        "path": "game/docs/research-screenshots/desktop_6_notebook.png",
+        "width": 1280,
+        "height": 800,
+        "sha256": "cf6a1296488db42d354cb872b506714e0debfa6840b6adf47b539605c0b2f553"
+      },
+      {
+        "path": "game/docs/research-screenshots/desktop_7_service_mid.png",
+        "width": 1280,
+        "height": 800,
+        "sha256": "8aa6d210a0fc0c17955a676aa495168331fa2ec48bc26af9dbbcfd4ab3800094"
+      },
+      {
+        "path": "game/docs/research-screenshots/desktop_8_result.png",
+        "width": 1280,
+        "height": 800,
+        "sha256": "92e4963d8b8285493c7d8b41d122cb2bbd2fc710db70e80fa2737b6c1599f7bb"
+      },
+      {
+        "path": "game/docs/research-screenshots/desktop_9_reloaded.png",
+        "width": 1280,
+        "height": 800,
+        "sha256": "0450b297619bb48dfdef0a3637d2fcff8b2e3cb34098787950a9643ef684d9d9"
+      },
+      {
+        "path": "game/docs/research-screenshots/portrait_10_save_failed.png",
+        "width": 390,
+        "height": 844,
+        "sha256": "a7a595bd56c429cd4bcf87f037882cd590be15e0a386689e6e241b7ff49d229e"
+      },
+      {
+        "path": "game/docs/research-screenshots/portrait_11_research_open.png",
+        "width": 390,
+        "height": 844,
+        "sha256": "2392ba9a41ef0f411b972b9d9528f9759adfd85c4bc591bb2ce8a83e7daf1022"
+      },
+      {
+        "path": "game/docs/research-screenshots/portrait_12_research_progress.png",
+        "width": 390,
+        "height": 844,
+        "sha256": "41c8b3cb2603d3f6ab1026e76c79250484d6d39017e3c0216b5b08b8ea8ade50"
+      },
+      {
+        "path": "game/docs/research-screenshots/portrait_13_research_reloaded.png",
+        "width": 390,
+        "height": 844,
+        "sha256": "d25200440720cafe7c9b4080c67d82c7d0acfb962f3eff0d2fafc6787cc04cb0"
+      },
+      {
+        "path": "game/docs/research-screenshots/portrait_1_shop_closed.png",
+        "width": 390,
+        "height": 844,
+        "sha256": "9f21d63c1ebc6b3c407157fb114bb4d299d0970733384be87a83c73ca25c1050"
+      },
+      {
+        "path": "game/docs/research-screenshots/portrait_2_dev_overlay.png",
+        "width": 390,
+        "height": 844,
+        "sha256": "b99c1b8f2e8eea27228f88c9f8459a298663a54f768957da52730a47cfe0b57c"
+      },
+      {
+        "path": "game/docs/research-screenshots/portrait_3_lab_selected.png",
+        "width": 390,
+        "height": 844,
+        "sha256": "c8e93f5c9430602e2f0c50fb3522636b631b84041ff45fa93bbb7a8c9437d855"
+      },
+      {
+        "path": "game/docs/research-screenshots/portrait_4_feedback_v1.png",
+        "width": 390,
+        "height": 844,
+        "sha256": "df2ace9c243fed512cb44550294f3c5d50b3a37f9e16c10f56a7bdf2321ffeea"
+      },
+      {
+        "path": "game/docs/research-screenshots/portrait_5_comparison_v2.png",
+        "width": 390,
+        "height": 844,
+        "sha256": "6318f844a3e04afd0e1eb0d28e0e58f0c25e32b3745dcbfa86bfd681b177872a"
+      },
+      {
+        "path": "game/docs/research-screenshots/portrait_6_notebook.png",
+        "width": 390,
+        "height": 844,
+        "sha256": "a9231f7da12b03b08ee06000e4ab3df470f415c7e9d25ac42d890a07b9136cce"
+      },
+      {
+        "path": "game/docs/research-screenshots/portrait_7_service_mid.png",
+        "width": 390,
+        "height": 844,
+        "sha256": "6112d325beed2b294b2d206d7db9ad64b71abcb6f08af5670b2105c348f2c1ce"
+      },
+      {
+        "path": "game/docs/research-screenshots/portrait_8_result.png",
+        "width": 390,
+        "height": 844,
+        "sha256": "2304ca50a5e4d8a7a9a43da82d9f4ca51972ab218d31fde3be3b7f686f0aabc6"
+      },
+      {
+        "path": "game/docs/research-screenshots/portrait_9_reloaded.png",
+        "width": 390,
+        "height": 844,
+        "sha256": "0c4c62c8d875e907660194784dc9bedacbc1d380e8457402dfc2471f0026ae8b"
+      }
+    ],
+    "timing": "started_utc=2026-10-14T06:28:37Z\nlaunch_cwd=/\nexit_status=0\nfinished_utc=2026-10-14T06:29:33Z\n"
+  },
+  "limitations": [
+    "Local unsigned development QA app, not a player distribution or iOS build.",
+    "Computer Use app startup may take minutes; no SLA or unattended schedule is configured.",
+    "Manual play feel and final user visual approval remain pending."
+  ],
+  "usage_note": "Actual returned num_turns and requested limits recorded independently. Cost estimates are not subscription bills. Raw account/session logs excluded."
+}
