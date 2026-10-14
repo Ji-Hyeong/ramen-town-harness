@@ -1,0 +1,312 @@
+{
+  "date": "2026-10-14",
+  "dependency_commit": "1000494c0e170b59e8de01e355db344e86b359ae",
+  "branch": "feature/ramen-research",
+  "runs": [
+    {
+      "run": "ramen-research-v1-20261014",
+      "requested_max_turns": 30,
+      "observed_exit_code": 0,
+      "subtype": "success",
+      "is_error": false,
+      "num_turns": 64,
+      "duration_ms": 575195,
+      "duration_api_ms": 573616,
+      "usage": {
+        "input_tokens": 56,
+        "cache_creation_input_tokens": 190211,
+        "cache_read_input_tokens": 3534425,
+        "output_tokens": 83713,
+        "output_tokens_details": {
+          "thinking_tokens": 33071
+        },
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 190211,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "global",
+        "iterations": [
+          {
+            "input_tokens": 2,
+            "output_tokens": 2167,
+            "cache_read_input_tokens": 193583,
+            "cache_creation_input_tokens": 1240,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 1240
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard",
+        "fallback_credit": null
+      },
+      "modelUsage": {
+        "claude-sonnet-5-5": {
+          "inputTokens": 56,
+          "outputTokens": 83713,
+          "cacheReadInputTokens": 3534425,
+          "cacheCreationInputTokens": 190211,
+          "webSearchRequests": 0,
+          "costUSD": 1.9515285000000002,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 33071,
+          "canonicalModel": "claude-sonnet-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "total_cost_usd": 1.9515285000000002,
+      "permission_denials": [],
+      "nonempty_report": true,
+      "tool_counts": {
+        "Glob": 1,
+        "Read": 19,
+        "Grep": 4,
+        "Write": 1,
+        "Edit": 38
+      }
+    },
+    {
+      "run": "ramen-research-validation-20261014",
+      "requested_max_turns": 20,
+      "observed_exit_code": 0,
+      "subtype": "success",
+      "is_error": false,
+      "num_turns": 10,
+      "duration_ms": 43761,
+      "duration_api_ms": 616845,
+      "usage": {
+        "input_tokens": 12,
+        "cache_creation_input_tokens": 10104,
+        "cache_read_input_tokens": 1201998,
+        "output_tokens": 6331,
+        "output_tokens_details": {
+          "thinking_tokens": 811
+        },
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 10104,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "global",
+        "iterations": [
+          {
+            "input_tokens": 2,
+            "output_tokens": 826,
+            "cache_read_input_tokens": 203795,
+            "cache_creation_input_tokens": 1132,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 1132
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard",
+        "fallback_credit": null
+      },
+      "modelUsage": {
+        "claude-sonnet-5-5": {
+          "inputTokens": 68,
+          "outputTokens": 90044,
+          "thinkingTokens": 33882,
+          "cacheReadInputTokens": 4736423,
+          "cacheCreationInputTokens": 200315,
+          "webSearchRequests": 0,
+          "costUSD": 2.1754783,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "canonicalModel": "claude-sonnet-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "total_cost_usd": 2.1754783,
+      "permission_denials": [],
+      "nonempty_report": true,
+      "tool_counts": {
+        "Edit": 7,
+        "Grep": 1,
+        "Read": 1
+      }
+    }
+  ],
+  "independent_checks": {
+    "import": {
+      "exit_code": 0,
+      "errors": 0
+    },
+    "initial_suite": {
+      "exit_code": 0,
+      "tests": 40,
+      "checks": 41007,
+      "failures": 0
+    },
+    "initial_layout": {
+      "exit_code": 0,
+      "checks": 2574,
+      "failures": 0
+    },
+    "extra_receipt_consistency_probe": {
+      "before_correction_exit_code": 1,
+      "before_correction_failures": 2,
+      "final_exit_code": 0,
+      "final_failures": 0
+    },
+    "final_suite": {
+      "exit_code": 0,
+      "tests": 42,
+      "checks": 41034,
+      "failures": 0
+    },
+    "final_layout": {
+      "exit_code": 0,
+      "viewports": [
+        [
+          1280,
+          800
+        ],
+        [
+          390,
+          844
+        ]
+      ],
+      "checks": 2646,
+      "failures": 0,
+      "whole_request_cards_checked": true,
+      "screenshots": false
+    },
+    "real_v1_file_migration": {
+      "exit_code": 0,
+      "fixture": "evidence/research-v1-synthetic-save.json",
+      "fixture_sha256": "c84a1a9fae3adb690278826be9f6f93f817cd811c4f7f6b41d9485119aa75e67",
+      "generated_with_pre_feature_schema": 1,
+      "records": 2,
+      "day": 2,
+      "wallet": 88300,
+      "preexisting_values_preserved": true,
+      "load_does_not_rewrite_file": true,
+      "v2_roundtrip": true,
+      "comparison": "Same JSON numeric representation on both sides; JSON whole numbers parse as floats."
+    },
+    "main_headless_60_frames": {
+      "exit_code": 0
+    },
+    "native_capture": {
+      "status": "pending user iTerm capture"
+    },
+    "ios": {
+      "status": "not tested"
+    }
+  },
+  "witness_measurements": [
+    {
+      "config": {
+        "broth": "broth_tonkotsu",
+        "cook": "cook_normal",
+        "noodle": "noodle_thick",
+        "oil": "oil_garlic",
+        "price": 9500,
+        "tare": "tare_shoyu",
+        "topping": "topping_nori"
+      },
+      "prep_seconds": 163,
+      "price": 9500,
+      "request_id": "dohyun_basic",
+      "score": 86,
+      "unit_cost": 1750
+    },
+    {
+      "config": {
+        "broth": "broth_dashi",
+        "cook": "cook_firm",
+        "noodle": "noodle_thin",
+        "oil": "oil_scallion",
+        "price": 9000,
+        "tare": "tare_shio",
+        "topping": "topping_nori"
+      },
+      "prep_seconds": 78,
+      "price": 9000,
+      "request_id": "hayoung_basic",
+      "score": 93,
+      "unit_cost": 1320
+    },
+    {
+      "config": {
+        "broth": "broth_chicken",
+        "cook": "cook_firm",
+        "noodle": "noodle_thin",
+        "oil": "oil_chili",
+        "price": 8000,
+        "tare": "tare_miso",
+        "topping": "topping_nori"
+      },
+      "prep_seconds": 76,
+      "price": 8000,
+      "request_id": "maru_basic",
+      "score": 86,
+      "unit_cost": 1380
+    },
+    {
+      "config": {
+        "broth": "broth_tonkotsu",
+        "cook": "cook_normal",
+        "noodle": "noodle_thick",
+        "oil": "oil_garlic",
+        "price": 11000,
+        "tare": "tare_shoyu",
+        "topping": "topping_chashu"
+      },
+      "prep_seconds": 175,
+      "price": 11000,
+      "request_id": "dohyun_advanced",
+      "score": 91,
+      "unit_cost": 2350
+    },
+    {
+      "config": {
+        "broth": "broth_dashi",
+        "cook": "cook_firm",
+        "noodle": "noodle_thin",
+        "oil": "oil_scallion",
+        "price": 9000,
+        "tare": "tare_shio",
+        "topping": "topping_egg"
+      },
+      "prep_seconds": 83,
+      "price": 9000,
+      "request_id": "hayoung_advanced",
+      "score": 95,
+      "unit_cost": 1520
+    },
+    {
+      "config": {
+        "broth": "broth_chicken",
+        "cook": "cook_firm",
+        "noodle": "noodle_thin",
+        "oil": "oil_chili",
+        "price": 7500,
+        "tare": "tare_miso",
+        "topping": "topping_nori"
+      },
+      "prep_seconds": 76,
+      "price": 7500,
+      "request_id": "maru_advanced",
+      "score": 86,
+      "unit_cost": 1380
+    }
+  ],
+  "usage_note": "Only observed CLI fields. Requested turn limits and returned num_turns are recorded independently, including fresh-call num_turns=64 with requested limit=30. No claim about subscription quota, charging or equal usage distribution. Raw sessions, accounts and transcripts are excluded."
+}

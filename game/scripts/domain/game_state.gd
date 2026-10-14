@@ -13,15 +13,23 @@ const Evaluator = preload("res://scripts/domain/recipe_evaluator.gd")
 const Sim = preload("res://scripts/domain/sales_simulator.gd")
 const Session = preload("res://scripts/domain/service_session.gd")
 
-const SCHEMA_VERSION: int = 1
+const Research = preload("res://scripts/domain/ramen_research.gd")
+
+## 스키마 v2: 최상위에 "research"(완료한 연구 의뢰 영수증 목록)가 추가됐다.
+## v1 저장은 "research" 키가 없는 것이 정상이며, 불러올 때 빈 연구 진행(완료 없음)으로 이행한다(load_from_dict 참고).
+## 다음 저장부터는 v2로 기록된다. 저장 서비스가 덮어쓰기 전에 기존 v1 본 파일을 백업으로 복사한다.
+const SCHEMA_VERSION: int = 2
+const MIN_SCHEMA_VERSION: int = 1
 const MAX_RECORDS: int = 30
 const START_WALLET: int = 30000
 const MAX_WALLET: int = 1000000000
 const MAX_DAY: int = 99999
 const MAX_VERSION: int = 9999
 
-const TOP_KEYS: Array = ["schema_version", "day", "wallet", "next_record_id", "next_lineage_id",
+const TOP_KEYS_V1: Array = ["schema_version", "day", "wallet", "next_record_id", "next_lineage_id",
 	"records", "selected_record_id", "last_feedback_record_id", "draft", "last_report"]
+const TOP_KEYS: Array = ["schema_version", "day", "wallet", "next_record_id", "next_lineage_id",
+	"records", "selected_record_id", "last_feedback_record_id", "draft", "last_report", "research"]
 const RECORD_KEYS: Array = ["record_id", "lineage_id", "name", "version", "tasted_day", "config", "scores", "comparison"]
 const COMPARISON_KEYS: Array = ["prev_record_id", "prev_version", "prev_scores", "prev_config"]
 const DRAFT_KEYS: Array = ["config", "name", "lineage_id"]
@@ -39,6 +47,8 @@ var draft_config: Dictionary = {}
 var draft_name: String = ""
 var draft_lineage_id: int = 0
 var _records: Array = []
+## 완료한 연구 의뢰 영수증(완료 순서). 총점/칭호/해금은 여기서 계산한다. 항목 구조는 ramen_research.gd 참고.
+var _research_done: Array = []
 ## 진행 중인 영업 런타임. 저장하지 않는다(재시작하면 영업 전 상태로 돌아온다). 있는 동안은 레시피/초안/일차를 잠근다.
 var _active_session: Session = null
 
@@ -425,6 +435,95 @@ static func _locked_fail() -> Dictionary:
 	return {"ok": false, "message": "영업 중에는 레시피와 일차를 바꿀 수 없어요. 영업을 끝내거나 중단한 뒤 다시 해 보세요."}
 
 
+# ---------- 라멘 연구 ----------
+##
+## 제출 규칙: 연구는 "시식으로 노트에 남은 불변 기록"만 심사한다. 초안은 심사 대상이 아니다.
+## 보상(점수는 완료 목록에서 계산, 자금은 지갑에 즉시 가산)은 submit_research() 성공 시 정확히 한 번만 생긴다.
+## 다른 어떤 경로(불러오기, 시식, 기록 선택/삭제, 탭 열기)도 연구 진행과 자금을 바꾸지 않는다.
+
+func research_completed_ids() -> Array:
+	var out: Array = []
+	for e in _research_done:
+		var d: Dictionary = e
+		out.append(str(d["request_id"]))
+	return out
+
+
+func research_receipts() -> Array:
+	return _research_done.duplicate(true)
+
+
+func research_points() -> int:
+	return Research.points_of(research_completed_ids())
+
+
+func research_stage() -> Dictionary:
+	return Research.stage_for(research_points())
+
+
+func research_complete() -> bool:
+	return _research_done.size() >= Research.REQUESTS.size()
+
+
+## "done" | "open" | "locked" | "unknown"
+func research_status(request_id: String) -> String:
+	if Research.find(request_id).is_empty():
+		return "unknown"
+	var done: Array = research_completed_ids()
+	if done.has(request_id):
+		return "done"
+	return "open" if Research.is_unlocked(request_id, done) else "locked"
+
+
+func research_lock_reason(request_id: String) -> String:
+	return Research.lock_reason(request_id, research_completed_ids())
+
+
+## 노트에 남은 기록 하나를 의뢰 조건에 대 본 결과(읽기 전용). 기록이 없으면 빈 딕셔너리.
+func research_check(request_id: String, record_id: int) -> Dictionary:
+	var rec: Dictionary = get_record(record_id)
+	if rec.is_empty():
+		return {}
+	return Research.check(request_id, rec["config"], rec["scores"])
+
+
+## 연구 제출(명시적 행동). 모든 검증을 먼저 끝내고, 실패하면 아무것도 바꾸지 않는다.
+## 성공하면 영수증 추가와 자금 가산이 같은 호출 안에서 함께 일어나 한쪽만 반영되는 상태가 없다.
+## 이미 완료한 의뢰는 거부되므로 같은 의뢰의 보상은 구조적으로 두 번 받을 수 없다(저장/불러오기 후에도 같다).
+func submit_research(request_id: String, record_id: int) -> Dictionary:
+	if service_active():
+		return _fail("영업 중에는 연구를 제출할 수 없어요. 영업을 끝내거나 중단한 뒤 다시 해 보세요.")
+	var req: Dictionary = Research.find(request_id)
+	if req.is_empty():
+		return _fail("알 수 없는 연구 의뢰예요.")
+	var done: Array = research_completed_ids()
+	if done.has(request_id):
+		return _fail("이미 완료한 연구예요. 보상은 한 번만 받을 수 있어요.")
+	if not Research.is_unlocked(request_id, done):
+		return _fail("아직 잠겨 있어요. " + Research.lock_reason(request_id, done))
+	if _research_done.size() >= Research.REQUESTS.size():
+		return _fail("이번 연구 과정은 모두 마쳤어요.")
+	var rec: Dictionary = get_record(record_id)
+	if rec.is_empty():
+		return _fail("제출할 시식 기록이 없어요. 시식을 마친 레시피를 노트에서 불러오세요. 시식하지 않은 초안은 제출할 수 없어요.")
+	var chk: Dictionary = Research.check(request_id, rec["config"], rec["scores"])
+	if str(chk["error"]) != "":
+		return _fail(str(chk["error"]))
+	if not bool(chk["all_met"]):
+		return _fail("'%s v%d'은(는) 아직 조건을 모두 채우지 못했어요. 힌트를 보고 고쳐서 다시 시식하세요." % [str(rec["name"]), int(rec["version"])])
+	var entry: Dictionary = Research.make_entry(request_id, rec, day)
+	var after: int = wallet + int(entry["cash"])
+	if after > MAX_WALLET:
+		return _fail("보유 자금 한도에 도달해 보상을 받을 수 없어요.")
+	# --- 여기부터는 실패 지점이 없다 ---
+	_research_done.append(entry)
+	wallet = after
+	var res: Dictionary = _ok("'%s v%d'으로 「%s」 연구를 마쳤어요. 연구 점수 +%d, 자금 +%d원" % [str(rec["name"]), int(rec["version"]), str(req["title"]), int(entry["points"]), int(entry["cash"])])
+	res["points"] = int(entry["points"])
+	res["cash"] = int(entry["cash"])
+	return res
+
+
 # ---------- 저장 직렬화 ----------
 
 func to_dict() -> Dictionary:
@@ -443,6 +542,7 @@ func to_dict() -> Dictionary:
 			"lineage_id": draft_lineage_id,
 		},
 		"last_report": last_report.duplicate(true),
+		"research": {"completed": _research_done.duplicate(true)},
 	}
 
 
@@ -454,11 +554,14 @@ func load_from_dict(raw: Variant) -> String:
 	if typeof(raw) != TYPE_DICTIONARY:
 		return "저장 구조가 올바르지 않아요."
 	var d: Dictionary = raw
-	var key_err: String = Check.keys_error(d, TOP_KEYS, "저장")
+	# 버전을 먼저 읽어 그 버전의 정확한 키 집합을 요구한다. v1은 "research"가 없어야 정상이고(있으면 변조),
+	# v2는 반드시 있어야 한다. 알 수 없는 버전은 키 검사 전에 거부한다.
+	if not d.has("schema_version") or not Check.in_range(d["schema_version"], MIN_SCHEMA_VERSION, SCHEMA_VERSION):
+		return "지원하지 않는 저장 버전이에요."
+	var version: int = int(d["schema_version"])
+	var key_err: String = Check.keys_error(d, TOP_KEYS_V1 if version == 1 else TOP_KEYS, "저장")
 	if key_err != "":
 		return key_err
-	if not Check.in_range(d["schema_version"], SCHEMA_VERSION, SCHEMA_VERSION):
-		return "지원하지 않는 저장 버전이에요."
 	if not Check.in_range(d["day"], 1, MAX_DAY):
 		return "일차 값이 범위를 벗어났어요."
 	if not Check.in_range(d["wallet"], 0, MAX_WALLET):
@@ -535,7 +638,21 @@ func load_from_dict(raw: Variant) -> String:
 	if str(rep_result["error"]) != "":
 		return str(rep_result["error"])
 
+	# 연구 진행. v1 → v2 이행: v1에는 연구가 없었으므로 완료 없음(빈 목록)으로 시작한다. 자금/일차/기록/노트는 그대로 읽는다.
+	# v2는 기록 목록 검증 뒤에 검사해, 노트에 남은 기록과 영수증이 어긋나는지도 함께 본다.
+	var research_parsed: Array = []
+	if version >= 2:
+		var by_id: Dictionary = {}
+		for pe in parsed:
+			var pd: Dictionary = pe
+			by_id[int(pd["record_id"])] = pd
+		var research_result: Dictionary = Research.parse_progress(d["research"], int(d["day"]), n_record, by_id)
+		if str(research_result["error"]) != "":
+			return str(research_result["error"])
+		research_parsed = research_result["completed"]
+
 	# 모든 검증 통과 후 반영
+	_research_done = research_parsed
 	day = int(d["day"])
 	wallet = int(d["wallet"])
 	next_record_id = n_record

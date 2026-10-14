@@ -13,6 +13,7 @@ const Evaluator = preload("res://scripts/domain/recipe_evaluator.gd")
 const Sim = preload("res://scripts/domain/sales_simulator.gd")
 const SessionScript = preload("res://scripts/domain/service_session.gd")
 const GameStateScript = preload("res://scripts/domain/game_state.gd")
+const Research = preload("res://scripts/domain/ramen_research.gd")
 const SaveServiceScript = preload("res://scripts/services/save_service.gd")
 const LocationScript = preload("res://scripts/services/data_location.gd")
 const StarMeterScript = preload("res://scripts/ui/star_meter.gd")
@@ -49,6 +50,7 @@ const TAB_LAB: int = 0
 const TAB_FEEDBACK: int = 1
 const TAB_NOTEBOOK: int = 2
 const TAB_SERVE: int = 3
+const TAB_RESEARCH: int = 4
 
 const NOT_SAVED_NOTE: String = "영업은 끝까지 진행해야 정산·저장돼요. 도중에 끄면 저장되지 않고 영업 전으로 돌아가요."
 const RUNNING_NOTE: String = "정산 전이에요. 끝까지 진행해야 반영·저장되고, 도중에 닫으면 저장되지 않아요."
@@ -110,6 +112,10 @@ var _serve_intro: Label
 var _serve_menu: Label
 var _serve_forecast: Label
 var _report_label: Label
+var _research_summary: Label
+var _research_target: Label
+var _research_message: Label
+var _research_box: VBoxContainer
 
 var _pending_delete_id: int = 0
 var _fast: bool = false
@@ -550,6 +556,7 @@ func _build_overlay() -> void:
 	_build_feedback(_make_tab("TabFeedback", "시식"))
 	_build_notebook(_make_tab("TabNotebook", "노트"))
 	_build_serve(_make_tab("TabServe", "영업"))
+	_build_research(_make_tab("TabResearch", "연구"))
 
 	_open_button = _button("영업하러 가기", "OverlayOpenButton")
 	_primary(_open_button)
@@ -735,6 +742,27 @@ func _build_serve(box: VBoxContainer) -> void:
 	_dev_label.visible = false
 	sb.add_child(_dev_label)
 	box.add_child(info_card)
+
+
+## "연구" 탭: 단골 세 분의 의뢰 여섯 개. 위쪽은 진행 요약/제출 대상/결과 메시지(고정), 아래는 의뢰 카드(갱신 때마다 다시 만든다).
+func _build_research(box: VBoxContainer) -> void:
+	var sum_card: PanelContainer = _card("ResearchSummaryCard")
+	var sb: VBoxContainer = _vbox(6)
+	sum_card.add_child(sb)
+	sb.add_child(_label("라멘 연구", 20, VERMILION))
+	_research_summary = _label("", 16, INK)
+	_research_summary.name = "ResearchSummary"
+	sb.add_child(_research_summary)
+	_research_target = _label("", 15, TEAL)
+	_research_target.name = "ResearchTarget"
+	sb.add_child(_research_target)
+	_research_message = _label("", 15, TEAL)
+	_research_message.name = "ResearchMessage"
+	sb.add_child(_research_message)
+	box.add_child(sum_card)
+	_research_box = _vbox(12)
+	_research_box.name = "ResearchList"
+	box.add_child(_research_box)
 
 
 # ---------- 레이아웃 ----------
@@ -1078,6 +1106,26 @@ func _on_delete_record(id: int) -> void:
 	_refresh_all()
 
 
+## 연구 제출: 검증/보상은 전부 GameState.submit_research()가 한다. 여기서는 선택된 기록 번호를 넘기고 결과를 보여 줄 뿐이다.
+## 제출 대상은 영업 메뉴로 선택된 "시식 기록"이며, 개발 탭의 편집 중인 초안은 대상이 아니다.
+func _on_research_submit(request_id: String) -> void:
+	_pending_delete_id = 0
+	var res: Dictionary = state.submit_research(request_id, state.selected_record_id)
+	if not bool(res["ok"]):
+		_research_message.text = str(res["message"])
+		_research_message.add_theme_color_override("font_color", VERMILION)
+		_refresh_research()
+		return
+	var saved: bool = _persist()
+	var text: String = "%s. 한 번만 받는 보상이에요." % str(res["message"])
+	if not saved:
+		# 보상은 메모리에 반영됐지만 파일에는 없다. 저장됐다고 말하지 않는다.
+		text += "\n⚠ 저장하지 못했어요: %s 지금 닫으면 이 제출은 사라질 수 있어요." % _last_save_message
+	_refresh_all()
+	_research_message.text = text
+	_research_message.add_theme_color_override("font_color", TEAL if saved else VERMILION)
+
+
 # ---------- 화면 갱신 ----------
 
 func _refresh_all() -> void:
@@ -1086,6 +1134,7 @@ func _refresh_all() -> void:
 	_refresh_feedback()
 	_refresh_notebook()
 	_refresh_serve()
+	_refresh_research()
 	_refresh_guide()
 	_refresh_status()
 	_refresh_nav()
@@ -1403,6 +1452,99 @@ func _refresh_serve() -> void:
 		_report_label.text = "아직 영업한 날이 없어요."
 	else:
 		_report_label.text = _report_text(state.last_report)
+
+
+func _refresh_research() -> void:
+	if _research_box == null:
+		return
+	var done: Array = state.research_completed_ids()
+	var stage: Dictionary = state.research_stage()
+	_research_summary.text = "연구 점수 %d점 · 완료 %d/%d · %s (%d/%d단계)" % [state.research_points(), done.size(), Research.REQUESTS.size(), str(stage["title"]), int(stage["stage"]), int(stage["stages"])]
+	var rec: Dictionary = state.get_record(state.selected_record_id)
+	if rec.is_empty():
+		_research_target.text = "제출할 기록이 없어요. 시식하거나 [노트]에서 시식한 레시피를 불러오면 그 기록이 제출 대상이 돼요. 시식하지 않은 초안은 제출할 수 없어요."
+	else:
+		_research_target.text = "제출 대상: %s v%d (%d일차 시식 기록). 개발 탭에서 고치는 중인 초안이 아니라, 이 기록의 시식 당시 구성이 심사돼요." % [str(rec["name"]), int(rec["version"]), int(rec["tasted_day"])]
+	_clear(_research_box)
+	if state.research_complete():
+		var fin: PanelContainer = _card("ResearchChapterDone")
+		fin.add_child(_label("연구 과정 완료! 세 분의 의뢰를 모두 해결해 「%s」가 됐어요. 이번 단계에는 더 이상 새 의뢰가 없어요." % str(stage["title"]), 17, TEAL))
+		_research_box.add_child(fin)
+	for r in Research.REQUESTS:
+		var req: Dictionary = r
+		_research_box.add_child(_research_card(req, rec))
+
+
+func _research_card(req: Dictionary, rec: Dictionary) -> PanelContainer:
+	var id: String = str(req["id"])
+	var status: String = state.research_status(id)
+	var customer: Dictionary = Customers.find(str(req["customer"]))
+	var tier_text: String = "입문" if str(req["tier"]) == Research.TIER_BASIC else "심화"
+	var card: PanelContainer = _card("Research_" + id)
+	card.add_theme_stylebox_override("panel", _box(PAPER_LIGHT, LINE, 2, 0, 10.0, 6.0))
+	var cb: VBoxContainer = _vbox(4)
+	card.add_child(cb)
+	var title: Label = _label("[%s] %s · %s" % [tier_text, str(customer["name"]), str(req["title"])], 18, TEAL if status == "done" else VERMILION)
+	title.name = "ResearchTitle_" + id
+	cb.add_child(title)
+
+	var status_label: Label = _label("", 14, MUTED)
+	status_label.name = "ResearchStatus_" + id
+	match status:
+		"done":
+			status_label.text = "완료 · 보상을 받았어요."
+			for e in state.research_receipts():
+				var ed: Dictionary = e
+				if str(ed["request_id"]) == id:
+					status_label.text = "완료 · %d일차에 '%s v%d'로 제출 (점수 +%d, 자금 +%s)" % [int(ed["day"]), str(ed["recipe_name"]), int(ed["version"]), int(ed["points"]), _won(int(ed["cash"]))]
+		"locked":
+			status_label.text = "잠김 · " + state.research_lock_reason(id)
+		_:
+			var tier: String = str(req["tier"])
+			status_label.text = "도전 가능 · 보상: 연구 점수 +%d, 자금 +%s (한 번만)" % [int(Research.REWARD_POINTS[tier]), _won(int(Research.REWARD_CASH[tier]))]
+	cb.add_child(status_label)
+
+	cb.add_child(_label("“%s”" % str(req["dialogue"]), 15, INK))
+
+	var chk: Dictionary = {}
+	if not rec.is_empty():
+		chk = state.research_check(id, int(rec["record_id"]))
+	var lines: Array[String] = []
+	var hints: Array[String] = []
+	var conds: Array = req["conditions"]
+	for i in conds.size():
+		var cond: Dictionary = conds[i]
+		if chk.is_empty() or (chk["conditions"] as Array).size() != conds.size():
+			lines.append("· " + Research.condition_text(cond))
+			continue
+		var cr: Dictionary = (chk["conditions"] as Array)[i]
+		lines.append("%s %s — 지금 %s" % ["[달성]" if bool(cr["met"]) else "[부족]", str(cr["text"]), str(cr["measured_text"])])
+		if not bool(cr["met"]):
+			hints.append(str(cr["hint"]))
+	var cond_label: Label = _label("조건\n" + "\n".join(lines), 15, INK)
+	cond_label.name = "ResearchConditions_" + id
+	cb.add_child(cond_label)
+	if rec.is_empty():
+		cb.add_child(_label("제출할 기록을 고르면 각 조건의 현재 값을 보여 드려요.", 13, MUTED))
+	elif status != "done" and not hints.is_empty():
+		var hint_label: Label = _label("힌트: " + hints[0], 14, TEAL)
+		hint_label.name = "ResearchHint_" + id
+		cb.add_child(hint_label)
+	if status != "done":
+		cb.add_child(_label("의뢰인의 조언: " + str(req["hint"]), 13, MUTED))
+
+	var submit: Button = _button("이 기록으로 연구 제출", "ResearchSubmit_" + id)
+	_primary(submit)
+	match status:
+		"done":
+			submit.text = "제출 완료"
+		"locked":
+			submit.text = "잠김"
+	# 버튼은 "제출할 수 있는 상태"에서만 켠다. 조건 미충족은 눌러서 이유를 보게 두고(도메인이 거부), 기록 없음/잠김/완료/영업 중은 끈다.
+	submit.disabled = status != "open" or rec.is_empty() or state.service_active()
+	submit.pressed.connect(_on_research_submit.bind(id))
+	cb.add_child(submit)
+	return card
 
 
 func _source_text(by_source: Dictionary) -> String:

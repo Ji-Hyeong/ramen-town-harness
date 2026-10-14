@@ -509,9 +509,172 @@ func _run_profile(tag: String, vp: Vector2i, expect_scale: int) -> void:
 	again.queue_free()
 	await _frames(2)
 	await _run_save_failure(holder, tag, vp)
+	await _run_research(holder, tag, vp)
 
 	holder.queue_free()
 	await _frames(2)
+
+
+## 개발 서랍에서 재료를 눌러 고르고 이름/가격을 정해 시식한다(실제 pressed 신호). 시식 후 피드백 탭으로 이동한다.
+func _taste_via_ui(app: Node, options: Array, recipe_name: String, price_buttons: Array) -> void:
+	var tabs: TabContainer = _find(app, "MainTabs") as TabContainer
+	tabs.current_tab = 0
+	await _settle()
+	_press(app, "NewRecipeButton")
+	for opt in options:
+		_press(app, str(opt))
+	if recipe_name != "":
+		var edit: LineEdit = _find(app, "RecipeNameEdit") as LineEdit
+		edit.text = recipe_name
+		edit.text_changed.emit(edit.text)
+	for pb in price_buttons:
+		_press(app, str(pb))
+	_press(app, "TasteButton")
+	await create_timer(1.2).timeout
+
+
+## 연구 탭(보조 서랍 탭): 열기/미시식 거부/조건 미충족 거부/제출 보상/재제출·잠금/해금/저장 후 복원을 실제 UI 핸들러로 밟는다.
+## 이 함수는 --layout-only 에서도 그대로 실행된다(스크린샷만 건너뜀). 화면의 시각 품질은 별도 눈 검수가 필요하다.
+func _run_research(holder: SubViewport, tag: String, vp: Vector2i) -> void:
+	var dir: String = _data_root.path_join(tag + "_research")
+	DirAccess.make_dir_recursive_absolute(dir)
+	SaveServiceScript.new(dir).remove_known_files()
+	var app: Node = await _spawn(holder, dir)
+	var st: Object = _state(app)
+	var tabs: TabContainer = _find(app, "MainTabs") as TabContainer
+	var overlay: Control = _find(app, "Overlay") as Control
+	var ids: Array = ["dohyun_basic", "hayoung_basic", "maru_basic", "dohyun_advanced", "hayoung_advanced", "maru_advanced"]
+
+	# 1) 기존 탭 순서/제목은 그대로고 연구 탭이 5번째로 붙는다. 개발 버튼으로 서랍을 열고 연구 탭을 연다.
+	_check(tabs.get_tab_count() == 5, tag + ": 탭은 5개")
+	var titles: Array = ["개발", "시식", "노트", "영업", "연구"]
+	for i in titles.size():
+		_check(tabs.get_tab_title(i) == str(titles[i]), "%s: 탭 %d 제목 %s" % [tag, i, tabs.get_tab_title(i)])
+	_press(app, "DevButton")
+	await _settle()
+	_check(overlay.visible, tag + ": 서랍이 열려야 해요")
+	tabs.current_tab = 4
+	await _settle()
+	_check(int(st.get("wallet")) == 30000 and int(st.call("research_points")) == 0, tag + ": 탭을 열어도 보상/자금 변화 없음")
+	_check(_text_of(app, "ResearchSummary").find("연구 점수 0점") >= 0 and _text_of(app, "ResearchSummary").find("0/6") >= 0, tag + ": 연구 요약: " + _text_of(app, "ResearchSummary"))
+	_check(_text_of(app, "ResearchTarget").find("제출할 기록이 없어요") >= 0, tag + ": 시식 전 제출 대상 안내")
+	for rid in ids:
+		for prefix in ["Research_", "ResearchTitle_", "ResearchStatus_", "ResearchConditions_", "ResearchSubmit_"]:
+			await _reachable(app, vp, prefix + str(rid))
+	for rid in ["dohyun_basic", "hayoung_basic", "maru_basic"]:
+		_check((_find(app, "ResearchSubmit_" + rid) as BaseButton).disabled, tag + ": 시식한 기록이 없으면 제출 버튼이 꺼져야 해요: " + rid)
+	for rid in ["dohyun_advanced", "hayoung_advanced", "maru_advanced"]:
+		_check(_text_of(app, "ResearchStatus_" + rid).find("잠김") >= 0 and _text_of(app, "ResearchStatus_" + rid).find("0/2") >= 0, tag + ": 잠금 이유 표시: " + _text_of(app, "ResearchStatus_" + rid))
+		_check((_find(app, "ResearchSubmit_" + rid) as BaseButton).disabled, tag + ": 잠긴 의뢰는 제출 버튼이 꺼져야 해요: " + rid)
+	_overflow(app, vp, tag + " 연구 첫 화면")
+	(tabs.get_child(4) as ScrollContainer).scroll_vertical = 0
+	await _shot(holder, tag + "_11_research_open.png")
+
+	# 2) 시식하지 않은 초안(도윤 입문 증인)은 어떤 진행도 만들지 않는다.
+	for opt in ["Opt_tare_shoyu", "Opt_oil_garlic", "Opt_noodle_thick", "Opt_topping_nori", "Opt_cook_normal"]:
+		_press(app, opt)
+	app.call("_refresh_all")
+	await _settle()
+	_check((_find(app, "ResearchSubmit_dohyun_basic") as BaseButton).disabled, tag + ": 초안만 있으면 제출 버튼은 여전히 꺼져 있어요")
+	app.call("_on_research_submit", "dohyun_basic")
+	await _settle()
+	_check(int(st.call("research_points")) == 0 and int(st.get("wallet")) == 30000, tag + ": 초안 제출 시도는 아무것도 바꾸지 않아요")
+
+	# 3) 조건을 못 채운 기록(기본 초안, 원가 2,200원)을 시식해 제출하면 거부 + 힌트가 보인다.
+	app.call("_on_new_recipe")
+	for opt in ["Opt_tare_shoyu", "Opt_oil_garlic", "Opt_noodle_thin", "Opt_topping_chashu", "Opt_cook_firm"]:
+		_press(app, opt)
+	_press(app, "TasteButton")
+	await create_timer(1.2).timeout
+	var wallet_a: int = int(st.get("wallet"))
+	tabs.current_tab = 4
+	await _settle()
+	_check(_text_of(app, "ResearchTarget").find("제출 대상") >= 0 and _text_of(app, "ResearchTarget").find("v1") >= 0, tag + ": 제출 대상 기록/버전 표시: " + _text_of(app, "ResearchTarget"))
+	_check(_text_of(app, "ResearchConditions_dohyun_basic").find("[부족]") >= 0 and _text_of(app, "ResearchConditions_dohyun_basic").find("2,200원") >= 0, tag + ": 조건별 현재 값: " + _text_of(app, "ResearchConditions_dohyun_basic"))
+	await _reachable(app, vp, "ResearchHint_dohyun_basic")
+	await _reachable(app, vp, "ResearchSubmit_dohyun_basic")
+	_press(app, "ResearchSubmit_dohyun_basic")
+	await _settle()
+	_check(int(st.call("research_points")) == 0 and int(st.get("wallet")) == wallet_a, tag + ": 조건 미충족 제출은 거부")
+	_check(_text_of(app, "ResearchMessage").find("조건") >= 0, tag + ": 거부 이유 표시: " + _text_of(app, "ResearchMessage"))
+
+	# 4) 도윤 입문 증인 조합을 시식(가격 9,500)하고 제출 → 보상 한 번.
+	await _taste_via_ui(app, ["Opt_broth_tonkotsu", "Opt_tare_shoyu", "Opt_oil_garlic", "Opt_noodle_thick", "Opt_topping_nori", "Opt_cook_normal"], "QA 도윤 연구", ["PriceUp500"])
+	var wallet_b: int = int(st.get("wallet"))
+	tabs.current_tab = 4
+	await _settle()
+	_check(_text_of(app, "ResearchTarget").find("QA 도윤 연구 v1") >= 0, tag + ": 새 기록이 제출 대상: " + _text_of(app, "ResearchTarget"))
+	_check(_text_of(app, "ResearchConditions_dohyun_basic").find("[부족]") < 0, tag + ": 증인 기록은 입문 조건을 모두 달성: " + _text_of(app, "ResearchConditions_dohyun_basic"))
+	_check(not (_find(app, "ResearchSubmit_dohyun_basic") as BaseButton).disabled, tag + ": 제출 버튼이 켜져야 해요")
+	_press(app, "ResearchSubmit_dohyun_basic")
+	await _settle()
+	_check(int(st.call("research_points")) == 2 and int(st.get("wallet")) == wallet_b + 2000, tag + ": 입문 보상 점수 2 / 자금 +2,000")
+	_check(_text_of(app, "ResearchMessage").find("연구를 마쳤어요") >= 0 and _text_of(app, "ResearchMessage").find("한 번만") >= 0, tag + ": 보상 확인 메시지: " + _text_of(app, "ResearchMessage"))
+	_check(_text_of(app, "ResearchSummary").find("완료 1/6") >= 0 and _text_of(app, "ResearchSummary").find("연구 점수 2점") >= 0, tag + ": 요약 갱신: " + _text_of(app, "ResearchSummary"))
+	var expected_wallet: String = "%d,%03d" % [(wallet_b + 2000) / 1000, (wallet_b + 2000) % 1000]
+	_check(_text_of(app, "WalletLabel").find(expected_wallet) >= 0, tag + ": 상단 자금 표시가 보상을 반영: %s (기대 %s)" % [_text_of(app, "WalletLabel"), expected_wallet])
+	_check((_find(app, "ResearchSubmit_dohyun_basic") as BaseButton).disabled and _text_of(app, "ResearchSubmit_dohyun_basic").find("제출 완료") >= 0, tag + ": 완료 의뢰는 버튼이 '제출 완료'로 꺼져요")
+	_check(int((st.call("research_receipts") as Array).size()) == 1 and _text_of(app, "ResearchStatus_dohyun_basic").find("완료") >= 0, tag + ": 완료 표시/영수증")
+
+	# 5) 재제출·잠긴 의뢰는 핸들러를 직접 불러도 거부된다(보상 없음).
+	var wallet_c: int = int(st.get("wallet"))
+	app.call("_on_research_submit", "dohyun_basic")
+	app.call("_on_research_submit", "dohyun_advanced")
+	await _settle()
+	_check(int(st.call("research_points")) == 2 and int(st.get("wallet")) == wallet_c, tag + ": 재제출/잠긴 의뢰는 보상이 없어요")
+	_check(_text_of(app, "ResearchMessage") != "" and _text_of(app, "ResearchMessage").find("연구를 마쳤어요") < 0, tag + ": 잠긴 의뢰 거부 메시지: " + _text_of(app, "ResearchMessage"))
+	_check((_find(app, "ResearchSubmit_dohyun_advanced") as BaseButton).disabled, tag + ": 입문 1개로는 심화 버튼이 꺼져 있어요")
+
+	# 6) 하영 입문 증인(가격 9,000) → 두 번째 입문 완료로 심화 해금.
+	await _taste_via_ui(app, ["Opt_broth_dashi", "Opt_tare_shio", "Opt_oil_scallion", "Opt_noodle_thin", "Opt_topping_nori", "Opt_cook_firm"], "QA 하영 연구", ["PriceDown500"])
+	tabs.current_tab = 4
+	await _settle()
+	_press(app, "ResearchSubmit_hayoung_basic")
+	await _settle()
+	_check(int(st.call("research_points")) == 4, tag + ": 두 번째 입문 완료 점수 4: " + _text_of(app, "ResearchMessage"))
+	_check(_text_of(app, "ResearchSummary").find("완료 2/6") >= 0, tag + ": 요약 완료 2/6")
+	for rid in ["dohyun_advanced", "hayoung_advanced", "maru_advanced"]:
+		_check(_text_of(app, "ResearchStatus_" + rid).find("도전 가능") >= 0, tag + ": 심화 해금: " + rid)
+		_check(not (_find(app, "ResearchSubmit_" + rid) as BaseButton).disabled, tag + ": 해금된 심화는 버튼이 켜져요(조건은 도메인이 판정): " + rid)
+	var wallet_d: int = int(st.get("wallet"))
+	_press(app, "ResearchSubmit_maru_advanced")
+	await _settle()
+	_check(int(st.call("research_points")) == 4 and int(st.get("wallet")) == wallet_d, tag + ": 조건 안 맞는 기록으로 심화 제출은 거부")
+	for rid in ids:
+		for prefix in ["Research_", "ResearchTitle_", "ResearchStatus_", "ResearchConditions_", "ResearchSubmit_"]:
+			await _reachable(app, vp, prefix + str(rid))
+	await _reachable(app, vp, "ResearchMessage")
+	_overflow(app, vp, tag + " 연구 진행 후")
+	(tabs.get_child(4) as ScrollContainer).scroll_vertical = 0
+	await _shot(holder, tag + "_12_research_progress.png")
+
+	# 7) 저장/재시작 후에도 진행이 남고 보상은 다시 받을 수 없다(마지막 변경은 제출 직후 저장됨).
+	var wallet_e: int = int(st.get("wallet"))
+	app.notification(Node.NOTIFICATION_WM_CLOSE_REQUEST)
+	app.queue_free()
+	await _frames(2)
+	var again: Node = await _spawn(holder, dir)
+	var st2: Object = _state(again)
+	_check(int(st2.call("research_points")) == 4 and int(st2.get("wallet")) == wallet_e, tag + ": 재시작 후 연구 점수/자금 복원")
+	_press(again, "DevButton")
+	await _settle()
+	var tabs2: TabContainer = _find(again, "MainTabs") as TabContainer
+	tabs2.current_tab = 4
+	await _settle()
+	_check(_text_of(again, "ResearchSummary").find("완료 2/6") >= 0 and _text_of(again, "ResearchSummary").find("연구 점수 4점") >= 0, tag + ": 재시작 후 요약: " + _text_of(again, "ResearchSummary"))
+	_check((_find(again, "ResearchSubmit_dohyun_basic") as BaseButton).disabled and (_find(again, "ResearchSubmit_hayoung_basic") as BaseButton).disabled, tag + ": 재시작 후 완료 의뢰는 꺼져 있어요")
+	again.call("_on_research_submit", "hayoung_basic")
+	await _settle()
+	_check(int(st2.call("research_points")) == 4 and int(st2.get("wallet")) == wallet_e, tag + ": 재시작 후 재제출은 보상이 없어요")
+	_check(_text_of(again, "ResearchStatus_maru_advanced").find("도전 가능") >= 0, tag + ": 재시작 후에도 심화 해금 유지")
+	for rid in ids:
+		await _reachable(again, vp, "ResearchSubmit_" + str(rid))
+	_overflow(again, vp, tag + " 연구 재시작")
+	await _shot(holder, tag + "_13_research_reloaded.png")
+	again.queue_free()
+	await _frames(2)
+	SaveServiceScript.new(dir).remove_known_files()
+	DirAccess.remove_absolute(dir)
 
 
 ## 저장이 실패해도 정산 결과 화면이 "저장했어요"라고 거짓말하지 않고 보이는 곳에 실패를 알리는지 본다.

@@ -16,6 +16,7 @@ const LayoutScript = preload("res://scripts/ui/shop_layout.gd")
 const ArtScript = preload("res://scripts/ui/pixel_art.gd")
 const PainterScript = preload("res://scripts/ui/shop_painter.gd")
 const SceneScript = preload("res://scripts/ui/shop_scene.gd")
+const Research = preload("res://scripts/domain/ramen_research.gd")
 
 const ARG: String = "--test-data-dir="
 
@@ -55,6 +56,11 @@ func _initialize() -> void:
 		test_service_money_matches_runtime, test_service_quality_changes_arrivals_and_reactions,
 		test_service_recipe_locking, test_service_cancel_and_reload, test_service_settlement_guards,
 		test_service_determinism_and_chunking, test_shop_layout_and_art,
+		test_research_catalog_and_feasibility, test_research_sweep_no_single_recipe,
+		test_research_unlock_and_one_time_rewards, test_research_check_values,
+		test_research_rejections_do_not_mutate, test_research_service_lock, test_research_overflow,
+		test_research_persistence_after_delete, test_research_v1_migration, test_research_malformed_progress,
+		test_research_rejects_fabricated_scores, test_research_load_rejects_unmet_retained_record,
 	]
 	var ran: int = 0
 	for t in tests:
@@ -782,7 +788,8 @@ func _mutate(label: String, d: Dictionary) -> void:
 		"비교 이전 버전 오류":
 			(rec1["comparison"] as Dictionary)["prev_version"] = 5
 		"스키마 버전":
-			d["schema_version"] = 2
+			# v2는 이제 정상 버전이므로 아직 존재하지 않는 다음 버전으로 바꿔 거부를 확인한다.
+			d["schema_version"] = GameStateScript.SCHEMA_VERSION + 1
 		_:
 			_failures.append("알 수 없는 변조 이름: " + label)
 
@@ -837,6 +844,447 @@ func test_data_location() -> void:
 
 # ---------- 실시간 영업 런타임 ----------
 # 아래 시험은 시간을 게임초 틱으로 직접 진행하므로 실제 시간·렌더러·난수에 의존하지 않는다.
+
+# ---------- 라멘 연구 ----------
+
+## 새 레시피로 시식하고 기록 번호를 돌려준다(이름은 의뢰 id로 구분).
+func _taste_as(s: GameStateScript, config: Dictionary, recipe_name: String) -> int:
+	s.start_new_recipe()
+	_apply_cfg(s, config)
+	s.set_draft_name(recipe_name)
+	var r: Dictionary = s.taste()
+	_check(bool(r["ok"]), "연구 시험용 시식 실패(%s): %s" % [recipe_name, str(r["message"])])
+	return int(r.get("record_id", 0))
+
+
+## 여섯 증인 조합을 모두 시식해 {의뢰 id: 기록 번호}를 만든다.
+func _record_all_witnesses(s: GameStateScript) -> Dictionary:
+	var ids: Dictionary = {}
+	for rid in Research.ids():
+		ids[rid] = _taste_as(s, Research.WITNESSES[rid], "시험 " + rid)
+	return ids
+
+
+func _research_state() -> GameStateScript:
+	return _state_with_wallet(100000)
+
+
+func test_research_catalog_and_feasibility() -> void:
+	var reqs: Array = Research.requests()
+	_check(reqs.size() == 6 and Research.ids().size() == 6, "의뢰는 정확히 6개")
+	var seen_ids: Dictionary = {}
+	var per_customer: Dictionary = {}
+	var basic: int = 0
+	var points_total: int = 0
+	var cash_total: int = 0
+	for r in reqs:
+		var req: Dictionary = r
+		var id: String = str(req["id"])
+		_check(not seen_ids.has(id), "의뢰 id 중복: " + id)
+		seen_ids[id] = true
+		_check(not Customers.find(str(req["customer"])).is_empty(), "알 수 없는 손님: " + id)
+		var tier: String = str(req["tier"])
+		_check(tier == Research.TIER_BASIC or tier == Research.TIER_ADVANCED, "단계 값: " + id)
+		var key: String = "%s:%s" % [str(req["customer"]), tier]
+		per_customer[key] = int(per_customer.get(key, 0)) + 1
+		if tier == Research.TIER_BASIC:
+			basic += 1
+		points_total += int(Research.REWARD_POINTS[tier])
+		cash_total += int(Research.REWARD_CASH[tier])
+		var conds: Array = req["conditions"]
+		_check(conds.size() >= 2, "조건은 점수 + 하나 이상의 절충: " + id)
+		if tier == Research.TIER_ADVANCED:
+			_check(conds.size() >= 3, "심화는 제약이 둘 이상(점수 제외): " + id)
+		var has_score: bool = false
+		for c in conds:
+			var cd: Dictionary = c
+			_check(Research.condition_text(cd) != "", "조건 문구 없음: " + id)
+			if str(cd["kind"]) == "score_min":
+				has_score = true
+				_check(str(cd["customer"]) == str(req["customer"]), "점수 조건은 의뢰한 손님 기준: " + id)
+		_check(has_score, "손님별 점수 조건 필요: " + id)
+		_check(str(req["dialogue"]) != "" and str(req["hint"]) != "" and str(req["title"]) != "", "대사/힌트/제목: " + id)
+		for field in ["title", "dialogue", "hint"]:
+			var txt: String = str(req[field])
+			_check(txt.find("broth_") < 0 and txt.find("noodle_") < 0 and txt.find("dohyun") < 0, "게임 문구에 내부 id가 보이면 안 돼요: " + id)
+	_check(basic == 3, "입문 3개")
+	for cid in Customers.ids():
+		_check(int(per_customer.get("%s:basic" % cid, 0)) == 1 and int(per_customer.get("%s:advanced" % cid, 0)) == 1, "손님마다 입문 1 + 심화 1: " + cid)
+	_check(points_total == 21 and cash_total == 21000, "보상 총량은 유한해요(점수 21, 21,000원): %d/%d" % [points_total, cash_total])
+	var last_stage: Dictionary = Research.stage_for(points_total)
+	_check(int(last_stage["stage"]) == int(last_stage["stages"]), "모두 완료하면 마지막 칭호 단계")
+	_check(str(Research.stage_for(0)["title"]) != str(last_stage["title"]), "칭호는 단계에 따라 달라져요")
+
+	# 증인 조합: 평가기로 직접 다시 계산해 모든 조건을 만족하는지 본다(숫자를 지어내지 않음).
+	var witness_configs: Array = []
+	for r in reqs:
+		var req2: Dictionary = r
+		var id2: String = str(req2["id"])
+		_check(Research.WITNESSES.has(id2), "증인 조합 없음: " + id2)
+		var cfg: Dictionary = Research.WITNESSES[id2]
+		_check(Check.config_error(cfg) == "", "증인 구성이 유효해야 해요: " + id2)
+		var m: Dictionary = Research.measures_for(cfg, _scores_of(cfg))
+		_check(Research.request_met(req2, m), "증인 조합이 조건을 만족해야 해요: %s (점수 %s, 준비 %d초, 원가 %d원, 가격 %d원)" % [id2, str(m["scores"]), int(m["prep"]), int(m["cost"]), int(m["price"])])
+		for prev in witness_configs:
+			_check(not Check.same_config(prev, cfg), "증인 조합은 서로 달라야 해요(시식 중복 규칙): " + id2)
+		witness_configs.append(cfg)
+	_end()
+
+
+## 재료 972가지 x 가격 표본(500원 단위)을 훑어 각 의뢰의 달성 가능성과 "한 레시피가 여섯을 모두 만족하지 못함"을 확인한다.
+func test_research_sweep_no_single_recipe() -> void:
+	var reqs: Array = Research.requests()
+	var satisfying: Dictionary = {}
+	var max_together: int = 0
+	var all_six: int = 0
+	var prices: Array[int] = []
+	for p in range(Catalog.PRICE_MIN, Catalog.PRICE_MAX + 1, 500):
+		prices.append(p)
+	for c in _all_configs():
+		var cfg: Dictionary = c
+		var m: Dictionary = Research.measures_for(cfg, _scores_of(cfg))
+		for price in prices:
+			m["price"] = price
+			var together: int = 0
+			for r in reqs:
+				var req: Dictionary = r
+				if Research.request_met(req, m):
+					together += 1
+					var rid: String = str(req["id"])
+					satisfying[rid] = int(satisfying.get(rid, 0)) + 1
+			max_together = maxi(max_together, together)
+			if together == reqs.size():
+				all_six += 1
+	for rid2 in Research.ids():
+		_check(int(satisfying.get(rid2, 0)) >= 1, "전체 재료 훑기에서 달성 조합이 있어야 해요: " + rid2)
+	_check(all_six == 0 and max_together < reqs.size(), "한 레시피가 여섯 의뢰를 모두 만족하면 안 돼요 (최대 동시 %d)" % max_together)
+	# 입문과 심화는 서로 다른 절충을 요구한다: 어떤 한 조합도 심화 세 개를 동시에 만족하지 못한다.
+	var adv_all: int = 0
+	for c2 in _all_configs():
+		var cfg2: Dictionary = c2
+		var m2: Dictionary = Research.measures_for(cfg2, _scores_of(cfg2))
+		for price2 in prices:
+			m2["price"] = price2
+			var n_adv: int = 0
+			for r2 in reqs:
+				var rq: Dictionary = r2
+				if str(rq["tier"]) == Research.TIER_ADVANCED and Research.request_met(rq, m2):
+					n_adv += 1
+			if n_adv == 3:
+				adv_all += 1
+	_check(adv_all == 0, "심화 세 개를 한 레시피가 동시에 만족하면 안 돼요")
+	_end()
+
+
+func test_research_unlock_and_one_time_rewards() -> void:
+	var s: GameStateScript = _research_state()
+	var rec: Dictionary = _record_all_witnesses(s)
+	_check(s.research_points() == 0 and s.research_completed_ids().is_empty(), "처음엔 연구 완료가 없어요")
+	_check(str(s.research_stage()["title"]) == str(Research.STAGES[0]["title"]), "처음 칭호")
+	for rid in ["dohyun_basic", "hayoung_basic", "maru_basic"]:
+		_check(s.research_status(rid) == "open", "입문은 처음부터 열림: " + rid)
+	for rid2 in ["dohyun_advanced", "hayoung_advanced", "maru_advanced"]:
+		_check(s.research_status(rid2) == "locked" and s.research_lock_reason(rid2).find("2") >= 0, "심화는 잠김 + 이유: " + rid2)
+		var locked: Dictionary = s.submit_research(rid2, int(rec[rid2]))
+		_check(not bool(locked["ok"]), "잠긴 심화는 제출할 수 없어요: " + rid2)
+	_check(s.research_points() == 0, "시식/조회만으로 점수가 생기면 안 돼요")
+
+	var w0: int = s.wallet
+	var r1: Dictionary = s.submit_research("dohyun_basic", int(rec["dohyun_basic"]))
+	_check(bool(r1["ok"]), "도윤 입문 제출: " + str(r1["message"]))
+	_check(s.wallet == w0 + Research.REWARD_CASH["basic"] and s.research_points() == 2, "입문 보상: 자금 +2,000 / 점수 2")
+	_check(s.research_status("dohyun_basic") == "done", "완료 표시")
+	_check(s.research_status("dohyun_advanced") == "locked", "입문 1개로는 심화가 열리지 않아요")
+	var snap: String = _json(s)
+	var again: Dictionary = s.submit_research("dohyun_basic", int(rec["dohyun_basic"]))
+	_check(not bool(again["ok"]) and _json(s) == snap, "같은 의뢰 재제출은 거부되고 아무것도 바뀌지 않아요")
+	var other: Dictionary = s.submit_research("dohyun_basic", int(rec["hayoung_basic"]))
+	_check(not bool(other["ok"]) and _json(s) == snap, "다른 기록으로도 같은 의뢰는 다시 받을 수 없어요")
+
+	# 시식/선택/삭제/새 레시피는 연구 점수와 자금(시식비 제외)을 바꾸지 않는다.
+	var w1: int = s.wallet
+	s.select_record(int(rec["maru_basic"]))
+	s.start_new_recipe()
+	_check(s.research_points() == 2 and s.wallet == w1, "선택/새 레시피는 연구에 영향이 없어요")
+
+	var w2: int = s.wallet
+	var r2: Dictionary = s.submit_research("hayoung_basic", int(rec["hayoung_basic"]))
+	_check(bool(r2["ok"]) and s.wallet == w2 + 2000 and s.research_points() == 4, "두 번째 입문: 점수 4")
+	_check(str(s.research_stage()["title"]) == str(Research.STAGES[1]["title"]), "칭호가 올라가요")
+	for rid3 in ["dohyun_advanced", "hayoung_advanced", "maru_advanced"]:
+		_check(s.research_status(rid3) == "open", "입문 2개 완료 후 심화 해금: " + rid3)
+	_check(not s.research_complete(), "아직 과정 전체 완료가 아니에요")
+
+	var w3: int = s.wallet
+	var r3: Dictionary = s.submit_research("maru_advanced", int(rec["maru_advanced"]))
+	_check(bool(r3["ok"]) and s.wallet == w3 + 5000 and s.research_points() == 9, "심화 보상: 자금 +5,000 / 점수 +5")
+	for rid4 in ["maru_basic", "dohyun_advanced", "hayoung_advanced"]:
+		var rr: Dictionary = s.submit_research(rid4, int(rec[rid4]))
+		_check(bool(rr["ok"]), "나머지 제출: %s %s" % [rid4, str(rr["message"])])
+	_check(s.research_complete() and s.research_points() == 21, "여섯 개 모두 완료하면 점수 21에서 끝나요")
+	_check(str(s.research_stage()["title"]) == str(Research.STAGES[Research.STAGES.size() - 1]["title"]), "마지막 칭호")
+	_check(s.wallet == w0 + 21000, "여섯 보상의 자금 합은 정확히 21,000원: %d" % (s.wallet - w0))
+	var end_snap: String = _json(s)
+	for rid5 in Research.ids():
+		_check(not bool(s.submit_research(rid5, int(rec[rid5]))["ok"]), "완료 후에는 무엇도 더 받을 수 없어요: " + rid5)
+	_check(_json(s) == end_snap, "완료 후 제출 시도는 상태를 바꾸지 않아요")
+	_end()
+
+
+func test_research_check_values() -> void:
+	var s: GameStateScript = _research_state()
+	var rid: int = _taste_as(s, Research.WITNESSES["maru_advanced"], "측정 시험")
+	var rec: Dictionary = s.get_record(rid)
+	var chk: Dictionary = s.research_check("maru_advanced", rid)
+	_check(bool(chk["all_met"]) and (chk["conditions"] as Array).size() == 4, "증인 기록은 조건 4개를 모두 달성")
+	var first: Dictionary = (chk["conditions"] as Array)[0]
+	_check(str(first["measured_text"]) == "%d점" % int((rec["scores"] as Dictionary)["maru"]), "측정값은 기록에 저장된 점수 그대로예요")
+	for c in chk["conditions"]:
+		var cd: Dictionary = c
+		_check(bool(cd["met"]) and str(cd["hint"]) == "", "달성한 조건에는 힌트가 없어요")
+	# 기본 초안(원가 2,200원)은 도윤 입문의 원가 조건을 넘는다 → 측정값과 사람이 읽을 힌트가 있어야 한다.
+	var weak: int = _taste_as(s, _cfg("broth_tonkotsu", "tare_shoyu", "oil_garlic", "noodle_thin", "topping_chashu", "cook_firm", 9000), "원가 시험")
+	var wchk: Dictionary = s.research_check("dohyun_basic", weak)
+	var cost_cond: Dictionary = (wchk["conditions"] as Array)[1]
+	_check(not bool(cost_cond["met"]) and str(cost_cond["measured_text"]) == "2,200원", "원가 측정값 표시: " + str(cost_cond["measured_text"]))
+	_check(str(cost_cond["hint"]).find("200원") >= 0, "미충족 힌트는 부족분을 알려요: " + str(cost_cond["hint"]))
+	_check(not bool(wchk["all_met"]), "원가 초과 기록은 달성이 아니에요")
+	_check(s.research_check("dohyun_basic", 9999).is_empty(), "없는 기록은 판정하지 않아요")
+	_end()
+
+
+func test_research_rejections_do_not_mutate() -> void:
+	var s: GameStateScript = _research_state()
+	var rec: Dictionary = _record_all_witnesses(s)
+	var weak: int = _taste_as(s, _cfg("broth_tonkotsu", "tare_shoyu", "oil_garlic", "noodle_thin", "topping_chashu", "cook_firm", 9000), "미달 시험")
+	var snap: String = _json(s)
+	var cases: Array = [
+		["미충족", "dohyun_basic", weak],
+		["알 수 없는 의뢰", "nope", int(rec["dohyun_basic"])],
+		["빈 의뢰", "", int(rec["dohyun_basic"])],
+		["기록 없음(0)", "dohyun_basic", 0],
+		["없는 기록", "dohyun_basic", 9999],
+		["음수 기록", "dohyun_basic", -3],
+		["잠긴 심화", "hayoung_advanced", int(rec["hayoung_advanced"])],
+	]
+	for c in cases:
+		var arr: Array = c
+		var res: Dictionary = s.submit_research(str(arr[1]), int(arr[2]))
+		_check(not bool(res["ok"]) and str(res["message"]) != "", "거부돼야 해요: " + str(arr[0]))
+		_check(_json(s) == snap, "거부는 상태를 바꾸면 안 돼요: " + str(arr[0]))
+	# 시식하지 않은 초안은 기록이 아니므로 어떤 번호로도 제출할 수 없다: 초안만 바꿔도 진행은 그대로.
+	_apply_cfg(s, Research.WITNESSES["hayoung_basic"])
+	_check(not bool(s.submit_research("hayoung_basic", 0)["ok"]), "초안만으로는 진행할 수 없어요")
+	_check(s.research_points() == 0, "초안은 점수를 만들지 않아요")
+	_end()
+
+
+func test_research_service_lock() -> void:
+	var s: GameStateScript = _research_state()
+	var rec: Dictionary = _record_all_witnesses(s)
+	s.select_record(int(rec["dohyun_basic"]))
+	var begin: Dictionary = s.begin_service()
+	_check(bool(begin["ok"]), "영업 시작: " + str(begin["message"]))
+	var snap: String = _json(s)
+	var res: Dictionary = s.submit_research("dohyun_basic", int(rec["dohyun_basic"]))
+	_check(not bool(res["ok"]) and s.research_points() == 0, "영업 중에는 연구를 제출할 수 없어요")
+	_check(_json(s) == snap and s.service_active(), "영업 중 제출 시도는 상태/세션을 건드리지 않아요")
+	s.cancel_service()
+	var ok: Dictionary = s.submit_research("dohyun_basic", int(rec["dohyun_basic"]))
+	_check(bool(ok["ok"]) and s.research_points() == 2, "영업을 끝낸 뒤에는 제출할 수 있어요")
+	_end()
+
+
+func test_research_overflow() -> void:
+	var s: GameStateScript = _research_state()
+	var rec: Dictionary = _record_all_witnesses(s)
+	s.wallet = GameStateScript.MAX_WALLET - 1000
+	var snap: String = _json(s)
+	var res: Dictionary = s.submit_research("dohyun_basic", int(rec["dohyun_basic"]))
+	_check(not bool(res["ok"]) and _json(s) == snap, "보상이 자금 한도를 넘으면 거부되고 아무것도 바뀌지 않아요")
+	_check(s.research_status("dohyun_basic") == "open", "거부된 의뢰는 여전히 열려 있어요")
+	s.wallet = GameStateScript.MAX_WALLET - 2000
+	var edge: Dictionary = s.submit_research("dohyun_basic", int(rec["dohyun_basic"]))
+	_check(bool(edge["ok"]) and s.wallet == GameStateScript.MAX_WALLET, "정확히 한도까지는 받을 수 있어요")
+	_end()
+
+
+func test_research_persistence_after_delete() -> void:
+	var dir: String = _case_dir("research_roundtrip")
+	var saver: SaveServiceScript = SaveServiceScript.new(dir)
+	saver.remove_known_files()
+	var s: GameStateScript = _research_state()
+	var rec: Dictionary = _record_all_witnesses(s)
+	_check(bool(s.submit_research("dohyun_basic", int(rec["dohyun_basic"]))["ok"]), "첫 제출")
+	_check(bool(s.submit_research("hayoung_basic", int(rec["hayoung_basic"]))["ok"]), "둘째 제출")
+	# 제출한 기록을 노트에서 삭제해도 완료는 남는다.
+	_check(bool(s.delete_record(int(rec["dohyun_basic"]))["ok"]), "제출한 기록 삭제")
+	_check(s.research_status("dohyun_basic") == "done" and s.research_points() == 4, "기록을 지워도 완료/점수가 유지돼요")
+	_check(bool(saver.save_state(s)["ok"]), "저장")
+	var loaded: GameStateScript = GameStateScript.new()
+	var lr: Dictionary = saver.load_into(loaded)
+	_check(str(lr["status"]) == "ok", "불러오기: " + str(lr["message"]))
+	_check(_json(loaded) == _json(s), "연구 진행이 저장/불러오기 왕복에서 동일해야 해요")
+	_check(loaded.research_status("dohyun_basic") == "done" and loaded.research_points() == 4 and loaded.wallet == s.wallet, "불러온 뒤 완료/점수/자금")
+	_check(loaded.get_record(int(rec["dohyun_basic"])).is_empty(), "삭제된 기록은 노트에 없어요")
+	var snap: String = _json(loaded)
+	_check(not bool(loaded.submit_research("dohyun_basic", int(rec["maru_basic"]))["ok"]) and _json(loaded) == snap, "불러온 뒤 같은 의뢰의 보상을 또 받을 수 없어요")
+	_check(not bool(loaded.submit_research("hayoung_basic", int(rec["hayoung_basic"]))["ok"]) and _json(loaded) == snap, "남아 있는 기록으로도 재수령 불가")
+	# 해금도 파생값이라 불러온 뒤에도 유지되며 다음 보상은 정상 지급된다.
+	var w: int = loaded.wallet
+	_check(bool(loaded.submit_research("maru_advanced", int(rec["maru_advanced"]))["ok"]) and loaded.wallet == w + 5000, "불러온 뒤 해금된 심화 제출")
+	_cleanup_case(saver)
+	_end()
+
+
+func test_research_v1_migration() -> void:
+	var dir: String = _case_dir("research_v1")
+	var saver: SaveServiceScript = SaveServiceScript.new(dir)
+	saver.remove_known_files()
+	var src: GameStateScript = _populated_state()
+	var v1: Dictionary = src.to_dict()
+	v1["schema_version"] = 1
+	v1.erase("research")
+	var v1_text: String = JSON.stringify(v1, "\t", true)
+	_write_text(saver.main_path(), v1_text)
+	var loaded: GameStateScript = GameStateScript.new()
+	var lr: Dictionary = saver.load_into(loaded)
+	_check(str(lr["status"]) == "ok", "v1 저장은 이행해 읽어야 해요: " + str(lr["message"]))
+	_check(loaded.day == src.day and loaded.wallet == src.wallet and loaded.record_count() == src.record_count(), "v1 이행: 일차/자금/기록 보존")
+	_check(str(loaded.records()) == str(src.records()) and loaded.selected_record_id == src.selected_record_id, "v1 이행: 레시피 개정/노트/선택 보존")
+	_check(str(loaded.last_report) == str(src.last_report) and loaded.draft_name == src.draft_name, "v1 이행: 보고/초안 보존")
+	_check(loaded.research_completed_ids().is_empty() and loaded.research_points() == 0, "v1 이행: 연구 진행은 비어 있음")
+	_check(FileAccess.get_file_as_string(saver.main_path()) == v1_text, "불러오기만으로 v1 파일을 바꾸면 안 돼요")
+	_check(bool(saver.save_state(loaded)["ok"]), "이행 후 저장")
+	_check(FileAccess.get_file_as_string(saver.bak_path()) == v1_text, "첫 v2 저장 때 기존 v1 파일이 백업에 보존돼요")
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(saver.main_path()))
+	_check(typeof(parsed) == TYPE_DICTIONARY and int((parsed as Dictionary)["schema_version"]) == GameStateScript.SCHEMA_VERSION and (parsed as Dictionary).has("research"), "새 저장은 v2 + research")
+	# v1 이행 뒤 연구가 정상 동작한다.
+	var rid: int = _taste_as(loaded, Research.WITNESSES["hayoung_basic"], "이행 시험")
+	_check(bool(loaded.submit_research("hayoung_basic", rid)["ok"]), "이행한 저장에서 연구 제출")
+	# 구조 검사: v1에 research가 있거나 v2에 없으면 변조로 거부한다.
+	var bad_v1: Dictionary = JSON.parse_string(v1_text)
+	bad_v1["research"] = {"completed": []}
+	var probe1: GameStateScript = GameStateScript.new()
+	_check(probe1.load_from_dict(bad_v1) != "", "research가 있는 v1은 거부")
+	var bad_v2: Dictionary = JSON.parse_string(JSON.stringify(_populated_state().to_dict()))
+	bad_v2.erase("research")
+	var probe2: GameStateScript = GameStateScript.new()
+	_check(probe2.load_from_dict(bad_v2) != "", "research가 없는 v2는 거부")
+	_cleanup_case(saver)
+	_end()
+
+
+func test_research_malformed_progress() -> void:
+	var s: GameStateScript = _research_state()
+	var rec: Dictionary = _record_all_witnesses(s)
+	for rid in ["dohyun_basic", "hayoung_basic", "maru_advanced"]:
+		_check(bool(s.submit_research(rid, int(rec[rid]))["ok"]), "픽스처 제출: " + rid)
+	var parsed: Variant = JSON.parse_string(JSON.stringify(s.to_dict()))
+	_check(typeof(parsed) == TYPE_DICTIONARY, "왕복 파싱")
+	var base: Dictionary = parsed
+	var ok_probe: GameStateScript = GameStateScript.new()
+	_check(ok_probe.load_from_dict(base) == "" and ok_probe.research_points() == 9, "정상 연구 진행은 float 숫자여도 받아들여요")
+	var labels: Array[String] = [
+		"알 수 없는 의뢰", "중복 의뢰", "해금 전 심화", "점수 변조", "금액 변조", "기록 번호 범위", "노트 기록과 불일치",
+		"미래 완료일", "키 누락", "추가 키", "research 구조", "completed 구조", "항목 7개", "버전 범위", "문자열 점수", "의뢰 id 형식",
+	]
+	for label in labels:
+		var copy: Dictionary = base.duplicate(true)
+		var research: Dictionary = {}
+		if copy["research"] is Dictionary:
+			research = copy["research"]
+		var items: Array = research["completed"]
+		var e0: Dictionary = items[0]
+		var e1: Dictionary = items[1]
+		match label:
+			"알 수 없는 의뢰":
+				e0["request_id"] = "nope_basic"
+			"중복 의뢰":
+				e1["request_id"] = e0["request_id"]
+			"해금 전 심화":
+				items.reverse()
+			"점수 변조":
+				e0["points"] = int(e0["points"]) + 1
+			"금액 변조":
+				e0["cash"] = 99999
+			"기록 번호 범위":
+				e0["record_id"] = 99999
+			"노트 기록과 불일치":
+				e0["recipe_name"] = "다른 이름"
+			"미래 완료일":
+				e0["day"] = int(copy["day"]) + 5
+			"키 누락":
+				e0.erase("cash")
+			"추가 키":
+				e0["bonus"] = 1
+			"research 구조":
+				copy["research"] = []
+			"completed 구조":
+				research["completed"] = "x"
+			"항목 7개":
+				while items.size() < 7:
+					items.append(e0.duplicate(true))
+			"버전 범위":
+				e0["version"] = 0
+			"문자열 점수":
+				e0["points"] = "2"
+			"의뢰 id 형식":
+				e0["request_id"] = 5
+			_:
+				_failures.append("알 수 없는 변조 이름: " + label)
+		var target: GameStateScript = GameStateScript.new()
+		var snapshot: String = _json(target)
+		var err: String = target.load_from_dict(copy)
+		_check(err != "", "연구 진행 거부돼야 해요: " + label)
+		_check(_json(target) == snapshot, "거부된 연구 진행 로드는 상태를 바꾸면 안 돼요: " + label)
+	_end()
+
+
+## 구성에 비해 위조된(범위 안) 점수로는 조건을 통과할 수 없다: 평가기의 새 계산값과 다르면 판정 자체를 거부한다.
+func test_research_rejects_fabricated_scores() -> void:
+	var cfg: Dictionary = _cfg("broth_tonkotsu", "tare_shoyu", "oil_garlic", "noodle_thin", "topping_chashu", "cook_firm", 7500)
+	var real: Dictionary = _scores_of(cfg)
+	var honest: Dictionary = Research.check("maru_basic", cfg, real)
+	_check(str(honest["error"]) == "" and not bool(honest["all_met"]), "정상 점수로는 이 구성이 마루 입문을 못 채워요")
+	var fake: Dictionary = real.duplicate(true)
+	fake["maru"] = 99
+	var forged: Dictionary = Research.check("maru_basic", cfg, fake)
+	_check(str(forged["error"]) != "" and not bool(forged["all_met"]), "위조 점수는 오류로 거부돼야 해요")
+	var missing: Dictionary = real.duplicate(true)
+	missing.erase("maru")
+	_check(str(Research.check("maru_basic", cfg, missing)["error"]) != "", "점수 누락도 거부")
+	# 정상 증인 구성은 진짜 점수로 여전히 통과한다.
+	var w: Dictionary = Research.WITNESSES["maru_basic"]
+	_check(bool(Research.check("maru_basic", w, _scores_of(w))["all_met"]), "증인은 정상 점수로 통과")
+	_end()
+
+
+## 노트에 남은 기록이 조건을 못 채우는데 형식만 맞는 완료 영수증은 불러오기에서 거부된다. 삭제된 기록의 완료는 그대로 유효하다.
+func test_research_load_rejects_unmet_retained_record() -> void:
+	var s: GameStateScript = _research_state()
+	var bad_id: int = _taste_as(s, _cfg("broth_tonkotsu", "tare_shoyu", "oil_garlic", "noodle_thin", "topping_chashu", "cook_firm", 7500), "미달 기록")
+	var good_id: int = _taste_as(s, Research.WITNESSES["maru_basic"], "달성 기록")
+	_check(not bool(s.submit_research("maru_basic", bad_id)["ok"]), "미달 기록은 정상 경로에서도 거부")
+	var base: Dictionary = JSON.parse_string(JSON.stringify(s.to_dict()))
+	var forged: Dictionary = base.duplicate(true)
+	var items: Array = (forged["research"] as Dictionary)["completed"]
+	items.append(JSON.parse_string(JSON.stringify(Research.make_entry("maru_basic", s.get_record(bad_id), s.day))))
+	var target: GameStateScript = GameStateScript.new()
+	var snapshot: String = _json(target)
+	_check(target.load_from_dict(forged) != "", "남은 미달 기록에 묶인 완료는 거부")
+	_check(_json(target) == snapshot, "거부된 로드는 상태를 전혀 바꾸지 않아요")
+	# 정상 완료 → 저장 구조 왕복 → 기록 삭제 후에도 유효.
+	_check(bool(s.submit_research("maru_basic", good_id)["ok"]), "정상 제출")
+	var ok_dict: Dictionary = JSON.parse_string(JSON.stringify(s.to_dict()))
+	var loaded: GameStateScript = GameStateScript.new()
+	_check(loaded.load_from_dict(ok_dict) == "" and loaded.research_status("maru_basic") == "done", "정상 완료는 불러와져요")
+	_check(bool(s.delete_record(good_id)["ok"]), "달성 기록 삭제")
+	var after_delete: Dictionary = JSON.parse_string(JSON.stringify(s.to_dict()))
+	var reloaded: GameStateScript = GameStateScript.new()
+	_check(reloaded.load_from_dict(after_delete) == "" and reloaded.research_status("maru_basic") == "done" and reloaded.research_points() == 2, "삭제된 기록의 완료는 유효")
+	_end()
+
 
 ## 준비 시간 73초(가장 빠른 축)인 레시피: 서버/자리 병목 없이 요리사 속도만 보게 하는 기준.
 func _fast_cfg(price: int = 9000) -> Dictionary:
