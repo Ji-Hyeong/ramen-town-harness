@@ -112,24 +112,87 @@ const ITEMS: Dictionary = {
 }
 
 
+## 탐험으로 발견해야 열리는 재료 6개(면/익힘은 없음). 시작부터 쓸 수 있는 ITEMS 와 일부러 분리했다:
+##  - items(slot)은 예전 재료만 돌려준다. 그래서 기존 조합 열거(972가지)와 시험이 늘어나지 않고, 예전 재료의 데이터/평가는 한 글자도 바뀌지 않는다.
+##  - all_items(slot)은 예전 재료 뒤에 발견 재료를 붙인 전체(카탈로그 순서)다. find/is_valid/평가기/저장 검증은 전체를 안다.
+##  - "region" 은 이 재료를 발견할 수 있는 지역 id(ingredient_exploration.gd 의 REGIONS 와 일치해야 한다).
+## 발견 전에는 상태(GameState)가 선택/시식/불러오기를 막는다. 카탈로그는 "알려진 id 인가"만 안다(발견 여부는 상태의 몫).
+## 모두 보편 상위호환이 아니다: 비용/시간/맛 축에 장단이 있고 손님마다 점수가 갈리며(시험으로 확인), 궁합 규칙도 장단이 있다.
+const DISCOVERY_ITEMS: Dictionary = {
+	"broth": [
+		{"id": "broth_clam", "name": "조개 맑은탕", "cost": 800, "seconds": 28, "region": "harbor",
+			"desc": "항구에서 갓 캔 조개로 낸 맑고 짭짤한 국물. 간과 향이 살지만 진한 맛은 약하고 비싸요.",
+			"axes": {"rich": 2, "salt": 3, "aroma": 3}},
+	],
+	"tare": [
+		{"id": "tare_plum", "name": "매실 타레", "cost": 260, "seconds": 8, "region": "market",
+			"desc": "새콤달콤한 매실로 맞춘 간. 향은 살리지만 염도가 약하고 국물이 가벼워져요.",
+			"axes": {"rich": -1, "salt": 2, "aroma": 2}},
+	],
+	"oil": [
+		{"id": "oil_shrimp", "name": "새우유", "cost": 220, "seconds": 7, "region": "harbor",
+			"desc": "새우 머리를 볶아 낸 기름. 진함과 향이 오르지만 맑은 국물에는 무거워요.",
+			"axes": {"rich": 2, "aroma": 3, "spice": 1}},
+		{"id": "oil_pepper", "name": "초피유", "cost": 200, "seconds": 6, "region": "mountain",
+			"desc": "산초 열매로 낸 얼얼한 기름. 향과 매운맛이 오르고 매운 걸 못 먹는 손님은 힘들어해요.",
+			"axes": {"aroma": 2, "spice": 3}},
+	],
+	"topping": [
+		{"id": "topping_pickle", "name": "절임 무", "cost": 120, "seconds": 4, "region": "market",
+			"desc": "아삭한 장터표 절임. 느끼함을 확 걷어내지만 국물의 진함도 같이 줄어요.",
+			"axes": {"rich": -2, "salt": 1}},
+		{"id": "topping_mushroom", "name": "표고 조림", "cost": 350, "seconds": 10, "region": "mountain",
+			"desc": "산골 농가식 표고 조림. 진함과 향을 보태 주지만 원가와 손이 더 들어요.",
+			"axes": {"rich": 2, "salt": 1, "aroma": 1}},
+	],
+}
+
+
 static func items(slot: String) -> Array:
 	if not ITEMS.has(slot):
 		return []
 	return ITEMS[slot]
 
 
+## 발견 재료만(슬롯별). 없는 슬롯은 빈 목록.
+static func discovery_items(slot: String) -> Array:
+	if not DISCOVERY_ITEMS.has(slot):
+		return []
+	return DISCOVERY_ITEMS[slot]
+
+
+## 전체 재료(예전 재료 먼저, 발견 재료 뒤). 순서는 토핑 정규 순서의 기준이다.
+static func all_items(slot: String) -> Array:
+	var out: Array = items(slot).duplicate()
+	out.append_array(discovery_items(slot))
+	return out
+
+
+## 발견해야 열리는 재료 id 전체(슬롯 순서).
+static func discovery_ids() -> Array[String]:
+	var out: Array[String] = []
+	for slot in SLOTS:
+		for item in discovery_items(slot):
+			out.append(str((item as Dictionary)["id"]))
+	return out
+
+
+static func is_discovery(id: String) -> bool:
+	return discovery_ids().has(id)
+
+
 static func find(id: String) -> Dictionary:
 	for slot in SLOTS:
-		for item in items(slot):
+		for item in all_items(slot):
 			var d: Dictionary = item
 			if str(d["id"]) == id:
 				return d
 	return {}
 
 
-## id가 해당 슬롯에 실제로 존재하는지 확인한다.
+## id가 해당 슬롯에 실제로 존재하는지 확인한다(발견 재료도 "알려진 id"). 발견 여부는 여기서 보지 않는다.
 static func is_valid(slot: String, id: String) -> bool:
-	for item in items(slot):
+	for item in all_items(slot):
 		var d: Dictionary = item
 		if str(d["id"]) == id:
 			return true
@@ -160,7 +223,7 @@ static func default_config() -> Dictionary:
 
 ## 카탈로그 안에서의 토핑 순서(알 수 없는 id는 -1).
 static func topping_order(id: String) -> int:
-	var list: Array = items(TOPPING_SLOT)
+	var list: Array = all_items(TOPPING_SLOT)
 	for i in list.size():
 		if str((list[i] as Dictionary)["id"]) == id:
 			return i

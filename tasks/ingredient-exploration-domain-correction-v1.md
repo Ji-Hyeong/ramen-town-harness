@@ -1,0 +1,19 @@
+TASK
+Targeted completion/correction of your existing ingredient-exploration domain session, not a fresh implementation. Current exploration remains Claude-implemented; user asked Codex usage increase AFTER it. Read current role exception in AGENTS.md. No UI/QA yet.
+
+OBSERVED INDEPENDENT RESULTS
+Your initial requested30/observed31 call ended exit1/error_max_turns/is_error=true/no denials with no result, so it is not completion. Import exit0/no script errors. Full tests actually77/49767,1 assertion failure and a SCRIPT ERROR: _scores_of ev["customers"] at run_tests.gd135 called by test_locked_ingredients_gating3720. That new case parses base through JSON, mutates v_rec config and calls evaluator without normalizing numeric price: serialized JSON price is FLOAT even when integral, evaluator rejects it, then helper reads missing customers. Expected locked-ingredient rejection sees earlier score mismatch instead. Fix the test fixture at the appropriate parse boundary (use the existing validated parser or explicit exact integer conversion), not a catch/default empty score or weaker contains assertion. Ensure comparison mutation fixture also has consistent expected scores if needed. Preserve every old/new assertion.
+Golden old972 configurations in both forms:1944 full-result comparisons/0/exit0. Private frozen actual schema3 fresh and grown(rank3/all4facilities/both staff/7records/3toppings/research/comparison/staffed report) migration/backup:37/0/exit0, every old value preserved. First Codex migration probe got2 false mismatches from comparing injected INTschema3 to JSON FLOATschema3; fixed normalization, NOT a product defect.
+
+REPRODUCED PRODUCT VALIDATION DEFECTS
+Independent work/exploration-invalid-state-probe.gd constructs actual trips/retirements/serves in isolated synthetic data. Current Exploration.parse_state wrongly accepts3 unreachable saves, and load mutates the target:
+1 Active trip day and last_departure_day set to yesterday while current day unchanged. All service/day progress is locked during a trip, so active.day must equal current day, not merely1..day.
+2 After13 actual retired trips, history pruned to12. Set retired=current_day, while last_departure_day=current_day-1. Parser only checks departures<=current_day, but one departure per day implies total departures<=last_departure_day (including active if present). Preserve legitimate sparse trip days/history pruning.
+3 Discover both market ingredients via actual trips, serve to next day, inject fresh active market departure/currentlastday. A completely discovered region cannot begin a new trip, so such an active region must be rejected by load. Prior finished receipts in a now-complete region remain valid.
+Fix these precise invariants, add meaningful persisted regressions/atomicity checks, don't alter costs/outcomes or weaken positive roundtrip/history tests. Validate entire load before mutation as before. Codex probe will be rerun independently.
+
+EDITABLE / CONSTRAINTS
+Only game/scripts/domain/ingredient_exploration.gd, game/scripts/domain/game_state.gd if required, game/tests/run_tests.gd, game/README.md and AGENTS.md domain handoff/NOT RUN entry. No UI/art/QA/settings/tools/tasks/old evidence/global/credentials/Bash/Git/network/delegation. Don't remove new tests or reduce bounds/assertions. Targeted corrections only, max10 turns; no runtime test permission.
+
+ACCEPTANCE / HANDOFF
+Finish domain and document its public APIs/state shape, actual region fees/rank/choice paths/materials, availability/parser/backup/history behavior and expected17 new tests (77 total before any additions). Previous note of16 was Codex counting error. Describe exact fixes and NOT RUN checks; report remaining UI work compactly. A successful completion report plus independently rerun tests/probes is required before UI phase. Scope this already16-minute domain, do not reanalyze full repo or redesign.

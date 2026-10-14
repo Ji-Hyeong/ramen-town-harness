@@ -16,6 +16,7 @@ const Session = preload("res://scripts/domain/service_session.gd")
 const Research = preload("res://scripts/domain/ramen_research.gd")
 const Growth = preload("res://scripts/domain/shop_growth.gd")
 const Staffing = preload("res://scripts/domain/shop_staffing.gd")
+const Exploration = preload("res://scripts/domain/ingredient_exploration.gd")
 
 ## 스키마 v2: 최상위에 "research"(완료한 연구 의뢰 영수증 목록)가 추가됐다.
 ## v1 저장은 "research" 키가 없는 것이 정상이며, 불러올 때 빈 연구 진행(완료 없음)으로 이행한다(load_from_dict 참고).
@@ -23,7 +24,12 @@ const Staffing = preload("res://scripts/domain/shop_staffing.gd")
 ## 토핑이 "topping"(문자열) → "toppings"(카탈로그 순서의 배열)로 바뀐다. 용량(토핑 슬롯/노트/직원 수)은 저장하지 않고 이 값들에서 매번 계산한다.
 ## v1/v2 저장은 불러올 때 "등급 1단계, 확장/고용 없음"과 "토핑 하나짜리 배열"로 이행한다(자금/일차/기록/점수/보고/연구 영수증은 그대로).
 ## 다음 저장부터는 v3로 기록되고, 저장 서비스가 덮어쓰기 전에 기존 v1/v2 본 파일을 보존한다(save_service.gd 참고).
-const SCHEMA_VERSION: int = 3
+##
+## 스키마 v4: 최상위에 "exploration"(발견한 재료 목록, 마지막 출발일, 누적 완료/포기 횟수, 진행 중 탐험, 최근 영수증 기록)이 추가된다.
+## v1~v3 저장은 이 키가 없는 것이 정상이며(있으면 변조), 불러올 때 "발견 없음, 진행 중 탐험 없음"으로 이행한다. 이행은 자금/일차/기록/점수/연구/성장을
+## 전혀 건드리지 않고 아무것도 새로 주지 않는다. 진행 중 탐험은 모든 만남 단계와 결과 단계에서 그대로 저장돼 다시 열어도 같은 만남이 이어진다
+## (만남은 카탈로그와 경로로만 정해지므로 불러올 때 새로 뽑지 않는다). 저장 서비스가 v4 첫 저장 전에 v3 원본을 보존한다.
+const SCHEMA_VERSION: int = 4
 const MIN_SCHEMA_VERSION: int = 1
 const MAX_RECORDS: int = 30
 const START_WALLET: int = 30000
@@ -35,8 +41,10 @@ const TOP_KEYS_V1: Array = ["schema_version", "day", "wallet", "next_record_id",
 	"records", "selected_record_id", "last_feedback_record_id", "draft", "last_report"]
 const TOP_KEYS_V2: Array = ["schema_version", "day", "wallet", "next_record_id", "next_lineage_id",
 	"records", "selected_record_id", "last_feedback_record_id", "draft", "last_report", "research"]
-const TOP_KEYS: Array = ["schema_version", "day", "wallet", "next_record_id", "next_lineage_id",
+const TOP_KEYS_V3: Array = ["schema_version", "day", "wallet", "next_record_id", "next_lineage_id",
 	"records", "selected_record_id", "last_feedback_record_id", "draft", "last_report", "research", "growth"]
+const TOP_KEYS: Array = ["schema_version", "day", "wallet", "next_record_id", "next_lineage_id",
+	"records", "selected_record_id", "last_feedback_record_id", "draft", "last_report", "research", "growth", "exploration"]
 const RECORD_KEYS: Array = ["record_id", "lineage_id", "name", "version", "tasted_day", "config", "scores", "comparison"]
 const COMPARISON_KEYS: Array = ["prev_record_id", "prev_version", "prev_scores", "prev_config"]
 const DRAFT_KEYS: Array = ["config", "name", "lineage_id"]
@@ -60,6 +68,9 @@ var _research_done: Array = []
 var _rank: int = 1
 var _facilities: Array = []
 var _hired: Array = []
+## 재료 탐험 상태(저장). 발견한 재료(영구), 마지막 출발일(하루 1번 규칙), 누적 완료/포기 횟수, 진행 중 탐험, 최근 영수증. 구조는 ingredient_exploration.gd 참고.
+## 이 값은 항상 Exploration 의 전이 함수가 돌려준 "새 딕셔너리"로 통째로 교체한다(부분 수정 없음). 외부에는 deep copy만 내보낸다.
+var _exploration: Dictionary = Exploration.empty_state()
 ## 진행 중인 영업 런타임. 저장하지 않는다(재시작하면 영업 전 상태로 돌아온다). 있는 동안은 레시피/초안/일차를 잠근다.
 var _active_session: Session = null
 
@@ -122,10 +133,13 @@ func _suggest_name() -> String:
 # ---------- 초안 편집 ----------
 
 func set_draft_choice(slot: String, id: String) -> Dictionary:
-	if service_active():
+	if _busy():
 		return _locked_fail()
 	if not Catalog.SLOTS.has(slot) or not Catalog.is_valid(slot, id):
 		return _fail("알 수 없는 재료예요.")
+	# 발견 전 재료는 알려진 id 여도 고를 수 없다(거부하면 초안은 그대로).
+	if not Exploration.unlocked(id, _discovered_list()):
+		return _fail(_lock_message(id))
 	if slot == Catalog.TOPPING_SLOT:
 		# 예전 호출 모양(토핑 하나 고르기) 호환: 토핑을 그 하나로 바꾼다. 여러 개는 set_draft_toppings/toggle_draft_topping 으로 고른다.
 		draft_config["toppings"] = [id]
@@ -137,12 +151,14 @@ func set_draft_choice(slot: String, id: String) -> Dictionary:
 ## 토핑 한 번에 지정(여러 개). 검증을 모두 마친 뒤에만 초안을 바꾼다: 최소 1개, 지금 열린 슬롯 수 이하, 중복/모르는 id 없음.
 ## 순서는 상관없다(카탈로그 순서로 정규화되므로 순서만 다른 지정은 같은 레시피다).
 func set_draft_toppings(ids: Array) -> Dictionary:
-	if service_active():
+	if _busy():
 		return _locked_fail()
 	var seen: Dictionary = {}
 	for v in ids:
 		if typeof(v) != TYPE_STRING or not Catalog.is_valid(Catalog.TOPPING_SLOT, str(v)):
 			return _fail("알 수 없는 토핑이에요.")
+		if not Exploration.unlocked(str(v), _discovered_list()):
+			return _fail(_lock_message(str(v)))
 		if seen.has(str(v)):
 			return _fail("같은 토핑을 두 번 고를 수 없어요.")
 		seen[str(v)] = true
@@ -158,7 +174,7 @@ func set_draft_toppings(ids: Array) -> Dictionary:
 
 ## 토핑 하나를 넣거나 뺀다(이미 있으면 빼고, 없으면 넣는다). 마지막 하나는 뺄 수 없고, 열린 슬롯 수를 넘겨 넣을 수 없다.
 func toggle_draft_topping(id: String) -> Dictionary:
-	if service_active():
+	if _busy():
 		return _locked_fail()
 	if not Catalog.is_valid(Catalog.TOPPING_SLOT, id):
 		return _fail("알 수 없는 토핑이에요.")
@@ -173,7 +189,7 @@ func toggle_draft_topping(id: String) -> Dictionary:
 
 
 func set_draft_price(price: int) -> Dictionary:
-	if service_active():
+	if _busy():
 		return _locked_fail()
 	if price <Catalog.PRICE_MIN or price > Catalog.PRICE_MAX or price % Catalog.PRICE_STEP != 0:
 		return _fail("가격은 %d~%d원, %d원 단위로 정해요." % [Catalog.PRICE_MIN, Catalog.PRICE_MAX, Catalog.PRICE_STEP])
@@ -183,7 +199,7 @@ func set_draft_price(price: int) -> Dictionary:
 
 ## 이름은 입력 중에는 그대로 저장하고, 시식 때 검증한다. 개정 중에는 이름을 바꿀 수 없다.
 func set_draft_name(text: String) -> Dictionary:
-	if service_active():
+	if _busy():
 		return _locked_fail()
 	if draft_lineage_id != 0:
 		return _fail("개정 중인 레시피는 이름을 바꿀 수 없어요.")
@@ -193,7 +209,7 @@ func set_draft_name(text: String) -> Dictionary:
 
 ## 새 레시피 시작: 개정 연결과 선택을 풀고 구성은 그대로 둔다.
 func start_new_recipe() -> void:
-	if service_active():
+	if _busy():
 		return
 	draft_lineage_id = 0
 	selected_record_id = 0
@@ -202,13 +218,16 @@ func start_new_recipe() -> void:
 
 ## 노트에서 선택: 구성/가격/익힘/이름을 복원하고 이후 시식은 같은 레시피의 새 버전이 된다.
 func select_record(id: int) -> Dictionary:
-	if service_active():
+	if _busy():
 		return _locked_fail()
 	var idx: int = _index_of(id)
 	if idx < 0:
 		return _fail("노트에 없는 기록이에요.")
 	var r: Dictionary = _records[idx]
 	var cfg: Dictionary = r["config"]
+	var rec_lock: String = Exploration.locked_in(cfg, _discovered_list())
+	if rec_lock != "":
+		return _fail(_lock_message(rec_lock))
 	draft_config = cfg.duplicate(true)
 	draft_name = str(r["name"])
 	draft_lineage_id = int(r["lineage_id"])
@@ -218,7 +237,7 @@ func select_record(id: int) -> Dictionary:
 
 
 func delete_record(id: int) -> Dictionary:
-	if service_active():
+	if _busy():
 		return _locked_fail()
 	var idx: int = _index_of(id)
 	if idx < 0:
@@ -242,11 +261,15 @@ func trial_cost() -> int:
 
 
 func taste() -> Dictionary:
-	if service_active():
+	if _busy():
 		return _locked_fail()
 	var cfg_err: String = Check.config_error(draft_config)
 	if cfg_err != "":
 		return _fail(cfg_err)
+	# 초안이 발견 전 재료를 담고 있으면(변조된 외부 대입 등) 시식하지 않는다: 기록에는 발견한 재료만 들어간다.
+	var draft_lock: String = Exploration.locked_in(draft_config, _discovered_list())
+	if draft_lock != "":
+		return _fail(_lock_message(draft_lock))
 	if Catalog.toppings_of(draft_config).size() > topping_slots():
 		return _fail("토핑이 지금 열린 슬롯(%d개)보다 많아요." % topping_slots())
 	var clean_name: String = draft_name.strip_edges()
@@ -338,11 +361,14 @@ func forecast() -> Dictionary:
 ## 즉시 정산하는 계산 경로이며 화면은 쓰지 않는다. 실제 플레이는 begin_service()/settle_service()를 거친다
 ## (회귀 테스트와 "런타임 결과 == 예측" 대조용으로만 남겨 둔다).
 func serve() -> Dictionary:
-	if service_active():
+	if _busy():
 		return _locked_fail()
 	var rec: Dictionary = get_record(selected_record_id)
 	if rec.is_empty():
 		return _fail("노트에서 영업할 레시피를 먼저 선택하세요.")
+	var serve_lock: String = Exploration.locked_in(rec["config"], _discovered_list())
+	if serve_lock != "":
+		return _fail(_lock_message(serve_lock))
 	if day >= MAX_DAY:
 		return _fail("더 이상 영업일을 늘릴 수 없어요.")
 	var sim: Dictionary = Sim.simulate(rec["config"], rec["scores"], day, current_staffing())
@@ -391,9 +417,14 @@ func active_session() -> Session:
 func begin_service() -> Dictionary:
 	if _active_session != null:
 		return _fail("이미 영업 중이에요.")
+	if exploration_active():
+		return _trip_fail()
 	var rec: Dictionary = get_record(selected_record_id)
 	if rec.is_empty():
 		return _fail("노트에서 영업할 레시피를 먼저 선택하세요.")
+	var rec_lock: String = Exploration.locked_in(rec["config"], _discovered_list())
+	if rec_lock != "":
+		return _fail(_lock_message(rec_lock))
 	if day >= MAX_DAY:
 		return _fail("더 이상 영업일을 늘릴 수 없어요.")
 	# 직원/성장 스냅샷은 여기서 한 번만 복사한다. 이후 세션은 이 값만 쓴다(영업 중 고용/구매는 막혀 있다).
@@ -496,8 +527,20 @@ func settle_service() -> Dictionary:
 	return res
 
 
-static func _locked_fail() -> Dictionary:
-	return {"ok": false, "message": "영업 중에는 레시피와 일차를 바꿀 수 없어요. 영업을 끝내거나 중단한 뒤 다시 해 보세요."}
+## 영업 중이거나 탐험 중이면 레시피/일차/성장/연구를 건드리는 행동은 도메인이 거부한다(화면 잠금과 별개의 마지막 방어선).
+## 두 잠금은 서로 배타적이다: 영업 중에는 탐험을 시작/진행할 수 없고, 탐험 중에는 영업을 시작할 수 없다.
+func _busy() -> bool:
+	return service_active() or exploration_active()
+
+
+func _locked_fail() -> Dictionary:
+	if service_active():
+		return {"ok": false, "message": "영업 중에는 레시피와 일차를 바꿀 수 없어요. 영업을 끝내거나 중단한 뒤 다시 해 보세요."}
+	return _trip_fail()
+
+
+static func _trip_fail() -> Dictionary:
+	return {"ok": false, "message": "탐험 중에는 레시피, 영업, 연구, 성장을 할 수 없어요. 탐험 결과를 받거나 포기한 뒤 다시 해 보세요. (저장은 할 수 있어요.)"}
 
 
 # ---------- 라멘 연구 ----------
@@ -558,6 +601,8 @@ func research_check(request_id: String, record_id: int) -> Dictionary:
 func submit_research(request_id: String, record_id: int) -> Dictionary:
 	if service_active():
 		return _fail("영업 중에는 연구를 제출할 수 없어요. 영업을 끝내거나 중단한 뒤 다시 해 보세요.")
+	if exploration_active():
+		return _trip_fail()
 	var req: Dictionary = Research.find(request_id)
 	if req.is_empty():
 		return _fail("알 수 없는 연구 의뢰예요.")
@@ -660,6 +705,8 @@ func promotion_review() -> Dictionary:
 func apply_promotion(target_rank: int) -> Dictionary:
 	if service_active():
 		return _fail("영업 중에는 등급 심사를 신청할 수 없어요. 영업을 끝내거나 중단한 뒤 다시 해 보세요.")
+	if exploration_active():
+		return _trip_fail()
 	if target_rank < 2 or target_rank > Growth.RANK_MAX:
 		return _fail("알 수 없는 등급이에요.")
 	if _rank >= Growth.RANK_MAX:
@@ -690,6 +737,8 @@ func facility_reviews() -> Array:
 func purchase_facility(id: String) -> Dictionary:
 	if service_active():
 		return _fail("영업 중에는 확장을 살 수 없어요. 영업을 끝내거나 중단한 뒤 다시 해 보세요.")
+	if exploration_active():
+		return _trip_fail()
 	var rv: Dictionary = facility_review(id)
 	if rv.is_empty():
 		return _fail("알 수 없는 확장이에요.")
@@ -721,6 +770,8 @@ func staff_reviews() -> Array:
 func hire_staff(id: String) -> Dictionary:
 	if service_active():
 		return _fail("영업 중에는 직원을 고용할 수 없어요. 영업을 끝내거나 중단한 뒤 다시 해 보세요.")
+	if exploration_active():
+		return _trip_fail()
 	var rv: Dictionary = staff_review(id)
 	if rv.is_empty():
 		return _fail("알 수 없는 직원이에요.")
@@ -730,6 +781,205 @@ func hire_staff(id: String) -> Dictionary:
 	wallet -= price
 	_hired.append(id)
 	return _ok("%s %s을(를) 고용했어요 (고용비 %s, 하루 운영비 %s)." % [str(rv["role_name"]), str(rv["name"]), Growth._won(price), Growth._won(int(rv["wage"]))])
+
+
+# ---------- 재료 탐험 (지역 선택 -> 갈래 만남 2번 -> 결과 수령/포기) ----------
+##
+## 거래 규칙 (모두 ingredient_exploration.gd 의 순수 전이 + 여기서의 자금 처리):
+##  - start/advance/finish/retire 는 영업 중이면 즉시 거부한다(화면의 시식 중 잠금과 별개). 반대로 탐험 중에는 메뉴 편집/시식/영업/연구/성장이 거부된다.
+##  - 모든 검증(등급, 자금, 하루 1번, 지역 완료 여부, 선택 유효성, 추가 비용)을 끝낸 뒤에만 상태와 자금을 함께 바꾼다. 실패하면 둘 다 그대로다.
+##  - 출발 비용은 start 에서 정확히 한 번, 선택의 추가 비용은 그 선택에서 정확히 한 번 빠진다. 포기해도 환불은 없다.
+##  - 보상(재료 영구 개방)은 finish 에서 정확히 한 번만 생긴다: 결과 단계에서만 가능하고 성공하면 진행 중 탐험이 사라져 같은 호출을 되풀이해도 거부된다.
+##    저장/불러오기/화면 갱신/탭 전환은 진행도, 자금, 보상을 바꾸지 않는다. 탐험은 일차를 올리지 않는다(일차는 영업 정산만 올린다).
+##  - 자금/등급/연구 보상과 소모품 재고는 없다. 재료 발견은 "레시피 개발에 쓸 수 있는 선택지의 영구 해금"일 뿐이다.
+
+func exploration_active() -> bool:
+	return not (_exploration["active"] as Dictionary).is_empty()
+
+
+func _discovered_list() -> Array:
+	return Exploration.discovered_ids(_exploration)
+
+
+## 발견한 재료 id(발견 순서). 항상 사본.
+func discovered_ingredients() -> Array:
+	var out: Array = []
+	for id in _discovered_list():
+		out.append(str(id))
+	return out
+
+
+## 발견 기록 [{id, region, day}] (발견 순서). 항상 deep copy.
+func discovery_records() -> Array:
+	return (_exploration["discovered"] as Array).duplicate(true)
+
+
+func is_discovered(id: String) -> bool:
+	return _discovered_list().has(id)
+
+
+## 예전 재료는 항상 true, 발견 재료는 발견한 뒤에만 true. 모르는 id 는 false.
+func ingredient_unlocked(id: String) -> bool:
+	return not Catalog.find(id).is_empty() and Exploration.unlocked(id, _discovered_list())
+
+
+## 잠긴 재료의 획득 안내({"locked": true, region, region_name, min_rank, fee, hint}). 열린 재료는 {"locked": false}. 모르는 id 는 {}.
+func ingredient_lock_info(id: String) -> Dictionary:
+	return Exploration.lock_info(id, _discovered_list())
+
+
+## 지금 고를 수 있는 재료(예전 재료 + 발견한 재료, 카탈로그 순서). 항목은 deep copy.
+func available_items(slot: String) -> Array:
+	var out: Array = []
+	var got: Array = _discovered_list()
+	for item in Catalog.all_items(slot):
+		var d: Dictionary = item
+		if Exploration.unlocked(str(d["id"]), got):
+			out.append(d.duplicate(true))
+	return out
+
+
+## 아직 잠긴 재료. 각 항목은 재료 데이터 사본에 "lock"(획득 안내)을 붙인다.
+func locked_items(slot: String) -> Array:
+	var out: Array = []
+	var got: Array = _discovered_list()
+	for item in Catalog.discovery_items(slot):
+		var d: Dictionary = item
+		if not got.has(str(d["id"])):
+			var c: Dictionary = d.duplicate(true)
+			c["lock"] = Exploration.lock_info(str(d["id"]), got)
+			out.append(c)
+	return out
+
+
+## {"obtained": 발견 수, "total": 6, "regions": [{id, obtained, total}]}
+func exploration_progress() -> Dictionary:
+	return Exploration.progress(_exploration)
+
+
+## 지역별 계산된 상태 3개(카탈로그 순서): 이름/설명/등급/출발 비용/재료(발견 여부)/진행도/status/can_start/reason.
+func exploration_regions() -> Array:
+	var out: Array = []
+	for id in Exploration.region_ids():
+		out.append(exploration_region(id))
+	return out
+
+
+func exploration_region(region_id: String) -> Dictionary:
+	return Exploration.region_review(_exploration, region_id, _rank, day, wallet)
+
+
+## 진행 중 탐험의 보기(단계, 지금 만남과 선택지, 또는 결과). 없으면 {}. 읽기 전용 사본.
+func expedition() -> Dictionary:
+	return Exploration.active_view(_exploration, wallet)
+
+
+## 최근 탐험 영수증(오래된 것부터, 최대 Exploration.MAX_HISTORY개). 항상 deep copy.
+func exploration_history() -> Array:
+	return (_exploration["history"] as Array).duplicate(true)
+
+
+## 오늘(현재 일차) 이미 출발했는지. 출발 후 포기/완료해도 영업을 마쳐 일차가 오를 때까지 참이다.
+func departed_today() -> bool:
+	return int(_exploration["last_departure_day"]) == day
+
+
+func exploration_stats() -> Dictionary:
+	return {
+		"completed": int(_exploration["completed"]),
+		"retired": int(_exploration["retired"]),
+		"last_departure_day": int(_exploration["last_departure_day"]),
+		"departed_today": departed_today(),
+		"active": exploration_active(),
+	}
+
+
+func _lock_message(id: String) -> String:
+	var info: Dictionary = Exploration.lock_info(id, _discovered_list())
+	if info.is_empty() or not bool(info["locked"]):
+		return "알 수 없는 재료예요."
+	return "아직 발견하지 못한 재료예요. " + str(info["hint"])
+
+
+static func _service_blocks_trip() -> Dictionary:
+	return {"ok": false, "message": "영업 중에는 탐험을 진행할 수 없어요. 영업을 끝내거나 중단한 뒤 다시 해 보세요."}
+
+
+## 출발. 거부(상태/자금 불변): 영업 중, 알 수 없는 지역, 이미 탐험 중, 등급 부족, 지역 완료, 오늘 이미 출발, 출발 비용 부족.
+func start_expedition(region_id: String) -> Dictionary:
+	if service_active():
+		return _service_blocks_trip()
+	var r: Dictionary = Exploration.begin(_exploration, region_id, _rank, day, wallet)
+	if str(r["error"]) != "":
+		return _fail(str(r["error"]))
+	var fee: int = int(r["fee"])
+	# --- 여기부터는 실패 지점이 없다 (begin 이 자금 >= 출발 비용을 이미 보장) ---
+	wallet -= fee
+	_exploration = r["state"]
+	var reg: Dictionary = Exploration.find_region(region_id)
+	var res: Dictionary = _ok("「%s」로 출발했어요. 출발 비용 %s을 냈어요. 오늘은 더 출발할 수 없어요." % [str(reg["name"]), Growth._won(fee)])
+	res["fee"] = fee
+	return res
+
+
+## 선택 하나. 추가 비용이 있으면 이 호출에서 한 번 낸다. 거부(상태/자금 불변): 영업 중, 탐험 없음, 결과 단계, 없는 선택, 추가 비용 부족.
+func advance_expedition(choice_id: String) -> Dictionary:
+	if service_active():
+		return _service_blocks_trip()
+	var r: Dictionary = Exploration.choose(_exploration, choice_id, wallet)
+	if str(r["error"]) != "":
+		return _fail(str(r["error"]))
+	var extra: int = int(r["extra"])
+	# --- 여기부터는 실패 지점이 없다 (choose 가 추가 비용 <= 자금을 이미 보장) ---
+	wallet -= extra
+	_exploration = r["state"]
+	var stage: String = str((_exploration["active"] as Dictionary)["stage"])
+	var choice: Dictionary = r["choice"]
+	var text: String = "「%s」을(를) 골랐어요." % str(choice["label"])
+	if extra > 0:
+		text += " 추가 비용 %s을 냈어요." % Growth._won(extra)
+	if stage == Exploration.STAGE_RESULT:
+		text += " 결과가 나왔어요. 결과를 받으면 재료가 열려요."
+	var res: Dictionary = _ok(text)
+	res["extra"] = extra
+	res["stage"] = stage
+	return res
+
+
+## 결과 수령(보상 지급). 결과 단계에서만 가능하고 성공하면 탐험이 끝나 되풀이해도 보상이 없다. 재료는 영구 개방된다.
+func finish_expedition() -> Dictionary:
+	if service_active():
+		return _service_blocks_trip()
+	var r: Dictionary = Exploration.collect(_exploration)
+	if str(r["error"]) != "":
+		return _fail(str(r["error"]))
+	# --- 여기부터는 실패 지점이 없다 ---
+	_exploration = r["state"]
+	var iid: String = str(r["ingredient"])
+	var is_new: bool = bool(r["new"])
+	var text: String = ""
+	if is_new:
+		text = "새 재료 「%s」를 발견했어요! 이제 레시피에 영구히 쓸 수 있어요." % Exploration.ingredient_name(iid)
+	else:
+		text = "「%s」는 이미 아는 재료라 새 발견은 없었어요." % Exploration.ingredient_name(iid)
+	var res: Dictionary = _ok(text)
+	res["ingredient"] = iid
+	res["new"] = is_new
+	res["receipt"] = (r["receipt"] as Dictionary).duplicate(true)
+	return res
+
+
+## 포기. 만남 단계에서만 가능하다. 낸 비용과 오늘의 출발권은 돌아오지 않고 보상은 없다.
+func retire_expedition() -> Dictionary:
+	if service_active():
+		return _service_blocks_trip()
+	var r: Dictionary = Exploration.retire(_exploration)
+	if str(r["error"]) != "":
+		return _fail(str(r["error"]))
+	_exploration = r["state"]
+	var res: Dictionary = _ok("탐험을 포기했어요. 낸 비용은 돌아오지 않고 오늘은 다시 출발할 수 없어요.")
+	res["receipt"] = (r["receipt"] as Dictionary).duplicate(true)
+	return res
 
 
 # ---------- 저장 직렬화 ----------
@@ -752,6 +1002,8 @@ func to_dict() -> Dictionary:
 		"last_report": last_report.duplicate(true),
 		"research": {"completed": _research_done.duplicate(true)},
 		"growth": {"rank": _rank, "facilities": _facilities.duplicate(), "staff": _hired.duplicate()},
+		# 진행 중 탐험은 어느 단계에서든 그대로 저장한다(경로와 이미 낸 비용 포함). 영수증은 최대 MAX_HISTORY개.
+		"exploration": _exploration.duplicate(true),
 	}
 
 
@@ -768,7 +1020,13 @@ func load_from_dict(raw: Variant) -> String:
 	if not d.has("schema_version") or not Check.in_range(d["schema_version"], MIN_SCHEMA_VERSION, SCHEMA_VERSION):
 		return "지원하지 않는 저장 버전이에요."
 	var version: int = int(d["schema_version"])
-	var expected_keys: Array = TOP_KEYS_V1 if version == 1 else (TOP_KEYS_V2 if version == 2 else TOP_KEYS)
+	var expected_keys: Array = TOP_KEYS_V1
+	if version == 2:
+		expected_keys = TOP_KEYS_V2
+	elif version == 3:
+		expected_keys = TOP_KEYS_V3
+	elif version >= 4:
+		expected_keys = TOP_KEYS
 	var key_err: String = Check.keys_error(d, expected_keys, "저장")
 	if key_err != "":
 		return key_err
@@ -875,6 +1133,26 @@ func load_from_dict(raw: Variant) -> String:
 		growth_rank = int(gr["rank"])
 		growth_facilities = gr["facilities"]
 		growth_staff = gr["staff"]
+	# 재료 탐험 상태. v1~v3에는 없었으므로 "발견 없음, 진행 중 탐험 없음, 출발 기록 없음"으로 이행한다(자금/재료/등급을 새로 주지 않는다).
+	# v4는 현재 등급/일차와 모순되는 발견·출발·경로·비용을 모두 거부한다(Exploration.parse_state). 진행 중 탐험은 단계 그대로 복원된다.
+	var exploration_parsed: Dictionary = Exploration.empty_state()
+	if version >= 4:
+		var ex: Dictionary = Exploration.parse_state(d["exploration"], growth_rank, int(d["day"]))
+		if str(ex["error"]) != "":
+			return str(ex["error"])
+		exploration_parsed = ex["state"]
+	# 어떤 구성(기록/비교의 이전 구성/초안)도 발견하지 못한 재료를 쓸 수 없다. 예전 저장(v1~v3)은 발견이 비어 있으므로
+	# 발견 재료 id 가 들어 있으면 거부된다. 이 검사가 선택/시식으로 막은 경로의 마지막 방어선이다(불러오기로 잠긴 재료가 들어오지 않는다).
+	var discovered_now: Array = Exploration.discovered_ids(exploration_parsed)
+	for pe0 in parsed:
+		var pcfg: Dictionary = (pe0 as Dictionary)["config"]
+		if Exploration.locked_in(pcfg, discovered_now) != "":
+			return "기록에 아직 발견하지 못한 재료가 있어요."
+		var pcmp: Dictionary = (pe0 as Dictionary)["comparison"]
+		if not pcmp.is_empty() and Exploration.locked_in(pcmp["prev_config"], discovered_now) != "":
+			return "비교 기록에 아직 발견하지 못한 재료가 있어요."
+	if Exploration.locked_in(dcfg["config"], discovered_now) != "":
+		return "초안에 아직 발견하지 못한 재료가 있어요."
 	# 어떤 구성(기록/비교의 이전 구성/초안)도 이 상태의 토핑 슬롯 수를 넘을 수 없다(슬롯은 줄지 않으므로 정상 저장은 항상 통과).
 	# 기록 개수가 노트 용량을 넘는 예전 저장은 거부하지 않는다(grandfather: 모두 보존, 새 시식만 용량 아래로 내려갈 때까지 불가).
 	var slot_limit: int = Growth.topping_slots(growth_rank, growth_facilities)
@@ -892,6 +1170,7 @@ func load_from_dict(raw: Variant) -> String:
 	_rank = growth_rank
 	_facilities = growth_facilities
 	_hired = growth_staff
+	_exploration = exploration_parsed
 	_research_done = research_parsed
 	day = int(d["day"])
 	wallet = int(d["wallet"])

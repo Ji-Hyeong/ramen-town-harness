@@ -21,7 +21,9 @@ const WorkScript = preload("res://scripts/ui/tasting_work.gd")
 const WorkViewScript = preload("res://scripts/ui/tasting_work_view.gd")
 const Growth = preload("res://scripts/domain/shop_growth.gd")
 const Staffing = preload("res://scripts/domain/shop_staffing.gd")
+const Exploration = preload("res://scripts/domain/ingredient_exploration.gd")
 const ShopViewScript = preload("res://scripts/ui/shop_view.gd")
+const TravelScript = preload("res://scripts/ui/expedition_travel.gd")
 
 const ARG: String = "--test-data-dir="
 
@@ -75,6 +77,14 @@ func _initialize() -> void:
 		test_schema_migration_v1_v2, test_growth_load_rejections, test_no_phantom_rewards_and_bounds,
 		# --- 성장 UI 단계: 다중 토핑 그릇 그림, 보조 직원 초상/스프라이트, 직원 자리/장면. 화면(main.gd) 핸들러 흐름은 qa_capture.gd(--layout-only 포함)가 밟는다. ---
 		test_growth_bowl_and_portrait_art, test_staff_layout_and_scene,
+		# --- 재료 탐험(스키마 v4) 도메인 시험 17개. 화면/그림/QA 핸들러 시험은 UI 단계에서 추가한다(아직 없음 = 보류, 생략 아님). ---
+		test_discovery_catalogue_shape, test_discovery_tradeoffs, test_old_evaluation_unchanged,
+		test_exploration_catalogue_and_paths, test_expedition_gating_and_fee, test_expedition_all_paths_rewards,
+		test_expedition_rejections_atomic, test_expedition_retire_and_daily_limit, test_expedition_busy_locks,
+		test_locked_ingredients_gating, test_discovered_ingredient_pipeline, test_expedition_save_resume_each_stage,
+		test_exploration_schema_migration_v3, test_exploration_load_rejections, test_exploration_history_bound_and_counters,
+		test_exploration_full_region_and_repeat, test_exploration_defensive_copies_and_no_phantom,
+		test_exploration_travel_presentation, test_discovery_pixel_art,
 	]
 	var ran: int = 0
 	for t in tests:
@@ -2201,6 +2211,9 @@ func _as_legacy(src: Dictionary, version: int) -> Dictionary:
 	var d: Dictionary = JSON.parse_string(JSON.stringify(src))
 	d["schema_version"] = version
 	d.erase("growth")
+	# 탐험(스키마 v4)이 생기기 전 파일에는 "exploration" 키가 없다. 이 변환은 v4 키를 항상 지워 v1~v3 모양을 만든다
+	# (v3 진짜 파일은 _as_v3()가 growth 를 남기는 쪽을 따로 만든다).
+	d.erase("exploration")
 	if version == 1:
 		d.erase("research")
 	for r in d["records"]:
@@ -2908,13 +2921,14 @@ func test_schema_migration_v1_v2() -> void:
 		_check(loaded.draft_name == src.draft_name and str(loaded.draft_config) == str(src.draft_config), "v%d: 초안" % version)
 		_check(str(loaded.research_receipts()) == (str(src.research_receipts()) if version == 2 else "[]"), "v%d: 연구 영수증" % version)
 		_check(loaded.rank() == 1 and loaded.facilities_owned().is_empty() and loaded.hired_staff().is_empty(), "v%d: 등급/확장/직원은 기본(불러오기로 생기는 것 없음)" % version)
+		_check(loaded.discovered_ingredients().is_empty() and not loaded.exploration_active() and loaded.exploration_history().is_empty() and int(loaded.exploration_stats()["completed"]) == 0 and not loaded.departed_today(), "v%d: 탐험은 빈 상태로 이행(불러오기로 생기는 발견/출발 없음)" % version)
 		_check(FileAccess.get_file_as_string(saver.main_path()) == legacy_text, "v%d: 불러오기만으로 파일을 바꾸지 않아요" % version)
 		_check(not FileAccess.file_exists(saver.legacy_bak_path(version)), "v%d: 불러오기만으로 보관본을 만들지 않아요" % version)
 		# 첫 v3 저장: 원본이 .bak 와 버전별 보관본에 모두 남는다.
 		_check(bool(saver.save_state(loaded)["ok"]), "v%d: 이행 후 저장" % version)
 		_check(FileAccess.get_file_as_string(saver.bak_path()) == legacy_text and FileAccess.get_file_as_string(saver.legacy_bak_path(version)) == legacy_text, "v%d: 원본이 백업과 이행 보관본에 보존" % version)
 		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(saver.main_path()))
-		_check(typeof(parsed) == TYPE_DICTIONARY and int((parsed as Dictionary)["schema_version"]) == 3 and (parsed as Dictionary).has("growth"), "v%d: 새 파일은 v3" % version)
+		_check(typeof(parsed) == TYPE_DICTIONARY and int((parsed as Dictionary)["schema_version"]) == GameStateScript.SCHEMA_VERSION and (parsed as Dictionary).has("growth") and (parsed as Dictionary).has("exploration"), "v%d: 새 파일은 현재 스키마(growth + exploration)" % version)
 		# 두 번째 저장은 일반 .bak 만 갱신하고 이행 보관본(원본)은 다시 만들지도 덮어쓰지도 않는다.
 		loaded.wallet += 1
 		_check(bool(saver.save_state(loaded)["ok"]), "v%d: 두 번째 저장" % version)
@@ -2931,6 +2945,7 @@ func test_schema_migration_v1_v2() -> void:
 	var v2_new_cfg: Dictionary = JSON.parse_string(JSON.stringify(_populated_state().to_dict()))
 	v2_new_cfg["schema_version"] = 2
 	v2_new_cfg.erase("growth")
+	v2_new_cfg.erase("exploration")
 	_check(GameStateScript.new().load_from_dict(v2_new_cfg) != "", "toppings 배열을 쓴 v2 거부")
 	var v3_old_cfg: Dictionary = _as_legacy(_populated_state().to_dict(), 3)
 	v3_old_cfg["growth"] = v3["growth"]
@@ -3113,6 +3128,1169 @@ func test_no_phantom_rewards_and_bounds() -> void:
 		_check(fc_net <= 0, "자금이 상한이면 순이익이 양수인 영업은 시작되지 않아요")
 	else:
 		_check(_json(z) == top_snap, "거부된 시작은 상태를 바꾸지 않아요")
+	_end()
+
+
+# =====================================================================================================
+# 재료 탐험 도메인 시험 (스키마 v4). 화면/장면/QA 시험은 UI 단계에서 추가한다.
+# 시험 상태는 등급 3 + 확장 4개를 가진 성장 상태(_grown_state(3))를 한 번 만들어 JSON 으로 캐시하고, 시험마다 새로 불러와 쓴다.
+# =====================================================================================================
+
+## [지역, 첫 선택, 둘째 선택, 발견 재료, 추가 비용 합계]. 지역마다 갈래 4가지, 총 12가지(손으로 계산한 기대값).
+const EXPLORE_PATHS: Array = [
+	["market", "m_ask", "m_buy_pickle", "topping_pickle", 300],
+	["market", "m_ask", "m_hear_recipe", "tare_plum", 0],
+	["market", "m_browse", "m_buy_plum", "tare_plum", 700],
+	["market", "m_browse", "m_taste_pickle", "topping_pickle", 200],
+	["harbor", "h_auction", "h_bid_clam", "broth_clam", 1300],
+	["harbor", "h_auction", "h_ask_shrimp", "oil_shrimp", 500],
+	["harbor", "h_boat", "h_share_soup", "broth_clam", 0],
+	["harbor", "h_boat", "h_rent_tools", "oil_shrimp", 400],
+	["mountain", "t_grove", "g_dry_pepper", "oil_pepper", 0],
+	["mountain", "t_grove", "g_learn_mushroom", "topping_mushroom", 600],
+	["mountain", "t_farm", "f_learn", "topping_mushroom", 1400],
+	["mountain", "t_farm", "f_pepper", "oil_pepper", 400],
+]
+const EXPLORE_FEES: Dictionary = {"market": 3000, "harbor": 6000, "mountain": 10000}
+
+var _explorer_base: Dictionary = {}
+
+
+func _explorer_state() -> GameStateScript:
+	if _explorer_base.is_empty():
+		var seed_state: GameStateScript = _grown_state(3)
+		_explorer_base = JSON.parse_string(JSON.stringify(seed_state.to_dict()))
+	var s: GameStateScript = GameStateScript.new()
+	var err: String = s.load_from_dict(_explorer_base.duplicate(true))
+	_check(err == "", "탐험 시험 준비: 불러오기 " + err)
+	return s
+
+
+## 영업 정산 한 번으로 일차를 올린다(탐험은 일차를 올리지 않으므로 다음 출발 가능일은 이 경로로만 온다).
+func _next_day(s: GameStateScript) -> void:
+	var before: int = s.day
+	var r: Dictionary = s.serve()
+	_check(bool(r["ok"]) and s.day == before + 1, "다음 날로 넘기기(영업 정산): " + str(r["message"]))
+
+
+## 출발 + 선택 두 번(결과 단계까지). 수령은 하지 않는다.
+func _trip(s: GameStateScript, region: String, c1: String, c2: String) -> void:
+	var r0: Dictionary = s.start_expedition(region)
+	_check(bool(r0["ok"]), "시험 준비: 출발 %s %s" % [region, str(r0["message"])])
+	var r1: Dictionary = s.advance_expedition(c1)
+	_check(bool(r1["ok"]), "시험 준비: 선택 %s %s" % [c1, str(r1["message"])])
+	var r2: Dictionary = s.advance_expedition(c2)
+	_check(bool(r2["ok"]), "시험 준비: 선택 %s %s" % [c2, str(r2["message"])])
+
+
+## 지역마다 서로 다른 두 재료를 가장 싼 경로로 발견해 6개를 모두 연다(여섯 번 출발, 사이마다 하루씩).
+func _discover_all(s: GameStateScript) -> void:
+	for idx in [0, 1, 6, 7, 8, 9]:
+		var row: Array = EXPLORE_PATHS[idx]
+		_trip(s, str(row[0]), str(row[1]), str(row[2]))
+		var fr: Dictionary = s.finish_expedition()
+		_check(bool(fr["ok"]) and bool(fr["new"]) and str(fr["ingredient"]) == str(row[3]), "시험 준비: 수령 %s %s" % [str(row[3]), str(fr["message"])])
+		_next_day(s)
+
+
+## 거부 호출 뒤 상태가 한 글자도 바뀌지 않았는지(자금 포함).
+func _unchanged(s: GameStateScript, before: String, label: String) -> void:
+	_check(_json(s) == before, "거부는 상태를 바꾸면 안 돼요: " + label)
+
+
+func _as_v3(src: Dictionary) -> Dictionary:
+	var d: Dictionary = JSON.parse_string(JSON.stringify(src))
+	d["schema_version"] = 3
+	d.erase("exploration")
+	return d
+
+
+# ---------- 재료 카탈로그 ----------
+
+## 이동은 화면만 진행한다. 잘못된 시간/지역은 기존 연출을 바꾸지 않고 명시적으로 거부한다.
+func test_exploration_travel_presentation() -> void:
+	var travel: TravelScript = TravelScript.new()
+	_check(not travel.running() and travel.progress() == 1.0, "처음에는 이동 대기가 없어요")
+	_check(bool(travel.start("market")["ok"]) and travel.running(), "실제 지역으로 이동 시작")
+	_check(bool(travel.advance(0.6)["ok"]) and is_equal_approx(travel.progress(), 0.5), "이동 반 진행")
+	var before: float = travel.progress()
+	for bad in [-1.0, NAN, INF]:
+		_check(not bool(travel.advance(bad)["ok"]) and travel.progress() == before, "잘못된 시간은 연출을 바꾸지 않아요")
+	_check(not bool(travel.start("unknown")["ok"]) and travel.region() == "market" and travel.progress() == before, "없는 지역은 연출을 바꾸지 않아요")
+	_check(bool(travel.advance(100.0)["ok"]) and not travel.running() and travel.progress() == 1.0, "긴 시간도 끝까지만 표시")
+	_check(bool(travel.advance(1.0)["ok"]) and travel.progress() == 1.0, "도착 이후 재진행 없음")
+	_check(bool(travel.start("harbor")["ok"]) and travel.running() and travel.region() == "harbor", "다음 지역 연출")
+	travel.stop()
+	_check(not travel.running(), "포기하면 이동 연출 중지")
+	_end()
+
+
+## 모든 새 재료의 아이콘/그릇과 각 지역 풍경·걷기가 실제로 다르다. 새 토핑도 다중 그릇에서 누락되지 않는다.
+func test_discovery_pixel_art() -> void:
+	var legacy: Dictionary = Catalog.default_config()
+	var baseline: PackedByteArray = ArtScript.bowl_image(legacy).get_data()
+	var icons: Array[PackedByteArray] = []
+	for id in Catalog.discovery_ids():
+		var icon: Image = ArtScript.icon_image(id)
+		_check(icon.get_size() == Vector2i(12, 12) and not icon.is_invisible(), "새 재료 아이콘: " + id)
+		_check(not icons.has(icon.get_data()), "새 아이콘은 서로 구별돼요: " + id)
+		icons.append(icon.get_data())
+		var cfg: Dictionary = legacy.duplicate(true)
+		var slot: String = id.split("_")[0]
+		if slot == "topping":
+			cfg["toppings"] = [id]
+		else:
+			cfg[slot] = id
+		var bowl: Image = ArtScript.bowl_image(cfg)
+		_check(bowl.get_size() == Vector2i(12, 7) and bowl.get_data() != baseline, "새 재료가 그릇에도 반영: " + id)
+		if slot == "topping":
+			cfg["toppings"] = ["topping_chashu", id]
+			_check(ArtScript.bowl_image(cfg).get_data() != baseline, "다중 토핑에도 새 재료 그림 반영: " + id)
+	var scenes: Array[PackedByteArray] = []
+	for region in Exploration.region_ids():
+		var picture: Image = ArtScript.exploration_image(region, 0.0, true)
+		var moved: Image = ArtScript.exploration_image(region, 0.5, true)
+		_check(picture.get_size() == Vector2i(72, 26) and not picture.is_invisible(), "지역 풍경 크기/그림: " + region)
+		_check(not scenes.has(picture.get_data()), "지역마다 다른 풍경: " + region)
+		_check(picture.get_data() != moved.get_data(), "여행자 실제 이동: " + region)
+		scenes.append(picture.get_data())
+	_end()
+
+
+func test_discovery_catalogue_shape() -> void:
+	var ids: Array[String] = Catalog.discovery_ids()
+	_check(ids.size() == 6, "발견 재료는 정확히 6개")
+	var base_ids: Dictionary = {}
+	for slot in Catalog.SLOTS:
+		for item in Catalog.items(slot):
+			base_ids[str((item as Dictionary)["id"])] = true
+	var slots_seen: Dictionary = {}
+	for slot in Catalog.SLOTS:
+		for item in Catalog.discovery_items(slot):
+			var d: Dictionary = item
+			var id: String = str(d["id"])
+			slots_seen[slot] = true
+			_check(id.begins_with(slot + "_"), "id 접두사 불일치: " + id)
+			_check(not base_ids.has(id), "예전 재료와 id 가 겹쳐요: " + id)
+			_check(Catalog.is_valid(slot, id) and not Catalog.find(id).is_empty() and Catalog.is_discovery(id), "알려진 id 여야 해요: " + id)
+			_check(not Catalog.is_valid("cook" if slot != "cook" else "noodle", id), "다른 슬롯에서는 유효하면 안 돼요: " + id)
+			_check(str(d["name"]) != "" and str(d["desc"]) != "", "이름/설명 누락: " + id)
+			_check(int(d["cost"]) > 0 and int(d["seconds"]) > 0, "비용/준비 시간은 양수: " + id)
+			var axes: Dictionary = d["axes"]
+			_check(not axes.is_empty(), "맛 축 누락: " + id)
+			for axis in axes:
+				_check(Catalog.AXES.has(axis) and absi(int(axes[axis])) <= 6, "맛 축 값 범위: " + id)
+			_check(Exploration.region_of(id) == str(d["region"]) and Exploration.find_region(str(d["region"])).has("id"), "재료의 지역이 탐험 지역과 일치: " + id)
+	_check(slots_seen.size() == 4 and slots_seen.has("broth") and slots_seen.has("tare") and slots_seen.has("oil") and slots_seen.has("topping"), "육수/타레/향미유/토핑에 걸쳐 있어야 해요")
+	_check(not slots_seen.has("noodle") and not slots_seen.has("cook"), "면/익힘은 새 재료를 갖지 않아요")
+	# 예전 재료 목록(items)은 그대로: 슬롯별 개수와 데이터 지문. 조합 열거(972)가 늘어나지 않는다.
+	var counts: Dictionary = {"broth": 3, "tare": 3, "oil": 3, "noodle": 3, "topping": 4, "cook": 3}
+	var cost_sum: int = 0
+	var sec_sum: int = 0
+	var combos: int = 1
+	for slot in Catalog.SLOTS:
+		_check(Catalog.items(slot).size() == int(counts[slot]), "예전 재료 개수는 그대로: " + slot)
+		combos *= Catalog.items(slot).size()
+		for item in Catalog.items(slot):
+			cost_sum += int((item as Dictionary)["cost"])
+			sec_sum += int((item as Dictionary)["seconds"])
+		_check(Catalog.all_items(slot).size() == Catalog.items(slot).size() + Catalog.discovery_items(slot).size(), "전체 = 예전 + 발견: " + slot)
+	_check(combos == 972 and cost_sum == 5450 and sec_sum == 400, "예전 재료의 비용/시간 지문이 바뀌면 안 돼요 (%d, %d, %d)" % [combos, cost_sum, sec_sum])
+	_check(Check.config_error(Catalog.default_config()) == "" and Catalog.item_ids(Catalog.default_config()).size() == 6, "기본 구성은 예전 재료만")
+	for rid in Catalog.item_ids(Catalog.default_config()):
+		_check(not Catalog.is_discovery(rid), "기본 구성은 발견 재료를 쓰지 않아요")
+	# 토핑 정규 순서: 예전 토핑이 먼저, 발견 토핑이 카탈로그 순서로 뒤.
+	_check(str(Catalog.canonical_toppings(["topping_mushroom", "topping_pickle", "topping_nori", "topping_chashu"])) == str(["topping_chashu", "topping_nori", "topping_pickle", "topping_mushroom"]), "토핑 정규 순서")
+	# 탐험 지역의 재료 목록 == 카탈로그의 지역 표시.
+	var from_regions: Array = []
+	for r in Exploration.REGIONS:
+		for iid in (r as Dictionary)["ingredients"]:
+			from_regions.append(str(iid))
+	from_regions.sort()
+	var sorted_ids: Array = ids.duplicate()
+	sorted_ids.sort()
+	_check(str(from_regions) == str(sorted_ids), "지역 재료 목록과 발견 재료가 정확히 일치")
+	_end()
+
+
+## 새 재료는 보편 상위호환이 아니다: 세 기준 레시피에 같은 슬롯으로 바꿔 넣으면 점수가 오르는 손님과 내리는 손님이 모두 나온다.
+func test_discovery_tradeoffs() -> void:
+	var baselines: Array = [_rich_cfg(), _light_cfg(), _spicy_cfg()]
+	for id in Catalog.discovery_ids():
+		var slot: String = id.split("_")[0]
+		var gain: bool = false
+		var loss: bool = false
+		for base in baselines:
+			var swapped: Dictionary = (base as Dictionary).duplicate(true)
+			swapped[slot] = id
+			var p0: Dictionary = Evaluator.build_profile(base)
+			var p1: Dictionary = Evaluator.build_profile(swapped)
+			for c in Customers.all():
+				var s0: int = Evaluator.score_for(p0, 0, c)
+				var s1: int = Evaluator.score_for(p1, 0, c)
+				if s1 > s0:
+					gain = true
+				if s1 < s0:
+					loss = true
+		_check(gain and loss, "보편 상위호환/하위호환이면 안 돼요 (맛 축 기준): " + id)
+		# 궁합 규칙도 장단이 있다(좋은 짝과 나쁜 짝이 모두 존재).
+		var pos: bool = false
+		var neg: bool = false
+		for rule in Evaluator.COMPAT:
+			var rd: Dictionary = rule
+			if str(rd["a"]) == id or str(rd["b"]) == id:
+				if int(rd["score"]) > 0:
+					pos = true
+				if int(rd["score"]) < 0:
+					neg = true
+		_check(pos and neg, "궁합에도 좋은 짝과 나쁜 짝이 있어야 해요: " + id)
+	# 손으로 계산한 대표 값: 진한 기준(R)에서 간장→매실 타레, 가벼운 기준(L)에서 해물 다시→조개탕.
+	var rich_plum: Dictionary = _rich_cfg()
+	rich_plum["tare"] = "tare_plum"
+	var pr: Dictionary = Evaluator.build_profile(rich_plum)
+	_check(int(pr["rich"]) == 7 and int(pr["salt"]) == 4 and int(pr["aroma"]) == 7 and int(pr["chew"]) == 9 and int(pr["spice"]) == 0, "매실 타레 대입 프로필 (7,4,7,9,0): " + str(pr))
+	var light_clam: Dictionary = _light_cfg()
+	light_clam["broth"] = "broth_clam"
+	var pl: Dictionary = Evaluator.build_profile(light_clam)
+	_check(int(pl["rich"]) == 3 and int(pl["salt"]) == 6 and int(pl["aroma"]) == 5 and int(pl["chew"]) == 5 and int(pl["spice"]) == 0, "조개탕 대입 프로필 (3,6,5,5,0): " + str(pl))
+	var base_ev: Dictionary = Evaluator.evaluate(_rich_cfg())
+	var plum_ev: Dictionary = Evaluator.evaluate(rich_plum)
+	_check(str(plum_ev["error"]) == "" and int(plum_ev["unit_cost"]) == int(base_ev["unit_cost"]) - 200 + 260 and int(plum_ev["prep_seconds"]) == int(base_ev["prep_seconds"]) - 5 + 8, "매실 타레는 원가 +60, 준비 +3초 (평가기가 새 재료를 반영)")
+	_end()
+
+
+## 새 궁합 규칙은 모두 발견 재료를 포함하므로 예전 재료만 쓴 972가지 조합의 궁합 목록은 예전 33개 규칙으로만 계산된다.
+func test_old_evaluation_unchanged() -> void:
+	_check(Evaluator.COMPAT.size() > Evaluator.LEGACY_COMPAT_COUNT, "탐험 궁합 규칙이 뒤에 붙어 있어요")
+	var disc: Array[String] = Catalog.discovery_ids()
+	for i in Evaluator.COMPAT.size():
+		var rule: Dictionary = Evaluator.COMPAT[i]
+		_check(not Catalog.find(str(rule["a"])).is_empty() and not Catalog.find(str(rule["b"])).is_empty(), "궁합 규칙의 재료 id 가 카탈로그에 있어요: %d" % i)
+		var uses_discovery: bool = disc.has(str(rule["a"])) or disc.has(str(rule["b"]))
+		_check(uses_discovery == (i >= Evaluator.LEGACY_COMPAT_COUNT), "규칙 %d: 발견 재료 규칙은 예전 규칙 뒤에만 있어야 해요" % i)
+	var checked: int = 0
+	for b in Catalog.items("broth"):
+		for t in Catalog.items("tare"):
+			for o in Catalog.items("oil"):
+				for n in Catalog.items("noodle"):
+					for p in Catalog.items("topping"):
+						for k in Catalog.items("cook"):
+							var cfg: Dictionary = _cfg(str((b as Dictionary)["id"]), str((t as Dictionary)["id"]), str((o as Dictionary)["id"]), str((n as Dictionary)["id"]), str((p as Dictionary)["id"]), str((k as Dictionary)["id"]), 9000)
+							var ids: Array[String] = Catalog.item_ids(cfg)
+							var want: int = 0
+							for j in Evaluator.LEGACY_COMPAT_COUNT:
+								var r: Dictionary = Evaluator.COMPAT[j]
+								if ids.has(str(r["a"])) and ids.has(str(r["b"])):
+									want += 1
+							if Evaluator.applied_compat(cfg).size() != want:
+								_check(false, "예전 조합의 궁합이 달라졌어요: " + str(cfg))
+							checked += 1
+	_check(checked == 972, "예전 조합 972가지를 모두 훑었어요")
+	_end()
+
+
+# ---------- 탐험 카탈로그 ----------
+
+func test_exploration_catalogue_and_paths() -> void:
+	_check(Exploration.REGIONS.size() == 3, "지역은 3곳")
+	var want_rank: Dictionary = {"market": 1, "harbor": 2, "mountain": 3}
+	var prev_fee: int = 0
+	for r in Exploration.REGIONS:
+		var d: Dictionary = r
+		var id: String = str(d["id"])
+		_check(int(d["min_rank"]) == int(want_rank[id]) and int(d["fee"]) == int(EXPLORE_FEES[id]), "지역 등급/출발 비용: " + id)
+		_check(int(d["fee"]) > prev_fee, "출발 비용은 등급과 함께 오르는 순서")
+		prev_fee = int(d["fee"])
+		_check((d["ingredients"] as Array).size() == 2 and str(d["name"]) != "" and str(d["summary"]) != "", "지역 재료 2개/이름/설명: " + id)
+		_check(not Exploration.find_event(str(d["start"])).is_empty() and str(Exploration.find_event(str(d["start"]))["region"]) == id, "시작 만남이 같은 지역: " + id)
+	var choice_ids: Dictionary = {}
+	var per_region_events: Dictionary = {}
+	for e in Exploration.EVENTS:
+		var ev: Dictionary = e
+		var rid: String = str(ev["region"])
+		_check(not Exploration.find_region(rid).is_empty(), "만남의 지역이 있어요")
+		per_region_events[rid] = int(per_region_events.get(rid, 0)) + 1
+		_check(str(ev["title"]) != "" and str(ev["text"]) != "", "만남 제목/본문")
+		var chs: Array = ev["choices"]
+		_check(chs.size() == 2, "만남마다 선택지 2개: " + str(ev["id"]))
+		var labels: Dictionary = {}
+		for c in chs:
+			var cd: Dictionary = c
+			var cid: String = str(cd["id"])
+			_check(not choice_ids.has(cid), "선택 id 는 전체에서 유일: " + cid)
+			choice_ids[cid] = true
+			labels[str(cd["label"])] = true
+			_check(str(cd["label"]) != "" and str(cd["desc"]) != "" and int(cd["cost"]) >= 0 and int(cd["cost"]) % 100 == 0, "선택 라벨/설명/비용: " + cid)
+			if int(ev["step"]) == 1:
+				var nxt: Dictionary = Exploration.find_event(str(cd["next"]))
+				_check(not cd.has("ingredient") and not nxt.is_empty() and str(nxt["region"]) == rid and int(nxt["step"]) == 2, "첫 만남 선택은 같은 지역의 둘째 만남으로: " + cid)
+			else:
+				_check(not cd.has("next") and (Exploration.find_region(rid)["ingredients"] as Array).has(str(cd["ingredient"])), "둘째 만남 선택은 지역 재료로: " + cid)
+			if int(cd["cost"]) > 0:
+				_check(str(cd["desc"]).contains(str(cd["cost"])), "추가 비용이 설명에 정직하게 적혀 있어요: " + cid)
+		_check(labels.size() == 2, "한 만남의 선택 라벨은 서로 달라요: " + str(ev["id"]))
+	_check(per_region_events.size() == 3 and int(per_region_events["market"]) == 3 and int(per_region_events["harbor"]) == 3 and int(per_region_events["mountain"]) == 3, "지역마다 만남 3개(첫 1 + 갈래 2)")
+	_check(EXPLORE_PATHS.size() == 12, "기대 경로표는 12가지")
+	var reached: Dictionary = {}
+	var per_region_paths: Dictionary = {}
+	for row in EXPLORE_PATHS:
+		var rr: Array = row
+		var path: Array = [rr[1], rr[2]]
+		_check(Exploration.path_valid(str(rr[0]), path), "경로 유효: " + str(path))
+		_check(Exploration.ingredient_for(str(rr[0]), path) == str(rr[3]), "경로 결과 재료: " + str(path))
+		_check(Exploration.path_cost(str(rr[0]), path) == int(rr[4]), "경로 추가 비용 합계: " + str(path))
+		reached[str(rr[3])] = int(reached.get(str(rr[3]), 0)) + 1
+		per_region_paths[str(rr[0])] = int(per_region_paths.get(str(rr[0]), 0)) + 1
+	_check(reached.size() == 6, "6개 재료 모두 명시적 선택으로 닿아요")
+	for iid in reached:
+		_check(int(reached[iid]) == 2, "재료마다 서로 다른 두 경로: " + str(iid))
+	_check(int(per_region_paths["market"]) == 4 and int(per_region_paths["harbor"]) == 4 and int(per_region_paths["mountain"]) == 4, "지역마다 갈래 4가지")
+	# 잘못된 경로.
+	_check(not Exploration.path_valid("market", ["m_ask", "m_buy_plum"]), "다른 갈래의 둘째 선택은 무효")
+	_check(not Exploration.path_valid("market", ["m_ask", "m_hear_recipe", "m_ask"]) and not Exploration.path_valid("market", [5]) and not Exploration.path_valid("nowhere", []), "긴 경로/형식/없는 지역 무효")
+	_check(Exploration.path_valid("market", []) and Exploration.ingredient_for("market", ["m_ask"]) == "" and Exploration.ingredient_for("harbor", ["m_ask", "m_hear_recipe"]) == "", "빈 경로는 유효, 미완성/다른 지역 경로는 재료 없음")
+	_end()
+
+
+# ---------- 출발 / 비용 / 등급 / 하루 한 번 ----------
+
+func test_expedition_gating_and_fee() -> void:
+	var s: GameStateScript = GameStateScript.new()
+	_check(s.rank() == 1 and s.wallet == 30000 and s.day == 1, "새 게임: 등급 1, 30000원, 1일차")
+	var regs: Array = s.exploration_regions()
+	_check(regs.size() == 3, "지역 3개 조회")
+	var by_id: Dictionary = {}
+	for r in regs:
+		by_id[str((r as Dictionary)["id"])] = r
+	_check(str((by_id["market"] as Dictionary)["status"]) == "available" and bool((by_id["market"] as Dictionary)["can_start"]), "1등급: 장터 출발 가능")
+	for rid in ["harbor", "mountain"]:
+		var rv: Dictionary = by_id[rid]
+		_check(str(rv["status"]) == "locked_rank" and not bool(rv["can_start"]) and bool(rv["rank_locked"]), "1등급: 잠긴 지역 " + rid)
+		_check(str(rv["reason"]).contains("%d단계" % int(rv["min_rank"])) and int(rv["obtained"]) == 0 and int(rv["total"]) == 2, "잠금 이유에 필요한 등급, 진행도 0/2: " + rid)
+	var before: String = _json(s)
+	for bad in ["harbor", "mountain", "", "nowhere", "market "]:
+		_check(not bool(s.start_expedition(bad)["ok"]), "출발 거부: '%s'" % bad)
+		_unchanged(s, before, "출발 거부 " + bad)
+	# 자금 경계: 3000원 미만은 거부(상태 불변), 정확히 3000원이면 출발하고 0원이 된다.
+	s.wallet = 2999
+	var broke: String = _json(s)
+	_check(not bool(s.start_expedition("market")["ok"]) and str(s.exploration_region("market")["status"]) == "no_funds", "자금 2999원: 출발 거부, no_funds")
+	_unchanged(s, broke, "자금 부족 출발")
+	s.wallet = 3000
+	var go: Dictionary = s.start_expedition("market")
+	_check(bool(go["ok"]) and int(go["fee"]) == 3000 and s.wallet == 0 and s.day == 1, "자금 3000원: 출발 비용을 한 번 내고 일차는 그대로")
+	_check(s.exploration_active() and s.departed_today() and str(s.expedition()["stage"]) == "choice_1" and int(s.expedition()["fee"]) == 3000, "출발 직후 첫 만남 단계")
+	# 같은 날 두 번째 출발(같은 지역/다른 지역)과 진행 중 중복 출발은 거부.
+	s.wallet = 50000
+	var started: String = _json(s)
+	_check(not bool(s.start_expedition("market")["ok"]) and not bool(s.start_expedition("harbor")["ok"]), "탐험 중에는 다시 출발할 수 없어요")
+	_unchanged(s, started, "중복 출발")
+	# 지역별 출발 비용은 정확히 한 번(등급 3 상태에서 세 지역).
+	for rid in ["market", "harbor", "mountain"]:
+		var e: GameStateScript = _explorer_state()
+		var w0: int = e.wallet
+		var d0: int = e.day
+		_check(str(e.exploration_region(rid)["status"]) == "available", "3등급: 출발 가능 " + rid)
+		var er: Dictionary = e.start_expedition(rid)
+		_check(bool(er["ok"]) and e.wallet == w0 - int(EXPLORE_FEES[rid]) and e.day == d0 and int(er["fee"]) == int(EXPLORE_FEES[rid]), "출발 비용 정확히 한 번: " + rid)
+	# 2등급: 장터/항구 가능, 산골은 잠김. 등급 심사 조건을 채웠어도 신청 전(1등급)에는 항구가 잠긴다.
+	var r2: GameStateScript = _ranked_state(2)
+	_check(str(r2.exploration_region("market")["status"]) == "available" and str(r2.exploration_region("harbor")["status"]) == "available" and str(r2.exploration_region("mountain")["status"]) == "locked_rank", "2등급: 장터/항구 가능, 산골 잠김")
+	var m_snap: String = _json(r2)
+	_check(not bool(r2.start_expedition("mountain")["ok"]), "2등급: 산골 출발 거부")
+	_unchanged(r2, m_snap, "2등급 산골")
+	var r1: GameStateScript = _ranked_state(1)
+	_check(bool(r1.promotion_review()["eligible"]) and str(r1.exploration_region("harbor")["status"]) == "locked_rank", "승급 신청 전에는 조건을 채웠어도 항구가 잠겨 있어요")
+	# 하루 한 번: 완료/포기 후에도 같은 날 재출발 불가, 영업으로 일차가 오르면 가능.
+	var a: GameStateScript = _explorer_state()
+	_trip(a, "market", "m_ask", "m_hear_recipe")
+	_check(bool(a.finish_expedition()["ok"]) and a.departed_today(), "수령 뒤에도 오늘 출발권은 쓴 상태")
+	var after_done: String = _json(a)
+	_check(not bool(a.start_expedition("market")["ok"]) and str(a.exploration_region("market")["status"]) == "used_today", "같은 날 두 번째 출발 거부(used_today)")
+	_check(not bool(a.start_expedition("harbor")["ok"]) and str(a.exploration_region("harbor")["status"]) == "used_today", "다른 지역도 같은 날은 거부")
+	_unchanged(a, after_done, "같은 날 재출발")
+	_next_day(a)
+	_check(not a.departed_today() and bool(a.start_expedition("harbor")["ok"]), "다음 날에는 다시 출발할 수 있어요")
+	_end()
+
+
+# ---------- 12가지 경로 전체: 보상은 수령에서 한 번만 ----------
+
+func test_expedition_all_paths_rewards() -> void:
+	for row in EXPLORE_PATHS:
+		var rr: Array = row
+		var region: String = str(rr[0])
+		var tag: String = "%s/%s/%s" % [region, str(rr[1]), str(rr[2])]
+		var s: GameStateScript = _explorer_state()
+		var w0: int = s.wallet
+		var d0: int = s.day
+		var rank0: int = s.rank()
+		var points0: int = s.research_points()
+		var fee: int = int(EXPLORE_FEES[region])
+		_check(bool(s.start_expedition(region)["ok"]) and s.wallet == w0 - fee, "출발 비용: " + tag)
+		var v0: Dictionary = s.expedition()
+		_check(str(v0["stage"]) == "choice_1" and str(v0["event"]["id"]) == str(Exploration.find_region(region)["start"]) and (v0["event"]["choices"] as Array).size() == 2, "첫 만남: " + tag)
+		# 결과 전 수령/포기 불가 조건: 첫 만남에서 수령은 거부(상태 불변).
+		var snap0: String = _json(s)
+		_check(not bool(s.finish_expedition()["ok"]), "첫 만남에서 수령 거부: " + tag)
+		_unchanged(s, snap0, "조기 수령 " + tag)
+		var cost1: int = 0
+		for c in v0["event"]["choices"]:
+			if str((c as Dictionary)["id"]) == str(rr[1]):
+				cost1 = int((c as Dictionary)["cost"])
+		var a1: Dictionary = s.advance_expedition(str(rr[1]))
+		_check(bool(a1["ok"]) and int(a1["extra"]) == cost1 and s.wallet == w0 - fee - cost1 and str(a1["stage"]) == "choice_2", "첫 선택 추가 비용 한 번: " + tag)
+		var v1: Dictionary = s.expedition()
+		_check(str(v1["event"]["step"]) == "2" and (v1["path"] as Array) == [str(rr[1])], "둘째 만남(갈래): " + tag)
+		var snap1: String = _json(s)
+		_check(not bool(s.finish_expedition()["ok"]), "둘째 만남에서 수령 거부: " + tag)
+		_unchanged(s, snap1, "둘째 만남 수령 " + tag)
+		var a2: Dictionary = s.advance_expedition(str(rr[2]))
+		_check(bool(a2["ok"]) and str(a2["stage"]) == "result" and s.wallet == w0 - fee - int(rr[4]), "둘째 선택 후 총 비용 = 출발 + 추가: " + tag)
+		var v2: Dictionary = s.expedition()
+		_check(str(v2["result"]["ingredient_id"]) == str(rr[3]) and bool(v2["result"]["new"]) and not bool(v2["can_retire"]), "결과 단계 미리보기: " + tag)
+		# 결과가 나왔어도 수령 전에는 보상이 없다.
+		_check(not s.is_discovered(str(rr[3])) and s.discovered_ingredients().is_empty() and not s.ingredient_unlocked(str(rr[3])), "수령 전에는 재료가 열리지 않아요: " + tag)
+		var snap2: String = _json(s)
+		_check(not bool(s.retire_expedition()["ok"]) and not bool(s.advance_expedition(str(rr[1]))["ok"]), "결과 단계에서는 포기/추가 선택 거부: " + tag)
+		_unchanged(s, snap2, "결과 단계 거부 " + tag)
+		var wallet_before_finish: int = s.wallet
+		var fin: Dictionary = s.finish_expedition()
+		_check(bool(fin["ok"]) and bool(fin["new"]) and str(fin["ingredient"]) == str(rr[3]), "수령: 새 재료 " + tag)
+		_check(s.wallet == wallet_before_finish and s.wallet == w0 - fee - int(rr[4]) and s.day == d0 and s.rank() == rank0 and s.research_points() == points0, "수령은 자금/일차/등급/연구를 바꾸지 않아요: " + tag)
+		_check(s.is_discovered(str(rr[3])) and s.ingredient_unlocked(str(rr[3])) and s.discovered_ingredients() == [str(rr[3])] and not s.exploration_active(), "재료가 영구히 열리고 탐험이 끝나요: " + tag)
+		var hist: Array = s.exploration_history()
+		_check(hist.size() == 1 and str(hist[0]["outcome"]) == "finished" and int(hist[0]["fee"]) == fee and int(hist[0]["extra"]) == int(rr[4]) and bool(hist[0]["new"]) and str(hist[0]["ingredient"]) == str(rr[3]) and int(hist[0]["day"]) == d0, "영수증: " + tag)
+		var prog: Dictionary = s.exploration_progress()
+		_check(int(prog["obtained"]) == 1 and int(prog["total"]) == 6 and int(s.exploration_stats()["completed"]) == 1, "진행도 1/6, 완료 1: " + tag)
+		# 되풀이: 같은 수령/포기/선택은 거부되고 어떤 것도 바뀌지 않는다.
+		var done: String = _json(s)
+		for k in 3:
+			_check(not bool(s.finish_expedition()["ok"]) and not bool(s.retire_expedition()["ok"]) and not bool(s.advance_expedition(str(rr[2]))["ok"]), "수령 뒤 되풀이 거부: " + tag)
+		_unchanged(s, done, "수령 되풀이 " + tag)
+		# 저장 왕복 뒤에도 보상은 한 번(불러온 상태에서 다시 수령 불가).
+		var back: GameStateScript = GameStateScript.new()
+		_check(back.load_from_dict(JSON.parse_string(JSON.stringify(s.to_dict()))) == "" and _json(back) == done, "수령 뒤 저장 왕복: " + tag)
+		_check(not bool(back.finish_expedition()["ok"]) and back.wallet == s.wallet and back.discovered_ingredients() == [str(rr[3])], "불러온 뒤 수령 되풀이 거부: " + tag)
+	_end()
+
+
+# ---------- 잘못된 입력 / 원자적 거부 ----------
+
+func test_expedition_rejections_atomic() -> void:
+	var s: GameStateScript = _explorer_state()
+	var idle: String = _json(s)
+	_check(not bool(s.advance_expedition("m_ask")["ok"]) and not bool(s.finish_expedition()["ok"]) and not bool(s.retire_expedition()["ok"]), "탐험이 없으면 진행/수령/포기 거부")
+	_unchanged(s, idle, "탐험 없음")
+	_check(bool(s.start_expedition("market")["ok"]), "출발")
+	var at1: String = _json(s)
+	for bad in ["", "bogus", "m_buy_pickle", "m_hear_recipe", "h_auction", " m_ask", "M_ASK", "m_ask "]:
+		_check(not bool(s.advance_expedition(bad)["ok"]), "첫 만남의 잘못된 선택 거부: '%s'" % bad)
+		_unchanged(s, at1, "잘못된 첫 선택 '%s'" % bad)
+	_check(bool(s.advance_expedition("m_ask")["ok"]), "정상 첫 선택")
+	var at2: String = _json(s)
+	for bad2 in ["m_ask", "m_browse", "m_buy_plum", "m_taste_pickle", "", "x"]:
+		_check(not bool(s.advance_expedition(bad2)["ok"]), "둘째 만남의 잘못된 선택(다른 갈래/첫 만남 id) 거부: '%s'" % bad2)
+		_unchanged(s, at2, "잘못된 둘째 선택 '%s'" % bad2)
+	# 추가 비용 경계: 출발 후 자금이 정확히 비용과 같을 때만 선택 가능, 1원 모자라면 전체 불변.
+	var t: GameStateScript = _explorer_state()
+	t.wallet = 3199
+	_check(bool(t.start_expedition("market")["ok"]) and t.wallet == 199, "자금 3199원으로 출발 -> 199원")
+	var tight: String = _json(t)
+	var low: Dictionary = t.advance_expedition("m_browse")
+	_check(not bool(low["ok"]) and str(low["message"]).contains("200원"), "추가 비용 200원이 199원보다 많으면 거부, 필요한 금액을 말해 줘요")
+	_unchanged(t, tight, "추가 비용 부족")
+	t.wallet = 200
+	var exact: Dictionary = t.advance_expedition("m_browse")
+	_check(bool(exact["ok"]) and t.wallet == 0 and int(t.expedition()["extra"]) == 200 and str(t.expedition()["stage"]) == "choice_2", "정확히 200원이면 선택되고 0원이 돼요(음수 없음)")
+	var zero: String = _json(t)
+	_check(not bool(t.advance_expedition("m_buy_plum")["ok"]) and t.wallet == 0, "0원에서 500원 선택 거부")
+	_unchanged(t, zero, "0원 추가 비용")
+	_check(bool(t.advance_expedition("m_taste_pickle")["ok"]) and t.wallet == 0, "비용 없는 선택은 0원에서도 가능")
+	_check(bool(t.finish_expedition()["ok"]) and t.wallet == 0 and t.is_discovered("topping_pickle"), "자금 0원에서도 수령")
+	# 영업(시식 포함 모든 변경)과의 상호 배제는 busy_locks 시험에서 본다. 여기서는 진행 중 중복 출발/영수증 확인.
+	_check(not bool(t.start_expedition("market")["ok"]) and int(t.exploration_stats()["completed"]) == 1, "같은 날 재출발 거부, 완료 1")
+	_end()
+
+
+# ---------- 포기 / 하루 한 번 ----------
+
+func test_expedition_retire_and_daily_limit() -> void:
+	var s: GameStateScript = _explorer_state()
+	var w0: int = s.wallet
+	_check(bool(s.start_expedition("market")["ok"]), "출발")
+	var rt: Dictionary = s.retire_expedition()
+	_check(bool(rt["ok"]) and s.wallet == w0 - 3000 and not s.exploration_active(), "첫 만남에서 포기: 환불 없음, 탐험 종료")
+	_check(s.discovered_ingredients().is_empty() and int(s.exploration_progress()["obtained"]) == 0, "포기는 보상이 없어요")
+	var h: Array = s.exploration_history()
+	_check(h.size() == 1 and str(h[0]["outcome"]) == "retired" and (h[0]["path"] as Array).is_empty() and str(h[0]["ingredient"]) == "" and not bool(h[0]["new"]) and int(h[0]["fee"]) == 3000 and int(h[0]["extra"]) == 0, "포기 영수증")
+	_check(int(s.exploration_stats()["retired"]) == 1 and int(s.exploration_stats()["completed"]) == 0 and s.departed_today(), "포기 1회, 오늘 출발권은 쓴 상태")
+	var after: String = _json(s)
+	_check(not bool(s.start_expedition("market")["ok"]) and not bool(s.retire_expedition()["ok"]) and not bool(s.finish_expedition()["ok"]), "포기 뒤 같은 날 재출발/재포기/수령 거부")
+	_unchanged(s, after, "포기 뒤 되풀이")
+	_next_day(s)
+	# 둘째 만남에서 포기: 이미 낸 출발 비용과 첫 선택 추가 비용이 모두 소비되고 보상은 없다.
+	var w1: int = s.wallet
+	_check(bool(s.start_expedition("market")["ok"]) and bool(s.advance_expedition("m_browse")["ok"]), "다시 출발해 첫 선택(200원)")
+	_check(bool(s.expedition()["can_retire"]), "만남 단계에서는 포기할 수 있어요")
+	_check(bool(s.retire_expedition()["ok"]) and s.wallet == w1 - 3000 - 200 and s.discovered_ingredients().is_empty(), "둘째 만남에서 포기: 3200원 소비, 보상 없음")
+	var last: Dictionary = (s.exploration_history()[1] as Dictionary)
+	_check(str(last["outcome"]) == "retired" and (last["path"] as Array) == ["m_browse"] and int(last["extra"]) == 200, "둘째 포기 영수증")
+	_next_day(s)
+	# 결과 단계에서는 포기할 수 없고 수령만 가능(이미 얻은 결과를 버리는 선택지는 없다).
+	_trip(s, "market", "m_browse", "m_buy_plum")
+	var at_result: String = _json(s)
+	_check(not bool(s.retire_expedition()["ok"]), "결과 단계에서 포기 거부")
+	_unchanged(s, at_result, "결과 단계 포기")
+	_check(bool(s.finish_expedition()["ok"]) and s.is_discovered("tare_plum") and int(s.exploration_stats()["completed"]) == 1 and int(s.exploration_stats()["retired"]) == 2, "수령하면 완료 1, 포기 2")
+	_end()
+
+
+# ---------- 잠금: 탐험 중 / 영업 중 ----------
+
+func test_expedition_busy_locks() -> void:
+	var s: GameStateScript = _explorer_state()
+	_check(bool(s.start_expedition("market")["ok"]), "출발")
+	var w0: int = s.wallet
+	var locked_calls: Array = [
+		["draft_choice", func() -> Dictionary: return s.set_draft_choice("tare", "tare_miso")],
+		["draft_toppings", func() -> Dictionary: return s.set_draft_toppings(["topping_egg"])],
+		["toggle", func() -> Dictionary: return s.toggle_draft_topping("topping_egg")],
+		["price", func() -> Dictionary: return s.set_draft_price(9100)],
+		["name", func() -> Dictionary: return s.set_draft_name("잠금")],
+		["select", func() -> Dictionary: return s.select_record(int((s.records()[0] as Dictionary)["record_id"]))],
+		["delete", func() -> Dictionary: return s.delete_record(int((s.records()[0] as Dictionary)["record_id"]))],
+		["taste", func() -> Dictionary: return s.taste()],
+		["serve", func() -> Dictionary: return s.serve()],
+		["begin_service", func() -> Dictionary: return s.begin_service()],
+		["research", func() -> Dictionary: return s.submit_research("hayoung_basic", int((s.records()[0] as Dictionary)["record_id"]))],
+		["promotion", func() -> Dictionary: return s.apply_promotion(3)],
+		["facility", func() -> Dictionary: return s.purchase_facility("bench_1")],
+		["hire", func() -> Dictionary: return s.hire_staff("prep_assistant")],
+		["second_start", func() -> Dictionary: return s.start_expedition("harbor")],
+	]
+	var before: String = _json(s)
+	for entry in locked_calls:
+		var pair: Array = entry
+		var fn: Callable = pair[1]
+		var res: Dictionary = fn.call()
+		_check(not bool(res["ok"]), "탐험 중 거부: " + str(pair[0]))
+		if str(pair[0]) != "second_start":
+			_check(str(res["message"]).contains("탐험"), "탐험 중이라는 이유를 말해 줘요: " + str(pair[0]))
+		_unchanged(s, before, "탐험 중 " + str(pair[0]))
+	s.start_new_recipe()
+	_unchanged(s, before, "탐험 중 start_new_recipe")
+	_check(s.wallet == w0 and not s.service_active(), "잠금 거부는 자금/세션을 바꾸지 않아요")
+	# 저장은 허용: 탐험 중에도 직렬화/저장이 되고 불러온 뒤에도 같은 탐험이 이어진다.
+	var dir: String = _case_dir("explore_busy_save")
+	var saver: SaveServiceScript = SaveServiceScript.new(dir)
+	saver.remove_known_files()
+	_check(bool(saver.save_state(s)["ok"]), "탐험 중에도 저장은 돼요")
+	var back: GameStateScript = GameStateScript.new()
+	_check(str(saver.load_into(back)["status"]) == "ok" and _json(back) == before and back.exploration_active(), "저장/불러오기 뒤에도 같은 탐험 상태")
+	_cleanup_case(saver)
+	# 끝내면 잠금이 풀린다.
+	_check(bool(s.retire_expedition()["ok"]) and bool(s.set_draft_price(9100)["ok"]), "포기하면 편집이 다시 가능")
+	# 영업 중에는 탐험의 모든 단계 호출이 도메인에서 거부된다.
+	var v: GameStateScript = _explorer_state()
+	_check(bool(v.begin_service()["ok"]) and v.service_active(), "영업 시작")
+	var sv: String = _json(v)
+	var rs: Dictionary = v.start_expedition("market")
+	_check(not bool(rs["ok"]) and str(rs["message"]).contains("영업"), "영업 중 출발 거부, 이유가 영업")
+	_unchanged(v, sv, "영업 중 출발")
+	# 탐험 상태를 영업 중에 강제로 주입(정상 경로로는 만들 수 없는 조합)해도 진행/수령/포기는 도메인이 막는다.
+	var donor: GameStateScript = _explorer_state()
+	_trip(donor, "market", "m_ask", "m_hear_recipe")
+	v._exploration = (donor.to_dict()["exploration"] as Dictionary).duplicate(true)
+	var forced: String = _json(v)
+	_check(v.service_active() and v.exploration_active(), "시험 주입: 영업 중 + 결과 단계 탐험")
+	_check(not bool(v.finish_expedition()["ok"]) and not bool(v.retire_expedition()["ok"]) and not bool(v.advance_expedition("m_ask")["ok"]) and not bool(v.start_expedition("market")["ok"]), "영업 중에는 수령/포기/선택/출발 모두 거부")
+	_unchanged(v, forced, "영업 중 탐험 호출")
+	_check(v.discovered_ingredients().is_empty(), "영업 중 거부된 수령은 재료를 열지 않아요")
+	# 탐험 중 영업 시작 불가는 위에서 확인했고, 영업을 취소하면 다시 탐험할 수 있다.
+	v.cancel_service()
+	_check(bool(v.finish_expedition()["ok"]) and v.is_discovered("tare_plum"), "영업을 취소하면 수령 가능")
+	_end()
+
+
+# ---------- 발견 전 재료 차단 ----------
+
+func test_locked_ingredients_gating() -> void:
+	var s: GameStateScript = _explorer_state()
+	var slots: Dictionary = {"broth_clam": "broth", "tare_plum": "tare", "oil_shrimp": "oil", "oil_pepper": "oil", "topping_pickle": "topping", "topping_mushroom": "topping"}
+	for id in slots:
+		var slot: String = slots[id]
+		_check(not s.ingredient_unlocked(id), "발견 전에는 잠겨 있어요: " + id)
+		var info: Dictionary = s.ingredient_lock_info(id)
+		_check(bool(info["locked"]) and str(info["hint"]).contains(str(info["region_name"])) and str(info["hint"]).contains("단계") and int(info["fee"]) == int(EXPLORE_FEES[str(info["region"])]), "획득 안내(지역/등급/출발 비용): " + id)
+		var avail_ids: Array = []
+		for it in s.available_items(slot):
+			avail_ids.append(str((it as Dictionary)["id"]))
+		_check(not avail_ids.has(id), "선택 목록에 없어요: " + id)
+		var locked_ids: Array = []
+		for it2 in s.locked_items(slot):
+			locked_ids.append(str((it2 as Dictionary)["id"]))
+			_check(bool(((it2 as Dictionary)["lock"] as Dictionary)["locked"]), "잠긴 항목에 안내가 붙어요")
+		_check(locked_ids.has(id), "잠긴 목록에 있어요: " + id)
+	_check(s.ingredient_unlocked("broth_tonkotsu") and not bool(s.ingredient_lock_info("tare_shoyu")["locked"]) and s.ingredient_lock_info("nope").is_empty() and not s.ingredient_unlocked("nope"), "예전 재료는 열려 있고, 모르는 id 는 열려 있지 않아요")
+	var before: String = _json(s)
+	for id2 in slots:
+		var r: Dictionary = s.set_draft_choice(str(slots[id2]), id2)
+		_check(not bool(r["ok"]) and str(r["message"]).contains("발견"), "선택 거부(발견 전): " + id2)
+	_check(not bool(s.set_draft_toppings(["topping_chashu", "topping_pickle"])["ok"]) and not bool(s.toggle_draft_topping("topping_mushroom")["ok"]), "토핑 지정/토글도 발견 전에는 거부")
+	_check(not bool(s.set_draft_choice("tare", "broth_clam")["ok"]) and not bool(s.set_draft_choice("tare", "tare_nope")["ok"]), "슬롯이 다르거나 모르는 id 도 거부")
+	_unchanged(s, before, "발견 전 선택 거부들")
+	_check(bool(s.set_draft_choice("tare", "tare_miso")["ok"]), "예전 재료는 그대로 고를 수 있어요")
+	# 외부에서 초안에 직접 넣어도 시식은 막는다.
+	s.draft_config["tare"] = "tare_plum"
+	s.set_draft_name("잠금 시험")
+	var wallet0: int = s.wallet
+	var recs0: int = s.record_count()
+	var tr: Dictionary = s.taste()
+	_check(not bool(tr["ok"]) and str(tr["message"]).contains("발견") and s.wallet == wallet0 and s.record_count() == recs0, "초안에 잠긴 재료가 있으면 시식 거부(자금/기록 불변)")
+	s.draft_config["tare"] = "tare_miso"
+	# 개정 기록(비교 포함)이 있는 상태를 만든다.
+	var first_id: int = int((s.records()[0] as Dictionary)["record_id"])
+	_check(bool(s.select_record(first_id)["ok"]) and bool(s.set_draft_price(int(s.draft_config["price"]) + 100)["ok"]), "개정 준비")
+	var rev: Dictionary = s.taste()
+	_check(bool(rev["ok"]), "개정 시식: " + str(rev["message"]))
+	var base: Dictionary = JSON.parse_string(JSON.stringify(s.to_dict()))
+	_check(GameStateScript.new().load_from_dict(base.duplicate(true)) == "", "기준 저장은 불러와져요")
+	var recs: Array = base["records"]
+	var last: Dictionary = recs[recs.size() - 1]
+	_check(not (last["comparison"] as Dictionary).is_empty(), "기준 저장에 비교 기록이 있어요")
+	# 저장 내용에 잠긴 재료가 있으면 불러오기 거부(초안 / 기록 / 비교의 이전 구성), 상태 불변.
+	var variants: Array = []
+	var v_draft: Dictionary = base.duplicate(true)
+	((v_draft["draft"] as Dictionary)["config"] as Dictionary)["tare"] = "tare_plum"
+	variants.append(["초안", v_draft])
+	# 연구 영수증이 가리키는 증인 기록은 건드리면 연구 검증이 먼저 걸리므로, 마지막(개정) 기록의 구성과 점수를 함께 바꾼다.
+	var v_rec: Dictionary = base.duplicate(true)
+	var v_last: Dictionary = (v_rec["records"] as Array)[(v_rec["records"] as Array).size() - 1]
+	var rec_cfg: Dictionary = v_last["config"]
+	rec_cfg["tare"] = "tare_plum"
+	# JSON 왕복본의 가격은 정수값이어도 float 다. 평가기는 정수 가격만 받으므로(불러오기 파서가 하는 것과 같은 정확한 정수 변환) 먼저 바꾼다.
+	_check(Check.is_whole(rec_cfg["price"]), "가격은 정수값이어야 해요")
+	rec_cfg["price"] = int(rec_cfg["price"])
+	var rec_scores: Dictionary = _scores_of(rec_cfg)
+	for cid in rec_scores:
+		(v_last["scores"] as Dictionary)[cid] = rec_scores[cid]
+	variants.append(["기록", v_rec])
+	var v_cmp: Dictionary = base.duplicate(true)
+	var cmp_last: Dictionary = ((v_cmp["records"] as Array)[(v_cmp["records"] as Array).size() - 1] as Dictionary)["comparison"]
+	(cmp_last["prev_config"] as Dictionary)["oil"] = "oil_pepper"
+	variants.append(["비교", v_cmp])
+	for var_entry in variants:
+		var ve: Array = var_entry
+		var target: GameStateScript = GameStateScript.new()
+		var snap: String = _json(target)
+		var err: String = target.load_from_dict(ve[1])
+		_check(err != "" and err.contains("발견"), "잠긴 재료가 든 저장 거부(%s): %s" % [str(ve[0]), err])
+		_unchanged(target, snap, "잠긴 재료 저장 " + str(ve[0]))
+	# 발견하면 같은 저장 내용이 유효해진다(발견 목록과 일치할 때만).
+	_next_day(s)
+	_trip(s, "market", "m_ask", "m_hear_recipe")
+	_check(bool(s.finish_expedition()["ok"]) and s.ingredient_unlocked("tare_plum"), "장터에서 매실 타레 발견")
+	_check(bool(s.set_draft_choice("tare", "tare_plum")["ok"]) and bool(s.taste()["ok"]), "발견 뒤에는 선택/시식 가능")
+	var after: Dictionary = JSON.parse_string(JSON.stringify(s.to_dict()))
+	var reloaded: GameStateScript = GameStateScript.new()
+	_check(reloaded.load_from_dict(after) == "" and _json(reloaded) == _json(s), "발견한 재료가 든 기록은 왕복해요")
+	_check(bool(reloaded.select_record(reloaded.selected_record_id)["ok"]), "발견한 재료의 기록을 선택할 수 있어요")
+	_end()
+
+
+# ---------- 발견한 재료의 전체 파이프라인 ----------
+
+func test_discovered_ingredient_pipeline() -> void:
+	var s: GameStateScript = _explorer_state()
+	_discover_all(s)
+	_check(s.discovered_ingredients().size() == 6 and int(s.exploration_progress()["obtained"]) == 6, "6개 모두 발견")
+	var counts: Dictionary = {"broth": 4, "tare": 4, "oil": 5, "noodle": 3, "topping": 6, "cook": 3}
+	for slot in counts:
+		_check(s.available_items(slot).size() == int(counts[slot]) and s.locked_items(slot).is_empty(), "선택 가능 개수: " + slot)
+	for region in Exploration.region_ids():
+		var rv: Dictionary = s.exploration_region(region)
+		_check(bool(rv["complete"]) and int(rv["obtained"]) == 2 and str(rv["status"]) == "complete" and not bool(rv["can_start"]), "발견을 마친 지역: " + region)
+	# 모든 슬롯에 새 재료를 쓰고 토핑 3개(차슈 + 절임 무 + 표고 조림)를 올린다(등급 3 + 조리대 II 로 토핑 3칸).
+	s.start_new_recipe()
+	for pair in [["broth", "broth_clam"], ["tare", "tare_plum"], ["oil", "oil_shrimp"], ["noodle", "noodle_thin"], ["cook", "cook_firm"]]:
+		_check(bool(s.set_draft_choice(str(pair[0]), str(pair[1]))["ok"]), "선택: " + str(pair[1]))
+	_check(bool(s.set_draft_toppings(["topping_mushroom", "topping_chashu", "topping_pickle"])["ok"]), "토핑 3개 지정(순서 무관)")
+	_check(bool(s.set_draft_price(9000)["ok"]) and bool(s.set_draft_name("탐험 시제품")["ok"]), "가격/이름")
+	_check(str(s.draft_config["toppings"]) == str(["topping_chashu", "topping_pickle", "topping_mushroom"]), "토핑은 카탈로그 순서로 정규화")
+	var ev: Dictionary = Evaluator.evaluate(s.draft_config)
+	_check(str(ev["error"]) == "" and int(ev["unit_cost"]) == 2700 and int(ev["prep_seconds"]) == 112, "원가 2700원, 준비 112초 (손계산): %d/%d" % [int(ev["unit_cost"]), int(ev["prep_seconds"])])
+	var pf: Dictionary = ev["profile"]
+	_check(int(pf["rich"]) == 4 and int(pf["salt"]) == 8 and int(pf["aroma"]) == 9 and int(pf["chew"]) == 5 and int(pf["spice"]) == 1, "맛 프로필 (4,8,9,5,1): " + str(pf))
+	_check(int(ev["compat_total"]) == 12 and (ev["compat_applied"] as Array).size() == 4, "궁합 4개 합 +12 (조개-가는면 3, 절임-차슈 2, 표고-조개 3, 가는면-꼬들 4): " + str(ev["compat_total"]))
+	for c in ev["customers"]:
+		var cd: Dictionary = c
+		_check(str(cd["headline"]) != "" and not (cd["reasons"] as Array).is_empty(), "새 재료 조합도 피드백이 있어요")
+	var w0: int = s.wallet
+	var tr: Dictionary = s.taste()
+	_check(bool(tr["ok"]) and s.wallet == w0 - 2700, "시식: 재료비 2700원 정확히 차감: " + str(tr["message"]))
+	var rec: Dictionary = s.get_record(int(tr["record_id"]))
+	_check(str(rec["scores"]) == str(_scores_of(rec["config"])) and str((rec["config"] as Dictionary)["toppings"]) == str(["topping_chashu", "topping_pickle", "topping_mushroom"]), "기록의 점수/토핑")
+	# 같은 구성(토핑 순서만 다름)은 중복으로 거부.
+	_check(not bool(s.set_draft_toppings(["topping_pickle", "topping_mushroom", "topping_chashu"])["ok"]) or not bool(s.taste()["ok"]), "순서만 다른 같은 구성은 시식 중복 거부")
+	# 저장 왕복 + 영업 정산 경로.
+	var back: GameStateScript = GameStateScript.new()
+	_check(back.load_from_dict(JSON.parse_string(JSON.stringify(s.to_dict()))) == "" and _json(back) == _json(s), "새 재료 기록 저장 왕복")
+	_check(bool(back.select_record(int(tr["record_id"]))["ok"]), "기록 선택")
+	var fc: Dictionary = back.forecast()
+	_check(str(fc["error"]) == "" and int(fc["units"]) >= 0, "예측이 계산돼요")
+	var d0: int = back.day
+	var sv: Dictionary = back.serve()
+	_check(bool(sv["ok"]) and back.day == d0 + 1, "새 재료 레시피로 영업 정산: " + str(sv["message"]))
+	_end()
+
+
+# ---------- 저장 / 이어하기 ----------
+
+func test_expedition_save_resume_each_stage() -> void:
+	var dir: String = _case_dir("explore_resume")
+	var saver: SaveServiceScript = SaveServiceScript.new(dir)
+	for steps in [0, 1, 2]:
+		saver.remove_known_files()
+		var s: GameStateScript = _explorer_state()
+		_check(bool(s.start_expedition("harbor")["ok"]), "출발 (단계 %d)" % steps)
+		var seq: Array = ["h_auction", "h_bid_clam"]
+		for i in steps:
+			_check(bool(s.advance_expedition(str(seq[i]))["ok"]), "선택 %d" % i)
+		var view0: String = str(s.expedition())
+		var json0: String = _json(s)
+		var w0: int = s.wallet
+		_check(bool(saver.save_state(s)["ok"]), "저장 (단계 %d)" % steps)
+		var a: GameStateScript = GameStateScript.new()
+		_check(str(saver.load_into(a)["status"]) == "ok" and _json(a) == json0 and str(a.expedition()) == view0 and a.wallet == w0, "불러오면 같은 만남/자금/경로 (단계 %d)" % steps)
+		_check(a.exploration_active() and a.departed_today() and a.discovered_ingredients().is_empty(), "불러오기는 보상/비용을 만들지 않아요 (단계 %d)" % steps)
+		# 같은 파일을 두 번 불러와도 같다(새 이벤트를 뽑지 않는다).
+		var b: GameStateScript = GameStateScript.new()
+		_check(str(saver.load_into(b)["status"]) == "ok" and _json(b) == json0, "두 번째 불러오기도 같은 상태")
+		# 이어서 끝까지 진행해 정확히 한 번 수령.
+		var rest: Array = []
+		for j in range(steps, 2):
+			rest.append(str(seq[j]))
+		for cid in rest:
+			_check(bool(a.advance_expedition(str(cid))["ok"]), "이어서 선택 " + str(cid))
+		_check(a.wallet == w0 - (1300 - (500 if steps >= 1 else 0) - (800 if steps >= 2 else 0)), "이어서 낸 추가 비용 합계 (단계 %d)" % steps)
+		var fin: Dictionary = a.finish_expedition()
+		_check(bool(fin["ok"]) and str(fin["ingredient"]) == "broth_clam" and a.discovered_ingredients() == ["broth_clam"], "이어서 수령 (단계 %d)" % steps)
+		_check(bool(saver.save_state(a)["ok"]), "수령 뒤 저장")
+		var c: GameStateScript = GameStateScript.new()
+		_check(str(saver.load_into(c)["status"]) == "ok" and _json(c) == _json(a) and not c.exploration_active(), "수령 뒤 불러오기")
+		var w_after: int = c.wallet
+		_check(not bool(c.finish_expedition()["ok"]) and not bool(c.retire_expedition()["ok"]) and c.wallet == w_after and c.discovered_ingredients().size() == 1, "불러온 뒤 수령 되풀이 거부, 보상/비용 중복 없음")
+		# 일차는 탐험이 올리지 않는다.
+		_check(c.day == s.day, "탐험은 일차를 올리지 않아요")
+	_cleanup_case(saver)
+	_end()
+
+
+# ---------- 이행 (v3 -> v4) ----------
+
+func test_exploration_schema_migration_v3() -> void:
+	var dir: String = _case_dir("migrate_v3")
+	var saver: SaveServiceScript = SaveServiceScript.new(dir)
+	saver.remove_known_files()
+	var src: GameStateScript = _explorer_state()
+	_check(bool(src.hire_staff("prep_assistant")["ok"]), "v3 픽스처: 직원 고용")
+	src.start_new_recipe()
+	_apply_cfg(src, _rich_cfg())
+	src.set_draft_name("v3 이행")
+	_check(bool(src.set_draft_toppings(["topping_chashu", "topping_egg"])["ok"]), "v3 픽스처: 토핑 2개")
+	_check(bool(src.taste()["ok"]), "v3 픽스처: 시식")
+	var v3: Dictionary = _as_v3(src.to_dict())
+	_check(int(v3["schema_version"]) == 3 and v3.has("growth") and v3.has("research") and not v3.has("exploration"), "진짜 v3 모양(growth 있음, exploration 없음)")
+	var legacy_text: String = JSON.stringify(v3, "\t", true)
+	_write_text(saver.main_path(), legacy_text)
+	var loaded: GameStateScript = GameStateScript.new()
+	var lr: Dictionary = saver.load_into(loaded)
+	_check(str(lr["status"]) == "ok", "v3 불러오기: " + str(lr["message"]))
+	_check(loaded.day == src.day and loaded.wallet == src.wallet and str(loaded.records()) == str(src.records()) and str(loaded.research_receipts()) == str(src.research_receipts()), "v3: 일차/자금/기록/연구 보존")
+	_check(loaded.rank() == 3 and str(loaded.facilities_owned()) == str(src.facilities_owned()) and str(loaded.hired_staff()) == str(src.hired_staff()), "v3: 등급/확장/직원 보존")
+	_check(loaded.draft_name == src.draft_name and str(loaded.draft_config) == str(src.draft_config) and loaded.selected_record_id == src.selected_record_id and str(loaded.last_report) == str(src.last_report), "v3: 초안/선택/보고 보존")
+	_check(loaded.discovered_ingredients().is_empty() and not loaded.exploration_active() and loaded.exploration_history().is_empty() and not loaded.departed_today(), "v3: 탐험은 빈 상태로 이행")
+	_check(FileAccess.get_file_as_string(saver.main_path()) == legacy_text and not FileAccess.file_exists(saver.legacy_bak_path(3)), "v3: 불러오기만으로 파일/보관본이 바뀌지 않아요")
+	# 첫 v4 저장: 원본이 일반 백업과 영구 v3 보관본에 남는다.
+	_check(bool(saver.save_state(loaded)["ok"]), "v3: 이행 뒤 첫 저장")
+	_check(FileAccess.get_file_as_string(saver.bak_path()) == legacy_text and FileAccess.get_file_as_string(saver.legacy_bak_path(3)) == legacy_text, "v3 원본이 백업과 영구 보관본에 보존")
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(saver.main_path()))
+	_check(typeof(parsed) == TYPE_DICTIONARY and int((parsed as Dictionary)["schema_version"]) == 4 and (parsed as Dictionary).has("exploration") and (parsed as Dictionary).has("growth"), "새 파일은 v4")
+	loaded.wallet += 1
+	_check(bool(saver.save_state(loaded)["ok"]), "두 번째 저장")
+	_check(FileAccess.get_file_as_string(saver.legacy_bak_path(3)) == legacy_text and FileAccess.get_file_as_string(saver.bak_path()) != legacy_text, "v3 보관본은 다시 만들거나 덮어쓰지 않고, 일반 백업만 갱신")
+	var again: GameStateScript = GameStateScript.new()
+	_check(str(saver.load_into(again)["status"]) == "ok" and _json(again) == _json(loaded), "v4 왕복")
+	# 이행한 저장으로 탐험이 실제로 가능하다(예전 저장도 계속 플레이 가능).
+	_check(bool(again.start_expedition("mountain")["ok"]) and bool(again.advance_expedition("t_grove")["ok"]) and bool(again.advance_expedition("g_dry_pepper")["ok"]) and bool(again.finish_expedition()["ok"]) and again.is_discovered("oil_pepper"), "이행한 저장에서 탐험을 마쳐요")
+	# 거부: v3 에 exploration 이 있거나, v4 에 없거나, v3 에 발견 재료가 있는 경우(예전 저장은 잠긴 재료를 가질 수 없다).
+	var with_ex: Dictionary = _as_v3(src.to_dict())
+	with_ex["exploration"] = Exploration.empty_state()
+	_check(GameStateScript.new().load_from_dict(with_ex) != "", "exploration 키가 있는 v3 거부")
+	var v4_missing: Dictionary = JSON.parse_string(JSON.stringify(src.to_dict()))
+	v4_missing.erase("exploration")
+	_check(GameStateScript.new().load_from_dict(v4_missing) != "", "exploration 이 없는 v4 거부")
+	var v3_locked: Dictionary = _as_v3(src.to_dict())
+	((v3_locked["draft"] as Dictionary)["config"] as Dictionary)["oil"] = "oil_pepper"
+	_write_text(saver.main_path(), JSON.stringify(v3_locked, "\t", true))
+	var probe: GameStateScript = GameStateScript.new()
+	var probe_snap: String = _json(probe)
+	_check(str(saver.load_into(probe)["status"]) == "corrupt" and _json(probe) == probe_snap, "발견 재료가 든 v3 저장은 corrupt, 상태 불변")
+	_cleanup_case(saver)
+	_end()
+
+
+# ---------- 불러오기 거부 ----------
+
+func _ex_dict(discovered: Array, last_dep: int, completed: int, retired: int, active: Dictionary, history: Array) -> Dictionary:
+	return {"discovered": discovered, "last_departure_day": last_dep, "completed": completed, "retired": retired, "active": active, "history": history}
+
+
+func test_exploration_load_rejections() -> void:
+	# 풍부한 기준 저장: 장터 완료(절임 무) -> 하루 -> 항구 포기 -> 하루 -> 항구 진행 중(둘째 만남).
+	var s: GameStateScript = _explorer_state()
+	var d0: int = s.day
+	_trip(s, "market", "m_ask", "m_buy_pickle")
+	_check(bool(s.finish_expedition()["ok"]), "기준: 장터 완료")
+	_next_day(s)
+	_check(bool(s.start_expedition("harbor")["ok"]) and bool(s.advance_expedition("h_boat")["ok"]) and bool(s.retire_expedition()["ok"]), "기준: 항구 포기")
+	_next_day(s)
+	_check(bool(s.start_expedition("harbor")["ok"]) and bool(s.advance_expedition("h_auction")["ok"]), "기준: 항구 진행 중(둘째 만남)")
+	_check(s.day == d0 + 2, "기준 일차")
+	var base: Dictionary = JSON.parse_string(JSON.stringify(s.to_dict()))
+	var ok_probe: GameStateScript = GameStateScript.new()
+	_check(ok_probe.load_from_dict(base.duplicate(true)) == "" and _json(ok_probe) == _json(s), "정상 v4 는 float 숫자여도 불러와져요")
+	_check(str(ok_probe.expedition()) == str(s.expedition()) and ok_probe.exploration_history().size() == 2, "불러온 탐험 보기/영수증이 같아요")
+	var labels: Array[String] = [
+		"탐험 누락", "탐험 추가 키", "탐험 구조", "탐험 키 누락", "발견 id 모름", "발견 id 예전 재료", "발견 지역 불일치", "발견 중복", "발견일 0",
+		"발견일 미래", "발견 항목 추가 키", "발견 구조", "발견이 완료 횟수보다 많음", "출발 횟수가 일차 초과", "마지막 출발일 0", "마지막 출발일이 활성과 다름",
+		"마지막 출발일 미래", "기록 개수 부족", "기록 날짜 역순", "기록이 활성보다 늦음", "기록 지역 모름", "기록 출발 비용 변조", "기록 추가 비용 변조",
+		"기록 경로 무효", "완료 기록 재료 변조", "포기 기록에 보상", "새 발견 기록인데 발견 없음", "활성 단계 모름", "활성 단계/경로 불일치", "활성 지역 모름",
+		"활성 비용 변조", "활성 추가 비용 변조", "활성 경로 무효", "활성 추가 키", "활성 출발일 불일치", "활성 구조", "횟수 소수", "횟수 문자열",
+		"횟수 음수", "기록 new 문자열", "기록 outcome 모름", "기록 경로 문자열", "이미 앎 기록인데 발견이 같은 날",
+	]
+	for label in labels:
+		var copy: Dictionary = base.duplicate(true)
+		var ex: Dictionary = {}
+		if copy.has("exploration") and copy["exploration"] is Dictionary:
+			ex = copy["exploration"]
+		var disc: Array = ex.get("discovered", [])
+		var hist: Array = ex.get("history", [])
+		var act: Dictionary = {}
+		if ex.has("active") and ex["active"] is Dictionary:
+			act = ex["active"]
+		match label:
+			"탐험 누락":
+				copy.erase("exploration")
+			"탐험 추가 키":
+				ex["bonus"] = 1
+			"탐험 구조":
+				copy["exploration"] = []
+			"탐험 키 누락":
+				ex.erase("history")
+			"발견 id 모름":
+				(disc[0] as Dictionary)["id"] = "topping_unknown"
+			"발견 id 예전 재료":
+				(disc[0] as Dictionary)["id"] = "topping_egg"
+			"발견 지역 불일치":
+				(disc[0] as Dictionary)["region"] = "harbor"
+			"발견 중복":
+				disc.append((disc[0] as Dictionary).duplicate(true))
+			"발견일 0":
+				(disc[0] as Dictionary)["day"] = 0
+			"발견일 미래":
+				(disc[0] as Dictionary)["day"] = int(copy["day"]) + 1
+			"발견 항목 추가 키":
+				(disc[0] as Dictionary)["bonus"] = 1
+			"발견 구조":
+				ex["discovered"] = "topping_pickle"
+			"발견이 완료 횟수보다 많음":
+				disc.append({"id": "tare_plum", "region": "market", "day": int(copy["day"]) - 1})
+			"출발 횟수가 일차 초과":
+				ex["retired"] = int(copy["day"])
+			"마지막 출발일 0":
+				ex["last_departure_day"] = 0
+			"마지막 출발일이 활성과 다름":
+				ex["last_departure_day"] = int(copy["day"]) - 1
+			"마지막 출발일 미래":
+				ex["last_departure_day"] = int(copy["day"]) + 1
+			"기록 개수 부족":
+				hist.remove_at(0)
+			"기록 날짜 역순":
+				var tmp: Variant = hist[0]
+				hist[0] = hist[1]
+				hist[1] = tmp
+			"기록이 활성보다 늦음":
+				(hist[1] as Dictionary)["day"] = int(act["day"])
+			"기록 지역 모름":
+				(hist[0] as Dictionary)["region"] = "sea"
+			"기록 출발 비용 변조":
+				(hist[0] as Dictionary)["fee"] = 1
+			"기록 추가 비용 변조":
+				(hist[0] as Dictionary)["extra"] = 0
+			"기록 경로 무효":
+				(hist[0] as Dictionary)["path"] = ["m_buy_plum", "m_ask"]
+			"완료 기록 재료 변조":
+				(hist[0] as Dictionary)["ingredient"] = "tare_plum"
+			"포기 기록에 보상":
+				(hist[1] as Dictionary)["ingredient"] = "oil_shrimp"
+				(hist[1] as Dictionary)["new"] = true
+			"새 발견 기록인데 발견 없음":
+				ex["discovered"] = []
+			"활성 단계 모름":
+				act["stage"] = "choice_3"
+			"활성 단계/경로 불일치":
+				act["stage"] = "result"
+			"활성 지역 모름":
+				act["region"] = "sea"
+			"활성 비용 변조":
+				act["fee"] = 100
+			"활성 추가 비용 변조":
+				act["extra"] = 0
+			"활성 경로 무효":
+				act["path"] = ["h_bid_clam"]
+			"활성 추가 키":
+				act["bonus"] = 1
+			"활성 출발일 불일치":
+				act["day"] = int(act["day"]) - 1
+			"활성 구조":
+				ex["active"] = "harbor"
+			"횟수 소수":
+				ex["completed"] = 1.5
+			"횟수 문자열":
+				ex["retired"] = "1"
+			"횟수 음수":
+				ex["retired"] = -1
+			"기록 new 문자열":
+				(hist[0] as Dictionary)["new"] = "true"
+			"기록 outcome 모름":
+				(hist[1] as Dictionary)["outcome"] = "skipped"
+			"기록 경로 문자열":
+				(hist[0] as Dictionary)["path"] = "m_ask"
+			"이미 앎 기록인데 발견이 같은 날":
+				(hist[0] as Dictionary)["new"] = false
+			_:
+				_failures.append("알 수 없는 변조 이름: " + label)
+		var target: GameStateScript = GameStateScript.new()
+		target.wallet = 12345
+		var snapshot: String = _json(target)
+		var err: String = target.load_from_dict(copy)
+		_check(err != "", "거부돼야 해요: " + label)
+		_check(_json(target) == snapshot and not target.exploration_active() and target.discovered_ingredients().is_empty(), "거부된 로드는 상태를 바꾸면 안 돼요: " + label)
+	# 등급 요건: 같은 구조가 허용 등급에서는 받아들여지고, 등급이 모자라면 거부된다(1등급 저장에 항구 재료/탐험).
+	var r1: GameStateScript = _ranked_state(1)
+	var r1_dict: Dictionary = JSON.parse_string(JSON.stringify(r1.to_dict()))
+	var rday: int = int(r1_dict["day"])
+	var market_receipt: Dictionary = {"day": 1, "region": "market", "outcome": "finished", "fee": 3000, "extra": 0, "path": ["m_ask", "m_hear_recipe"], "ingredient": "tare_plum", "new": true}
+	var market_ok: Dictionary = r1_dict.duplicate(true)
+	market_ok["exploration"] = _ex_dict([{"id": "tare_plum", "region": "market", "day": 1}], 1, 1, 0, {}, [market_receipt])
+	_check(GameStateScript.new().load_from_dict(market_ok) == "", "1등급 저장의 장터 발견은 받아들여요")
+	var harbor_receipt: Dictionary = {"day": 1, "region": "harbor", "outcome": "finished", "fee": 6000, "extra": 0, "path": ["h_boat", "h_share_soup"], "ingredient": "broth_clam", "new": true}
+	var harbor_bad: Dictionary = r1_dict.duplicate(true)
+	harbor_bad["exploration"] = _ex_dict([{"id": "broth_clam", "region": "harbor", "day": 1}], 1, 1, 0, {}, [harbor_receipt])
+	var hb: GameStateScript = GameStateScript.new()
+	_check(hb.load_from_dict(harbor_bad) != "" and hb.discovered_ingredients().is_empty(), "1등급 저장의 항구 발견은 거부")
+	var active_bad: Dictionary = r1_dict.duplicate(true)
+	active_bad["exploration"] = _ex_dict([], rday, 0, 0, {"region": "harbor", "day": rday, "stage": "choice_1", "fee": 6000, "extra": 0, "path": []}, [])
+	_check(GameStateScript.new().load_from_dict(active_bad) != "", "1등급 저장의 항구 진행 중 탐험은 거부")
+	var active_ok: Dictionary = r1_dict.duplicate(true)
+	active_ok["exploration"] = _ex_dict([], rday, 0, 0, {"region": "market", "day": rday, "stage": "choice_1", "fee": 3000, "extra": 0, "path": []}, [])
+	var ao: GameStateScript = GameStateScript.new()
+	_check(ao.load_from_dict(active_ok) == "" and ao.exploration_active() and ao.departed_today(), "같은 구조의 장터 진행 중 탐험은 1등급에서도 받아들여요")
+	# 어제 출발한 진행 중 탐험은 도달 불가(탐험 중에는 일차가 오르지 않는다): 출발일을 마지막 출발일과 함께 어제로 맞춰도 거부(상태 불변).
+	var stale: Dictionary = active_ok.duplicate(true)
+	var stale_ex: Dictionary = stale["exploration"]
+	stale_ex["last_departure_day"] = rday - 1
+	(stale_ex["active"] as Dictionary)["day"] = rday - 1
+	var stale_t: GameStateScript = GameStateScript.new()
+	var stale_snap: String = _json(stale_t)
+	_check(stale_t.load_from_dict(stale) != "" and _json(stale_t) == stale_snap and not stale_t.exploration_active(), "어제 출발한 진행 중 탐험 거부, 상태 불변")
+	# 저장 서비스: 변조된 v4 파일은 corrupt, 파일/상태 불변. 미래 버전은 unsupported.
+	var dir: String = _case_dir("explore_corrupt")
+	var saver: SaveServiceScript = SaveServiceScript.new(dir)
+	saver.remove_known_files()
+	var bad: Dictionary = base.duplicate(true)
+	((bad["exploration"] as Dictionary)["active"] as Dictionary)["fee"] = 1
+	var bad_text: String = JSON.stringify(bad, "\t", true)
+	_write_text(saver.main_path(), bad_text)
+	var probe: GameStateScript = GameStateScript.new()
+	var snap0: String = _json(probe)
+	_check(str(saver.load_into(probe)["status"]) == "corrupt" and FileAccess.get_file_as_string(saver.main_path()) == bad_text and _json(probe) == snap0, "변조된 v4 파일: corrupt, 파일/상태 불변")
+	var future: Dictionary = base.duplicate(true)
+	future["schema_version"] = GameStateScript.SCHEMA_VERSION + 1
+	var future_text: String = JSON.stringify(future, "\t", true)
+	_write_text(saver.main_path(), future_text)
+	_check(str(saver.load_into(GameStateScript.new())["status"]) == "unsupported" and FileAccess.get_file_as_string(saver.main_path()) == future_text, "미래 버전은 unsupported 로 보존")
+	_cleanup_case(saver)
+	_end()
+
+
+# ---------- 기록 길이 / 누적 횟수 ----------
+
+func test_exploration_history_bound_and_counters() -> void:
+	var s: GameStateScript = _explorer_state()
+	var d0: int = s.day
+	var fees: int = 0
+	for i in 14:
+		var w: int = s.wallet
+		_check(bool(s.start_expedition("market")["ok"]) and s.wallet == w - 3000, "출발 %d" % i)
+		fees += 3000
+		_check(bool(s.retire_expedition()["ok"]), "포기 %d" % i)
+		_next_day(s)
+	var hist: Array = s.exploration_history()
+	_check(Exploration.MAX_HISTORY == 12 and hist.size() == 12, "영수증은 최근 12개만 남아요: %d" % hist.size())
+	_check(int((hist[0] as Dictionary)["day"]) == d0 + 2 and int((hist[11] as Dictionary)["day"]) == d0 + 13, "가장 오래된 두 개가 잘렸어요")
+	for i in range(1, hist.size()):
+		_check(int((hist[i] as Dictionary)["day"]) > int((hist[i - 1] as Dictionary)["day"]), "영수증 날짜는 엄격히 늘어요")
+	_check(int(s.exploration_stats()["retired"]) == 14 and int(s.exploration_stats()["completed"]) == 0, "누적 포기 횟수는 잘리지 않아요")
+	_check(s.discovered_ingredients().is_empty(), "포기만으로는 발견이 없어요")
+	var back: GameStateScript = GameStateScript.new()
+	_check(back.load_from_dict(JSON.parse_string(JSON.stringify(s.to_dict()))) == "" and _json(back) == _json(s), "잘린 기록도 왕복해요")
+	# 기록 길이가 규칙(min(12, 누적))과 다르면 거부.
+	var fat: Dictionary = JSON.parse_string(JSON.stringify(s.to_dict()))
+	var fat_hist: Array = (fat["exploration"] as Dictionary)["history"]
+	fat_hist.append((fat_hist[fat_hist.size() - 1] as Dictionary).duplicate(true))
+	_check(GameStateScript.new().load_from_dict(fat) != "", "13개 기록 거부")
+	# 하루 한 번 규칙은 누적 횟수에도 적용: 기록이 잘려도 누적 포기 횟수가 마지막 출발일(=일차-1)을 넘으면 거부.
+	var over: Dictionary = JSON.parse_string(JSON.stringify(s.to_dict()))
+	var over_ex: Dictionary = over["exploration"]
+	_check(int(over_ex["last_departure_day"]) == int(over["day"]) - 1 and int(over_ex["retired"]) == 14, "초과 시험 기준: 포기 14, 마지막 출발일 = 일차-1")
+	over_ex["retired"] = int(over["day"])
+	var over_t: GameStateScript = GameStateScript.new()
+	var over_snap: String = _json(over_t)
+	_check(over_t.load_from_dict(over) != "" and _json(over_t) == over_snap, "누적 출발 횟수 > 마지막 출발일 거부, 상태 불변")
+	# 하루 한 번 규칙이 누적 횟수로도 지켜진다: 14번 출발은 14일 이상에서만 가능했다.
+	_check(s.day >= int(s.exploration_stats()["retired"]), "출발 횟수는 일차를 넘지 않아요")
+	_end()
+
+
+# ---------- 지역 완료 / 이미 아는 재료 ----------
+
+func test_exploration_full_region_and_repeat() -> void:
+	var s: GameStateScript = _explorer_state()
+	# 항구: 조개 -> 같은 조개(이미 앎, 새 발견 없음) -> 새우로 완료.
+	_trip(s, "harbor", "h_boat", "h_share_soup")
+	_check(bool(s.finish_expedition()["new"]), "첫 항구: 조개 새 발견")
+	_next_day(s)
+	_check(int(s.exploration_region("harbor")["obtained"]) == 1 and str(s.exploration_region("harbor")["status"]) == "available", "항구 1/2, 아직 출발 가능")
+	var w0: int = s.wallet
+	_check(bool(s.start_expedition("harbor")["ok"]) and bool(s.advance_expedition("h_boat")["ok"]), "다시 항구로")
+	var view: Dictionary = s.expedition()
+	var known_flags: Dictionary = {}
+	for c in view["event"]["choices"]:
+		known_flags[str((c as Dictionary)["id"])] = bool((c as Dictionary)["known"])
+	_check(bool(known_flags["h_share_soup"]) and not bool(known_flags["h_rent_tools"]), "이미 아는 재료로 이어지는 선택이 미리 표시돼요")
+	_check(bool(s.advance_expedition("h_share_soup")["ok"]) and not bool(s.expedition()["result"]["new"]), "결과 미리보기: 새 발견 없음")
+	var fin: Dictionary = s.finish_expedition()
+	_check(bool(fin["ok"]) and not bool(fin["new"]) and s.discovered_ingredients() == ["broth_clam"] and s.wallet == w0 - 6000, "이미 아는 재료: 비용만 들고 새 발견 없음")
+	var rcp: Dictionary = s.exploration_history()[1]
+	_check(not bool(rcp["new"]) and str(rcp["ingredient"]) == "broth_clam" and int(s.exploration_stats()["completed"]) == 2, "영수증에 new=false")
+	_next_day(s)
+	var back: GameStateScript = GameStateScript.new()
+	_check(back.load_from_dict(JSON.parse_string(JSON.stringify(s.to_dict()))) == "" and _json(back) == _json(s), "이미 아는 재료 영수증 왕복")
+	_trip(s, "harbor", "h_boat", "h_rent_tools")
+	_check(bool(s.finish_expedition()["new"]) and s.discovered_ingredients() == ["broth_clam", "oil_shrimp"], "새우 발견으로 항구 완료")
+	_next_day(s)
+	# 완료한 지역은 더 출발할 수 없고 출발 비용도 받지 않는다. 하루 출발권도 쓰지 않는다.
+	var rv: Dictionary = s.exploration_region("harbor")
+	_check(bool(rv["complete"]) and str(rv["status"]) == "complete" and str(rv["reason"]).contains("받지 않아요"), "항구 완료 상태와 이유")
+	var done: String = _json(s)
+	var w1: int = s.wallet
+	_check(not bool(s.start_expedition("harbor")["ok"]) and s.wallet == w1 and not s.departed_today(), "완료한 지역 출발 거부, 자금/출발권 불변")
+	_unchanged(s, done, "완료한 지역")
+	# 도달 불가 저장: 완전히 발견한 지역의 진행 중 탐험은 거부(과거 완료 영수증은 유효), 같은 구조의 미완료 지역은 허용. 거부는 대상 상태를 바꾸지 않는다.
+	var inj_base: Dictionary = JSON.parse_string(JSON.stringify(s.to_dict()))
+	_check(GameStateScript.new().load_from_dict(inj_base.duplicate(true)) == "", "완료 지역의 과거 영수증이 든 저장은 유효")
+	var inj_day: int = int(inj_base["day"])
+	for case in [["harbor", 6000, false], ["market", 3000, true]]:
+		var c: Array = case
+		var inj: Dictionary = inj_base.duplicate(true)
+		var iex: Dictionary = inj["exploration"]
+		iex["last_departure_day"] = inj_day
+		iex["active"] = {"region": str(c[0]), "day": inj_day, "stage": "choice_1", "fee": int(c[1]), "extra": 0, "path": []}
+		var tgt: GameStateScript = GameStateScript.new()
+		var tsnap: String = _json(tgt)
+		var terr: String = tgt.load_from_dict(inj)
+		if bool(c[2]):
+			_check(terr == "" and tgt.exploration_active(), "미완료 지역의 같은 구조 활성 탐험은 허용: " + terr)
+		else:
+			_check(terr != "" and _json(tgt) == tsnap and not tgt.exploration_active(), "완전히 발견한 지역의 활성 탐험은 거부, 상태 불변")
+	_check(bool(s.start_expedition("market")["ok"]), "다른 지역은 같은 날 출발 가능(완료 지역이 출발권을 쓰지 않았어요)")
+	_check(int(s.exploration_progress()["obtained"]) == 2, "진행도 2/6")
+	_end()
+
+
+# ---------- 방어적 복사 / 보상 없음 ----------
+
+func test_exploration_defensive_copies_and_no_phantom() -> void:
+	var s: GameStateScript = _explorer_state()
+	_trip(s, "market", "m_ask", "m_hear_recipe")
+	_check(bool(s.finish_expedition()["ok"]), "준비: 한 번 완료")
+	_next_day(s)
+	_check(bool(s.start_expedition("harbor")["ok"]) and bool(s.advance_expedition("h_auction")["ok"]), "준비: 둘째 만남")
+	var before: String = _json(s)
+	var view: Dictionary = s.expedition()
+	(view["path"] as Array).append("x")
+	((view["event"] as Dictionary)["choices"] as Array).clear()
+	(view["event"] as Dictionary)["title"] = "변조"
+	view["fee"] = 1
+	var regs: Array = s.exploration_regions()
+	(regs[0] as Dictionary)["fee"] = 1
+	((regs[0] as Dictionary)["ingredients"] as Array).clear()
+	var one: Dictionary = s.exploration_region("harbor")
+	one["status"] = "x"
+	(one["ingredients"] as Array).clear()
+	var dis: Array = s.discovered_ingredients()
+	dis.append("x")
+	var recs: Array = s.discovery_records()
+	(recs[0] as Dictionary)["id"] = "x"
+	var hist: Array = s.exploration_history()
+	(hist[0] as Dictionary)["fee"] = 1
+	(hist[0] as Dictionary)["path"] = []
+	hist.clear()
+	var prog: Dictionary = s.exploration_progress()
+	prog["obtained"] = 99
+	(prog["regions"] as Array).clear()
+	var stats: Dictionary = s.exploration_stats()
+	stats["completed"] = 99
+	var avail: Array = s.available_items("tare")
+	(avail[0] as Dictionary)["cost"] = 99999
+	((avail[0] as Dictionary)["axes"] as Dictionary)["salt"] = 99
+	avail.clear()
+	var locked: Array = s.locked_items("topping")
+	(locked[0] as Dictionary)["name"] = "변조"
+	((locked[0] as Dictionary)["lock"] as Dictionary)["hint"] = "변조"
+	var info: Dictionary = s.ingredient_lock_info("broth_clam")
+	info["locked"] = false
+	var dict: Dictionary = s.to_dict()
+	((dict["exploration"] as Dictionary)["discovered"] as Array).clear()
+	((dict["exploration"] as Dictionary)["active"] as Dictionary)["path"] = []
+	_check(_json(s) == before, "반환값을 바꿔도 내부 상태가 바뀌지 않아요")
+	_check(int(Catalog.find("tare_shoyu")["cost"]) == 200 and s.expedition()["path"] == ["h_auction"] and s.exploration_region("harbor")["status"] == "active_here", "카탈로그/활성 보기는 그대로")
+	# 읽기 전용 호출은 상태를 바꾸지 않는다(여러 번 불러도 같다).
+	for k in 3:
+		s.expedition()
+		s.exploration_regions()
+		s.exploration_progress()
+		s.exploration_history()
+		s.discovery_records()
+		s.available_items("broth")
+		s.locked_items("oil")
+		s.ingredient_lock_info("oil_pepper")
+		s.exploration_stats()
+	_check(_json(s) == before, "읽기 전용 호출은 상태를 바꾸지 않아요")
+	# 불러오기/탭 전환에 해당하는 반복 조회는 자금·보상을 만들지 않는다.
+	var w: int = s.wallet
+	var back: GameStateScript = GameStateScript.new()
+	for k2 in 3:
+		_check(back.load_from_dict(JSON.parse_string(JSON.stringify(s.to_dict()))) == "" and back.wallet == w and back.discovered_ingredients() == ["tare_plum"], "반복 불러오기는 자금/보상을 만들지 않아요")
+	# 보상은 재료 영구 개방뿐: 자금·등급·연구 점수는 수령으로 늘지 않는다.
+	var rank0: int = s.rank()
+	var pts0: int = s.research_points()
+	var rc0: int = s.research_receipts().size()
+	_check(bool(s.advance_expedition("h_bid_clam")["ok"]) and bool(s.finish_expedition()["ok"]), "항구 완료")
+	_check(s.rank() == rank0 and s.research_points() == pts0 and s.research_receipts().size() == rc0 and s.wallet == w - 800, "수령은 등급/연구/자금 보상을 주지 않아요(추가 비용만 빠짐)")
 	_end()
 
 
