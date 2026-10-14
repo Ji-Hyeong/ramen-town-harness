@@ -5,7 +5,9 @@ extends RefCounted
 
 const Catalog = preload("res://scripts/domain/ingredient_catalog.gd")
 
-const CONFIG_KEYS: Array = ["broth", "tare", "oil", "noodle", "topping", "cook", "price"]
+## 정규 구성의 키(토핑은 "toppings" 배열). 옛 구성(v1/v2 저장, 예전 시험 조합)은 "topping" 문자열 하나를 쓴다.
+const CONFIG_KEYS: Array = ["broth", "tare", "oil", "noodle", "toppings", "cook", "price"]
+const LEGACY_CONFIG_KEYS: Array = ["broth", "tare", "oil", "noodle", "topping", "cook", "price"]
 const NAME_MAX: int = 20
 
 
@@ -50,15 +52,23 @@ static func name_error(text: String, allow_empty: bool) -> String:
 	return ""
 
 
-## 메모리 상의 설정(이미 정수 가격)을 검증한다.
+## 메모리 상의 설정(이미 정수 가격)을 검증한다. 정규 모양("toppings" 배열 1~MAX_TOPPINGS개, 알려진 id, 중복 없음)과
+## 옛 모양("topping" 하나) 둘 다 받는다. 토핑 순서는 여기서 따지지 않는다(순서만 다르면 같은 구성: 정규화/same_config 참고).
+## 슬롯 수 한도(등급/조리대)는 상태(GameState)가 정하므로 여기서는 절대 상한만 본다.
 static func config_error(config: Dictionary) -> String:
-	var key_err: String = keys_error(config, CONFIG_KEYS, "레시피 구성")
+	var legacy: bool = not config.has("toppings")
+	var key_err: String = keys_error(config, LEGACY_CONFIG_KEYS if legacy else CONFIG_KEYS, "레시피 구성")
 	if key_err != "":
 		return key_err
 	for slot in Catalog.SLOTS:
+		if slot == Catalog.TOPPING_SLOT:
+			continue
 		var v: Variant = config[slot]
 		if typeof(v) != TYPE_STRING or not Catalog.is_valid(slot, str(v)):
 			return "알 수 없는 재료입니다 (%s)." % slot
+	var top_err: String = _toppings_error(config, legacy)
+	if top_err != "":
+		return top_err
 	var price: Variant = config["price"]
 	if typeof(price) != TYPE_INT:
 		return "가격은 정수여야 해요."
@@ -68,29 +78,76 @@ static func config_error(config: Dictionary) -> String:
 	return ""
 
 
+static func _toppings_error(config: Dictionary, legacy: bool) -> String:
+	if legacy:
+		var one: Variant = config["topping"]
+		if typeof(one) != TYPE_STRING or not Catalog.is_valid(Catalog.TOPPING_SLOT, str(one)):
+			return "알 수 없는 재료입니다 (topping)."
+		return ""
+	var raw: Variant = config["toppings"]
+	if typeof(raw) != TYPE_ARRAY:
+		return "토핑 목록 구조가 올바르지 않아요."
+	var list: Array = raw
+	if list.size() < 1:
+		return "토핑은 최소 1개를 골라야 해요."
+	if list.size() > Catalog.MAX_TOPPINGS:
+		return "토핑은 최대 %d개까지예요." % Catalog.MAX_TOPPINGS
+	var seen: Dictionary = {}
+	for v in list:
+		if typeof(v) != TYPE_STRING or not Catalog.is_valid(Catalog.TOPPING_SLOT, str(v)):
+			return "알 수 없는 재료입니다 (topping)."
+		if seen.has(str(v)):
+			return "같은 토핑을 두 번 고를 수 없어요."
+		seen[str(v)] = true
+	return ""
+
+
 ## 저장 파일 등 외부에서 온 값을 정규화(float→int)한 뒤 검증한다.
-## 반환: {"error": String, "config": Dictionary}
-static func parse_config(raw: Variant, ctx: String) -> Dictionary:
+## legacy=true 는 v1/v2 저장의 구성("topping" 하나, "toppings" 없음)이다: 정규 구성으로 바꿔 돌려준다(점수/원가/시간은 같다).
+## legacy=false(v3)는 "toppings" 배열이 카탈로그 순서로 정렬돼 있어야 한다(섞인 순서는 변조/손상으로 거부).
+## 반환: {"error": String, "config": Dictionary(정규 모양)}
+static func parse_config(raw: Variant, ctx: String, legacy: bool = false) -> Dictionary:
 	if typeof(raw) != TYPE_DICTIONARY:
 		return {"error": ctx + ": 구조가 올바르지 않아요.", "config": {}}
 	var d: Dictionary = raw
-	var key_err: String = keys_error(d, CONFIG_KEYS, ctx)
+	var key_err: String = keys_error(d, LEGACY_CONFIG_KEYS if legacy else CONFIG_KEYS, ctx)
 	if key_err != "":
 		return {"error": key_err, "config": {}}
 	var config: Dictionary = {}
 	for slot in Catalog.SLOTS:
+		if slot == Catalog.TOPPING_SLOT:
+			continue
 		config[slot] = d[slot]
+	if legacy:
+		config["topping"] = d["topping"]
+	else:
+		config["toppings"] = d["toppings"]
 	if not is_whole(d["price"]):
 		return {"error": ctx + ": 가격 형식이 올바르지 않아요.", "config": {}}
 	config["price"] = int(d["price"])
 	var err: String = config_error(config)
 	if err != "":
 		return {"error": ctx + ": " + err, "config": {}}
-	return {"error": "", "config": config}
+	var canonical: Dictionary = Catalog.normalize_config(config)
+	if not legacy:
+		var given: Array = []
+		for t in Catalog.toppings_of(config):
+			given.append(t)
+		if str(given) != str(canonical["toppings"]):
+			return {"error": ctx + ": 토핑 순서가 올바르지 않아요.", "config": {}}
+	return {"error": "", "config": canonical}
 
 
+## 구성이 같은지: 옛/정규 모양을 가리지 않고, 토핑은 순서와 무관하게 같은 집합이면 같은 구성이다.
 static func same_config(a: Dictionary, b: Dictionary) -> bool:
+	var na: Dictionary = Catalog.normalize_config(a)
+	var nb: Dictionary = Catalog.normalize_config(b)
 	for k in CONFIG_KEYS:
-		if a[k] != b[k]:
+		if not na.has(k) or not nb.has(k):
+			return false
+		if k == "toppings":
+			if str(na[k]) != str(nb[k]):
+				return false
+		elif na[k] != nb[k]:
 			return false
 	return true

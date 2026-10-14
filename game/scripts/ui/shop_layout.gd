@@ -55,6 +55,8 @@ const LANE2_Y: float = 11.5
 const SIDEWALK_END: float = 12.3
 const PASS: Vector2 = Vector2(6.6, 2.0)
 const CHEF: Vector2 = Vector2(2.4, 1.75)
+const STAFF_PREP: Vector2 = Vector2(4.1, 1.6)
+const STAFF_FLOOR: Vector2 = Vector2(6.4, 7.7)
 const FACADE: Rect2 = Rect2(0.0, 8.5, 7.2, 1.2)
 const DOOR_GAP: Vector2 = Vector2(3.3, 4.7)
 
@@ -107,6 +109,13 @@ static func make(variant: String) -> Dictionary:
 	var prep: Rect2 = Rect2(4.9, 0.2, 1.8, 1.0)
 	layout["chef_grid"] = CHEF
 	layout["pass_grid"] = PASS
+	# 보조 직원 자리(격자 + 투영). 고용했을 때만 그려진다. 안전 조건(시험이 확인): 단단한 가구 발자국/손님·서빙 경로에서 0.45칸 이상 떨어져 있고 방 안이다.
+	#  - 조리 보조: 주방 안 화로 오른쪽 끝과 준비대 사이 바닥(요리사 옆). 준비대를 향해 등을 보이고 선다. 서버 대기 자리(PASS)·서빙 길과 겹치지 않는다.
+	#  - 홀 보조: 문 안쪽 홀 앞쪽 빈 바닥(손님이 문에서 통로로 올라가는 길 x=4, 테이블 통로 x=9.2 사이). 정면을 보고 쟁반을 든다.
+	layout["staff_spots"] = {
+		"prep_assistant": {"grid": STAFF_PREP, "pos": proj(layout, STAFF_PREP), "back": true},
+		"floor_assistant": {"grid": STAFF_FLOOR, "pos": proj(layout, STAFF_FLOOR), "back": false},
+	}
 	layout["chef_pos"] = proj(layout, CHEF)
 	layout["pass_pos"] = proj(layout, PASS)
 	var ready: Array = []

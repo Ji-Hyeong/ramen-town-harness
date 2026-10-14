@@ -10,6 +10,7 @@ extends RefCounted
 const Customers = preload("res://scripts/domain/customer_catalog.gd")
 const Check = preload("res://scripts/domain/data_check.gd")
 const Evaluator = preload("res://scripts/domain/recipe_evaluator.gd")
+const Staffing = preload("res://scripts/domain/shop_staffing.gd")
 
 const SERVICE_SECONDS: int = 2400
 const OVERHEAD: int = 3000
@@ -51,14 +52,24 @@ static func _demand(base: int, mult: float, score: int, price: int, fair: int, m
 	return maxi(0, roundi(d))
 
 
+## 그날의 총 운영비 = 기본 운영비 + 고용한 보조 직원의 하루 운영비(스냅샷 값). 보조 직원이 없으면 기준과 정확히 같다.
+static func overhead_for(staffing: Dictionary) -> int:
+	return OVERHEAD + Staffing.daily_wage(staffing)
+
+
 ## config: 검증된 레시피 구성, scores: {손님id: 0~100 점수}, day: 1 이상.
+## staffing: ShopStaffing.snapshot()(영업 시작 시점의 직원 구성). 빈 딕셔너리 = 보조 직원 없음 = 기준 계산과 동일.
+##   조리 보조는 실제 조리 시간(→ 수용량·이탈)을, 모든 보조는 운영비를 바꾼다. 맛 점수/수요 취향에는 손대지 않는다.
 ## 반환: {"error", "units", "revenue", "ingredient_cost", "overhead", "net", "demand", "capacity", "by_source"}
-static func simulate(config: Dictionary, scores: Dictionary, day: int) -> Dictionary:
+static func simulate(config: Dictionary, scores: Dictionary, day: int, staffing: Dictionary = {}) -> Dictionary:
 	var err: String = Check.config_error(config)
 	if err != "":
 		return {"error": err}
 	if day < 1:
 		return {"error": "영업일은 1 이상이어야 해요."}
+	var staff_err: String = Staffing.snapshot_error(staffing)
+	if staff_err != "":
+		return {"error": staff_err}
 	var ids: Array[String] = Customers.ids()
 	var score_sum: int = 0
 	for id in ids:
@@ -70,7 +81,8 @@ static func simulate(config: Dictionary, scores: Dictionary, day: int) -> Dictio
 
 	var price: int = int(config["price"])
 	var cost: int = Evaluator.unit_cost(config)
-	var prep: int = Evaluator.prep_seconds(config)
+	var prep: int = Staffing.effective_prep(Evaluator.prep_seconds(config), staffing)
+	var overhead: int = overhead_for(staffing)
 	var mult: float = day_multiplier(day)
 
 	var order: Array[String] = []
@@ -118,8 +130,8 @@ static func simulate(config: Dictionary, scores: Dictionary, day: int) -> Dictio
 		"units": served,
 		"revenue": revenue,
 		"ingredient_cost": ingredient_cost,
-		"overhead": OVERHEAD,
-		"net": revenue - ingredient_cost - OVERHEAD,
+		"overhead": overhead,
+		"net": revenue - ingredient_cost - overhead,
 		"demand": total_demand,
 		"capacity": capacity,
 		"by_source": by_source,

@@ -86,8 +86,9 @@ static func build_profile(config: Dictionary) -> Dictionary:
 	var profile: Dictionary = {}
 	for axis in Catalog.AXES:
 		profile[axis] = 0
-	for slot in Catalog.SLOTS:
-		var item: Dictionary = Catalog.find(str(config[slot]))
+	# 토핑을 포함한 모든 선택 재료를 Catalog.item_ids() 하나로 훑는다(토핑마다 정확히 한 번 반영, 하나뿐인 옛 구성은 예전과 같은 합).
+	for id in Catalog.item_ids(config):
+		var item: Dictionary = Catalog.find(id)
 		var axes: Dictionary = item["axes"]
 		for axis in axes:
 			profile[axis] = int(profile[axis]) + int(axes[axis])
@@ -98,25 +99,24 @@ static func build_profile(config: Dictionary) -> Dictionary:
 
 static func unit_cost(config: Dictionary) -> int:
 	var total: int = 0
-	for slot in Catalog.SLOTS:
-		var item: Dictionary = Catalog.find(str(config[slot]))
+	for id in Catalog.item_ids(config):
+		var item: Dictionary = Catalog.find(id)
 		total += int(item["cost"])
 	return total
 
 
+## 재료별 준비 시간의 합(보조 직원이 없을 때의 기준 시간). 영업 중 실제 조리 시간은 ShopStaffing.effective_prep()가 이 값에서 계산한다.
 static func prep_seconds(config: Dictionary) -> int:
 	var total: int = 0
-	for slot in Catalog.SLOTS:
-		var item: Dictionary = Catalog.find(str(config[slot]))
+	for id in Catalog.item_ids(config):
+		var item: Dictionary = Catalog.find(id)
 		total += int(item["seconds"])
 	return total
 
 
 ## 선택된 재료 쌍에 해당하는 궁합 규칙 목록: [{"score": int, "note": String}]
 static func applied_compat(config: Dictionary) -> Array:
-	var ids: Array[String] = []
-	for slot in Catalog.SLOTS:
-		ids.append(str(config[slot]))
+	var ids: Array[String] = Catalog.item_ids(config)
 	var applied: Array = []
 	for rule in COMPAT:
 		var r: Dictionary = rule

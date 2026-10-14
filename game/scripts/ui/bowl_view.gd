@@ -2,6 +2,8 @@ extends Control
 ## 코드로 그린 라멘 그릇. 할당된 영역(size)에 맞춰 300x220 설계 좌표를 균등 축소/확대한다.
 ## config(재료 id들)에 따라 국물 색, 면 굵기, 토핑, 향미유가 달라지고 reveal(0~1)로 시식 연출을 한다.
 
+const Catalog = preload("res://scripts/domain/ingredient_catalog.gd")
+
 const DESIGN: Vector2 = Vector2(300.0, 220.0)
 const INK: Color = Color(0.17, 0.15, 0.13)
 const PAPER: Color = Color(0.96, 0.94, 0.88)
@@ -143,8 +145,18 @@ func _draw_oil(c: Vector2) -> void:
 		draw_circle(c + Vector2(cos(a) * r, sin(a) * r * 0.17), 2.4, oil_color)
 
 
+## 선택한 토핑을 모두 그린다(Catalog.toppings_of). 둘 이상이면 그릇 위에서 좌우로 나눠 놓는다.
 func _draw_topping(c: Vector2) -> void:
-	match _id("topping"):
+	var tops: Array = Catalog.canonical_toppings(Catalog.toppings_of(config))
+	for i in tops.size():
+		var shift: Vector2 = Vector2.ZERO
+		if tops.size() > 1:
+			shift = Vector2(float(i) * 30.0 - float(tops.size() - 1) * 15.0, 0.0)
+		_draw_one_topping(str(tops[i]), c + shift)
+
+
+func _draw_one_topping(topping_id: String, c: Vector2) -> void:
+	match topping_id:
 		"topping_chashu":
 			for i in 2:
 				var p: Vector2 = c + Vector2(-34.0 + float(i) * 26.0, -4.0 + float(i) * 4.0)

@@ -35,6 +35,30 @@ func bak_path() -> String:
 	return dir.path_join(BAK_FILE)
 
 
+## 예전 스키마 본 파일의 보관 위치(버전별 한 개, 처음 한 번만 만든다).
+func legacy_bak_path(version: int) -> String:
+	return dir.path_join("%s.v%d.bak" % [SAVE_FILE, version])
+
+
+## 디스크의 본 파일 스키마 버전(읽을 수 없거나 해석이 안 되면 0). 파일을 바꾸지 않는다.
+func _disk_schema_version(path: String) -> int:
+	var file: FileAccess = FileAccess.open(path, FileAccess.READ)
+	if file == null:
+		return 0
+	if file.get_length() > MAX_BYTES:
+		file.close()
+		return 0
+	var text: String = file.get_as_text()
+	file.close()
+	var json: JSON = JSON.new()
+	if json.parse(text) != OK or typeof(json.data) != TYPE_DICTIONARY:
+		return 0
+	var d: Dictionary = json.data
+	if not d.has("schema_version") or not Check.is_whole(d["schema_version"]):
+		return 0
+	return int(d["schema_version"])
+
+
 func has_save() -> bool:
 	return dir != "" and FileAccess.file_exists(main_path())
 
@@ -66,7 +90,8 @@ func load_into(state: GameStateScript) -> Dictionary:
 	if not d.has("schema_version") or not Check.is_whole(d["schema_version"]):
 		return _status("corrupt", "저장 버전 정보가 없거나 올바르지 않아요.")
 	var version: int = int(d["schema_version"])
-	# v1(연구 도입 전)은 GameState.load_from_dict()가 빈 연구 진행으로 이행해 읽는다. 그보다 오래/새 버전만 거부한다.
+	# v1(연구 도입 전)/v2(성장 도입 전)는 GameState.load_from_dict()가 빈 연구/기본 성장 상태와 정규 토핑으로 이행해 읽는다.
+	# 불러오기는 파일을 바꾸지 않는다. 그보다 오래/새 버전만 거부한다.
 	if version < GameStateScript.MIN_SCHEMA_VERSION or version > GameStateScript.SCHEMA_VERSION:
 		if version > GameStateScript.SCHEMA_VERSION:
 			return _status("unsupported", "더 새로운 버전에서 만든 저장이에요 (v%d). 이 버전에서는 열 수 없어요." % version)
@@ -97,6 +122,17 @@ func save_state(state: GameStateScript) -> Dictionary:
 		return {"ok": false, "message": "저장 내용 확인에 실패했어요. 기존 저장은 그대로예요."}
 	var main: String = main_path()
 	if FileAccess.file_exists(main):
+		# 이행 백업: 디스크의 본 파일이 현재보다 오래된 스키마(v1/v2)면, 처음 v3로 덮어쓰기 전에 원본을 버전별 고정 이름으로 한 번만 복사해 둔다.
+		# 이 파일은 이미 있으면 다시 만들지도 덮어쓰지도 않는다(일반 .bak 는 저장마다 직전 파일로 바뀌므로 원본을 잃을 수 있다).
+		# 복사에 실패하면 저장을 중단한다: 기존 본 파일은 그대로다.
+		var disk_version: int = _disk_schema_version(main)
+		if disk_version >= 1 and disk_version < GameStateScript.SCHEMA_VERSION:
+			var legacy_bak: String = legacy_bak_path(disk_version)
+			if not FileAccess.file_exists(legacy_bak):
+				var legacy_err: int = DirAccess.copy_absolute(main, legacy_bak)
+				if legacy_err != OK:
+					DirAccess.remove_absolute(tmp)
+					return {"ok": false, "message": "예전 버전 저장의 보관본을 만들지 못했어요 (%s). 기존 저장은 그대로예요." % error_string(legacy_err)}
 		var bak: String = bak_path()
 		if FileAccess.file_exists(bak):
 			var rm_err: int = DirAccess.remove_absolute(bak)
@@ -128,7 +164,7 @@ func archive_corrupt() -> Dictionary:
 
 ## 테스트용: 이 서비스가 만드는 고정 이름 파일만 지운다(폴더 스캔 없음).
 func remove_known_files() -> void:
-	for p in [main_path(), tmp_path(), bak_path()]:
+	for p in [main_path(), tmp_path(), bak_path(), legacy_bak_path(1), legacy_bak_path(2)]:
 		if FileAccess.file_exists(str(p)):
 			DirAccess.remove_absolute(str(p))
 
