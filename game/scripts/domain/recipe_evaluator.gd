@@ -23,6 +23,8 @@ const COMPAT_GAIN_POS: float = 0.3
 const COMPAT_GAIN_NEG: float = 0.5
 const COMPAT_CAP: int = 20
 const NOTICE_GAP: int = 2
+## COMPAT 앞쪽 몫(탐험 도입 전부터 있던 규칙)의 개수. 그 뒤 규칙은 모두 발견 재료를 포함해야 한다.
+const LEGACY_COMPAT_COUNT: int = 33
 
 const DIR_TEXT: Dictionary = {
 	"rich": ["국물이 가벼워요", "국물이 너무 무겁고 느끼해요"],
@@ -67,6 +69,26 @@ const COMPAT: Array = [
 	{"a": "broth_dashi", "b": "topping_chashu", "score": -2, "note": "차슈의 기름기가 맑은 해물 다시 위에서 겉돌아요"},
 	{"a": "tare_miso", "b": "topping_egg", "score": 2, "note": "반숙란의 부드러움이 된장 타레의 구수함과 어울려요"},
 	{"a": "broth_dashi", "b": "topping_nori", "score": 2, "note": "김의 바다 향이 해물 다시와 이어져요"},
+	# --- 탐험 발견 재료 전용 규칙(위 33개 뒤에만 덧붙인다: LEGACY_COMPAT_COUNT). 모든 규칙이 발견 재료 id를 하나 이상 포함하므로
+	# 예전 재료만 쓴 구성은 이 규칙에 절대 걸리지 않아 예전 평가 결과가 그대로다(시험이 이 불변식을 확인한다). ---
+	{"a": "broth_clam", "b": "tare_shio", "score": 4, "note": "소금 타레가 조개 국물의 맑은 감칠맛을 그대로 살려요"},
+	{"a": "broth_clam", "b": "tare_miso", "score": -4, "note": "된장 향이 조개 국물의 섬세함을 덮어요"},
+	{"a": "broth_clam", "b": "noodle_thin", "score": 3, "note": "가는 면이 조개 국물을 가볍게 머금어요"},
+	{"a": "broth_clam", "b": "noodle_thick", "score": -4, "note": "굵은 면이 조개 국물의 맛을 눌러요"},
+	{"a": "tare_plum", "b": "broth_chicken", "score": 4, "note": "닭 육수에 매실의 산뜻함이 잘 어울려요"},
+	{"a": "tare_plum", "b": "broth_tonkotsu", "score": -3, "note": "진한 돼지뼈 국물에는 매실 간이 힘을 못 써요"},
+	{"a": "tare_plum", "b": "oil_chili", "score": -2, "note": "고추기름의 매운맛이 매실의 산뜻함을 가려요"},
+	{"a": "oil_shrimp", "b": "broth_dashi", "score": 3, "note": "새우유가 해물 다시의 바다 향에 깊이를 더해요"},
+	{"a": "oil_shrimp", "b": "broth_tonkotsu", "score": -3, "note": "새우유와 돼지뼈 국물은 둘 다 무거워 느끼해져요"},
+	{"a": "oil_pepper", "b": "broth_tonkotsu", "score": 4, "note": "초피의 얼얼함이 돼지뼈 국물의 느끼함을 잡아요"},
+	{"a": "oil_pepper", "b": "tare_miso", "score": 3, "note": "된장 타레와 초피유가 산골풍으로 어우러져요"},
+	{"a": "oil_pepper", "b": "broth_dashi", "score": -4, "note": "초피의 강한 향이 해물 다시를 압도해요"},
+	{"a": "topping_pickle", "b": "broth_tonkotsu", "score": 3, "note": "절임 무의 아삭함이 진한 국물의 느끼함을 씻어요"},
+	{"a": "topping_pickle", "b": "topping_chashu", "score": 2, "note": "절임 무가 차슈의 기름기를 정리해요"},
+	{"a": "topping_pickle", "b": "broth_dashi", "score": -2, "note": "절임의 신맛이 맑은 해물 다시의 섬세함을 가려요"},
+	{"a": "topping_mushroom", "b": "tare_miso", "score": 3, "note": "표고 조림이 된장 타레의 구수함과 이어져요"},
+	{"a": "topping_mushroom", "b": "broth_clam", "score": 3, "note": "표고의 감칠맛이 조개 국물과 겹쳐 깊어져요"},
+	{"a": "topping_mushroom", "b": "topping_sprouts", "score": -2, "note": "표고 조림과 숙주는 식감이 따로 놀아요"},
 ]
 
 

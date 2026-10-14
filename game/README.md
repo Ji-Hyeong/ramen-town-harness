@@ -2,13 +2,15 @@
 
 Godot 4.7(타입 지정 GDScript) 프로젝트입니다. 기본 화면은 작은 도트 라멘가게이고, 메뉴 개발은 아래 버튼으로 여는 보조 서랍입니다. 레시피를 만들고 단골 세 분의 시식 반응을 읽은 뒤, 영업을 시작하면 손님이 줄을 서고 자리에 앉아 주문하면 요리사가 만들고 서버가 나르며 손님이 먹고 평가하고 떠납니다. 먹기를 마친 주문만 매출로 정산됩니다. Mac 데스크톱(1280x800)과 세로(390x844) 레이아웃을 지원합니다. iOS 내보내기와 실제 기기 검증은 아직 하지 않았습니다.
 
-> **현재 성장 버전(v3)**: 가게 등급·유료 확장·토핑 1~3개·노트 6/12/30칸·직원 2~4명을 연결했습니다. Claude 구현 후 Codex 독립 검사 60개 테스트·48,272개 확인, 배치 7,056개 확인, 실제 OpenGL 화면 7,168개 확인·56장·종료 0·엔진 오류 없음입니다. [성장 규칙](#가게-성장), [현재 화면](docs/growth-screenshots), [검증 기록](VERIFICATION.md), [위임 증거](../evidence/shop-growth-runs.json). 사용자 플레이 감·iPhone은 별도 확인 범위입니다. 아래 이전 검증 수치는 각 단계의 역사적 기록입니다.
+> **이전 성장 버전(v3)**: 가게 등급·유료 확장·토핑 1~3개·노트 6/12/30칸·직원 2~4명을 연결했습니다. Claude 구현 후 Codex 독립 검사 60개 테스트·48,272개 확인, 배치 7,056개 확인, 실제 OpenGL 화면 7,168개 확인·56장·종료 0·엔진 오류 없음입니다. [성장 규칙](#가게-성장), [현재 화면](docs/growth-screenshots), [검증 기록](VERIFICATION.md), [위임 증거](../evidence/shop-growth-runs.json). 사용자 플레이 감·iPhone은 별도 확인 범위입니다. 아래 이전 검증 수치는 각 단계의 역사적 기록입니다.
 
 > **연구 기능 검증 상태**: 6개 연구 의뢰와 저장 v2를 포함한 42개 테스트·41,034개 확인, 두 크기 UI 2,646개 확인이 통과했습니다. 기존 v1 저장 호환성도 독립 확인했습니다. 연구 탭은 자동 네이티브 캡처(26장, 2,698개 확인·실패 0, 종료 0)에서 렌더링이 확인됐습니다.
 >
 > **피드백 1차(시식 준비·초상·글자 없는 간판·수동 저장) 상태**: Claude가 구현·테스트를 작성하고 Codex가 독립 검증했습니다. 45개 테스트·41,101개 확인, 두 크기 배치 3,784개 확인, 실제 OpenGL 화면 3,852개 확인·34장·종료 0·엔진 오류 없음입니다. [현재 화면](docs/feedback-screenshots), [검증 범위](VERIFICATION.md), [위임 기록](../evidence/feedback-play-feel-runs.json). 실제 플레이 감과 iPhone 검증은 별도입니다.
 >
 > **검증 상태(연구 이전)**: Codex 독립 실행으로 30개 테스트·40,404개 확인 및 두 해상도 UI 검사 1,548개가 통과했습니다. 최종 실제 캡처 20장과 렌더링 QA 1,588개 확인·실패 0을 확인했습니다. 최종 화면 승인·플레이 감과 iPhone은 미검증입니다. [검증 범위와 수정 이력](VERIFICATION.md)
+
+> **현재 탐색 버전(v4)**: 장터·항구·산골과 새 재료 6종, 선택형 만남·약 1.2초 이동 연출·저장 이어하기를 연결했습니다. 전체 79개 테스트/49,814개 확인, 배치 8,766개, 실제 화면 8,934개·84장·실패 0·종료 0·엔진 오류 없음. Claude 도메인 구현 후 사용자가 승인한 Codex 화면·그림·QA 구현입니다. [현재 화면](docs/exploration-screenshots), [선별 증거](../evidence/ingredient-exploration-runs.json). iPhone과 새 버전의 사용자 플레이 감은 미검증입니다.
 
 ## 플레이 흐름
 1. **가게(기본 화면)**: 위쪽 HUD(일차·자금·시각·진행률), 가운데 도트 가게(주방·카운터·테이블·입구·골목 줄), 아래 상태 줄과 하단 바(`메뉴 개발` / `영업 시작` / 영업 중 `속도`)로 구성됩니다.
@@ -134,6 +136,42 @@ v3는 최상위 `growth`(등급, 산 확장 id 순서, 고용 직원 id 순서)�
 - 새 QA 스크린샷(크기별): `17_growth_locked`, `18_growth_eligible`, `19_growth_purchased`, `20_shop_staffed`, `21_multi_topping_lab`, `22_multi_topping_feedback`, `23_staffed_service`, `24_growth_reloaded`, `25_growth_save_failed`, `26_growth_full`, `27_full_service` = 11장. 기존 17장에 더해 크기별 28장·총 56장이 실제 생성됐고, [해상도·해시 목록](docs/growth-screenshots/manifest.json)을 보관합니다. 초기 54장 추정은 마지막 `27_full_service`를 빠뜨렸으며 실행 결과로 정정했습니다.
 - 알려진 한계: 시설 모티프(작업 공간 그림)는 만들지 않았습니다. 탭이 여섯 개가 되어 세로 화면에서 탭 줄이 빠듯할 수 있어 실제 렌더 확인이 필요합니다. 스크린샷/네이티브 결과는 실행 전까지 주장하지 않습니다.
 
+## 재료 탐험
+
+메뉴 개발 서랍의 일곱 번째 `탐색` 탭에서 지역을 고르고 출발합니다. 가로는 탭 7개 한 줄, 세로는 4+3 두 줄입니다. 출발 → 약 1.2초 이동 → 첫 만남 → 분기된 두 번째 만남 → 명시적 재료 수령입니다. 그림과 진행률은 연출만 담당하며 재화·발견 상태를 바꾸지 않습니다. 탐색 중 영업·시식·성장·연구 거래는 잠기고 저장과 창 닫기는 가능합니다. 재시작하면 지불한 비용과 선택 단계를 유지합니다. 새 재료는 공급처의 영구 발견이며 소모형 재고가 아닙니다. 미발견 재료는 메뉴 선택창에서 지역·랭크 안내와 함께 잠깁니다. 저장 실패는 메모리 상태만 변경됐다고 명시하며 성공을 가장하지 않습니다.
+tasks/ingredient-exploration-v1.md의 도메인 단계입니다. 화면(일곱 번째 탭), 지역 그림, 이동 연출, QA 캡처는 다음 UI 단계 몫이라 **지금은 플레이할 수 없고** 렌더러/네이티브 검증도 주장하지 않습니다. 아래 시험 결과도 실행 전까지 NOT RUN입니다.
+
+### 규칙
+- 지역 3곳이 가게 등급 1/2/3으로 열립니다. **출발 비용은 출발 때 한 번**, 선택에 붙은 **추가 비용은 그 선택을 누를 때 한 번** 냅니다(선택지 설명에 금액이 미리 적혀 있습니다). 포기해도 환불은 없습니다.
+- **영업을 마친 하루(일차)에 출발은 한 번뿐**(지역 무관). 완료·포기해도 그날의 출발권은 돌아오지 않고, 탐험은 일차를 올리지 않습니다(영업 정산만 올립니다).
+- 만남 2번: 첫 만남의 선택이 둘째 만남(갈래)을 정하고, 둘째 선택이 발견 재료를 정해 **결과 단계**에서 멈춥니다. 결과 단계에서 `finish_expedition()`을 해야 재료가 열리며 그 호출이 진행 중 탐험을 지우므로 보상은 정확히 한 번입니다. 만남 단계에서만 포기할 수 있고, 결과 단계에서는 수령만 가능합니다.
+- 보상은 **재료 영구 개방뿐**입니다. 자금/등급/연구 점수 보상, 소모품 재고, 그릇당 재고, 직원 원정은 없습니다. 이미 아는 재료로 이어지는 선택은 "새 발견 없음"이 미리 표시되고 비용은 그대로 듭니다. 한 지역 재료를 모두 발견하면 그 지역은 출발이 거부되어 의미 없는 반복 비용을 받지 않습니다.
+- 탐험 중에는 메뉴 편집/시식/영업/연구/성장이 도메인에서 거부되고(저장은 가능), 영업 중에는 출발/선택/수령/포기가 거부됩니다. 화면의 "시식 준비 중" 잠금은 UI 단계에서 추가로 겁니다.
+
+### 지역 · 비용 · 경로 (총 12가지, 지역마다 재료 2개에 각각 두 경로)
+| 지역 | 등급 | 출발 비용 | 첫 선택(추가) → 둘째 선택(추가) → 재료 |
+|---|---|---|---|
+| 새벽 장터 `market` | 1 | 3,000 | `m_ask`(0)→`m_buy_pickle`(300)→절임 무 / `m_hear_recipe`(0)→매실 타레 · `m_browse`(200)→`m_buy_plum`(500)→매실 타레 / `m_taste_pickle`(0)→절임 무 |
+| 아침 항구 `harbor` | 2 | 6,000 | `h_auction`(500)→`h_bid_clam`(800)→조개 맑은탕 / `h_ask_shrimp`(0)→새우유 · `h_boat`(0)→`h_share_soup`(0)→조개 맑은탕 / `h_rent_tools`(400)→새우유 |
+| 산골 농가 `mountain` | 3 | 10,000 | `t_grove`(0)→`g_dry_pepper`(0)→초피유 / `g_learn_mushroom`(600)→표고 조림 · `t_farm`(400)→`f_learn`(1000)→표고 조림 / `f_pepper`(0)→초피유 |
+
+### 발견 재료 6개 (`Catalog.DISCOVERY_ITEMS`, 면/익힘 없음)
+`tare_plum` 매실 타레(260원·8초, 시장) · `topping_pickle` 절임 무(120원·4초, 시장) · `broth_clam` 조개 맑은탕(800원·28초, 항구) · `oil_shrimp` 새우유(220원·7초, 항구) · `oil_pepper` 초피유(200원·6초, 산골) · `topping_mushroom` 표고 조림(350원·10초, 산골). 모두 장단이 있어(예: 절임 무는 느끼함을 걷지만 진함이 줄고, 초피유는 향/매운맛이 오르지만 맑은 국물과 충돌) 보편 상위호환이 아니며, 궁합 규칙(좋은 짝/나쁜 짝)이 `recipe_evaluator.gd`의 `COMPAT` 뒤쪽(`LEGACY_COMPAT_COUNT=33` 이후)에 붙어 있습니다. 모든 새 규칙이 발견 재료를 포함하므로 **예전 재료만 쓴 구성의 평가는 그대로**입니다. `Catalog.items(slot)`은 예전 재료만 돌려줘 기존 972가지 열거가 늘어나지 않고, `all_items(slot)`/`find`/`is_valid`는 발견 재료까지 압니다. 발견 전에는 선택·시식·불러오기가 모두 거부됩니다.
+
+### 계산되는 가용성(`GameState.exploration_regions()` / `exploration_region(id)`)
+`status`: `active_here` · `active_other` · `locked_rank` · `complete` · `used_today` · `no_funds` · `available`(이 순서로 판정, `can_start`는 `available`일 때만 참)과 `reason`(한국어 안내)을 돌려줍니다. 잠긴 재료는 `ingredient_lock_info(id)`가 지역·필요 등급·출발 비용을 안내합니다.
+
+### 공개 도메인 API (`game_state.gd`)
+변경(모두 `{ok, message, ...}`): `start_expedition(region_id)`(`fee`), `advance_expedition(choice_id)`(`extra`, `stage`), `finish_expedition()`(`ingredient`, `new`, `receipt`), `retire_expedition()`(`receipt`).
+조회(항상 복사본): `exploration_regions()`, `exploration_region(id)`, `expedition()`(`region`, `stage`=`choice_1|choice_2|result`, `day`, `fee`, `extra`, `path`, `can_retire`, `event{id,step,title,text,choices[{id,label,desc,cost,affordable,leads_to|ingredient_id,ingredient_name,known}]}`, `result{ingredient_id,ingredient_name,new,message}`), `exploration_progress()`, `exploration_history()`, `exploration_stats()`, `departed_today()`, `exploration_active()`, `discovered_ingredients()`, `discovery_records()`, `is_discovered(id)`, `ingredient_unlocked(id)`, `ingredient_lock_info(id)`, `available_items(slot)`, `locked_items(slot)`.
+
+### 저장 스키마 v4와 이행
+v4는 최상위 `exploration`을 추가합니다: `discovered[{id,region,day}]`(발견 순서), `last_departure_day`, `completed`/`retired`(누적, 잘리지 않음), `active`(없으면 `{}`; `region`,`day`,`stage`,`fee`,`extra`,`path`), `history`(영수증 최근 **12개**, 오래된 것부터 잘림; `day`,`region`,`outcome`=`finished|retired`,`fee`,`extra`,`path`,`ingredient`,`new`). 진행 중 탐험은 모든 만남·결과 단계에서 그대로 저장되며 만남은 카탈로그와 경로로만 정해져 불러올 때 새로 뽑지 않습니다. 검증은 카탈로그 기반 엄격 검증이고 전체를 통과해야 한 번에 반영됩니다: 알려진 지역/선택/재료 id, 지역 일치·중복 없음·엄격히 늘어나는 날짜, 현재 등급 이하 지역, `completed+retired+활성 ≤ last_departure_day`(하루 1번; 기록이 잘려도 누적 횟수로 계속 적용, 출발 사이 빈 날은 허용), 진행 중 탐험의 출발일 == 현재 일차(탐험 중에는 일차가 오르지 않으므로 어제 출발한 활성 탐험은 도달 불가), 이미 모두 발견한 지역의 활성 탐험 거부(과거 완료 영수증은 유효), `last_departure_day`와 활성/마지막 영수증 날짜 일치, 경로가 갈래를 따르고 `fee`/`extra`가 카탈로그와 일치, 영수증 결과↔발견 목록 일치, 기록 길이 `== min(12, 누적)`, 발견 ≤ 완료, 그리고 기록/비교/초안에 **발견하지 못한 재료가 있으면 거부**. v1~v3는 `exploration` 키가 없는 것이 정상이고 빈 탐험 상태로 읽습니다(아무것도 새로 주지 않음). 첫 v4 저장 때 원본이 `.bak`와 영구 보관본 `ramen_lab_save.json.v1.bak`/`.v2.bak`/`.v3.bak`에 한 번만 복사됩니다. 이 검증은 로컬 파일 변조를 막지 못합니다: 저장은 암호학적으로 인증되지 않아 플레이어가 자기 파일을 일관되게 고치는 것은 막을 수 없고, 손상·불일치만 거부합니다. 카탈로그의 지역 출발 비용을 나중에 바꾸면 그 비용으로 저장된 기록은 거부되므로 비용 변경에는 이행이 필요합니다.
+
+### 독립 검증 완료 (2026-10-15)
+
+도메인 시험 17개와 이동/그림 시험 2개를 추가하여 총 79개 테스트/49,814개 확인이 통과했습니다. 예전 재료 972조합의 평가 1,944건과 그림 1,963건은 기준 버전과 동일했습니다. schema3 이행·백업 37건, 불가능한 저장 상태 61건, 실제 schema2 플레이 저장의 별도 복사본 11건도 통과했으며 정상 플레이 파일에는 테스트 쓰기가 없습니다. UI 핸들러·재시작·하루 제한·포기·유료 선택·6종 수령·실제 저장 실패/회복을 두 크기에서 검증했고 새 캡처는 각 42장입니다. 이전 단계 NOT RUN 기록은 그 단계의 이력이며 현재 완료 상태가 아닙니다.
+
 ## 실행과 검증
 Godot 4.7.2에서 `game/project.godot`를 가져오고 프로젝트 실행(F5)을 사용합니다. 다른 컴퓨터에서는 Godot을 별도로 설치해야 합니다. 엔진 바이너리는 Git에 포함하지 않습니다.
 
@@ -171,6 +209,8 @@ RAMEN_GODOT=/Users/ji/Documents/Codex/2026-10-13/referenced-chatgpt-conversation
 로그 파일을 따로 두려면 `--log-file <경로>` 를 추가하세요(기본 파일 로그는 꺼져 있습니다).
 
 ## 로컬 macOS 런처 앱 (개발 편의용)
+
+현재 탐색 런처: `outputs/ramen-play-exploration-v1/Ramen Atelier.app`(저장소 밖 로컬 작업 공간). 기존 게임 창을 닫은 뒤 실행합니다. 실제 렌더링 검증을 통과한 동일 PCK를 사용하고 `work/player-save`를 유지하므로 이전 진행을 읽습니다. 저장 v4 첫 기록 전에 이전 버전 백업을 보존합니다. 정상 저장 경로에서는 QA나 자동 플레이를 실행하지 않았습니다. 이 새 런처의 별도 메인 씬 스모크는 미실행이며, 검증 범위는 동일 PCK의 네이티브 QA입니다. 로컬 설치된 Godot를 참조하는 개발용 앱으로 iOS 배포물이 아닙니다.
 `tools/build_local_apps.py`(표준 라이브러리만 사용)가 `Ramen Atelier.app`(게임)과 `Ramen QA.app`(`tests/qa_capture.gd`)을 `--output-dir`에 만듭니다. 각 앱은 `Info.plist`와 셸 런처만 가진 얇은 번들로, 지정한 Godot 실행 파일을 프로젝트 경로·`--log-file`(output-dir 안)·`--dev-data-dir`와 함께 `exec` 합니다. QA 앱은 `--qa-out`에 스크린샷을 저장하고 저장 폴더는 `<data-dir>/qa`를 씁니다. 스크립트는 파일만 쓰며 Godot를 실행하지 않고, 이미 있는 `.app`이 있으면 덮어쓰거나 지우지 않고 중단합니다.
 
 ```sh

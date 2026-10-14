@@ -506,6 +506,44 @@ static func staff_portrait_image(staff_id: String) -> Image:
 
 # ---------- 그릇 ----------
 
+## 글자 없는 72x26 지역 풍경. 진행률은 배낭 여행자의 위치·걸음만 바꾸며 보상과 무관하다.
+static func exploration_image(region: String, progress: float = 1.0, moving: bool = false) -> Image:
+	var img: Image = new_image(72, 26)
+	img.fill(Color(0.91, 0.88, 0.71))
+	rect(img, 0, 0, 72, 14, Color(0.73, 0.84, 0.79))
+	if region == "market":
+		for x in [3, 26, 49]:
+			rect(img, x, 7, 18, 12, Color(0.53, 0.36, 0.20))
+			rect(img, x - 1, 5, 20, 4, RED)
+			for stripe in range(0, 20, 4):
+				rect(img, x - 1 + stripe, 5, 2, 4, WHITE)
+			rect(img, x + 2, 10, 14, 5, Color(0.28, 0.25, 0.17))
+			for crate in 3:
+				rect(img, x + 2 + crate * 4, 14, 3, 3, Color(0.86, 0.70, 0.29))
+	elif region == "harbor":
+		rect(img, 0, 10, 72, 10, Color(0.31, 0.62, 0.68))
+		for x in range(2, 70, 8):
+			line(img, Vector2(x, 13), Vector2(x + 4, 13), WHITE)
+		poly(img, [Vector2(35, 13), Vector2(64, 13), Vector2(58, 18), Vector2(41, 18)], Color(0.43, 0.29, 0.18))
+		line(img, Vector2(49, 1), Vector2(49, 13), INK)
+		poly(img, [Vector2(50, 2), Vector2(60, 11), Vector2(50, 11)], WHITE)
+		rect(img, 2, 15, 24, 6, Color(0.64, 0.45, 0.26))
+		for x in [4, 14, 24]:
+			rect(img, x, 13, 2, 9, INK)
+	else:
+		poly(img, [Vector2(0, 17), Vector2(20, 1), Vector2(36, 17)], Color(0.30, 0.48, 0.34))
+		poly(img, [Vector2(26, 17), Vector2(51, 0), Vector2(72, 17)], Color(0.43, 0.60, 0.40))
+		for x in [3, 13, 59, 66]:
+			rect(img, x + 2, 11, 2, 9, Color(0.43, 0.29, 0.18))
+			poly(img, [Vector2(x, 13), Vector2(x + 3, 6), Vector2(x + 6, 13)], Color(0.22, 0.40, 0.28))
+	rect(img, 0, 22, 72, 4, Color(0.67, 0.52, 0.34))
+	for x in range(1, 70, 7):
+		px(img, x, 24, WHITE)
+	var p: float = clampf(progress, 0.0, 1.0) if is_finite(progress) else 0.0
+	var frame: int = int(p * 12.0) % 2 if moving else 0
+	blit(img, person_image(9, "walk" if moving else "stand", frame, false), Vector2i(3 + int(p * 50.0), 5))
+	return img
+
 static func broth_color(config: Dictionary) -> Color:
 	match str(config.get("broth", "")):
 		"broth_tonkotsu":
@@ -514,6 +552,8 @@ static func broth_color(config: Dictionary) -> Color:
 			return Color(0.88, 0.68, 0.30)
 		"broth_dashi":
 			return Color(0.78, 0.74, 0.46)
+		"broth_clam":
+			return Color(0.70, 0.83, 0.81)
 	return Color(0.88, 0.80, 0.62)
 
 
@@ -533,6 +573,12 @@ static func _draw_topping_single(img: Image, id: String) -> void:
 			px(img, 3, 2, Color(0.88, 0.95, 0.70))
 		"topping_nori":
 			rect(img, 8, 0, 2, 2, Color(0.12, 0.20, 0.16))
+		"topping_pickle":
+			rect(img, 2, 1, 3, 1, Color(0.83, 0.82, 0.29))
+			px(img, 3, 2, Color(0.55, 0.65, 0.24))
+		"topping_mushroom":
+			rect(img, 2, 1, 3, 1, Color(0.52, 0.33, 0.20))
+			px(img, 3, 2, Color(0.88, 0.78, 0.57))
 
 
 ## 토핑이 둘 이상일 때의 2칸 폭 작은 모양. ax 는 왼쪽 끝 x(2/5/8). 모두 국물 면 두 줄(y 1~2)과 테두리(y 0) 안에 있다.
@@ -553,6 +599,12 @@ static func _draw_topping_compact(img: Image, id: String, ax: int) -> void:
 			px(img, ax + 1, 2, Color(0.88, 0.95, 0.70))
 		"topping_nori":
 			rect(img, ax, 0, 2, 2, Color(0.12, 0.20, 0.16))
+		"topping_pickle":
+			rect(img, ax, 1, 2, 1, Color(0.83, 0.82, 0.29))
+			px(img, ax + 1, 2, Color(0.55, 0.65, 0.24))
+		"topping_mushroom":
+			rect(img, ax, 1, 2, 1, Color(0.52, 0.33, 0.20))
+			px(img, ax + 1, 2, Color(0.88, 0.78, 0.57))
 
 
 ## 12x7 라멘 그릇(위에서 비스듬히). 재료가 바뀌면 국물색/면/토핑/향미유 점이 바뀐다. 장면의 그릇과 미리보기가 같은 함수를 쓴다.
@@ -594,10 +646,17 @@ static func bowl_image(config: Dictionary) -> Image:
 			oil = Color(0.85, 0.16, 0.08)
 		"oil_scallion":
 			oil = Color(0.36, 0.62, 0.28)
+		"oil_shrimp":
+			oil = Color(0.95, 0.43, 0.20)
+		"oil_pepper":
+			oil = Color(0.17, 0.35, 0.23)
 	if oil.a > 0.0:
 		px(img, 6, 1, oil)
 		px(img, 5, 2, oil)
 		px(img, 8, 2, oil)
+	# 새 매실 간만 색을 더한다. 예전 간/단일 토핑 그림은 그대로 유지한다.
+	if str(config.get("tare", "")) == "tare_plum":
+		px(img, 4, 2, Color(0.60, 0.25, 0.37))
 	return img
 
 
@@ -623,6 +682,8 @@ static func icon_image(id: String) -> Image:
 			sauce = Color(0.93, 0.90, 0.78)
 		elif id == "tare_miso":
 			sauce = Color(0.74, 0.50, 0.22)
+		elif id == "tare_plum":
+			sauce = Color(0.60, 0.25, 0.37)
 		rect(img, 4, 0, 4, 2, steel_d)
 		rect(img, 3, 2, 6, 9, Color(0.82, 0.88, 0.90))
 		rect(img, 4, 5, 4, 5, sauce)
@@ -633,6 +694,10 @@ static func icon_image(id: String) -> Image:
 			oc = Color(0.85, 0.16, 0.08)
 		elif id == "oil_scallion":
 			oc = Color(0.36, 0.62, 0.28)
+		elif id == "oil_shrimp":
+			oc = Color(0.95, 0.43, 0.20)
+		elif id == "oil_pepper":
+			oc = Color(0.17, 0.35, 0.23)
 		rect(img, 5, 0, 2, 2, steel_d)
 		rect(img, 4, 2, 4, 2, oc)
 		rect(img, 3, 4, 6, 4, oc)
@@ -667,6 +732,15 @@ static func icon_image(id: String) -> Image:
 			"topping_nori":
 				rect(img, 2, 1, 8, 10, Color(0.12, 0.20, 0.16))
 				rect(img, 3, 2, 6, 1, Color(0.22, 0.34, 0.26))
+			"topping_pickle":
+				for y in [2, 5, 8]:
+					rect(img, 2, y, 8, 2, Color(0.83, 0.82, 0.29))
+					px(img, 9, y, Color(0.55, 0.65, 0.24))
+			"topping_mushroom":
+				rect(img, 3, 4, 6, 6, Color(0.88, 0.78, 0.57))
+				rect(img, 1, 2, 10, 4, Color(0.52, 0.33, 0.20))
+				px(img, 4, 3, WHITE)
+				px(img, 8, 4, WHITE)
 	elif id.begins_with("cook_"):
 		var lines: int = 1
 		if id == "cook_normal":

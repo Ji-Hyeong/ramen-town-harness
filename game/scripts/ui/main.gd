@@ -23,6 +23,8 @@ const ShopViewScript = preload("res://scripts/ui/shop_view.gd")
 const ArtScript = preload("res://scripts/ui/pixel_art.gd")
 const WorkScript = preload("res://scripts/ui/tasting_work.gd")
 const WorkViewScript = preload("res://scripts/ui/tasting_work_view.gd")
+const Exploration = preload("res://scripts/domain/ingredient_exploration.gd")
+const TravelScript = preload("res://scripts/ui/expedition_travel.gd")
 
 const INK: Color = Color(0.17, 0.12, 0.08)
 const PAPER: Color = Color(0.96, 0.92, 0.82)
@@ -56,12 +58,13 @@ const TAB_NOTEBOOK: int = 2
 const TAB_SERVE: int = 3
 const TAB_RESEARCH: int = 4
 const TAB_GROWTH: int = 5
+const TAB_EXPLORATION: int = 6
 ## 등급 심사 신청은 실수로 누르기 쉬우므로 두 번 눌러야 확정된다(첫 누름 후 이 시간 안에 다시 눌러야 함).
 const PROMOTE_CONFIRM_MS: int = 4000
 
 const NOT_SAVED_NOTE: String = "영업은 끝까지 진행해야 정산·저장돼요. 도중에 끄면 저장되지 않고 영업 전으로 돌아가요."
 const RUNNING_NOTE: String = "정산 전이에요. 끝까지 진행해야 반영·저장되고, 도중에 닫으면 저장되지 않아요."
-const AUTOSAVE_NOTE: String = "자동 저장: 시식 완료, 연구 제출, 노트 정리, 영업 정산, 서랍을 닫거나 탭을 옮길 때 저장 파일에 바로 써요. 영업이나 시식 준비가 끝나기 전의 진행은 저장하지 않아요."
+const AUTOSAVE_NOTE: String = "자동 저장: 시식 완료, 연구 제출, 노트 정리, 영업 정산, 탐색 출발·선택·결과, 서랍 닫기·탭 이동 때 파일에 써요. 진행 중 탐색은 이어갈 수 있어요. 영업과 시식 준비는 끝나기 전 진행을 저장하지 않아요."
 const WORK_NOTE: String = "아직 재료비가 나가지 않았고 기록도 없어요. 끝까지 준비되면 시식 기록이 한 번만 만들어지고 그때 저장돼요. 도중에 닫으면 사라져요."
 
 ## 테스트/QA가 ready 전에 주입할 수 있다. 비어 있으면 명령줄에서 결정한다.
@@ -137,6 +140,18 @@ var _promote_armed_until: int = 0
 var _notebook_note: Label
 var _topping_count: Label
 var _topping_hint: Label
+var _tab_navigation: GridContainer
+var _tab_links: Array[Button] = []
+var _discovery_hints: Dictionary = {}
+var _exploration_summary: Label
+var _exploration_message: Label
+var _exploration_box: VBoxContainer
+var _exploration_buttons: Array[Button] = []
+var _travel: TravelScript = TravelScript.new()
+var _travel_art: TextureRect
+var _travel_label: Label
+var _travel_bar: ProgressBar
+var _trip_notice: Label
 
 ## 시식 준비 작업(국물→면→시식). 진행 상태만 가지며, 끝났을 때 한 번만 state.taste()를 부른다.
 var _work: WorkScript = WorkScript.new()
@@ -173,6 +188,9 @@ func _ready() -> void:
 	saver = SaveServiceScript.new(str(data_location["dir"]))
 	_build_ui()
 	_load_save()
+	# 재개 시 이동 그림만 다시 보여 준다. 비용·경로·발견은 이미 불러온 도메인 상태를 사용한다.
+	if state.exploration_active():
+		_travel.start(str(state.expedition()["region"]))
 	_refresh_all()
 	tabs.tab_changed.connect(_on_tab_changed)
 	resized.connect(_apply_layout)
@@ -186,6 +204,7 @@ func _notification(what: int) -> void:
 	# 저장되는 것은 항상 "영업 전/시식 준비 전" 상태다: 진행 중 세션과 시식 준비는 자금/일차/기록을 바꾸지 않았고 편집도 잠겨 있다.
 	# 닫기 요청이면 끝나지 않은 시식 준비를 먼저 버린다(완료로 처리하지 않고, 저장 파일에도 어떤 흔적도 남기지 않는다).
 	# 앱이 잠깐 멈추는(PAUSED) 경우는 작업을 버리지 않고 확정된 상태만 저장한다.
+	# 탐색은 이미 지불한 비용과 선택 단계가 확정된 상태이므로 닫기에서도 취소하지 않고 그대로 저장한다.
 	if what == NOTIFICATION_WM_CLOSE_REQUEST:
 		_work.cancel()
 	if what == NOTIFICATION_WM_CLOSE_REQUEST or what == NOTIFICATION_APPLICATION_PAUSED:
@@ -210,6 +229,8 @@ func _process(delta: float) -> void:
 	# (검사용으로 시간을 앞당기는 길은 advance_work()를 직접 부르는 것뿐이고, 실행 중인 게임에는 그런 설정이 없다.)
 	if _work.is_running():
 		advance_work(minf(delta, 0.1))
+	if _travel.running():
+		advance_travel(minf(delta, 0.1))
 	if not state.service_active():
 		return
 	var session: SessionScript = state.active_session()
@@ -604,10 +625,21 @@ func _build_overlay() -> void:
 	_guide_label = _label("", 15, TEAL)
 	_guide_label.name = "GuideLabel"
 	col.add_child(_guide_label)
+	_trip_notice = _label("탐색 중 · 마치거나 포기하면 메뉴 개발과 영업을 재개해요. 닫기는 진행을 저장해요.", 14, TEAL)
+	_trip_notice.name = "ExpeditionLockNotice"
+	_trip_notice.visible = false
+	col.add_child(_trip_notice)
 	_build_work_card(col)
+	# 세로에서는 4+3개의 두 줄 탭을 사용한다. 작은 스크롤 화살표 대신 모든 탭이 44px 이상의 직접 터치 대상이다.
+	_tab_navigation = GridContainer.new()
+	_tab_navigation.name = "TabNavigation"
+	_tab_navigation.add_theme_constant_override("h_separation", 4)
+	_tab_navigation.add_theme_constant_override("v_separation", 4)
+	col.add_child(_tab_navigation)
 
 	tabs = TabContainer.new()
 	tabs.name = "MainTabs"
+	tabs.tabs_visible = false
 	tabs.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	tabs.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	col.add_child(tabs)
@@ -617,6 +649,19 @@ func _build_overlay() -> void:
 	_build_serve(_make_tab("TabServe", "영업"))
 	_build_research(_make_tab("TabResearch", "연구"))
 	_build_growth(_make_tab("TabGrowth", "성장"))
+	_build_exploration(_make_tab("TabExploration", "탐색"))
+	var link_group: ButtonGroup = ButtonGroup.new()
+	for i in tabs.get_tab_count():
+		var link: Button = _button(tabs.get_tab_title(i), "TabLink_" + str(i))
+		link.custom_minimum_size = Vector2(44.0, 48.0)
+		link.add_theme_font_size_override("font_size", 16)
+		link.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		link.toggle_mode = true
+		link.button_group = link_group
+		link.pressed.connect(_on_tab_link.bind(i))
+		_tab_links.append(link)
+		_tab_navigation.add_child(link)
+	_sync_tab_links()
 
 	_open_button = _button("영업하러 가기", "OverlayOpenButton")
 	_primary(_open_button)
@@ -731,7 +776,7 @@ func _build_lab(box: VBoxContainer) -> void:
 		if slot != Catalog.TOPPING_SLOT:
 			group = ButtonGroup.new()
 			_groups[slot] = group
-		for item in Catalog.items(slot):
+		for item in Catalog.all_items(slot):
 			var d: Dictionary = item
 			flow.add_child(_make_option(slot, d, group))
 		if slot == Catalog.TOPPING_SLOT:
@@ -747,6 +792,10 @@ func _build_lab(box: VBoxContainer) -> void:
 		desc.name = "Desc_" + slot
 		_desc_labels[slot] = desc
 		sb.add_child(desc)
+		var discovery_hint: Label = _label("", 14, TEAL)
+		discovery_hint.name = "DiscoveryHint_" + slot
+		_discovery_hints[slot] = discovery_hint
+		sb.add_child(discovery_hint)
 		box.add_child(sec)
 
 	var price_card: PanelContainer = _card("PriceCard")
@@ -970,6 +1019,7 @@ func _place_status() -> void:
 
 func _apply_layout() -> void:
 	var portrait: bool = _is_portrait()
+	_tab_navigation.columns = 4 if portrait else 7
 	_place_status()
 	var side: int = 6 if portrait else maxi(6, int((size.x - 820.0) * 0.5))
 	_drawer_margin.add_theme_constant_override("margin_left", side)
@@ -1086,6 +1136,7 @@ func _sync_guide_visibility() -> void:
 
 
 func _on_tab_changed(_index: int) -> void:
+	_sync_tab_links()
 	_sync_guide_visibility()
 	_pending_delete_id = 0
 	_promote_armed_until = 0
@@ -1094,6 +1145,16 @@ func _on_tab_changed(_index: int) -> void:
 		_persist()
 	_refresh_notebook()
 	_refresh_growth()
+	_refresh_exploration()
+
+
+func _on_tab_link(index: int) -> void:
+	tabs.current_tab = index
+
+
+func _sync_tab_links() -> void:
+	for i in _tab_links.size():
+		_tab_links[i].set_pressed_no_signal(i == tabs.current_tab)
 
 
 # ---------- 가게 화면 입력 ----------
@@ -1109,7 +1170,7 @@ func _on_dev_pressed() -> void:
 		_flash("영업 중에는 메뉴를 바꿀 수 없어요. 영업이 끝난 뒤 개발하세요.")
 		return
 	# 시식 준비 중에는 서랍을 닫지 못한다(보이지 않는 곳에서 끝나 기록이 생기는 일을 막는다). 먼저 [준비 취소]를 누른다.
-	if _overlay.visible and _work_blocked("서랍을 닫"):
+	if _overlay.visible and _work_blocked("서랍을 닫", true):
 		return
 	if _overlay.visible:
 		_close_overlay()
@@ -1138,12 +1199,15 @@ func _close_overlay() -> void:
 
 
 func _on_close_pressed() -> void:
-	if _work_blocked("서랍을 닫"):
+	if _work_blocked("서랍을 닫", true):
 		return
 	_close_overlay()
 
 
 func _on_overlay_open_pressed() -> void:
+	if state.exploration_active():
+		_close_overlay()
+		return
 	if _work_blocked("영업을 시작"):
 		return
 	_close_overlay()
@@ -1152,6 +1216,9 @@ func _on_overlay_open_pressed() -> void:
 
 
 func _on_start_pressed() -> void:
+	if state.exploration_active():
+		_open_overlay(TAB_EXPLORATION)
+		return
 	# 시식 준비 중에는 영업 시작/서랍 열기 모두 거부한다. 영업 중 중단 흐름과는 겹치지 않는다(둘은 동시에 있을 수 없다).
 	if _work_blocked("영업을 시작"):
 		return
@@ -1235,11 +1302,14 @@ func _on_result_ok() -> void:
 
 ## 시식 준비 중 잠금 판정. 버튼을 꺼 두는 것과 별개로 모든 상태 변경 핸들러가 맨 앞에서 이 함수를 불러 막는다
 ## (버튼 비활성만 믿으면 직접 호출/단축 입력으로 초안이 시작 때 복사한 스냅샷과 어긋날 수 있다). 막았으면 true.
-func _work_blocked(action: String) -> bool:
-	if not _work.is_running():
-		return false
-	_work_reject("시식 준비 중에는 %s 수 없어요. 끝나길 기다리거나 [준비 취소]를 누르세요." % action)
-	return true
+func _work_blocked(action: String, allow_trip: bool = false) -> bool:
+	if _work.is_running():
+		_work_reject("시식 준비 중에는 %s 수 없어요. 끝나길 기다리거나 [준비 취소]를 누르세요." % action)
+		return true
+	if not allow_trip and state.exploration_active():
+		_flash("탐색 중에는 %s 수 없어요. [탐색]에서 마치거나 포기하세요." % action)
+		return true
+	return false
 
 
 func _work_reject(message: String) -> Dictionary:
@@ -1556,7 +1626,238 @@ func _finish_growth_action(res: Dictionary) -> void:
 
 # ---------- 화면 갱신 ----------
 
+## 탐색 버튼은 도메인 허용 조건과 화면의 준비/이동 잠금을 함께 반영한다. 실제 핸들러에서도 다시 검사한다.
+func _build_exploration(box: VBoxContainer) -> void:
+	_exploration_summary = _label("", 18, VERMILION)
+	_exploration_summary.name = "ExplorationSummary"
+	box.add_child(_exploration_summary)
+	var note: Label = _label("지역을 골라 두 번의 만남에서 선택하면 새 재료를 발견해요. 발견한 재료는 계속 개발에 쓸 수 있는 공급처가 열려요. 출발은 하루 한 번, 다음 기회는 영업을 마친 뒤예요.", 14, MUTED)
+	note.name = "ExplorationRules"
+	box.add_child(note)
+	_exploration_message = _label("", 15, TEAL)
+	_exploration_message.name = "ExplorationMessage"
+	box.add_child(_exploration_message)
+	_exploration_box = _vbox(12)
+	box.add_child(_exploration_box)
+
+
+func _exploration_button(text: String, node_name: String, locked: bool, travel_guard: bool = false) -> Button:
+	var b: Button = _button(text, node_name)
+	b.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	b.set_meta("locked", locked)
+	b.set_meta("travel_guard", travel_guard)
+	_exploration_buttons.append(b)
+	return b
+
+
+func _region_picture(region: String, node_name: String) -> TextureRect:
+	var picture: TextureRect = TextureRect.new()
+	picture.name = node_name
+	picture.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	picture.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
+	picture.texture = ArtScript.scaled_tex(ArtScript.exploration_image(region), 4)
+	picture.custom_minimum_size = Vector2(288.0, 104.0)
+	picture.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	return picture
+
+
+func _refresh_exploration() -> void:
+	if _exploration_box == null:
+		return
+	_clear(_exploration_box)
+	_exploration_buttons.clear()
+	_travel_art = null
+	_travel_bar = null
+	_travel_label = null
+	var progress: Dictionary = state.exploration_progress()
+	_exploration_summary.text = "재료 탐색 · 발견 %d/%d종\n%d일차 · 자금 %s · 가게 등급 %d" % [int(progress["obtained"]), int(progress["total"]), state.day, _won(state.wallet), state.rank()]
+	_exploration_message.visible = _exploration_message.text != ""
+	var trip: Dictionary = state.expedition()
+	if not trip.is_empty():
+		var active: PanelContainer = _card("ExpeditionCard")
+		var ab: VBoxContainer = _vbox(6)
+		active.add_child(ab)
+		var title: Label = _label(str(trip["region_name"]) + " · 탐색 수첩", 19, VERMILION)
+		title.name = "ExpeditionTitle"
+		ab.add_child(title)
+		_travel_art = _region_picture(str(trip["region"]), "ExpeditionLandscape")
+		ab.add_child(_travel_art)
+		var paid: Label = _label("출발 %s + 선택 %s · 이미 지불한 비용이에요." % [_won(int(trip["fee"])), _won(int(trip["extra"]))], 14, MUTED)
+		paid.name = "ExpeditionPaid"
+		ab.add_child(paid)
+		if _travel.running():
+			_travel_label = _label("", 16, TEAL)
+			_travel_label.name = "ExpeditionTravelLabel"
+			ab.add_child(_travel_label)
+			_travel_bar = ProgressBar.new()
+			_travel_bar.name = "ExpeditionTravelProgress"
+			_travel_bar.show_percentage = false
+			_travel_bar.custom_minimum_size = Vector2(0.0, 16.0)
+			ab.add_child(_travel_bar)
+			_update_travel_picture()
+		elif str(trip["stage"]) == Exploration.STAGE_RESULT:
+			var result: Dictionary = trip["result"]
+			var result_text: Label = _label(str(result["message"]), 18, TEAL)
+			result_text.name = "ExpeditionResult"
+			ab.add_child(result_text)
+			var collect: Button = _exploration_button("결과 받기", "ExpeditionCollect", false, true)
+			collect.pressed.connect(_on_exploration_collect)
+			ab.add_child(collect)
+		else:
+			var event: Dictionary = trip["event"]
+			var event_title: Label = _label("만남 %d/2 · %s" % [int(event["step"]), str(event["title"])], 18, VERMILION)
+			event_title.name = "ExpeditionEventTitle"
+			ab.add_child(event_title)
+			var event_text: Label = _label(str(event["text"]), 16, INK)
+			event_text.name = "ExpeditionEventText"
+			ab.add_child(event_text)
+			for choice in event["choices"]:
+				var ch: Dictionary = choice
+				var action: Button = _exploration_button(str(ch["label"]), "ExpeditionChoice_" + str(ch["id"]), not bool(ch["affordable"]), true)
+				action.pressed.connect(_on_exploration_choice.bind(str(ch["id"])))
+				ab.add_child(action)
+				var text: String = str(ch["desc"])
+				if ch.has("ingredient_name"):
+					text += "\n" + str(ch["ingredient_name"]) + (" · 이미 발견한 재료" if bool(ch["known"]) else " · 새 재료")
+				if not bool(ch["affordable"]):
+					text += " · 자금이 모자라요."
+				var detail: Label = _label(text, 14, MUTED)
+				detail.name = "ExpeditionChoiceNote_" + str(ch["id"])
+				ab.add_child(detail)
+		if bool(trip["can_retire"]):
+			var retire: Button = _exploration_button("탐색 포기 (비용·오늘 기회는 돌아오지 않아요)", "ExpeditionRetire", false)
+			retire.add_theme_font_size_override("font_size", 14)
+			retire.pressed.connect(_on_exploration_retire)
+			ab.add_child(retire)
+		_exploration_box.add_child(active)
+	elif not state.exploration_history().is_empty():
+		var receipt: Dictionary = state.exploration_history().back()
+		var message: String = "%d일차 탐색 · %s" % [int(receipt["day"]), str(Exploration.find_region(str(receipt["region"]))["name"])]
+		message += "\n포기했어요. 보상과 환불은 없어요." if str(receipt["outcome"]) == Exploration.OUTCOME_RETIRED else "\n" + Exploration.ingredient_name(str(receipt["ingredient"])) + (" · 새 발견" if bool(receipt["new"]) else " · 이미 발견한 재료")
+		var last: Label = _label(message, 16, TEAL)
+		last.name = "ExplorationLastReceipt"
+		_exploration_box.add_child(last)
+	for rv in state.exploration_regions():
+		var region: Dictionary = rv
+		var id: String = str(region["id"])
+		var card: PanelContainer = _card("RegionCard_" + id)
+		var box: VBoxContainer = _vbox(6)
+		card.add_child(box)
+		var head: Label = _label("%s · %d/%d종" % [str(region["name"]), int(region["obtained"]), int(region["total"])], 20, VERMILION)
+		head.name = "RegionTitle_" + id
+		box.add_child(head)
+		box.add_child(_region_picture(id, "RegionPicture_" + id))
+		var info: Label = _label("등급 %d부터 · 출발 %s\n%s" % [int(region["min_rank"]), _won(int(region["fee"])), str(region["summary"])], 15, INK)
+		info.name = "RegionInfo_" + id
+		box.add_child(info)
+		for ingredient in region["ingredients"]:
+			var item: Dictionary = ingredient
+			var material: Label = _label(("발견 · " if bool(item["discovered"]) else "미발견 · ") + str(item["name"]) + "\n" + str(item["desc"]), 14, TEAL if bool(item["discovered"]) else MUTED)
+			material.name = "Discovery_" + str(item["id"])
+			box.add_child(material)
+		var reason: Label = _label(str(region["reason"]), 14, MUTED)
+		reason.name = "RegionReason_" + id
+		reason.visible = reason.text != ""
+		box.add_child(reason)
+		var depart: Button = _exploration_button("모두 발견했어요" if bool(region["complete"]) else "출발 · " + _won(int(region["fee"])), "ExpeditionDepart_" + id, not bool(region["can_start"]))
+		depart.pressed.connect(_on_exploration_depart.bind(id))
+		box.add_child(depart)
+		_exploration_box.add_child(card)
+	_sync_exploration_lock()
+
+
+func _sync_exploration_lock() -> void:
+	var busy: bool = _work.is_running() or state.service_active()
+	for button in _exploration_buttons:
+		if is_instance_valid(button):
+			button.disabled = busy or bool(button.get_meta("locked")) or (_travel.running() and bool(button.get_meta("travel_guard")))
+
+
+func _exploration_guard(moving_action: bool = false) -> bool:
+	var reason: String = ""
+	if _work.is_running():
+		reason = "시식 준비 중에는 탐색할 수 없어요. 준비를 마치거나 취소하세요."
+	elif state.service_active():
+		reason = "영업 중에는 탐색할 수 없어요. 정산을 마친 뒤 출발하세요."
+	elif moving_action and _travel.running():
+		reason = "이동 중이에요. 도착하면 다음 선택을 할 수 있어요."
+	if reason == "":
+		return false
+	_exploration_message.text = reason
+	_exploration_message.visible = true
+	_exploration_message.add_theme_color_override("font_color", VERMILION)
+	return true
+
+
+func _on_exploration_depart(region: String) -> void:
+	if _exploration_guard():
+		return
+	_finish_exploration_action(state.start_expedition(region), true)
+
+
+func _on_exploration_choice(choice: String) -> void:
+	if _exploration_guard(true):
+		return
+	_finish_exploration_action(state.advance_expedition(choice), true)
+
+
+func _on_exploration_collect() -> void:
+	if _exploration_guard(true):
+		return
+	_finish_exploration_action(state.finish_expedition())
+
+
+func _on_exploration_retire() -> void:
+	if _exploration_guard():
+		return
+	_finish_exploration_action(state.retire_expedition())
+
+
+## 먼저 실제 도메인 거래가 성공한 뒤 저장 결과를 표시한다. 저장 실패는 메모리에만 반영된 변화임을 분명히 알린다.
+func _finish_exploration_action(result: Dictionary, travel: bool = false) -> void:
+	var message: String = str(result["message"])
+	if not bool(result["ok"]):
+		_exploration_message.text = message
+		_exploration_message.visible = true
+		_exploration_message.add_theme_color_override("font_color", VERMILION)
+		return
+	if travel and state.exploration_active():
+		_travel.start(str(state.expedition()["region"]))
+	else:
+		_travel.stop()
+	var saved: bool = _persist()
+	message += " 저장했어요." if saved else "\n⚠ 저장하지 못했어요: %s 지금 진행은 이 게임 안에만 남아 있어요." % _last_save_message
+	_refresh_all()
+	_exploration_message.text = message
+	_exploration_message.visible = true
+	_exploration_message.add_theme_color_override("font_color", TEAL if saved else VERMILION)
+	# 아래쪽 지역에서 출발해도 새 만남/저장 경고가 있는 위쪽으로 돌아간다. 이전 카드의 스크롤 위치를 재사용하지 않는다.
+	(tabs.get_child(TAB_EXPLORATION) as ScrollContainer).scroll_vertical = 0
+
+
+## 연출이 끝나도 사건 선택/보상은 건드리지 않는다. 도착하면 버튼을 보여 주기만 한다.
+func advance_travel(seconds: float) -> Dictionary:
+	var result: Dictionary = _travel.advance(seconds)
+	if not bool(result["ok"]):
+		return result
+	if _travel.running():
+		_update_travel_picture()
+	else:
+		_refresh_exploration()
+	return result
+
+
+func _update_travel_picture() -> void:
+	if _travel_art == null:
+		return
+	_travel_art.texture = ArtScript.scaled_tex(ArtScript.exploration_image(_travel.region(), _travel.progress(), true), 4)
+	if _travel_bar != null:
+		_travel_bar.value = _travel.progress() * 100.0
+	if _travel_label != null:
+		_travel_label.text = "이동 중… %d%%" % int(_travel.progress() * 100.0)
+
 func _refresh_all() -> void:
+	_trip_notice.visible = state.exploration_active()
 	_refresh_header()
 	_refresh_lab()
 	_refresh_feedback()
@@ -1564,6 +1865,7 @@ func _refresh_all() -> void:
 	_refresh_serve()
 	_refresh_research()
 	_refresh_growth()
+	_refresh_exploration()
 	_refresh_guide()
 	_refresh_status()
 	_refresh_nav()
@@ -1598,18 +1900,19 @@ func _refresh_work_ui() -> void:
 func _apply_work_lock() -> void:
 	if _work_card == null:
 		return
-	var busy: bool = _work.is_running()
+	var busy: bool = _work.is_running() or state.exploration_active() or state.service_active()
 	for id in _buttons.keys():
-		(_buttons[id] as Button).disabled = busy
+		(_buttons[id] as Button).disabled = busy or not state.ingredient_unlocked(str(id))
 	for b in _price_buttons:
 		b.disabled = busy
 	_new_button.disabled = busy
 	_taste_button.disabled = busy
-	_taste_button.text = "시식 준비 중…" if busy else "시식하기"
-	_close_button.disabled = busy
-	_open_button.disabled = busy
+	_taste_button.text = "시식 준비 중…" if _work.is_running() else ("탐색을 먼저 마치세요" if state.exploration_active() else "시식하기")
+	_close_button.disabled = _work.is_running()
+	_open_button.disabled = _work.is_running()
 	_name_edit.editable = (not busy) and state.draft_lineage_id == 0
 	_sync_growth_lock()
+	_sync_exploration_lock()
 
 
 func _refresh_header() -> void:
@@ -1618,6 +1921,10 @@ func _refresh_header() -> void:
 
 
 func _refresh_guide() -> void:
+	if state.exploration_active():
+		_guide_label.text = "탐색 중에는 메뉴를 바꿀 수 없어요. [탐색]에서 마치거나 포기하세요."
+		_open_button.text = "닫고 가게로"
+		return
 	var rec: Dictionary = state.get_record(state.selected_record_id)
 	if state.record_count() == 0:
 		_guide_label.text = "처음이에요! ① 재료와 가격을 고르고 ② 이름을 정해 [시식하기]를 누르면 ③ 그 메뉴로 영업할 수 있어요."
@@ -1638,6 +1945,9 @@ func _refresh_nav() -> void:
 	if active:
 		var armed: bool = _stop_armed_until != 0 and Time.get_ticks_msec() <= _stop_armed_until
 		_start_button.text = "다시 눌러 중단" if armed else "영업 중단"
+		return
+	if state.exploration_active():
+		_start_button.text = "탐색 이어가기"
 		return
 	var rec: Dictionary = state.get_record(state.selected_record_id)
 	if state.record_count() == 0:
@@ -1666,6 +1976,12 @@ func _refresh_status() -> void:
 		if closing:
 			text += " · 마감 정리"
 		note = RUNNING_NOTE
+	elif state.exploration_active():
+		var trip: Dictionary = state.expedition()
+		_clock_label.text = "탐색 중"
+		_progress.value = 100.0 * float((trip["path"] as Array).size()) / 2.0
+		text = "%s 탐색 · %s · 지불 %s" % [str(trip["region_name"]), "결과 수령 전" if str(trip["stage"]) == Exploration.STAGE_RESULT else "만남 %d/2" % ((trip["path"] as Array).size() + 1), _won(int(trip["fee"]) + int(trip["extra"]))]
+		note = "선택할 때 저장해요. 닫았다가 이어갈 수 있어요."
 	else:
 		_clock_label.text = "영업 전"
 		_progress.value = 0.0
@@ -1711,11 +2027,20 @@ func _refresh_lab() -> void:
 			chosen_ids = Catalog.toppings_of(state.draft_config)
 		else:
 			chosen_ids.append(str(state.draft_config[slot]))
-		for item in Catalog.items(slot):
+		for item in Catalog.all_items(slot):
 			var d: Dictionary = item
 			var id: String = str(d["id"])
 			var b: Button = _buttons[id]
 			b.set_pressed_no_signal(chosen_ids.has(id))
+			var locked: bool = not state.ingredient_unlocked(id)
+			b.text = "%s%s\n%s · %d초" % ["탐색 필요 · " if locked else "", str(d["name"]), _won(int(d["cost"])), int(d["seconds"])]
+		var hints: Array[String] = []
+		for locked_item in state.locked_items(slot):
+			var li: Dictionary = locked_item
+			hints.append(str(li["name"]) + ": " + str((li["lock"] as Dictionary)["hint"]))
+		var hint_label: Label = _discovery_hints[slot]
+		hint_label.text = "\n".join(hints)
+		hint_label.visible = not hints.is_empty()
 		var desc_lines: Array[String] = []
 		for cid in chosen_ids:
 			var sel: Dictionary = Catalog.find(cid)
@@ -1785,6 +2110,13 @@ func _refresh_feedback() -> void:
 	var tops_label: Label = _label("토핑 %d개: %s" % [Catalog.toppings_of(config).size(), Catalog.topping_names(config)], 14, MUTED)
 	tops_label.name = "FeedbackToppings"
 	tcb.add_child(tops_label)
+	var ingredients: Array[String] = []
+	for slot in Catalog.SLOTS:
+		if slot != Catalog.TOPPING_SLOT:
+			ingredients.append(str(Catalog.find(str(config[slot]))["name"]))
+	var recipe_details: Label = _label(" · ".join(ingredients), 14, MUTED)
+	recipe_details.name = "FeedbackRecipeDetails"
+	tcb.add_child(recipe_details)
 	_feedback_box.add_child(title_card)
 
 	for c in evaluation["customers"]:
@@ -2120,7 +2452,7 @@ func _refresh_growth() -> void:
 
 ## 시식 준비 중이거나 영업 중이면 성장 행동 버튼을 모두 끈다. 나머지 이유(조건/자금/자리)로 꺼진 버튼은 메타 "locked" 로 구분한다.
 func _sync_growth_lock() -> void:
-	var busy: bool = _work.is_running() or (state != null and state.service_active())
+	var busy: bool = _work.is_running() or (state != null and (state.service_active() or state.exploration_active()))
 	for b in _growth_buttons:
 		if is_instance_valid(b):
 			b.disabled = busy or bool(b.get_meta("locked", false))

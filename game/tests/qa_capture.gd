@@ -10,6 +10,7 @@ extends SceneTree
 
 const SaveServiceScript = preload("res://scripts/services/save_service.gd")
 const ResearchScript = preload("res://scripts/domain/ramen_research.gd")
+const ExplorationScript = preload("res://scripts/domain/ingredient_exploration.gd")
 
 # scale: 장면 정수 배율의 하한. 등각 장면의 의도한 캔버스에 맞춘 값이다 — 가로 320x152 → 1280x608 (배율 4),
 # 세로 176x264 → 352x528 (배율 2, 이전 128x208 프론탈 장면은 배율 3). 화면 55% 이상/뷰포트 포함/HUD 비겹침 검사는 그대로다.
@@ -561,6 +562,8 @@ func _run_profile(tag: String, vp: Vector2i, expect_scale: int) -> void:
 	await _run_manual_save(holder, tag, vp)
 	await _run_growth(holder, tag, vp)
 	await _run_growth_failure(holder, tag, vp)
+	await _run_exploration(holder, tag, vp)
+	await _run_exploration_failure(holder, tag, vp)
 
 	holder.queue_free()
 	await _frames(2)
@@ -597,7 +600,7 @@ func _run_research(holder: SubViewport, tag: String, vp: Vector2i) -> void:
 
 	# 1) 기존 탭 순서/제목은 그대로고 연구 탭이 5번째로 붙는다. 개발 버튼으로 서랍을 열고 연구 탭을 연다.
 	# 적응(성장 단계): 여섯 번째 "성장" 탭이 붙었다. 기존 0~4번 탭의 순서/제목/동작은 그대로 검사한다.
-	_check(tabs.get_tab_count() == 6, tag + ": 탭은 6개")
+	_check(tabs.get_tab_count() == 7, tag + ": 기존 여섯 탭과 탐색 탭")
 	var titles: Array = ["개발", "시식", "노트", "영업", "연구", "성장"]
 	for i in titles.size():
 		_check(tabs.get_tab_title(i) == str(titles[i]), "%s: 탭 %d 제목 %s" % [tag, i, tabs.get_tab_title(i)])
@@ -959,8 +962,299 @@ func _run_tasting_work(holder: SubViewport, tag: String, vp: Vector2i) -> void:
 # 22 multi_topping_feedback, 23 staffed_service, 24 growth_reloaded, 25 growth_save_failed, 26 growth_full, 27 full_service = 11장.
 # =====================================================================================================
 
+func _open_exploration(app: Node) -> void:
+	app.call("_open_overlay", 6)
+	await _settle()
+	(tabs_of(app).get_child(6) as ScrollContainer).scroll_vertical = 0
+	await _settle()
+
+
+## 이동 시계만 앞당긴다. 사건·비용·보상은 실제 UI 버튼으로 처리한다.
+func _arrive(app: Node) -> void:
+	app.call("advance_travel", 2.0)
+	await _settle()
+
+
+func _exploration_reach(app: Node, vp: Vector2i) -> void:
+	for name in ["ExplorationSummary", "ExplorationRules"]:
+		await _reachable(app, vp, name)
+	for i in 7:
+		await _reachable(app, vp, "TabLink_" + str(i))
+	for id in ExplorationScript.region_ids():
+		for prefix in ["RegionTitle_", "RegionPicture_", "RegionInfo_", "ExpeditionDepart_"]:
+			await _reachable(app, vp, prefix + id)
+	for id in ["tare_plum", "topping_pickle", "broth_clam", "oil_shrimp", "oil_pepper", "topping_mushroom"]:
+		await _reachable(app, vp, "Discovery_" + id)
+	_overflow(app, vp, "탐색 모든 지역/재료")
+
+
+## 실제 두 선택과 명시적 수령을 사용한다. 도착 시계만 앞당기고 어떤 보상도 직접 주입하지 않는다.
+func _trip_via_ui(app: Node, region: String, second_index: int) -> void:
+	var st: Object = _state(app)
+	await _open_exploration(app)
+	_press(app, "ExpeditionDepart_" + region)
+	await _arrive(app)
+	var first: Dictionary = (st.call("expedition") as Dictionary)["event"]
+	_press(app, "ExpeditionChoice_" + str(first["choices"][0]["id"]))
+	await _arrive(app)
+	var second: Dictionary = (st.call("expedition") as Dictionary)["event"]
+	_press(app, "ExpeditionChoice_" + str(second["choices"][second_index]["id"]))
+	await _arrive(app)
+	_press(app, "ExpeditionCollect")
+	await _settle()
+
+
+func _run_exploration(holder: SubViewport, tag: String, vp: Vector2i) -> void:
+	var dir: String = _data_root.path_join(tag + "_exploration")
+	DirAccess.make_dir_recursive_absolute(dir)
+	var saver: SaveServiceScript = SaveServiceScript.new(dir)
+	saver.remove_known_files()
+	var app: Node = await _spawn(holder, dir)
+	var st: Object = _state(app)
+	await _open_exploration(app)
+	_check(tabs_of(app).get_tab_count() == 7 and tabs_of(app).get_tab_title(6) == "탐색", tag + ": 탐색 탭 번호")
+	_check(_btn_disabled(app, "ExpeditionDepart_harbor") and _btn_disabled(app, "ExpeditionDepart_mountain"), tag + ": 등급 1에서 항구/산지 잠금")
+	_check(not _btn_disabled(app, "ExpeditionDepart_market") and _text_of(app, "RegionInfo_market").contains("3,000"), tag + ": 실제 장터 가격과 출발")
+	await _exploration_reach(app, vp)
+	(tabs_of(app).get_child(6) as ScrollContainer).scroll_vertical = 0
+	await _shot(holder, tag + "_28_exploration_regions.png")
+	# 아직 모르는 재료는 버튼과 직접 호출 양쪽에서 막고, 획득 안내를 보여 준다.
+	tabs_of(app).current_tab = 0
+	await _settle()
+	_check(_btn_disabled(app, "Opt_tare_plum") and _text_of(app, "DiscoveryHint_tare").contains("장터"), tag + ": 새 재료 잠금/획득 안내")
+	var before: String = _dict_str(app)
+	app.call("_on_option_pressed", "tare", "tare_plum")
+	_check(_dict_str(app) == before, tag + ": 잠긴 재료 직접 선택 불변")
+	await _open_exploration(app)
+	var wallet0: int = int(st.get("wallet"))
+	_press(app, "ExpeditionDepart_market")
+	await _frames(3)
+	var clock: Object = app.get("_travel") as Object
+	_check(float(clock.call("progress")) > 0.0 and float(clock.call("progress")) < 1.0, tag + ": 실제 프레임에서 이동 연출 진행")
+	# 이후 긴 배치/스크린샷 검사와 도착 시간이 경쟁하지 않게 이 인스턴스의 시계만 잠시 고정한다.
+	app.set_process(false)
+	_check(int(st.get("wallet")) == wallet0 - 3000 and bool(st.call("exploration_active")), tag + ": 출발 한 번 결제")
+	before = _dict_str(app)
+	app.call("_on_exploration_depart", "market")
+	app.call("_on_exploration_choice", "m_ask")
+	app.call("_on_exploration_collect")
+	_check(_dict_str(app) == before, tag + ": 중복 출발/이동 중 선택/수령 불변")
+	app.call("advance_travel", 0.3)
+	await _reachable(app, vp, "ExpeditionTravelLabel")
+	await _shot(holder, tag + "_29_exploration_travel.png")
+	await _arrive(app)
+	for name in ["ExpeditionEventTitle", "ExpeditionEventText", "ExpeditionChoice_m_ask", "ExpeditionChoice_m_browse", "ExpeditionRetire"]:
+		await _reachable(app, vp, name)
+	await _shot(holder, tag + "_30_exploration_first_choice.png")
+	# 현재 탐색이 있는 동안 메뉴/시식/성장/영업은 변하지 않고 수동 저장은 가능하다.
+	before = _dict_str(app)
+	app.call("_on_new_recipe")
+	app.call("_on_price_step", 100)
+	app.call("_on_facility_buy", "bench_1")
+	app.call("_on_research_submit", "dohyun_basic")
+	app.call("_start_service")
+	var tasting: Dictionary = app.call("start_tasting")
+	_check(not bool(tasting["ok"]) and _dict_str(app) == before, tag + ": 탐색 중 다른 작업/영업 불변")
+	_press(app, "ExpeditionChoice_m_ask")
+	await _arrive(app)
+	var snapshot: String = _dict_str(app)
+	var manual: Dictionary = app.call("manual_save")
+	_check(bool(manual["ok"]), tag + ": 진행 중 탐색 수동 저장 허용")
+	app.call("_on_close_pressed")
+	_check(not (_find(app, "Overlay") as Control).visible and _dict_str(app) == snapshot, tag + ": 닫기는 탐색을 완료/포기하지 않아요")
+	app.notification(Node.NOTIFICATION_WM_CLOSE_REQUEST)
+	app.queue_free()
+	await _frames(2)
+	app = await _spawn(holder, dir)
+	app.set_process(false)
+	st = _state(app)
+	_check(_dict_str(app) == snapshot and str((st.call("expedition") as Dictionary)["stage"]) == "choice_2", tag + ": 재시작 후 이미 낸 비용/두 번째 만남 복원")
+	await _open_exploration(app)
+	await _arrive(app)
+	await _reachable(app, vp, "ExpeditionChoice_m_hear_recipe")
+	await _reachable(app, vp, "ExpeditionChoiceNote_m_hear_recipe")
+	await _shot(holder, tag + "_31_exploration_resumed.png")
+	_press(app, "ExpeditionChoice_m_hear_recipe")
+	await _arrive(app)
+	_check((st.call("discovered_ingredients") as Array).is_empty(), tag + ": 결과 수령 전에 발견 보상 없음")
+	await _reachable(app, vp, "ExpeditionCollect")
+	await _reachable(app, vp, "ExpeditionResult")
+	await _shot(holder, tag + "_32_exploration_result.png")
+	_press(app, "ExpeditionCollect")
+	await _settle()
+	_check(bool(st.call("is_discovered", "tare_plum")) and not bool(st.call("exploration_active")), tag + ": 수령하면 매실 타레 영구 개방")
+	before = _dict_str(app)
+	app.call("_on_exploration_collect")
+	app.call("_on_exploration_depart", "market")
+	_check(_dict_str(app) == before, tag + ": 중복 보상/같은 날 재출발 불변")
+	(tabs_of(app).get_child(6) as ScrollContainer).scroll_vertical = 0
+	await _shot(holder, tag + "_33_exploration_collection.png")
+	tabs_of(app).current_tab = 0
+	await _settle()
+	_check(not _btn_disabled(app, "Opt_tare_plum"), tag + ": 발견한 재료 선택 활성")
+	_press(app, "Opt_tare_plum")
+	await _finish_tasting(app)
+	_check(str((st.get("draft_config") as Dictionary)["tare"]) == "tare_plum" and int(st.call("record_count")) == 1, tag + ": 새 재료 시식 기록")
+	await _shot(holder, tag + "_34_exploration_new_feedback.png")
+	# 더 높은 지역은 실제 연구/영업/승급으로 여는 별도 합성 준비다. 제품의 무료 해금 경로는 만들지 않는다.
+	_check(bool((st.call("delete_record", int(st.get("selected_record_id"))) as Dictionary)["ok"]), tag + ": 준비 기록 공간 확보")
+	st.set("wallet", 900000)
+	var records: Dictionary = {}
+	for rid in ResearchScript.ids():
+		records[rid] = _domain_taste(app, ResearchScript.WITNESSES[rid], "QA " + str(rid))
+	for rid in ResearchScript.ids():
+		_check(bool((st.call("submit_research", rid, int(records[rid])) as Dictionary)["ok"]), tag + ": 연구 준비")
+	for i in 10:
+		_check(bool((st.call("serve") as Dictionary)["ok"]), tag + ": 실제 영업으로 등급 준비")
+	for rank in [2, 3]:
+		_check(bool((st.call("apply_promotion", rank) as Dictionary)["ok"]), tag + ": 실제 승급")
+	for id in ["bench_1", "bench_2"]:
+		_check(bool((st.call("purchase_facility", id) as Dictionary)["ok"]), tag + ": 다중 재료 노트 확장")
+	app.call("_refresh_all")
+	await _trip_via_ui(app, "market", 0)
+	_check((st.call("discovered_ingredients") as Array).size() == 2, tag + ": 장터 두 재료 발견")
+	before = _dict_str(app)
+	app.call("_on_exploration_depart", "market")
+	_check(_dict_str(app) == before and _btn_disabled(app, "ExpeditionDepart_market"), tag + ": 완성된 지역은 비용을 받지 않아요")
+	for region in ["harbor", "mountain"]:
+		for index in 2:
+			_check(bool((st.call("serve") as Dictionary)["ok"]), tag + ": 탐색 사이 다음 영업일")
+			app.call("_refresh_all")
+			if index == 0:
+				await _open_exploration(app)
+				_press(app, "ExpeditionDepart_" + region)
+				await _arrive(app)
+				await _reachable(app, vp, "ExpeditionEventText")
+				await _shot(holder, tag + ("_35_exploration_harbor.png" if region == "harbor" else "_36_exploration_mountain.png"))
+				var ev: Dictionary = (st.call("expedition") as Dictionary)["event"]
+				_press(app, "ExpeditionChoice_" + str(ev["choices"][0]["id"]))
+				await _arrive(app)
+				ev = (st.call("expedition") as Dictionary)["event"]
+				_press(app, "ExpeditionChoice_" + str(ev["choices"][0]["id"]))
+				await _arrive(app)
+				_press(app, "ExpeditionCollect")
+				await _settle()
+			else:
+				await _trip_via_ui(app, region, 1)
+	_check((st.call("discovered_ingredients") as Array).size() == 6, tag + ": 6종 모두 발견")
+	await _exploration_reach(app, vp)
+	(tabs_of(app).get_child(6) as ScrollContainer).scroll_vertical = 0
+	await _shot(holder, tag + "_37_exploration_all_discovered.png")
+	# 발견한 국물/간/기름과 새 토핑 두 종을 실제 개발 조작으로 조합한다. 카탈로그 단독 테스트 외에 연결 누락도 확인한다.
+	tabs_of(app).current_tab = 0
+	await _settle()
+	for option in ["Opt_broth_clam", "Opt_tare_plum", "Opt_oil_shrimp"]:
+		_check(not _btn_disabled(app, option), tag + ": 발견한 선택 활성 " + option)
+		_press(app, option)
+	var wanted: Array = ["topping_pickle", "topping_mushroom", "topping_egg"]
+	var previous: Array = (st.get("draft_config") as Dictionary)["toppings"].duplicate()
+	for id in previous:
+		if not wanted.has(id):
+			if ((st.get("draft_config") as Dictionary)["toppings"] as Array).size() == 1:
+				_press(app, "Opt_topping_pickle")
+			_press(app, "Opt_" + str(id))
+	for id in wanted:
+		if not ((st.get("draft_config") as Dictionary)["toppings"] as Array).has(id):
+			_press(app, "Opt_" + str(id))
+	await _settle()
+	for name in ["Opt_broth_clam", "Opt_oil_shrimp", "Opt_topping_pickle", "Opt_topping_mushroom", "ToppingCount", "Desc_topping"]:
+		await _reachable(app, vp, name)
+	_check(_text_of(app, "Desc_topping").contains("절임") and _text_of(app, "Desc_topping").contains("표고"), tag + ": 새 토핑 두 종 설명")
+	(tabs_of(app).get_child(0) as ScrollContainer).scroll_vertical = 0
+	await _shot(holder, tag + "_40_exploration_combined_recipe.png")
+	await _finish_tasting(app)
+	_check(_text_of(app, "FeedbackRecipeDetails").contains("조개") and _text_of(app, "FeedbackRecipeDetails").contains("매실") and _text_of(app, "FeedbackRecipeDetails").contains("새우"), tag + ": 새 국물/간/기름 시식평 요약")
+	_check(_text_of(app, "FeedbackToppings").contains("절임") and _text_of(app, "FeedbackToppings").contains("표고"), tag + ": 새 토핑 시식평 요약")
+	await _reachable(app, vp, "FeedbackRecipeDetails")
+	await _reachable(app, vp, "FeedbackToppings")
+	_overflow(app, vp, "새 재료 조합 시식평")
+	(tabs_of(app).get_child(1) as ScrollContainer).scroll_vertical = 0
+	await _shot(holder, tag + "_41_exploration_combined_feedback.png")
+	# 영업/시식 준비 중 직접 호출도 거부하며 포기한 출발은 환불하지 않는다(아래 별도 첫날 사례).
+	app.call("_on_close_pressed")
+	app.call("_on_start_pressed")
+	before = _dict_str(app)
+	app.call("_on_exploration_depart", "market")
+	_check(bool(st.call("service_active")) and _dict_str(app) == before and _text_of(app, "ExplorationMessage").contains("영업"), tag + ": 영업 중 탐색 거부")
+	app.call("_abort_service", "QA 중단")
+	app.call("_open_overlay", 0)
+	app.call("_on_price_step", 100)
+	var work: Dictionary = app.call("start_tasting")
+	_check(bool(work["ok"]), tag + ": 시식 준비 시작")
+	before = _dict_str(app)
+	app.call("_on_exploration_depart", "market")
+	_check(_dict_str(app) == before and _text_of(app, "ExplorationMessage").contains("시식"), tag + ": 시식 준비 중 탐색 거부")
+	app.call("_on_work_cancel")
+	app.queue_free()
+	await _frames(2)
+	saver.remove_known_files()
+	DirAccess.remove_absolute(dir)
+
+
+func _run_exploration_failure(holder: SubViewport, tag: String, vp: Vector2i) -> void:
+	var dir: String = _data_root.path_join(tag + "_exploration_failure")
+	DirAccess.make_dir_recursive_absolute(dir)
+	var saver: SaveServiceScript = SaveServiceScript.new(dir)
+	saver.remove_known_files()
+	var app: Node = await _spawn(holder, dir)
+	app.set_process(false)
+	app.call("_persist")
+	var original: String = _read_file(saver.main_path())
+	var conflict: String = saver.tmp_path()
+	_check(DirAccess.make_dir_recursive_absolute(conflict) == OK, tag + ": 실제 저장 실패 충돌")
+	await _open_exploration(app)
+	app.call("_on_exploration_depart", "market")
+	app.call("advance_travel", 0.5)
+	await _settle()
+	_check(bool(_state(app).call("exploration_active")) and _read_file(saver.main_path()) == original, tag + ": 저장 실패는 메모리에만 탐색을 남김")
+	_check(_text_of(app, "ExplorationMessage").contains("저장하지 못했") and not _text_of(app, "ExplorationMessage").contains("저장했어요"), tag + ": 정직한 탐색 저장 실패")
+	await _reachable(app, vp, "ExplorationMessage")
+	_overflow(app, vp, "탐색 저장 실패")
+	await _shot(holder, tag + "_38_exploration_save_failed.png")
+	_check(DirAccess.remove_absolute(conflict) == OK, tag + ": QA 충돌만 해제")
+	var saved: Dictionary = app.call("manual_save")
+	_check(bool(saved["ok"]), tag + ": 진행 중 탐색 수동 저장 복구")
+	var snapshot: String = _dict_str(app)
+	app.notification(Node.NOTIFICATION_WM_CLOSE_REQUEST)
+	app.queue_free()
+	await _frames(2)
+	app = await _spawn(holder, dir)
+	app.set_process(false)
+	_check(_dict_str(app) == snapshot, tag + ": 저장 복구 후 재시작 비용/진행 유지")
+	await _open_exploration(app)
+	await _arrive(app)
+	await _shot(holder, tag + "_39_exploration_save_recovered.png")
+	var before: int = int(_state(app).get("wallet"))
+	_press(app, "ExpeditionRetire")
+	await _settle()
+	_check(not bool(_state(app).call("exploration_active")) and int(_state(app).get("wallet")) == before and (_state(app).call("discovered_ingredients") as Array).is_empty(), tag + ": 포기는 환불/보상 없음")
+	var retired: String = _dict_str(app)
+	app.call("_on_exploration_depart", "market")
+	_check(_dict_str(app) == retired, tag + ": 포기해도 하루 기회 소비")
+	app.queue_free()
+	await _frames(2)
+	var garbage: String = "{ QA 손상 탐색 저장"
+	var file: FileAccess = FileAccess.open(saver.main_path(), FileAccess.WRITE)
+	_check(file != null, tag + ": 손상 저장 준비")
+	if file != null:
+		file.store_string(garbage)
+		file.close()
+	app = await _spawn(holder, dir)
+	app.set_process(false)
+	_check(bool(app.get("save_locked")), tag + ": 손상 저장 보호")
+	app.call("_on_exploration_depart", "market")
+	_check(_read_file(saver.main_path()) == garbage and _text_of(app, "ExplorationMessage").contains("저장하지 못했"), tag + ": 손상 저장에 탐색도 덮어쓰지 않음")
+	app.notification(Node.NOTIFICATION_WM_CLOSE_REQUEST)
+	app.queue_free()
+	await _frames(2)
+	_check(_read_file(saver.main_path()) == garbage, tag + ": 닫아도 원본 손상 저장 보존")
+	saver.remove_known_files()
+	DirAccess.remove_absolute(dir)
+
+
 func _dict_str(app: Node) -> String:
-	return str(_state(app).call("to_dict"))
+	# 사전 삽입 순서는 저장 파서에서 달라질 수 있다. 모든 값/배열 순서는 유지하고 키만 정렬해 의미를 비교한다.
+	return JSON.stringify(_state(app).call("to_dict"), "", true)
 
 
 ## 실제 도메인 연산으로 레시피 하나를 시식한다(연구 증인 조합은 옛 모양 topping 문자열을 쓴다: 단일 토핑 경로). 기록 번호를 돌려준다.
@@ -1042,7 +1336,7 @@ func _run_growth(holder: SubViewport, tag: String, vp: Vector2i) -> void:
 	var witnesses: Dictionary = ResearchScript.WITNESSES
 
 	# 1) 잠긴 첫 화면: 탭 6개(0~4 그대로 + 성장), 등급 1, 승급/구매/고용 모두 꺼짐 + 이유 표시.
-	_check(tabs.get_tab_count() == 6 and tabs.get_tab_title(5) == "성장", tag + ": 성장 탭")
+	_check(tabs.get_tab_count() == 7 and tabs.get_tab_title(5) == "성장", tag + ": 성장 번호 유지 + 탐색 탭")
 	_press(app, "DevButton")
 	await _settle()
 	await _open_growth_tab(app)

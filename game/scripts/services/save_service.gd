@@ -90,7 +90,7 @@ func load_into(state: GameStateScript) -> Dictionary:
 	if not d.has("schema_version") or not Check.is_whole(d["schema_version"]):
 		return _status("corrupt", "저장 버전 정보가 없거나 올바르지 않아요.")
 	var version: int = int(d["schema_version"])
-	# v1(연구 도입 전)/v2(성장 도입 전)는 GameState.load_from_dict()가 빈 연구/기본 성장 상태와 정규 토핑으로 이행해 읽는다.
+	# v1(연구 도입 전)/v2(성장 도입 전)/v3(탐험 도입 전)는 GameState.load_from_dict()가 빈 연구/기본 성장/빈 탐험 상태와 정규 토핑으로 이행해 읽는다.
 	# 불러오기는 파일을 바꾸지 않는다. 그보다 오래/새 버전만 거부한다.
 	if version < GameStateScript.MIN_SCHEMA_VERSION or version > GameStateScript.SCHEMA_VERSION:
 		if version > GameStateScript.SCHEMA_VERSION:
@@ -122,7 +122,9 @@ func save_state(state: GameStateScript) -> Dictionary:
 		return {"ok": false, "message": "저장 내용 확인에 실패했어요. 기존 저장은 그대로예요."}
 	var main: String = main_path()
 	if FileAccess.file_exists(main):
-		# 이행 백업: 디스크의 본 파일이 현재보다 오래된 스키마(v1/v2)면, 처음 v3로 덮어쓰기 전에 원본을 버전별 고정 이름으로 한 번만 복사해 둔다.
+		# 이행 백업: 디스크의 본 파일이 현재보다 오래된 스키마(v1/v2/v3)면, 처음 현재 버전(v4)으로 덮어쓰기 전에 원본을 버전별 고정 이름
+		# (ramen_lab_save.json.v1.bak / .v2.bak / .v3.bak)으로 한 번만 복사해 둔다. v3 원본(성장 저장)도 같은 규칙으로 영구 보존되며,
+		# 여러 세대를 건너뛴 저장(v1→v4)도 자기 버전 이름으로 한 번만 보존된다. 아래 일반 .bak 는 저장마다 직전 파일로 바뀐다.
 		# 이 파일은 이미 있으면 다시 만들지도 덮어쓰지도 않는다(일반 .bak 는 저장마다 직전 파일로 바뀌므로 원본을 잃을 수 있다).
 		# 복사에 실패하면 저장을 중단한다: 기존 본 파일은 그대로다.
 		var disk_version: int = _disk_schema_version(main)
@@ -164,7 +166,7 @@ func archive_corrupt() -> Dictionary:
 
 ## 테스트용: 이 서비스가 만드는 고정 이름 파일만 지운다(폴더 스캔 없음).
 func remove_known_files() -> void:
-	for p in [main_path(), tmp_path(), bak_path(), legacy_bak_path(1), legacy_bak_path(2)]:
+	for p in [main_path(), tmp_path(), bak_path(), legacy_bak_path(1), legacy_bak_path(2), legacy_bak_path(3)]:
 		if FileAccess.file_exists(str(p)):
 			DirAccess.remove_absolute(str(p))
 

@@ -1,0 +1,139 @@
+{
+  "date": "2026-10-15",
+  "scope": "Feedback4: three rank-gated regions, two branching encounters, six permanent ingredient-source unlocks; not consumable stock.",
+  "roles": {
+    "domain": "Claude Code",
+    "ui_art_tests_qa": "Codex, explicitly authorized after Claude quota stop",
+    "future_default": "Codex implementation/test; Claude selective short review only"
+  },
+  "runs": [
+    {
+      "phase": "domain-v1",
+      "requested_max_turns": 30,
+      "actual_exit_status": 1,
+      "observed_turns": 31,
+      "subtype": "error_max_turns",
+      "is_error": true,
+      "report_present": false,
+      "permission_denials": [],
+      "duration_ms": 987894,
+      "usage": {
+        "input_tokens": 60,
+        "output_tokens": 147506,
+        "cache_creation_input_tokens": 254599,
+        "cache_read_input_tokens": 4003036
+      },
+      "reported_total_cost_usd": 2.8938796000000004,
+      "tool_calls": 72
+    },
+    {
+      "phase": "domain-correction-v1",
+      "requested_max_turns": 10,
+      "actual_exit_status": 0,
+      "observed_turns": 9,
+      "subtype": "success",
+      "is_error": false,
+      "report_present": true,
+      "permission_denials": [],
+      "duration_ms": 61737,
+      "usage": {
+        "input_tokens": 10,
+        "output_tokens": 8149,
+        "cache_creation_input_tokens": 264656,
+        "cache_read_input_tokens": 1063052
+      },
+      "reported_total_cost_usd": 4.1403188,
+      "tool_calls": 8
+    },
+    {
+      "phase": "ui-v1",
+      "requested_max_turns": 30,
+      "actual_exit_status": 1,
+      "observed_turns": 8,
+      "subtype": "success",
+      "is_error": true,
+      "report_present": true,
+      "permission_denials": [],
+      "duration_ms": 11018,
+      "usage": {
+        "input_tokens": 6,
+        "output_tokens": 1162,
+        "cache_creation_input_tokens": 14547,
+        "cache_read_input_tokens": 819673
+      },
+      "reported_total_cost_usd": 4.2921061,
+      "tool_calls": 7
+    }
+  ],
+  "usage_note": "Observed response fields; resumed reports may be cumulative. Do not sum cost fields or equate them to subscription charges or quota percentages.",
+  "checks": {
+    "full": {
+      "tests": 79,
+      "checks": 49814,
+      "failures": 0,
+      "exit_status": 0
+    },
+    "layout": {
+      "checks": 8766,
+      "failures": 0,
+      "exit_status": 0,
+      "sizes": [
+        [
+          1280,
+          800
+        ],
+        [
+          390,
+          844
+        ]
+      ]
+    },
+    "native": {
+      "checks": 8934,
+      "failures": 0,
+      "exit_status": 0,
+      "engine_errors": 0,
+      "pngs": 84,
+      "pack_sha256": "48a12559fa2f6db6ee98eb3a0674c0363a17070d5e0d1ebdc11b967016715af3"
+    },
+    "legacy_evaluator": {
+      "checks": 1944,
+      "failures": 0,
+      "exit_status": 0
+    },
+    "legacy_pixels": {
+      "checks": 1963,
+      "failures": 0,
+      "exit_status": 0
+    },
+    "schema3_migration": {
+      "checks": 37,
+      "failures": 0,
+      "exit_status": 0
+    },
+    "invalid_states": {
+      "checks": 61,
+      "failures": 0,
+      "exit_status": 0
+    },
+    "player_schema2_copy": {
+      "checks": 11,
+      "failures": 0,
+      "exit_status": 0,
+      "live_save_written": false
+    }
+  },
+  "failure_history": [
+    "Initial domain call stopped at max turns; not complete.",
+    "Independent domain test found JSON-price fixture error and three invalid-load invariants; targeted correction and retained regressions passed.",
+    "Claude UI call used seven read tools and made no edits before quota failure; not authentication failure.",
+    "First UI layout had ten failures: dictionary-order comparison and double-taste QA bugs, plus retained scroll obscuring save warning. Production scroll reset and precise QA corrections retained assertions; final layout/native passed.",
+    "Private synthetic save generator and JSON comparison probes had fixture/comparator errors; only corrected final results accepted."
+  ],
+  "limitations": [
+    "No iOS export or real iPhone verification.",
+    "New milestone user play feel not yet reviewed.",
+    "Player launcher reuses native-accepted PCK; not auto-launched against live save or independently main-only smoke-tested.",
+    "Original unexplained duplicate source files preserved; development used separate clean worktree."
+  ]
+}
