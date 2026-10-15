@@ -13,6 +13,8 @@ extends RefCounted
 const BASE_STAFF: int = 2
 const PREP_PERCENT: int = 80
 const SERVE_PERCENT: int = 70
+const Training = preload("res://scripts/domain/staff_training.gd")
+const Check = preload("res://scripts/domain/data_check.gd")
 
 const STAFF: Array = [
 	{
@@ -51,21 +53,35 @@ static func find(id: String) -> Dictionary:
 
 ## 고용 목록(고용 순서)에서 영업 스냅샷을 만든다. 순서와 무관하게 카탈로그 순서로 정렬해 같은 구성은 같은 스냅샷이 된다.
 ## 알 수 없는 id는 무시하지 않고 호출자(GameState)가 이미 검증한 목록만 받는다.
-static func snapshot(hired: Array) -> Dictionary:
+static func snapshot(hired: Array, training: Dictionary = {}) -> Dictionary:
 	var ordered: Array = []
 	var wage: int = 0
 	var prep_pct: int = 100
 	var serve_pct: int = 100
+	var qualifications: Array = []
 	for s in STAFF:
 		var d: Dictionary = s
 		if hired.has(str(d["id"])):
+			var lv: int = 0
+			var style: String = ""
+			if training.has(str(d["id"])):
+				var entry: Dictionary = training[str(d["id"])]
+				lv = Training.level(entry)
+				if lv > 0:
+					style = str(entry["lessons"][lv - 1]["style"])
+					qualifications.append({"id": str(d["id"]), "level": lv, "style": style})
+			var fx: Dictionary = Training.effect(lv, style)
 			ordered.append(str(d["id"]))
-			wage += int(d["wage"])
+			wage += int(d["wage"]) + int(fx["wage_delta"])
 			if str(d["role"]) == "prep":
-				prep_pct = PREP_PERCENT
+				prep_pct = PREP_PERCENT - int(fx["percent_discount"])
 			elif str(d["role"]) == "floor":
-				serve_pct = SERVE_PERCENT
-	return {"hired": ordered, "prep_percent": prep_pct, "serve_percent": serve_pct, "wage": wage}
+				serve_pct = SERVE_PERCENT - int(fx["percent_discount"])
+	var out: Dictionary = {"hired": ordered, "prep_percent": prep_pct, "serve_percent": serve_pct, "wage": wage}
+	# 훈련 전에는 예전 스냅샷의 키/값을 그대로 유지한다. 자격이 있을 때만 효과의 근거를 추가한다.
+	if not qualifications.is_empty():
+		out["training"] = qualifications
+	return out
 
 
 ## 스냅샷이 카탈로그에서 파생한 값과 정확히 같은지 확인한다(빈 딕셔너리 = 보조 직원 없음 = 기준). 맞으면 "".
@@ -84,8 +100,31 @@ static func snapshot_error(staffing: Dictionary) -> String:
 		if seen.has(str(h)):
 			return "같은 직원이 두 번 들어 있어요."
 		seen[str(h)] = true
-	var expected: Dictionary = snapshot(staffing["hired"] as Array)
-	if str(expected) != str(staffing):
+	var entries: Dictionary = {}
+	if staffing.has("training"):
+		if typeof(staffing["training"]) != TYPE_ARRAY or staffing["training"].is_empty() or staffing["training"].size() > 2:
+			return "직원 자격 구조가 올바르지 않아요."
+		for value in staffing["training"]:
+			if typeof(value) != TYPE_DICTIONARY:
+				return "직원 자격 구조가 올바르지 않아요."
+			var q: Dictionary = value
+			if Check.keys_error(q, ["id", "level", "style"], "직원 자격") != "":
+				return "직원 자격 항목이 올바르지 않아요."
+			if typeof(q["id"]) != TYPE_STRING or not seen.has(q["id"]) or entries.has(q["id"]) or not Check.in_range(q["level"], 1, 2) or typeof(q["style"]) != TYPE_STRING:
+				return "직원 자격 값이 올바르지 않아요."
+			var fx: Dictionary = Training.effect(int(q["level"]), str(q["style"]))
+			if fx.has("error"):
+				return str(fx["error"])
+			# 자격만으로 효과를 재계산한다. 영업 스냅샷에 경험/훈련 거래 기록을 중복 저장하지 않는다.
+			var lessons: Array = []
+			for i in int(q["level"]):
+				lessons.append({"style": "basic" if i == 0 else str(q["style"])})
+			entries[str(q["id"])] = {"lessons": lessons}
+	for k in ["prep_percent", "serve_percent", "wage"]:
+		if not Check.in_range(staffing[k], 0, 1000000):
+			return "직원 효과는 유효한 정수여야 해요."
+	var expected: Dictionary = snapshot(staffing["hired"] as Array, entries)
+	if JSON.stringify(expected, "", true) != JSON.stringify(staffing, "", true):
 		return "직원 구성 값이 직원 목록과 맞지 않아요."
 	return ""
 
@@ -95,7 +134,7 @@ static func _keys(d: Dictionary) -> String:
 		if not d.has(k):
 			return "직원 구성: 항목 누락 (%s)" % str(k)
 	for k in d.keys():
-		if not SNAPSHOT_KEYS.has(k):
+		if not SNAPSHOT_KEYS.has(k) and k != "training":
 			return "직원 구성: 알 수 없는 항목 (%s)" % str(k)
 	return ""
 

@@ -568,6 +568,8 @@ func _run_profile(tag: String, vp: Vector2i, expect_scale: int) -> void:
 	await _run_exploration_failure(holder, tag, vp)
 	await _run_contests(holder, tag, vp)
 	await _run_contest_failure(holder, tag, vp)
+	await _run_staff_training(holder, tag, vp)
+	await _run_staff_training_failure(holder, tag, vp)
 
 	holder.queue_free()
 	await _frames(2)
@@ -1470,6 +1472,197 @@ func _run_contest_failure(holder: SubViewport, tag: String, vp: Vector2i) -> voi
 func _dict_str(app: Node) -> String:
 	# 사전 삽입 순서는 저장 파서에서 달라질 수 있다. 모든 값/배열 순서는 유지하고 키만 정렬해 의미를 비교한다.
 	return JSON.stringify(_state(app).call("to_dict"), "", true)
+
+
+## 테스트 전용 인스턴스에서 정상 시식/연구/영업/승급/구매/고용으로 육성 출발점을 만든다.
+func _training_fixture(app: Node) -> void:
+	var st: Object = _state(app)
+	st.set("wallet", 900000)
+	var ids: Dictionary = {}
+	for rid in ResearchScript.ids():
+		ids[rid] = _domain_taste(app, ResearchScript.WITNESSES[rid], "육성 " + rid)
+	for rid in ResearchScript.ids():
+		_check(bool((st.call("submit_research", rid, ids[rid]) as Dictionary)["ok"]), "육성 준비 연구")
+	_check(bool((st.call("select_record", ids["hayoung_basic"]) as Dictionary)["ok"]), "육성 영업 메뉴")
+	while int(st.get("day")) < 11:
+		_check(bool((st.call("serve") as Dictionary)["ok"]), "육성 준비 완료 영업")
+	for rank in [2, 3]:
+		_check(bool((st.call("apply_promotion", rank) as Dictionary)["ok"]), "육성 준비 승급")
+	for facility in ["staff_1", "staff_2"]:
+		_check(bool((st.call("purchase_facility", facility) as Dictionary)["ok"]), "육성 준비 직원 공간")
+	for id in ["prep_assistant", "floor_assistant"]:
+		_check(bool((st.call("hire_staff", id) as Dictionary)["ok"]), "육성 준비 고용")
+	app.call("_refresh_all")
+
+
+func _training_earn(app: Node, bowls: int, days: int) -> void:
+	var st: Object = _state(app)
+	var guard: int = 0
+	var training: Dictionary = st.call("staff_training")
+	while (int(training["prep_assistant"]["bowls"]) < bowls or int(training["prep_assistant"]["work_days"]) < days) and guard < 24:
+		_check(bool((st.call("serve") as Dictionary)["ok"]), "육성 조건 실제 완료 영업")
+		training = st.call("staff_training")
+		guard += 1
+	_check(guard < 24, "육성 조건은 유한 영업으로 달성")
+	app.call("_refresh_all")
+
+
+func _training_reach(app: Node, vp: Vector2i, id: String, styles: Array) -> void:
+	# 행동 직후 카드를 다시 만들었으므로 Godot의 컨테이너 배치가 끝난 뒤 실제 스크롤 도달성을 검사한다.
+	await _settle()
+	for prefix in ["TrainingPortrait_", "TrainingTitle_", "TrainingExperience_", "TrainingEffect_", "TrainingRequirements_", "TrainingPolicy_"]:
+		await _reachable(app, vp, prefix + id)
+	_check(_text_of(app, "TrainingPolicy_" + id).contains("돌려받지") and _text_of(app, "TrainingPolicy_" + id).contains("바꿀 수 없"), "훈련 선택 자리에서 환불/재선택 불가를 명시")
+	for style in styles:
+		await _reachable(app, vp, "TrainingChoice_" + id + "_" + str(style))
+		await _reachable(app, vp, "Train_" + id + "_" + str(style))
+	_overflow(app, vp, "직원 육성")
+
+
+func _run_staff_training(holder: SubViewport, tag: String, vp: Vector2i) -> void:
+	var dir: String = _data_root.path_join(tag + "_training")
+	DirAccess.make_dir_recursive_absolute(dir)
+	var saver: SaveServiceScript = SaveServiceScript.new(dir)
+	saver.remove_known_files()
+	var app: Node = await _spawn(holder, dir)
+	app.set_process(false)
+	var st: Object = _state(app)
+	await _open_growth_tab(app)
+	_check(_btn_disabled(app, "Train_prep_assistant_basic"), tag + ": 미고용 훈련 잠김")
+	await _reachable(app, vp, "TrainingHeader")
+	await _shot(holder, tag + "_52_training_unhired.png")
+	_training_fixture(app)
+	await _open_growth_tab(app)
+	var before: String = _dict_str(app)
+	app.call("_on_staff_train", "prep_assistant", "basic")
+	_check(_dict_str(app) == before and _btn_disabled(app, "Train_prep_assistant_basic"), tag + ": 경험 부족은 직접 호출도 불변")
+	await _training_reach(app, vp, "prep_assistant", ["basic"])
+	await _reachable(app, vp, "TrainingTitle_prep_assistant")
+	await _shot(holder, tag + "_53_training_experience_locked.png")
+	_training_earn(app, 40, 2)
+	await _open_growth_tab(app)
+	await _training_reach(app, vp, "prep_assistant", ["basic"])
+	var cash: int = int(st.get("wallet"))
+	before = _dict_str(app)
+	_press(app, "Train_prep_assistant_basic")
+	_check(_dict_str(app) == before and int(st.get("wallet")) == cash, tag + ": 첫 누름은 확인만/돈 변화 없음")
+	await _settle()
+	await _reachable(app, vp, "Train_prep_assistant_basic")
+	await _shot(holder, tag + "_54_training_confirmation.png")
+	_press(app, "Train_prep_assistant_basic")
+	_check(int(st.get("wallet")) == cash - 4000 and float(app.get("_training_left")) == 2.0, tag + ": 확정 때 비용 한번/연습 연출 시작")
+	app.call("advance_training", 0.7)
+	await _settle()
+	await _reachable(app, vp, "TrainingPresentation")
+	await _shot(holder, tag + "_55_training_practice.png")
+	before = _dict_str(app)
+	app.call("_on_staff_train", "prep_assistant", "basic")
+	app.call("_on_staff_train", "floor_assistant", "basic")
+	app.call("_on_contest_enter", "clear_bowl")
+	app.call("_on_exploration_depart", "market")
+	app.call("_on_price_step", 100)
+	_check(not bool((app.call("start_tasting") as Dictionary)["ok"]) and _dict_str(app) == before, tag + ": 훈련 연출 중 다른 상태 변경 거부")
+	_check(not bool((app.call("advance_training", NAN) as Dictionary)["ok"]) and float(app.get("_training_left")) > 0.0, tag + ": 잘못된 시간 거부")
+	_check(bool((app.call("manual_save") as Dictionary)["ok"]) and _dict_str(app) == before, tag + ": 확정한 결과는 연출 중에도 직접 저장 가능")
+	# 연출 중 재시작해도 자격/비용은 이미 저장되어 있고 경험/추가 지급은 없다.
+	app.queue_free()
+	await _frames(2)
+	app = await _spawn(holder, dir)
+	app.set_process(false)
+	st = _state(app)
+	_check(_dict_str(app) == before and float(app.get("_training_left")) == 0.0, tag + ": 연습 중 재시작 시 거래 보존/연출 재지급 없음")
+	await _open_growth_tab(app)
+	_check(_text_of(app, "TrainingEffect_prep_assistant").contains("70%") and _text_of(app, "TrainingEffect_prep_assistant").contains("750원"), tag + ": 숙련 시간/운영비 실제 표시")
+	await _reachable(app, vp, "TrainingExperience_prep_assistant")
+	await _shot(holder, tag + "_56_training_reloaded.png")
+	# 같은 날 다른 직원은 독립적으로 훈련 가능하다.
+	_press(app, "Train_floor_assistant_basic")
+	_press(app, "Train_floor_assistant_basic")
+	app.call("advance_training", 3.0)
+	_training_earn(app, 160, 5)
+	await _open_growth_tab(app)
+	await _training_reach(app, vp, "prep_assistant", ["speed", "economy"])
+	await _training_reach(app, vp, "floor_assistant", ["speed", "economy"])
+	await _reachable(app, vp, "TrainingExperience_prep_assistant")
+	await _shot(holder, tag + "_57_training_specialization.png")
+	cash = int(st.get("wallet"))
+	# 선택을 바꾸면 다시 첫 누름부터 확인한다.
+	_press(app, "Train_prep_assistant_speed")
+	_press(app, "Train_prep_assistant_economy")
+	_check(int(st.get("wallet")) == cash, tag + ": 다른 전문 선택으로 바꾸면 확인 초기화")
+	_press(app, "Train_prep_assistant_speed")
+	_press(app, "Train_prep_assistant_speed")
+	app.call("advance_training", 3.0)
+	_press(app, "Train_floor_assistant_economy")
+	_press(app, "Train_floor_assistant_economy")
+	app.call("advance_training", 3.0)
+	await _settle()
+	_check(int(st.get("wallet")) == cash - 24000, tag + ": 두 전문 훈련 각12000만 차감")
+	var staffing: Dictionary = st.call("current_staffing")
+	_check(staffing["prep_percent"] == 55 and staffing["serve_percent"] == 55 and staffing["wage"] == 1400, tag + ": 시온 속도/다온 절약 실제 효과")
+	for id in ["prep_assistant", "floor_assistant"]:
+		await _reachable(app, vp, "TrainingComplete_" + id)
+	await _reachable(app, vp, "TrainingExperience_prep_assistant")
+	_overflow(app, vp, "전문화 완료")
+	await _shot(holder, tag + "_58_training_specialized.png")
+	# 실제 영업 종료 프레임만 켜서 자동 저장과 경험을 검사한다.
+	var xp: int = int((st.call("staff_training") as Dictionary)["prep_assistant"]["bowls"])
+	app.set_process(true)
+	await _service_day_via_ui(app, tag)
+	app.set_process(false)
+	_check(int((st.call("staff_training") as Dictionary)["prep_assistant"]["bowls"]) == xp + int(st.get("last_report")["units"]), tag + ": 실제 영업 완료분만 경험/자동 저장")
+	await _open_growth_tab(app)
+	await _reachable(app, vp, "TrainingExperience_prep_assistant")
+	await _shot(holder, tag + "_59_training_service_growth.png")
+	before = _dict_str(app)
+	app.queue_free()
+	await _frames(2)
+	app = await _spawn(holder, dir)
+	app.set_process(false)
+	_check(_dict_str(app) == before, tag + ": 전문화 이후 실제 영업 저장/재시작")
+	app.queue_free()
+	await _frames(2)
+	saver.remove_known_files()
+	DirAccess.remove_absolute(dir)
+
+
+func _run_staff_training_failure(holder: SubViewport, tag: String, vp: Vector2i) -> void:
+	var dir: String = _data_root.path_join(tag + "_training_failure")
+	DirAccess.make_dir_recursive_absolute(dir)
+	var saver: SaveServiceScript = SaveServiceScript.new(dir)
+	saver.remove_known_files()
+	var app: Node = await _spawn(holder, dir)
+	app.set_process(false)
+	_training_fixture(app)
+	_training_earn(app, 40, 2)
+	_check(bool(app.call("_persist")), tag + ": 훈련 전 저장")
+	var original: String = _read_file(saver.main_path())
+	DirAccess.make_dir_recursive_absolute(saver.tmp_path())
+	await _open_growth_tab(app)
+	_press(app, "Train_prep_assistant_basic")
+	_press(app, "Train_prep_assistant_basic")
+	var trained: String = _dict_str(app)
+	app.call("_on_staff_train", "prep_assistant", "basic")
+	_check(_text_of(app, "GrowthMessage").contains("저장하지 못했") and _dict_str(app) == trained, tag + ": 중복 입력이 훈련 저장 실패 안내를 덮지 않음")
+	app.call("advance_training", 3.0)
+	await _settle()
+	_check(_read_file(saver.main_path()) == original, tag + ": 훈련 저장 실패는 기존 파일 보존")
+	await _reachable(app, vp, "GrowthMessage")
+	await _shot(holder, tag + "_60_training_save_failed.png")
+	DirAccess.remove_absolute(saver.tmp_path())
+	_check(bool((app.call("manual_save") as Dictionary)["ok"]), tag + ": 수동 저장으로 훈련 회복")
+	app.queue_free()
+	await _frames(2)
+	app = await _spawn(holder, dir)
+	app.set_process(false)
+	await _open_growth_tab(app)
+	_check(_dict_str(app) == trained, tag + ": 회복 후 훈련 보존/재시작")
+	await _reachable(app, vp, "TrainingExperience_prep_assistant")
+	await _shot(holder, tag + "_61_training_save_recovered.png")
+	app.queue_free()
+	await _frames(2)
+	saver.remove_known_files()
+	DirAccess.remove_absolute(dir)
 
 
 ## 실제 도메인 연산으로 레시피 하나를 시식한다(연구 증인 조합은 옛 모양 topping 문자열을 쓴다: 단일 토핑 경로). 기록 번호를 돌려준다.

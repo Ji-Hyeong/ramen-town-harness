@@ -21,6 +21,7 @@ const WorkScript = preload("res://scripts/ui/tasting_work.gd")
 const WorkViewScript = preload("res://scripts/ui/tasting_work_view.gd")
 const Growth = preload("res://scripts/domain/shop_growth.gd")
 const Staffing = preload("res://scripts/domain/shop_staffing.gd")
+const Training = preload("res://scripts/domain/staff_training.gd")
 const Exploration = preload("res://scripts/domain/ingredient_exploration.gd")
 const ShopViewScript = preload("res://scripts/ui/shop_view.gd")
 const TravelScript = preload("res://scripts/ui/expedition_travel.gd")
@@ -91,6 +92,10 @@ func _initialize() -> void:
 		test_magazine_once_and_deleted_record, test_contest_load_rejections,
 		test_contest_migration_v4, test_contest_history_limit, test_contest_art,
 		test_contest_review_regressions,
+		test_training_service_experience, test_training_transactions, test_training_specializations,
+		test_training_runtime_settlement, test_training_persistence, test_training_legacy_v5,
+		test_training_invalid_saves, test_training_snapshot_validation,
+		test_training_zero_sales_between_lessons,
 	]
 	var ran: int = 0
 	for t in tests:
@@ -119,6 +124,267 @@ func _check(cond: bool, message: String) -> void:
 
 func _end() -> void:
 	_finished = true
+
+
+## 고용 이후 실제 완료 영업으로만 경험을 만든다. 성장 준비 영업은 고용 전이므로 소급되지 않는다.
+func _training_staffed() -> GameStateScript:
+	var s: GameStateScript = _grown_state(3)
+	for id in Staffing.ids():
+		_check(bool(s.hire_staff(id)["ok"]), "육성 준비: 고용 " + id)
+	return s
+
+
+func _training_basic(s: GameStateScript) -> void:
+	var guard: int = 0
+	# 2일은 최소 조건이다. 수요/메뉴에 따라 40그릇에는 영업을 더 마쳐야 한다.
+	while (int(s.staff_training()["prep_assistant"]["work_days"]) < 2 or int(s.staff_training()["prep_assistant"]["bowls"]) < 40) and guard < 20:
+		_check(bool(s.serve()["ok"]), "육성 준비: 실무 영업")
+		guard += 1
+	_check(guard < 20, "육성 준비: 기본 조건 도달")
+	for id in Staffing.ids():
+		_check(bool(s.train_staff(id, "basic")["ok"]), "육성 준비: 숙련 훈련 " + id)
+
+
+func _training_expert_ready(s: GameStateScript) -> void:
+	_training_basic(s)
+	var guard: int = 0
+	while (int(s.staff_training()["prep_assistant"]["bowls"]) < 160 or int(s.staff_training()["prep_assistant"]["work_days"]) < 5) and guard < 20:
+		_check(bool(s.serve()["ok"]), "육성 준비: 전문 실무")
+		guard += 1
+	_check(guard < 20, "육성 준비: 유한 영업으로 전문 조건 달성")
+
+
+func test_training_service_experience() -> void:
+	var s: GameStateScript = _training_staffed()
+	_check(s.staff_training()["prep_assistant"] == Training.empty(), "고용 전 영업은 경험 소급 없음")
+	var before: String = _json(s)
+	s.forecast()
+	s.training_review("prep_assistant", "basic")
+	s.staff_training()["prep_assistant"]["bowls"] = 500
+	_check(_json(s) == before, "조회/사본 수정은 경험을 바꾸지 않음")
+	_check(bool(s.begin_service()["ok"]), "경험 영업 시작")
+	s.active_session().advance(300.0)
+	_check(_json(s) == before, "시작/부분 영업은 경험 없음")
+	s.cancel_service()
+	_check(_json(s) == before, "영업 중단은 경험 없음")
+	var units: int = int(s.forecast()["units"])
+	var worked_day: int = s.day
+	_check(bool(s.serve()["ok"]), "완료 영업")
+	for id in Staffing.ids():
+		var e: Dictionary = s.staff_training()[id]
+		_check(int(e["bowls"]) == units and int(e["work_days"]) == 1 and int(e["last_work_day"]) == worked_day, "완료 그릇/실무 한번 " + id)
+	before = _json(s)
+	_check(not bool(s.settle_service()["ok"]) and _json(s) == before, "재정산은 경험 중복 없음")
+	_end()
+
+
+func test_training_transactions() -> void:
+	var fresh: GameStateScript = GameStateScript.new()
+	_check(not bool(fresh.train_staff("prep_assistant", "basic")["ok"]), "미고용 훈련 거부")
+	var s: GameStateScript = _training_staffed()
+	var before: String = _json(s)
+	for style in ["basic", "speed", "unknown"]:
+		_check(not bool(s.train_staff("prep_assistant", style)["ok"]) and _json(s) == before, "경험 부족/방식 오류 원자적 거부")
+	var guard: int = 0
+	while (int(s.staff_training()["prep_assistant"]["work_days"]) < 2 or int(s.staff_training()["prep_assistant"]["bowls"]) < 40) and guard < 20:
+		_check(bool(s.serve()["ok"]), "실무 준비")
+		guard += 1
+	_check(guard < 20, "훈련비 경계 시험 준비")
+	var saved_cash: int = s.wallet
+	s.wallet = 3999
+	before = _json(s)
+	_check(not bool(s.train_staff("prep_assistant", "basic")["ok"]) and _json(s) == before, "훈련비 부족 원자적 거부")
+	s.wallet = 4000
+	var xp: Dictionary = s.staff_training()["prep_assistant"]
+	_check(bool(s.train_staff("prep_assistant", "basic")["ok"]) and s.wallet == 0, "정확한 비용 허용/한 번만 차감")
+	_check(s.staff_training()["prep_assistant"]["bowls"] == xp["bowls"], "훈련은 경험 소비 없음")
+	s.wallet = saved_cash
+	before = _json(s)
+	_check(not bool(s.train_staff("prep_assistant", "speed")["ok"]) and _json(s) == before, "같은 날 두 번째 훈련 거부")
+	_check(bool(s.begin_service()["ok"]), "훈련 잠금 영업")
+	before = _json(s)
+	_check(not bool(s.train_staff("floor_assistant", "basic")["ok"]) and _json(s) == before, "영업 중 훈련 거부")
+	s.cancel_service()
+	_check(bool(s.start_expedition("market")["ok"]), "훈련 잠금 탐색")
+	before = _json(s)
+	_check(not bool(s.train_staff("floor_assistant", "basic")["ok"]) and _json(s) == before, "탐색 중 훈련 거부")
+	_end()
+
+
+func test_training_specializations() -> void:
+	var s: GameStateScript = _training_staffed()
+	var cfg: Dictionary = s.get_record(s.selected_record_id)["config"]
+	var scores: Dictionary = Evaluator.evaluate(cfg)
+	_check(s.current_staffing() == Staffing.snapshot(Staffing.ids()), "미훈련 스냅샷은 구버전과 동일")
+	_training_expert_ready(s)
+	var basic: Dictionary = s.current_staffing()
+	_check(basic["prep_percent"] == 70 and basic["serve_percent"] == 60 and basic["wage"] == 1400, "숙련 조리70/홀60/임금1400")
+	var eco: GameStateScript = GameStateScript.new()
+	_check(eco.load_from_dict(JSON.parse_string(_json(s))) == "", "분기 준비 왕복")
+	for id in Staffing.ids():
+		_check(bool(s.train_staff(id, "speed")["ok"]) and bool(eco.train_staff(id, "economy")["ok"]), "각 전문 분기 " + id)
+	var speed: Dictionary = s.current_staffing()
+	var economy: Dictionary = eco.current_staffing()
+	_check(speed["prep_percent"] == 55 and speed["serve_percent"] == 45 and speed["wage"] == 1900, "속도 전문 조리55/홀45/임금1900")
+	_check(economy["prep_percent"] == 65 and economy["serve_percent"] == 55 and economy["wage"] == 900, "절약 전문 조리65/홀55/임금900")
+	_check(Staffing.effective_prep(103, speed) == 57 and Staffing.effective_prep(103, economy) == 67, "전문 효과는 실제 초에 올림 적용")
+	_check(Sim.overhead_for(speed) == 4900 and Sim.overhead_for(economy) == 3900, "속도와 운영비 사이 선택")
+	_check(Evaluator.evaluate(cfg) == scores, "직원 전문화는 맛 점수 불변")
+	var before: String = _json(s)
+	_check(not bool(s.train_staff("prep_assistant", "economy")["ok"]) and _json(s) == before, "최고 전문화 재선택 불가")
+	_end()
+
+
+func test_training_runtime_settlement() -> void:
+	var base: GameStateScript = _training_staffed()
+	_training_expert_ready(base)
+	for style in ["speed", "economy"]:
+		var s: GameStateScript = GameStateScript.new()
+		_check(s.load_from_dict(JSON.parse_string(_json(base))) == "", "실제 영업 준비")
+		for id in Staffing.ids():
+			_check(bool(s.train_staff(id, style)["ok"]), "전문화 확정")
+		var fc: Dictionary = s.forecast()
+		var before: String = _json(s)
+		var copy: GameStateScript = GameStateScript.new()
+		_check(copy.load_from_dict(JSON.parse_string(before)) == "", "즉시 계산 대조 준비")
+		_check(bool(s.begin_service()["ok"]), "전문가 영업 시작")
+		var session: SessionScript = s.active_session()
+		var frozen: String = JSON.stringify(session.staffing, "", true)
+		_check(_json(s) == before, "시작만으로 경험/돈 변화 없음")
+		s.current_staffing()["training"].clear()
+		_check(JSON.stringify(session.staffing, "", true) == frozen, "외부 사본 수정은 영업 자격에 영향 없음")
+		session.run_to_end()
+		_check(session.is_finished(), "전문가 런타임 종료")
+		var bowls_before: int = int(s.staff_training()["prep_assistant"]["bowls"])
+		_check(bool(s.settle_service()["ok"]), "전문가 실제 정산")
+		_check(s.last_report["units"] == fc["units"] and s.last_report["net"] == fc["net"] and s.last_report["overhead"] == fc["overhead"], "실제 완료 주문/임금=예측")
+		_check(int(s.staff_training()["prep_assistant"]["bowls"]) == bowls_before + int(s.last_report["units"]), "실제 완료 그릇만 경험")
+		_check(bool(copy.serve()["ok"]) and _json(copy) == _json(s), "즉시/실제 경로의 경험/경제/보고 모두 동일")
+		var settled: String = _json(s)
+		_check(not bool(s.settle_service()["ok"]) and _json(s) == settled, "실제 정산 중복 불가")
+	_end()
+
+
+func test_training_persistence() -> void:
+	var s: GameStateScript = _training_staffed()
+	_training_expert_ready(s)
+	_check(bool(s.train_staff("prep_assistant", "speed")["ok"]) and bool(s.train_staff("floor_assistant", "economy")["ok"]), "혼합 전문화")
+	var dir: String = _case_dir("training_roundtrip")
+	var saver: SaveServiceScript = SaveServiceScript.new(dir)
+	saver.remove_known_files()
+	_check(bool(saver.save_state(s)["ok"]), "육성 파일 저장")
+	var restored: GameStateScript = GameStateScript.new()
+	_check(str(saver.load_into(restored)["status"]) == "ok" and _json(restored) == _json(s), "육성 모든 값 JSON 파일 왕복")
+	var before: String = _json(s)
+	var e: Dictionary = s.staff_training()
+	e["prep_assistant"]["lessons"][0]["bowls"] = 0
+	s.training_review("prep_assistant", "speed")["effect"]["wage_delta"] = 99999
+	s.to_dict()["training"].clear()
+	_check(_json(s) == before, "육성 외부 사본은 원본 불변")
+	_cleanup_case(saver)
+	_end()
+
+
+func test_training_legacy_v5() -> void:
+	var s: GameStateScript = _training_staffed()
+	var raw: Dictionary = s.to_dict()
+	raw["schema_version"] = 5
+	raw.erase("training")
+	var old: String = JSON.stringify(raw, "\t", true)
+	var dir: String = _case_dir("training_v5")
+	var saver: SaveServiceScript = SaveServiceScript.new(dir)
+	saver.remove_known_files()
+	_write_text(saver.main_path(), old)
+	var restored: GameStateScript = GameStateScript.new()
+	_check(str(saver.load_into(restored)["status"]) == "ok" and _json(restored) == _json(s), "v5 기존 값 유지/육성0 이행")
+	_check(bool(saver.save_state(restored)["ok"]) and FileAccess.get_file_as_string(saver.legacy_bak_path(5)) == old, "v6 첫 저장 전에 원본v5 영구 보존")
+	_check(bool(saver.save_state(restored)["ok"]) and FileAccess.get_file_as_string(saver.legacy_bak_path(5)) == old, "v5 보존본 덮어쓰지 않음")
+	_cleanup_case(saver)
+	_end()
+
+
+func test_training_invalid_saves() -> void:
+	var s: GameStateScript = _training_staffed()
+	_training_expert_ready(s)
+	_check(bool(s.train_staff("prep_assistant", "speed")["ok"]), "검증 준비")
+	var raw: Dictionary = JSON.parse_string(_json(s))
+	var target: GameStateScript = _populated_state()
+	var before: String = _json(target)
+	for kind in ["missing", "type", "employee_missing", "unhired", "fraction", "bool", "future", "zero_days", "impossible_bowls", "extra", "unknown_style", "early_lesson", "same_day", "rank", "receipt_xp", "late_xp", "gap_days"]:
+		var d: Dictionary = raw.duplicate(true)
+		var e: Dictionary = d["training"]["prep_assistant"]
+		match kind:
+			"missing": d.erase("training")
+			"type": d["training"] = []
+			"employee_missing": d["training"].erase("floor_assistant")
+			"unhired": d["training"]["unknown"] = Training.empty()
+			"fraction": e["bowls"] = 160.5
+			"bool": e["work_days"] = true
+			"future": e["last_work_day"] = s.day
+			"zero_days": e["work_days"] = 0
+			"impossible_bowls": e["bowls"] = 2401 * int(e["work_days"])
+			"extra": e["unused"] = 1
+			"unknown_style": e["lessons"][1]["style"] = "magic"
+			"early_lesson": e["lessons"][0]["day"] = 1
+			"same_day": e["lessons"][1]["day"] = e["lessons"][0]["day"]
+			"rank": e["lessons"][1]["rank"] = 2
+			"receipt_xp": e["lessons"][1]["bowls"] = int(e["bowls"]) + 1
+			"late_xp": e["lessons"][1]["bowls"] = 160
+			"gap_days":
+				e["lessons"][1]["day"] = int(e["lessons"][0]["day"]) + 1
+				e["last_work_day"] = int(e["lessons"][1]["day"]) - 1
+		_check(target.load_from_dict(d) != "" and _json(target) == before, "육성 불가능 저장 원자적 거부 " + kind)
+	var legacy: Dictionary = raw.duplicate(true)
+	legacy["schema_version"] = 5
+	_check(target.load_from_dict(legacy) != "", "training 포함한 위장v5 거부")
+	_end()
+
+
+func test_training_snapshot_validation() -> void:
+	var s: GameStateScript = _training_staffed()
+	_training_expert_ready(s)
+	_check(bool(s.train_staff("prep_assistant", "speed")["ok"]), "스냅샷 준비")
+	var snap: Dictionary = s.current_staffing()
+	_check(Staffing.snapshot_error(snap) == "", "정상 자격 스냅샷")
+	for kind in ["wage", "pct", "bool", "unknown", "empty", "double", "unhired", "style"]:
+		var d: Dictionary = snap.duplicate(true)
+		match kind:
+			"wage": d["wage"] = 0
+			"pct": d["prep_percent"] = 20
+			"bool": d["wage"] = true
+			"unknown": d["training"][0]["unused"] = 1
+			"empty": d["training"] = []
+			"double": d["training"].append(d["training"][0].duplicate())
+			"unhired": d["training"][0]["id"] = "unknown"
+			"style": d["training"][0]["style"] = "basic"
+		_check(Staffing.snapshot_error(d) != "", "변조된 자격 효과 거부 " + kind)
+	_end()
+
+
+## 실제 최대 가격 메뉴는 손님0명이어도 운영비를 내고 하루가 끝난다.
+## 훈련을 미루다가 이미 전문 조건을 채운 직원은 이런 하루 뒤 경험 증가 없이 다음 단계 훈련이 가능하다.
+func test_training_zero_sales_between_lessons() -> void:
+	var s: GameStateScript = _training_staffed()
+	var guard: int = 0
+	while (int(s.staff_training()["prep_assistant"]["bowls"]) < 160 or int(s.staff_training()["prep_assistant"]["work_days"]) < 5) and guard < 30:
+		_check(bool(s.serve()["ok"]), "훈련을 미룬 직원의 실무")
+		guard += 1
+	_check(guard < 30 and bool(s.train_staff("prep_assistant", "basic")["ok"]), "전문 조건을 갖춘 뒤 첫 훈련")
+	var before: Dictionary = s.staff_training()
+	_check(bool(s.set_draft_price(Catalog.PRICE_MAX)["ok"]) and bool(s.taste()["ok"]), "판매0인 고가 메뉴를 실제 시식")
+	_check(int(s.forecast()["units"]) == 0, "모든 손님의 가격 상한을 넘어 실제 수요0")
+	var instant: GameStateScript = GameStateScript.new()
+	_check(instant.load_from_dict(JSON.parse_string(_json(s))) == "", "판매0 이전 저장은 정상")
+	_check(bool(s.begin_service()["ok"]), "실제 판매0 영업 시작")
+	s.active_session().run_to_end()
+	_check(s.active_session().is_finished() and bool(s.settle_service()["ok"]), "실제 판매0 영업 마감/정산")
+	_check(bool(instant.serve()["ok"]) and _json(instant) == _json(s), "판매0의 실제/즉시 경로 일치")
+	_check(s.staff_training() == before and int(s.last_report["units"]) == 0, "판매0은 경험/실무 그대로, 운영비/일차만 정산")
+	_check(bool(s.train_staff("prep_assistant", "speed")["ok"]), "경험 증가 없이 다음 날 전문 훈련은 정상 허용")
+	var restored: GameStateScript = GameStateScript.new()
+	var error: String = restored.load_from_dict(JSON.parse_string(_json(s)))
+	_check(error == "" and _json(restored) == _json(s), "정상 도달한 동경험 훈련 저장이 반드시 복원됨: " + error)
+	_end()
 
 
 ## 콘테스트 시험은 실제 시식/영업으로 일차를 열며 정상 저장을 건드리지 않는다.
@@ -282,6 +548,7 @@ func test_contest_migration_v4() -> void:
 	var v4: Dictionary = s.to_dict()
 	v4["schema_version"] = 4
 	v4.erase("contests")
+	v4.erase("training")
 	var dir: String = _case_dir("contest_v4")
 	var saver: SaveServiceScript = SaveServiceScript.new(dir)
 	saver.remove_known_files()
@@ -2471,6 +2738,7 @@ func _as_legacy(src: Dictionary, version: int) -> Dictionary:
 	# (v3 진짜 파일은 _as_v3()가 growth 를 남기는 쪽을 따로 만든다).
 	d.erase("exploration")
 	d.erase("contests")
+	d.erase("training")
 	if version == 1:
 		d.erase("research")
 	for r in d["records"]:
@@ -3204,6 +3472,7 @@ func test_schema_migration_v1_v2() -> void:
 	v2_new_cfg.erase("growth")
 	v2_new_cfg.erase("exploration")
 	v2_new_cfg.erase("contests")
+	v2_new_cfg.erase("training")
 	_check(GameStateScript.new().load_from_dict(v2_new_cfg) != "", "toppings 배열을 쓴 v2 거부")
 	var v3_old_cfg: Dictionary = _as_legacy(_populated_state().to_dict(), 3)
 	v3_old_cfg["growth"] = v3["growth"]
@@ -3461,6 +3730,7 @@ func _as_v3(src: Dictionary) -> Dictionary:
 	d["schema_version"] = 3
 	d.erase("exploration")
 	d.erase("contests")
+	d.erase("training")
 	return d
 
 
