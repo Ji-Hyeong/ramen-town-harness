@@ -16,6 +16,7 @@ const Session = preload("res://scripts/domain/service_session.gd")
 const Research = preload("res://scripts/domain/ramen_research.gd")
 const Growth = preload("res://scripts/domain/shop_growth.gd")
 const Staffing = preload("res://scripts/domain/shop_staffing.gd")
+const Training = preload("res://scripts/domain/staff_training.gd")
 const Exploration = preload("res://scripts/domain/ingredient_exploration.gd")
 const Contest = preload("res://scripts/domain/ramen_contest.gd")
 const ContestProgress = preload("res://scripts/domain/contest_progress.gd")
@@ -32,7 +33,9 @@ const ContestProgress = preload("res://scripts/domain/contest_progress.gd")
 ## 전혀 건드리지 않고 아무것도 새로 주지 않는다. 진행 중 탐험은 모든 만남 단계와 결과 단계에서 그대로 저장돼 다시 열어도 같은 만남이 이어진다
 ## (만남은 카탈로그와 경로로만 정해지므로 불러올 때 새로 뽑지 않는다). 저장 서비스가 v4 첫 저장 전에 v3 원본을 보존한다.
 ## v5에는 출품 영수증·최고 메달·잡지 영수증을 보존한다. v1~v4 이행은 보상 없이 빈 진행으로 시작한다.
-const SCHEMA_VERSION: int = 5
+## v6 육성은 고용 직원별 완료 주문 경험과 최대 두 훈련 영수증을 보존한다.
+## v1~v5는 기존 값 모두 유지, 고용된 직원의 경험/훈련만 0부터 시작한다(소급 지급 없음).
+const SCHEMA_VERSION: int = 6
 const MIN_SCHEMA_VERSION: int = 1
 const MAX_RECORDS: int = 30
 const START_WALLET: int = 30000
@@ -48,7 +51,8 @@ const TOP_KEYS_V3: Array = ["schema_version", "day", "wallet", "next_record_id",
 	"records", "selected_record_id", "last_feedback_record_id", "draft", "last_report", "research", "growth"]
 const TOP_KEYS_V4: Array = ["schema_version", "day", "wallet", "next_record_id", "next_lineage_id",
 	"records", "selected_record_id", "last_feedback_record_id", "draft", "last_report", "research", "growth", "exploration"]
-const TOP_KEYS: Array = TOP_KEYS_V4 + ["contests"]
+const TOP_KEYS_V5: Array = TOP_KEYS_V4 + ["contests"]
+const TOP_KEYS: Array = TOP_KEYS_V5 + ["training"]
 const RECORD_KEYS: Array = ["record_id", "lineage_id", "name", "version", "tasted_day", "config", "scores", "comparison"]
 const COMPARISON_KEYS: Array = ["prev_record_id", "prev_version", "prev_scores", "prev_config"]
 const DRAFT_KEYS: Array = ["config", "name", "lineage_id"]
@@ -72,6 +76,7 @@ var _research_done: Array = []
 var _rank: int = 1
 var _facilities: Array = []
 var _hired: Array = []
+var _training: Dictionary = {}
 ## 재료 탐험 상태(저장). 발견한 재료(영구), 마지막 출발일(하루 1번 규칙), 누적 완료/포기 횟수, 진행 중 탐험, 최근 영수증. 구조는 ingredient_exploration.gd 참고.
 ## 이 값은 항상 Exploration 의 전이 함수가 돌려준 "새 딕셔너리"로 통째로 교체한다(부분 수정 없음). 외부에는 deep copy만 내보낸다.
 var _exploration: Dictionary = Exploration.empty_state()
@@ -385,6 +390,9 @@ func serve() -> Dictionary:
 	if after > MAX_WALLET:
 		return _fail("보유 자금 한도에 도달했어요.")
 	var cfg: Dictionary = rec["config"]
+	var trained: Dictionary = _service_experience(int(sim["units"]))
+	if str(trained["error"]) != "":
+		return _fail(str(trained["error"]))
 	last_report = {
 		"day": day,
 		"recipe_name": str(rec["name"]),
@@ -399,6 +407,7 @@ func serve() -> Dictionary:
 		"by_source": (sim["by_source"] as Dictionary).duplicate(true),
 	}
 	wallet = after
+	_training = trained["state"]
 	day += 1
 	var res: Dictionary = _ok("%d일차 영업을 마쳤어요." % int(last_report["day"]))
 	res["report"] = last_report.duplicate(true)
@@ -507,6 +516,9 @@ func settle_service() -> Dictionary:
 		return _fail("자금이 부족해서 정산할 수 없어요.")
 	if after > MAX_WALLET:
 		return _fail("보유 자금 한도에 도달했어요.")
+	var trained: Dictionary = _service_experience(units)
+	if str(trained["error"]) != "":
+		return _fail(str(trained["error"]))
 	# --- 여기부터는 실패 지점이 없다 ---
 	last_report = {
 		"day": day,
@@ -522,6 +534,7 @@ func settle_service() -> Dictionary:
 		"by_source": src_sm.duplicate(true),
 	}
 	wallet = after
+	_training = trained["state"]
 	day += 1
 	s.mark_settled()
 	_active_session = null
@@ -686,7 +699,7 @@ func free_staff_slots() -> int:
 
 ## 현재 고용 목록에서 만든 직원 구성(영업 시작 때 이 값이 세션으로 복사된다). 아무도 고용하지 않으면 기준과 같은 값(100%, 운영비 0).
 func current_staffing() -> Dictionary:
-	return Staffing.snapshot(_hired)
+	return Staffing.snapshot(_hired, _training)
 
 
 ## 영업 시작 시점에 세션에 복사해 두는 성장 요약(표시/검증용). 정산 금액에는 직원 구성만 쓰인다.
@@ -785,7 +798,47 @@ func hire_staff(id: String) -> Dictionary:
 	var price: int = int(rv["hire_price"])
 	wallet -= price
 	_hired.append(id)
+	_training[id] = Training.empty()
 	return _ok("%s %s을(를) 고용했어요 (고용비 %s, 하루 운영비 %s)." % [str(rv["role_name"]), str(rv["name"]), Growth._won(price), Growth._won(int(rv["wage"]))])
+
+
+## 영업/경험/자금은 같은 정산에서만 바뀐다. 모든 직원의 경험을 먼저 계산하여 일부만 반영되는 일을 막는다.
+func _service_experience(units: int) -> Dictionary:
+	var next: Dictionary = _training.duplicate(true)
+	for id in _hired:
+		var result: Dictionary = Training.accrue(_training[id], day, units)
+		if str(result["error"]) != "":
+			return {"error": str(result["error"])}
+		next[id] = result["state"]
+	return {"error": "", "state": next}
+
+
+func staff_training() -> Dictionary:
+	return _training.duplicate(true)
+
+
+func training_review(id: String, style: String) -> Dictionary:
+	if not _hired.has(id):
+		return {"error": "먼저 이 직원을 고용해 주세요.", "eligible": false}
+	return Training.review(_training[id], _rank, wallet, day, style)
+
+
+## 확정 시 비용/자격을 함께 반영하고 이후 화면의 연습 연출은 아무 보상도 만들지 않는다.
+func train_staff(id: String, style: String) -> Dictionary:
+	if _busy():
+		return _locked_fail()
+	if not _hired.has(id):
+		return _fail("먼저 이 직원을 고용해 주세요.")
+	var result: Dictionary = Training.train(_training[id], _rank, wallet, day, style)
+	if str(result["error"]) != "":
+		return _fail(str(result["error"]))
+	wallet -= int(result["cost"])
+	_training[id] = result["state"]
+	var receipt: Dictionary = result["receipt"]
+	var fx: Dictionary = Training.effect(Training.level(_training[id]), str(receipt["style"]))
+	var out: Dictionary = _ok("%s의 「%s」 훈련을 마쳤어요. 훈련비 %s. 경험은 유지되고 전문화는 바꿀 수 없어요." % [Staffing.find(id)["name"], fx["title"], Growth._won(int(result["cost"]))])
+	out["receipt"] = receipt.duplicate(true)
+	return out
 
 
 # ---------- 재료 탐험 (지역 선택 -> 갈래 만남 2번 -> 결과 수령/포기) ----------
@@ -1076,6 +1129,7 @@ func to_dict() -> Dictionary:
 		# 진행 중 탐험은 어느 단계에서든 그대로 저장한다(경로와 이미 낸 비용 포함). 영수증은 최대 MAX_HISTORY개.
 		"exploration": _exploration.duplicate(true),
 		"contests": _contests.duplicate(true),
+		"training": _training.duplicate(true),
 	}
 
 
@@ -1099,7 +1153,9 @@ func load_from_dict(raw: Variant) -> String:
 		expected_keys = TOP_KEYS_V3
 	elif version == 4:
 		expected_keys = TOP_KEYS_V4
-	elif version >= 5:
+	elif version == 5:
+		expected_keys = TOP_KEYS_V5
+	elif version >= 6:
 		expected_keys = TOP_KEYS
 	var key_err: String = Check.keys_error(d, expected_keys, "저장")
 	if key_err != "":
@@ -1207,6 +1263,21 @@ func load_from_dict(raw: Variant) -> String:
 		growth_rank = int(gr["rank"])
 		growth_facilities = gr["facilities"]
 		growth_staff = gr["staff"]
+	var training_parsed: Dictionary = {}
+	if version >= 6:
+		if typeof(d["training"]) != TYPE_DICTIONARY:
+			return "직원 육성 구조가 올바르지 않아요."
+		var training_keys: String = Check.keys_error(d["training"], growth_staff, "고용 직원 육성")
+		if training_keys != "":
+			return training_keys
+	for id in growth_staff:
+		if version < 6:
+			training_parsed[id] = Training.empty()
+		else:
+			var tr: Dictionary = Training.parse(d["training"][id], int(d["day"]), growth_rank)
+			if str(tr["error"]) != "":
+				return str(tr["error"])
+			training_parsed[id] = tr["state"]
 	# 재료 탐험 상태. v1~v3에는 없었으므로 "발견 없음, 진행 중 탐험 없음, 출발 기록 없음"으로 이행한다(자금/재료/등급을 새로 주지 않는다).
 	# v4는 현재 등급/일차와 모순되는 발견·출발·경로·비용을 모두 거부한다(Exploration.parse_state). 진행 중 탐험은 단계 그대로 복원된다.
 	var exploration_parsed: Dictionary = Exploration.empty_state()
@@ -1255,6 +1326,7 @@ func load_from_dict(raw: Variant) -> String:
 	_rank = growth_rank
 	_facilities = growth_facilities
 	_hired = growth_staff
+	_training = training_parsed
 	_exploration = exploration_parsed
 	_contests = contests_parsed
 	_research_done = research_parsed

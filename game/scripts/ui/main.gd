@@ -16,6 +16,7 @@ const GameStateScript = preload("res://scripts/domain/game_state.gd")
 const Research = preload("res://scripts/domain/ramen_research.gd")
 const Growth = preload("res://scripts/domain/shop_growth.gd")
 const Staffing = preload("res://scripts/domain/shop_staffing.gd")
+const Training = preload("res://scripts/domain/staff_training.gd")
 const SaveServiceScript = preload("res://scripts/services/save_service.gd")
 const LocationScript = preload("res://scripts/services/data_location.gd")
 const StarMeterScript = preload("res://scripts/ui/star_meter.gd")
@@ -138,6 +139,11 @@ var _growth_box: VBoxContainer
 ## 갱신 때 다시 만든 성장 행동 버튼(승급/구매/고용). 시식 준비 중에는 일괄로 꺼서 보여 준다(실제 차단은 각 핸들러의 _work_blocked + 도메인).
 var _growth_buttons: Array[Button] = []
 var _promote_armed_until: int = 0
+## 훈련은 두 번 눌러 확정한다. 확정 직후 저장하며 2초 연습 연출은 거래/경험을 다시 만들지 않는다.
+var _training_armed: String = ""
+var _training_armed_until: int = 0
+var _training_left: float = 0.0
+var _training_target: String = ""
 var _notebook_note: Label
 var _topping_count: Label
 var _topping_hint: Label
@@ -227,6 +233,10 @@ func _process(delta: float) -> void:
 	if _promote_armed_until != 0 and now > _promote_armed_until:
 		_promote_armed_until = 0
 		_refresh_growth()
+	if _training_armed_until != 0 and now > _training_armed_until:
+		_training_armed_until = 0
+		_training_armed = ""
+		_refresh_growth()
 	if _flash_until != 0 and now > _flash_until:
 		_flash_until = 0
 		_flash_text = ""
@@ -239,6 +249,8 @@ func _process(delta: float) -> void:
 		advance_travel(minf(delta, 0.1))
 	if _contest_left > 0.0:
 		advance_contest(minf(delta, 0.1))
+	if _training_left > 0.0:
+		advance_training(minf(delta, 0.1))
 	if not state.service_active():
 		return
 	var session: SessionScript = state.active_session()
@@ -1297,7 +1309,10 @@ func _finish_service() -> void:
 	if not saved:
 		# 정산은 메모리에 반영됐지만 파일에는 없다. 거짓으로 저장됐다고 말하지 않는다.
 		save_line = "⚠ 저장하지 못했어요: %s\n정산은 지금 실행 중인 게임에만 반영돼 있고, 지금 닫으면 이 영업은 사라질 수 있어요." % _last_save_message
-	_result_note.text = "평균 만족도 %.1f / 5 · 줄이 길어 돌아간 손님 %d명\n%s" % [float(res["avg_stars"]), int(res["turned_away"]), save_line]
+	var experience: String = ""
+	if not state.hired_staff().is_empty() and int(report["units"]) > 0:
+		experience = "\n함께 일한 보조 직원: 각자 실무 +1일 · 경험 +%d그릇" % int(report["units"])
+	_result_note.text = "평균 만족도 %.1f / 5 · 줄이 길어 돌아간 손님 %d명%s\n%s" % [float(res["avg_stars"]), int(res["turned_away"]), experience, save_line]
 	_result_note.add_theme_color_override("font_color", TEAL if saved else VERMILION)
 	_result_layer.visible = true
 	_refresh_all()
@@ -1313,6 +1328,9 @@ func _on_result_ok() -> void:
 ## 시식 준비 중 잠금 판정. 버튼을 꺼 두는 것과 별개로 모든 상태 변경 핸들러가 맨 앞에서 이 함수를 불러 막는다
 ## (버튼 비활성만 믿으면 직접 호출/단축 입력으로 초안이 시작 때 복사한 스냅샷과 어긋날 수 있다). 막았으면 true.
 func _work_blocked(action: String, allow_trip: bool = false) -> bool:
+	if _training_left > 0.0 and not allow_trip:
+		_flash("훈련 결과를 정리하는 중에는 %s 수 없어요. 잠시 기다려 주세요." % action)
+		return true
 	if _contest_left > 0.0 and not allow_trip:
 		_flash("심사 결과를 정리하는 중에는 %s 수 없어요. 잠시 기다려 주세요." % action)
 		return true
@@ -1392,6 +1410,8 @@ func _on_taste() -> void:
 ## 거부 사유: 이미 준비 중(중복 시작), 영업 중, 또는 시식해도 도메인이 거부할 초안(이름/중복 구성/자금 등 — 복제본으로 미리 확인한다).
 func start_tasting() -> Dictionary:
 	_pending_delete_id = 0
+	if _training_left > 0.0:
+		return _taste_refused("훈련 결과를 정리한 뒤 시식할 수 있어요.")
 	if _contest_left > 0.0:
 		return _taste_refused("심사 결과를 정리한 뒤 시식할 수 있어요.")
 	if _work.is_running():
@@ -1615,6 +1635,51 @@ func _on_staff_hire(id: String) -> void:
 	_finish_growth_action(state.hire_staff(id))
 
 
+func _on_staff_train(id: String, style: String) -> void:
+	if _work_blocked("직원을 훈련할"):
+		return
+	if state.service_active():
+		_growth_fail("영업을 끝내거나 중단한 뒤 훈련해 주세요.")
+		return
+	var review: Dictionary = state.training_review(id, style)
+	if str(review["error"]) != "":
+		_growth_fail(str(review["error"]))
+		return
+	if not bool(review["eligible"]):
+		_growth_fail(str(review["reason"]))
+		return
+	var key: String = id + ":" + style
+	if _training_armed != key or Time.get_ticks_msec() > _training_armed_until:
+		_training_armed = key
+		_training_armed_until = Time.get_ticks_msec() + 6000
+		_growth_message.text = "%s 훈련을 한 번 더 눌러 확정하세요. 비용은 즉시 사용하며 환불·전문화 변경은 없어요." % Growth._won(int(review["cost"]))
+		_refresh_growth()
+		return
+	_training_armed = ""
+	_training_armed_until = 0
+	var result: Dictionary = state.train_staff(id, style)
+	if bool(result["ok"]):
+		_training_left = 2.0
+		_training_target = id
+	_finish_growth_action(result)
+
+
+## 시간 전진은 결과 연출만 한다. 저장/자금/자격/경험은 확정 시 이미 한 번 반영됐다.
+func advance_training(seconds: float) -> Dictionary:
+	if not is_finite(seconds) or seconds < 0.0:
+		return {"ok": false, "message": "훈련 연출 시간은 유한한 0 이상의 값이어야 해요."}
+	if _training_left <= 0.0:
+		return {"ok": false, "message": "진행 중인 훈련 연출이 없어요."}
+	_training_left = maxf(0.0, _training_left - seconds)
+	if _training_left == 0.0:
+		_refresh_all()
+	else:
+		var bar: ProgressBar = find_child("TrainingProgressBar", true, false) as ProgressBar
+		if bar != null:
+			bar.value = 100.0 * (1.0 - _training_left / 2.0)
+	return {"ok": true, "message": "훈련 연출만 진행했어요."}
+
+
 func _growth_fail(message: String) -> void:
 	_growth_message.text = message
 	_growth_message.add_theme_color_override("font_color", VERMILION)
@@ -1782,7 +1847,7 @@ func _refresh_exploration() -> void:
 
 
 func _sync_exploration_lock() -> void:
-	var busy: bool = _work.is_running() or state.service_active() or _contest_left > 0.0
+	var busy: bool = _work.is_running() or state.service_active() or _contest_left > 0.0 or _training_left > 0.0
 	for button in _exploration_buttons:
 		if is_instance_valid(button):
 			button.disabled = busy or bool(button.get_meta("locked")) or (_travel.running() and bool(button.get_meta("travel_guard")))
@@ -1790,7 +1855,9 @@ func _sync_exploration_lock() -> void:
 
 func _exploration_guard(moving_action: bool = false) -> bool:
 	var reason: String = ""
-	if _contest_left > 0.0:
+	if _training_left > 0.0:
+		reason = "훈련 결과를 정리한 뒤 탐색할 수 있어요."
+	elif _contest_left > 0.0:
 		reason = "심사 결과를 정리한 뒤 탐색할 수 있어요."
 	elif _work.is_running():
 		reason = "시식 준비 중에는 탐색할 수 없어요. 준비를 마치거나 취소하세요."
@@ -1952,7 +2019,7 @@ func _refresh_contests() -> void:
 		col.add_child(reason)
 		var enter: Button = _button("선택한 시식 메뉴로 출품 · " + _won(int(def["fee"])), "ContestEnter_" + id)
 		enter.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		enter.disabled = not bool(def["can_enter"]) or judging or work_active()
+		enter.disabled = not bool(def["can_enter"]) or judging or work_active() or _training_left > 0.0
 		enter.pressed.connect(_on_contest_enter.bind(id))
 		_contest_buttons.append(enter)
 		col.add_child(enter)
@@ -1968,7 +2035,7 @@ func _refresh_contests() -> void:
 			col.add_child(published)
 			if magazine.is_empty():
 				var accept: Button = _button("잡지 소개 수락", "MagazineAccept_" + id)
-				accept.disabled = judging or work_active() or state.service_active() or state.exploration_active()
+				accept.disabled = judging or work_active() or state.service_active() or state.exploration_active() or _training_left > 0.0
 				accept.pressed.connect(_on_magazine_accept.bind(id))
 				_contest_buttons.append(accept)
 				col.add_child(accept)
@@ -2065,7 +2132,7 @@ func _refresh_work_ui() -> void:
 func _apply_work_lock() -> void:
 	if _work_card == null:
 		return
-	var busy: bool = _work.is_running() or state.exploration_active() or state.service_active() or _contest_left > 0.0
+	var busy: bool = _work.is_running() or state.exploration_active() or state.service_active() or _contest_left > 0.0 or _training_left > 0.0
 	for id in _buttons.keys():
 		(_buttons[id] as Button).disabled = busy or not state.ingredient_unlocked(str(id))
 	for b in _price_buttons:
@@ -2074,7 +2141,7 @@ func _apply_work_lock() -> void:
 	_taste_button.disabled = busy
 	_taste_button.text = "시식 준비 중…" if _work.is_running() else ("탐색을 먼저 마치세요" if state.exploration_active() else "시식하기")
 	_close_button.disabled = _work.is_running()
-	_open_button.disabled = _work.is_running() or _contest_left > 0.0
+	_open_button.disabled = _work.is_running() or _contest_left > 0.0 or _training_left > 0.0
 	_name_edit.editable = (not busy) and state.draft_lineage_id == 0
 	_sync_growth_lock()
 	_sync_exploration_lock()
@@ -2104,7 +2171,7 @@ func _refresh_guide() -> void:
 
 func _refresh_nav() -> void:
 	var active: bool = state.service_active()
-	_start_button.disabled = _contest_left > 0.0
+	_start_button.disabled = _contest_left > 0.0 or _training_left > 0.0
 	_speed_button.visible = active
 	_speed_button.text = "속도 ×2" if _fast else "속도 ×1"
 	_dev_button.text = "메뉴 개발"
@@ -2603,6 +2670,21 @@ func _refresh_growth() -> void:
 	_growth_buttons.clear()
 	_clear(_growth_box)
 	_growth_box.add_child(_rank_card())
+	var training_head: Label = _label("직원 육성 · 실무를 쌓고 전문화하기", 18, VERMILION)
+	training_head.name = "TrainingHeader"
+	_growth_box.add_child(training_head)
+	_growth_box.add_child(_label("끝까지 마친 영업의 판매 그릇만 경험이 돼요. 두 보조 직원부터 육성할 수 있고 맛 점수는 바뀌지 않아요.", 14, MUTED))
+	if _training_left > 0.0:
+		var pending: Label = _label("%s · 반복 연습과 훈련 결과 정리 중…\n비용·자격을 반영했어요. 이 연출은 경험을 더 주지 않아요." % Staffing.find(_training_target)["name"], 15, TEAL)
+		pending.name = "TrainingPresentation"
+		_growth_box.add_child(pending)
+		var bar: ProgressBar = ProgressBar.new()
+		bar.name = "TrainingProgressBar"
+		bar.custom_minimum_size.y = 24.0
+		bar.value = 100.0 * (1.0 - _training_left / 2.0)
+		_growth_box.add_child(bar)
+	for staff_id in Staffing.ids():
+		_growth_box.add_child(_training_card(staff_id))
 	var head1: Label = _label("유료 확장 (한 번만 살 수 있고 환불은 없어요)", 18, VERMILION)
 	head1.name = "GrowthFacilityHeader"
 	_growth_box.add_child(head1)
@@ -2618,7 +2700,7 @@ func _refresh_growth() -> void:
 
 ## 시식 준비 중이거나 영업 중이면 성장 행동 버튼을 모두 끈다. 나머지 이유(조건/자금/자리)로 꺼진 버튼은 메타 "locked" 로 구분한다.
 func _sync_growth_lock() -> void:
-	var busy: bool = _work.is_running() or _contest_left > 0.0 or (state != null and (state.service_active() or state.exploration_active()))
+	var busy: bool = _work.is_running() or _contest_left > 0.0 or _training_left > 0.0 or (state != null and (state.service_active() or state.exploration_active()))
 	for b in _growth_buttons:
 		if is_instance_valid(b):
 			b.disabled = busy or bool(b.get_meta("locked", false))
@@ -2631,6 +2713,80 @@ func _growth_button(text: String, node_name: String, locked: bool) -> Button:
 	b.disabled = locked
 	_growth_buttons.append(b)
 	return b
+
+
+func _training_card(id: String) -> PanelContainer:
+	var card: PanelContainer = _card("Training_" + id)
+	var box: VBoxContainer = _vbox(5)
+	card.add_child(box)
+	var def: Dictionary = Staffing.find(id)
+	var head: HBoxContainer = HBoxContainer.new()
+	head.add_theme_constant_override("separation", 10)
+	box.add_child(head)
+	var picture: TextureRect = TextureRect.new()
+	picture.name = "TrainingPortrait_" + id
+	picture.texture = _staff_portrait_tex(id)
+	picture.custom_minimum_size = Vector2(48, 48)
+	picture.stretch_mode = TextureRect.STRETCH_KEEP
+	picture.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	head.add_child(picture)
+	var title: Label = _label("%s · %s" % [def["name"], def["role_name"]], 18, TEAL)
+	title.name = "TrainingTitle_" + id
+	head.add_child(title)
+	var all_training: Dictionary = state.staff_training()
+	if not all_training.has(id):
+		box.add_child(_label("아직 함께 일하지 않아요. 직원 공간을 넓힌 뒤 아래에서 고용하세요. 고용 전 경험은 소급되지 않아요.", 14, MUTED))
+		box.add_child(_growth_button("고용 후 훈련 가능", "Train_" + id + "_basic", true))
+		return card
+	var entry: Dictionary = all_training[id]
+	var lv: int = Training.level(entry)
+	var style: String = "" if lv == 0 else str(entry["lessons"][lv - 1]["style"])
+	var fx: Dictionary = Training.effect(lv, style)
+	var status: Label = _label("%s · 훈련 %d/2단계\n실무 %d일 · 경험 %d그릇" % [fx["title"], lv, entry["work_days"], entry["bowls"]], 15, INK)
+	status.name = "TrainingExperience_" + id
+	box.add_child(status)
+	var current: Label = _label("지금 효과: " + _training_effect_text(id, fx), 14, TEAL)
+	current.name = "TrainingEffect_" + id
+	box.add_child(current)
+	if lv == 2:
+		var done: Label = _label("전문화 완료 · 선택은 유지돼요. 더 훈련하거나 전문화를 바꿀 수 없어요.", 14, MUTED)
+		done.name = "TrainingComplete_" + id
+		box.add_child(done)
+		return card
+	var goal: int = 40 if lv == 0 else 160
+	var progress: ProgressBar = ProgressBar.new()
+	progress.name = "TrainingXP_" + id
+	progress.custom_minimum_size.y = 22.0
+	progress.value = minf(100.0, 100.0 * float(entry["bowls"]) / float(goal))
+	box.add_child(progress)
+	var needs: Label = _label("다음 훈련: 경험 %d그릇 · 실무 %d일 · 가게 등급 %d\n비용 %s · 경험 유지 · 같은 직원 하루 1회" % [goal, 2 if lv == 0 else 5, 2 if lv == 0 else 3, _won(4000 if lv == 0 else 12000)], 14, INK)
+	needs.name = "TrainingRequirements_" + id
+	box.add_child(needs)
+	var policy: Label = _label("훈련비는 돌려받지 못해요. 전문화는 한 번만 고르며 나중에 바꿀 수 없어요.", 13, VERMILION)
+	policy.name = "TrainingPolicy_" + id
+	box.add_child(policy)
+	for choice in (["basic"] if lv == 0 else ["speed", "economy"]):
+		var review: Dictionary = state.training_review(id, choice)
+		var target: Dictionary = Training.effect(lv + 1, choice)
+		var text: Label = _label("%s: %s" % [target["title"], _training_effect_text(id, target)], 14, INK)
+		text.name = "TrainingChoice_" + id + "_" + choice
+		box.add_child(text)
+		var ready: bool = bool(review["eligible"])
+		var armed: bool = _training_armed == id + ":" + choice and Time.get_ticks_msec() <= _training_armed_until
+		var btn: Button = _growth_button("다시 눌러 확정 · " + _won(int(review["cost"])) if armed else str(target["title"]) + " 훈련 · " + _won(int(review["cost"])), "Train_" + id + "_" + choice, not ready)
+		btn.pressed.connect(_on_staff_train.bind(id, choice))
+		box.add_child(btn)
+		if not ready:
+			var reason: Label = _label(str(review["reason"]), 13, MUTED)
+			reason.name = "TrainingLock_" + id + "_" + choice
+			box.add_child(reason)
+	return card
+
+
+func _training_effect_text(id: String, effect: Dictionary) -> String:
+	var def: Dictionary = Staffing.find(id)
+	var base: int = Staffing.PREP_PERCENT if str(def["role"]) == "prep" else Staffing.SERVE_PERCENT
+	return "%s 시간 %d%% (올림) · 하루 운영비 %s" % ["조리" if str(def["role"]) == "prep" else "서빙 왕복", base - int(effect["percent_discount"]), _won(int(def["wage"]) + int(effect["wage_delta"]))]
 
 
 func _rank_card() -> PanelContainer:

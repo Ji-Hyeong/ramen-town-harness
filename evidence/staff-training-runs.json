@@ -1,0 +1,236 @@
+{
+  "date": "2026-10-15",
+  "scope": "Staff training schema6: two hired helpers, actual completed-service XP, basic certification and speed/economy permanent specialization",
+  "roles": {
+    "Claude Code": "Single-worker pure rules and focused core tests; bounded read-only rules/persistence review",
+    "Codex": "State/persistence migration, atomic service XP, staffing effects, UI/integration tests, independent reproduction/corrections, native QA and publication"
+  },
+  "runs": [
+    {
+      "phase": "staff-training-core",
+      "max_turns": 18,
+      "actual_exit_status": 1,
+      "observed_turns": 1,
+      "subtype": "success",
+      "is_error": true,
+      "report_present": true,
+      "permission_denials": [],
+      "duration_ms": 238,
+      "usage": {
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "input_tokens": 0,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "output_tokens": 0,
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "",
+        "iterations": [],
+        "speed": "standard",
+        "fallback_credit": null
+      },
+      "reported_total_cost_usd": 0
+    },
+    {
+      "phase": "staff-training-core-v2",
+      "max_turns": 18,
+      "actual_exit_status": 0,
+      "observed_turns": 11,
+      "subtype": "success",
+      "is_error": false,
+      "report_present": true,
+      "permission_denials": [],
+      "duration_ms": 174593,
+      "usage": {
+        "input_tokens": 10,
+        "cache_creation_input_tokens": 39572,
+        "cache_read_input_tokens": 99700,
+        "output_tokens": 27244,
+        "output_tokens_details": {
+          "thinking_tokens": 12812
+        },
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 39572,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "global",
+        "iterations": [
+          {
+            "input_tokens": 2,
+            "output_tokens": 1871,
+            "cache_read_input_tokens": 37671,
+            "cache_creation_input_tokens": 5594,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 5594
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard",
+        "fallback_credit": null
+      },
+      "reported_total_cost_usd": 0.44071799999999994
+    },
+    {
+      "phase": "staff-training-review-v1",
+      "max_turns": 8,
+      "actual_exit_status": 0,
+      "observed_turns": 8,
+      "subtype": "success",
+      "is_error": false,
+      "report_present": true,
+      "permission_denials": [],
+      "duration_ms": 38789,
+      "usage": {
+        "input_tokens": 8,
+        "cache_creation_input_tokens": 21757,
+        "cache_read_input_tokens": 44471,
+        "output_tokens": 4817,
+        "output_tokens_details": {
+          "thinking_tokens": 1990
+        },
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 21757,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "global",
+        "iterations": [
+          {
+            "input_tokens": 2,
+            "output_tokens": 1825,
+            "cache_read_input_tokens": 21621,
+            "cache_creation_input_tokens": 3245,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 3245
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard",
+        "fallback_credit": null
+      },
+      "reported_total_cost_usd": 0.13966109999999998
+    }
+  ],
+  "usage_note": "Actual response fields only; API estimates are not subscription charges or service quota percentages. No automatic50:50 distribution. Raw sessions/accounts/logs excluded.",
+  "review": {
+    "finding": "Zero-sales day legitimately advances day without XP; delayed basic then specialization with unchanged XP was accepted by train but refused by parser. Original implementation contract made the wrong assumption.",
+    "independent_reproduction": "Actual max-price tasting/zero-demand forecast, actual runtime settlement and matching instant path, next-day specialization.97tests/50982 checks with exactly1 reload failure before correction.",
+    "correction": "Receipt XP nondecreasing, dates strictly increasing; all receipt/current-state bounds retained. Kept integration + pure regression.",
+    "review_limitations": "Reviewer did not execute tests or inspect all migration/UI/runtime code."
+  },
+  "checks": {
+    "core": {
+      "checks": 96,
+      "failures": 0,
+      "exit_status": 0
+    },
+    "full": {
+      "tests": 97,
+      "checks": 50982,
+      "failures": 0,
+      "exit_status": 0
+    },
+    "real_previous_v5": {
+      "fixture_generation_checks": 124,
+      "fixtures": 8,
+      "migration_backup_roundtrip_checks": 48,
+      "independent_python_full_value_comparisons": 8,
+      "failures": 0,
+      "exit_status": 0
+    },
+    "layout": {
+      "checks": 12096,
+      "failures": 0,
+      "exit_status": 0,
+      "sizes": [
+        [
+          1280,
+          800
+        ],
+        [
+          390,
+          844
+        ]
+      ],
+      "renderer_verified": false
+    },
+    "native": {
+      "date": "2026-10-15",
+      "run_utc": "20261015T022419Z",
+      "mode": "actual OpenGL renderer",
+      "checks": 12344,
+      "failures": 0,
+      "exit_status": 0,
+      "engine_errors": 0,
+      "png_count": 124,
+      "profiles": {
+        "desktop": 62,
+        "portrait": 62
+      },
+      "published_new_images": 20,
+      "bundled_source_files": 67,
+      "source_mismatches": 0,
+      "pack_sha256": "2d8b6afb94f875da996bd0da9d80a5c09d1ed5e1bc3431ff49177f2ce90da28c",
+      "status": "PASSED",
+      "visual_inspection": "Actual desktop practice/specialization and portrait confirmation/specialization/completed/save-failed/save-recovered images inspected. Choice/refund policy visible beside actions; no text clipped outside scroll viewport."
+    },
+    "packed_main": {
+      "frames": 60,
+      "exit_status": 0,
+      "engine_errors": 0,
+      "save_scope": "isolated scratch; never live player-save"
+    }
+  },
+  "limitations": [
+    "User is away; user play feel pending",
+    "No iOS export/physical-device verification",
+    "No live player-save tests or auto-launch",
+    "Core chef/server training, fatigue, free placement and customer branching stories outside scope"
+  ],
+  "iterations": [
+    {
+      "phase": "first_integration",
+      "tests": 96,
+      "checks": 50841,
+      "failures": 27,
+      "cause": "Test fixture assumed two minimum work days guaranteed40 actual sales; threshold was not reached. Earn actual bowls in bounded completed services. Prior88 tests had no failures."
+    },
+    {
+      "phase": "first_layout",
+      "checks": 12040,
+      "failures": 21,
+      "cause": "New fixture names exceeded20-character limit; querying recreated controls before container layout settled. Corrected fixture names/waited layout without weakening assertions."
+    },
+    {
+      "phase": "first_native",
+      "checks": 12288,
+      "failures": 0,
+      "exit_status": 0,
+      "png_count": 124,
+      "status": "SUPERSEDED after visual inspection",
+      "correction": "Permanent-choice/refund policy only appeared in distant global message; add policy beside choices and QA assertions. Fresh snapshot/capture required."
+    }
+  ]
+}
