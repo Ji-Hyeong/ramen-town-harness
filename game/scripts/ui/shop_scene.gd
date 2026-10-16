@@ -93,7 +93,7 @@ static func build(layout: Dictionary, ent: Dictionary, bowl_config: Dictionary, 
 	items.append(_item(layout, "server|%s|%d" % [server_pose, server_frame], _person_img(cache, Art.LOOK_SERVER, server_pose, server_frame, false), server_pos - foot, sdepth, n))
 	n += 1
 	if carrying:
-		items.append(_item(layout, "bowl", _bowl_img(cache, bowl_config), server_pos + Vector2(-6.0, -9.0), sdepth + 0.05, n))
+		items.append(_item(layout, "bowl", _bowl_img(cache, ent.get("server_config", bowl_config)), server_pos + Vector2(-6.0, -9.0), sdepth + 0.05, n))
 		n += 1
 	# 보조 직원: 고용했을 때만. 위치는 ShopLayout.staff_spots(안전 자리), 깊이는 발 위치(다른 사람과 같은 눈금)다.
 	# 모션은 지원 역할만 보여 준다: 조리 보조는 요리사가 조리 중일 때 같이 손을 움직이고, 홀 보조는 서버가 서빙 중일 때 쟁반을 들고 거든다.
@@ -122,12 +122,14 @@ static func build(layout: Dictionary, ent: Dictionary, bowl_config: Dictionary, 
 	var ready: int = int(ent.get("ready", 0))
 	var ready_pos: Array = layout["ready_bowls"]
 	for i in mini(ready, ready_pos.size()):
-		items.append(_item(layout, "bowl", _bowl_img(cache, bowl_config), ready_pos[i], float(layout["ready_depth"]), n))
+		var configs: Array = ent.get("ready_configs", [])
+		var cfg: Dictionary = configs[i] if i < configs.size() else bowl_config
+		items.append(_item(layout, "bowl", _bowl_img(cache, cfg), ready_pos[i], float(layout["ready_depth"]), n))
 		n += 1
 
 	if ent.has("patrons"):
 		for p in ent["patrons"]:
-			n = _add_patron(layout, p, items, bubbles, bowl_config, anim, vis, cache, n)
+			n = _add_patron(layout, p, items, bubbles, p.get("config", bowl_config), anim, vis, cache, n)
 	return {"items": items, "bubbles": bubbles}
 
 

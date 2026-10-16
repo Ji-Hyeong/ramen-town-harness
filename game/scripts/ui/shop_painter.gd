@@ -156,9 +156,9 @@ static func _ground(img: Image, L: Dictionary) -> void:
 	var size: Vector2i = L["size"]
 	var o: Vector2 = L["origin"]
 	for y in size.y:
-		var v: float = (float(y) + 0.5 - o.y) / Layouts.HALF_H
+		var v: float = (float(y) + 0.5 - o.y) / float(L.get("half_h", Layouts.HALF_H))
 		for x in size.x:
-			var u: float = (float(x) + 0.5 - o.x) / Layouts.HALF_W
+			var u: float = (float(x) + 0.5 - o.x) / float(L.get("half_w", Layouts.HALF_W))
 			var gx: float = (u + v) * 0.5
 			var gy: float = (v - u) * 0.5
 			# 뒷벽 너머(이웃 건물이 가리는 곳)는 바닥을 만들지 않는다.
@@ -288,16 +288,17 @@ static func _neighbors(img: Image, L: Dictionary) -> void:
 
 ## 바닥 판의 두께(컷어웨이 단면): 앞왼쪽 가장자리(gy=8.5)와 앞오른쪽 가장자리(gx=12).
 static func _slab(img: Image, L: Dictionary) -> void:
-	_pq(img, L, "Y", Layouts.ROOM_D, 0.0, Layouts.ROOM_W, -5.0, 0.0, WOOD.darkened(0.1))
-	_pq(img, L, "Y", Layouts.ROOM_D, 0.0, Layouts.ROOM_W, -1.0, 0.0, WOOD_D)
-	_pq(img, L, "X", Layouts.ROOM_W, 0.0, Layouts.ROOM_D, -5.0, 0.0, WOOD_D.lightened(0.05))
-	_pq(img, L, "X", Layouts.ROOM_W, 0.0, Layouts.ROOM_D, -1.0, 0.0, Color(0.20, 0.11, 0.06))
+	var room: Rect2 = L["room"]
+	_pq(img, L, "Y", room.size.y, 0.0, room.size.x, -5.0, 0.0, WOOD.darkened(0.1))
+	_pq(img, L, "Y", room.size.y, 0.0, room.size.x, -1.0, 0.0, WOOD_D)
+	_pq(img, L, "X", room.size.x, 0.0, room.size.y, -5.0, 0.0, WOOD_D.lightened(0.05))
+	_pq(img, L, "X", room.size.x, 0.0, room.size.y, -1.0, 0.0, Color(0.20, 0.11, 0.06))
 
 
 static func _walls(img: Image, L: Dictionary) -> void:
 	var w: float = Layouts.WALL_H
 	var d: float = Layouts.ROOM_D
-	var rw: float = Layouts.ROOM_W
+	var rw: float = (L["room"] as Rect2).size.x
 	# 왼쪽 벽(gx=0, 오른쪽 아래를 향함)은 오른쪽 벽보다 한 톤 어둡다(빛이 왼쪽 앞에서 온다).
 	_pq(img, L, "X", 0.0, 0.0, d, 0.0, w, PLASTER_D)
 	_pq(img, L, "Y", 0.0, 0.0, rw, 0.0, w, PLASTER)
@@ -364,7 +365,7 @@ static func _wall_left(img: Image, L: Dictionary) -> void:
 
 
 static func _wall_right(img: Image, L: Dictionary) -> void:
-	_wainscot(img, L, "Y", Layouts.ROOM_W)
+	_wainscot(img, L, "Y", (L["room"] as Rect2).size.x)
 	for t in [0.0, 4.6, 8.6, 11.65]:
 		_beam(img, L, "Y", float(t))
 	# 주방 벽타일(체스판)
@@ -504,7 +505,7 @@ static func _emit_slices(out: Array, L: Dictionary, f: Dictionary, part: String,
 	while sx < used.end.x:
 		var w: int = mini(6, used.end.x - sx)
 		var piece: Image = img.get_region(Rect2i(sx, 0, w, size.y))
-		var u: float = (float(sx) + float(w) * 0.5 - o.x) / Layouts.HALF_W
+		var u: float = (float(sx) + float(w) * 0.5 - o.x) / float(L.get("half_w", Layouts.HALF_W))
 		var depth: float = (u + 2.0 * c if plane == "Y" else 2.0 * c - u) + depth_off
 		_push(out, piece, depth, "%s%s@%d" % [str(f["id"]), (":" + part) if part != "" else "", sx], Vector2(float(sx), 0.0))
 		sx += w

@@ -13,6 +13,7 @@ const Customers = preload("res://scripts/domain/customer_catalog.gd")
 const Evaluator = preload("res://scripts/domain/recipe_evaluator.gd")
 const Sim = preload("res://scripts/domain/sales_simulator.gd")
 const Staffing = preload("res://scripts/domain/shop_staffing.gd")
+const MenuSales = preload("res://scripts/domain/menu_sales.gd")
 
 # 세션 상태
 const RUNNING: int = 0
@@ -83,6 +84,7 @@ class Patron extends RefCounted:
 	var stars: int = 3
 	var base_stars: int = 3
 	var patience: int = 150
+	var menu_index: int = 0
 
 
 var day: int = 0
@@ -100,6 +102,13 @@ var price: int = 0
 var unit_cost: int = 0
 ## 영업 중 실제 한 그릇 조리 시간(보조 직원이 있으면 기준 시간에서 줄어든 값).
 var prep: int = 1
+## 확장 영업은 메뉴별 스냅샷/주문을 사용한다. 기본 한 메뉴 계획은 옛 경로와 출력까지 유지한다.
+var menus: Array = []
+var seat_count: int = SEAT_COUNT
+var _multi: bool = false
+var _chef_total: int = 1
+const EXTRA_WALK: Array[int] = [78, 78, 82, 82]
+const EXTRA_SERVE: Array[int] = [34, 36, 38, 40]
 var state: int = RUNNING
 var settled: bool = false
 var time: int = 0
@@ -146,7 +155,12 @@ func _init(plan: Dictionary) -> void:
 	price = int(config["price"])
 	unit_cost = Evaluator.unit_cost(config)
 	prep = Staffing.effective_prep(Evaluator.prep_seconds(config), staffing)
-	for i in SEAT_COUNT:
+	_chef_total = prep
+	_multi = plan.has("menus")
+	if _multi:
+		menus = plan["menus"].duplicate(true)
+		seat_count = int(plan["seat_count"])
+	for i in seat_count:
 		_seat_owner.append(-1)
 		_seat_free_at.append(0)
 
@@ -154,16 +168,17 @@ func _init(plan: Dictionary) -> void:
 	var raw: Array = plan["arrivals"]
 	for i in raw.size():
 		var a: Dictionary = raw[i]
-		arrivals.append({"t": int(a["t"]), "i": i, "source": str(a["source"]), "will_order": bool(a["will_order"])})
+		arrivals.append({"t": int(a["t"]), "i": i, "source": str(a["source"]), "will_order": bool(a["will_order"]), "menu_index": int(a.get("menu_index", 0))})
 	arrivals.sort_custom(_arrival_before)
 	for k in arrivals.size():
 		var a2: Dictionary = arrivals[k]
 		var p: Patron = Patron.new()
 		p.id = k
 		p.source = str(a2["source"])
+		p.menu_index = int(a2["menu_index"])
 		p.will_order = bool(a2["will_order"])
 		p.arrive_t = maxi(0, int(a2["t"]))
-		var score: int = _score_of(p.source)
+		var score: int = _menu_score(p.source, p.menu_index)
 		p.base_stars = Evaluator.stars_for(score)
 		p.stars = p.base_stars
 		p.patience = _patience_of(p.source)
@@ -236,6 +251,73 @@ static func _arrival_before(x: Dictionary, y: Dictionary) -> bool:
 	if int(x["t"]) != int(y["t"]):
 		return int(x["t"]) < int(y["t"])
 	return int(x["i"]) < int(y["i"])
+
+
+## 두 메뉴의 방문/조리 예산은 helper가 한 번 계산한다. 도착·조리·서빙·식사는 같은 런타임을 공유한다.
+static func make_menu_plan(records: Array, on_day: int, staffing: Dictionary, growth: Dictionary, seats: int = 12) -> Dictionary:
+	if seats != 8 and seats != 12:
+		return {"error": "좌석은 8석 또는 12석이어야 해요."}
+	var fc: Dictionary = MenuSales.simulate(records, on_day, staffing)
+	if str(fc["error"]) != "":
+		return fc
+	var plan: Dictionary = make_plan(records[0], on_day, staffing, growth)
+	if str(plan["error"]) != "":
+		return plan
+	plan["forecast"] = fc.duplicate(true)
+	plan["menus"] = fc["menus"].duplicate(true)
+	plan["seat_count"] = seats
+	var order: Array = []
+	for i in records.size():
+		order.append(i)
+	order.sort_custom(func(a: int, b: int) -> bool: return int(records[a]["record_id"]) < int(records[b]["record_id"]))
+	var groups: Array = Customers.ids()
+	groups.append(Sim.WALKIN_ID)
+	var seq: Array = []
+	var seed_value: int = on_day * 1000003 + int(fc["units"]) * 31
+	for index in order:
+		var row: Dictionary = fc["menus"][index]
+		seed_value += int(row["record_id"]) * 7919
+		for source in groups:
+			for n in int(row["by_source"][source]):
+				seq.append({"source": str(source), "menu_index": int(index)})
+	seed_value &= 0x7fffffff
+	for i in range(seq.size() - 1, 0, -1):
+		seed_value = _lcg(seed_value)
+		var j: int = (seed_value >> 8) % (i + 1)
+		var tmp: Dictionary = seq[i]
+		seq[i] = seq[j]
+		seq[j] = tmp
+	var arrivals: Array = []
+	for i in seq.size():
+		var u: float = (float(i) + 0.5) / float(seq.size())
+		seed_value = _lcg(seed_value)
+		var t: int = int(float(ARRIVAL_SPAN) * (u + 0.1 * sin(TAU * u))) + int((seed_value >> 8) % 25) - 12
+		arrivals.append({"t": maxi(5, t), "source": seq[i]["source"], "menu_index": seq[i]["menu_index"], "will_order": true})
+	var lost: int = int(fc["demand"]) - int(fc["units"])
+	for i in lost:
+		arrivals.append({"t": 600 + int(1600.0 * (float(i) + 0.5) / float(lost)), "source": Sim.WALKIN_ID, "menu_index": 0, "will_order": false})
+	plan["arrivals"] = arrivals
+	return plan
+
+
+func _menu_score(source: String, index: int) -> int:
+	if not _multi:
+		return _score_of(source)
+	var sc: Dictionary = menus[index]["scores"]
+	if sc.has(source):
+		return int(sc[source])
+	var total: int = 0
+	for id in Customers.ids():
+		total += int(sc[id])
+	return roundi(float(total) / float(Customers.ids().size()))
+
+
+func _walk_seconds(seat: int) -> int:
+	return SEAT_WALK[seat] if seat < SEAT_COUNT else EXTRA_WALK[seat - SEAT_COUNT]
+
+
+func _serve_seconds(seat: int) -> int:
+	return SEAT_SERVE[seat] if seat < SEAT_COUNT else EXTRA_SERVE[seat - SEAT_COUNT]
 
 
 static func _lcg(seed_value: int) -> int:
@@ -353,7 +435,7 @@ func _update_patron(pt: Patron) -> void:
 				pt.state = P_GONE
 				turned_away += 1
 		P_TO_SEAT:
-			if pt.state_t >= SEAT_WALK[pt.seat]:
+			if pt.state_t >= _walk_seconds(pt.seat):
 				pt.state = P_ORDERING
 				pt.state_t = 0
 		P_ORDERING:
@@ -377,12 +459,15 @@ func _complete_order(pt: Patron) -> void:
 		"patron": pt.id,
 		"source": pt.source,
 		"seat": pt.seat,
-		"price": price,
-		"unit_cost": unit_cost,
+		"price": int(menus[pt.menu_index]["price"]) if _multi else price,
+		"unit_cost": int(menus[pt.menu_index]["unit_cost"]) if _multi else unit_cost,
 		"stars": pt.stars,
 		"wait": pt.wait_total,
 		"done_t": time,
 	})
+	if _multi:
+		completed[-1]["menu_index"] = pt.menu_index
+		completed[-1]["record_id"] = int(menus[pt.menu_index]["record_id"])
 	for i in range(seat_log.size() - 1, -1, -1):
 		var entry: Dictionary = seat_log[i]
 		if int(entry["patron"]) == pt.id and int(entry["to"]) == -1:
@@ -397,7 +482,7 @@ func _complete_order(pt: Patron) -> void:
 func _assign_seats() -> void:
 	while not _queue.is_empty():
 		var free: int = -1
-		for i in SEAT_COUNT:
+		for i in seat_count:
 			if _seat_owner[i] == -1 and time >= _seat_free_at[i]:
 				free = i
 				break
@@ -423,7 +508,9 @@ func _update_chef() -> void:
 	if not _chef_busy and not _cook_queue.is_empty():
 		_chef_order = _cook_queue.pop_front()
 		_chef_busy = true
-		_chef_left = prep
+		var patron: Patron = _patrons[_chef_order]
+		_chef_total = int(menus[patron.menu_index]["prep"]) if _multi else prep
+		_chef_left = _chef_total
 
 
 func _update_server() -> void:
@@ -433,7 +520,7 @@ func _update_server() -> void:
 				_server_patron = _ready.pop_front()
 				var pt: Patron = _patrons[_server_patron]
 				# 홀 보조가 있으면 서빙 시간이 줄어든다(스냅샷 값). 없으면 SEAT_SERVE 그대로.
-				_server_total = Staffing.effective_carry(SEAT_SERVE[pt.seat], staffing)
+				_server_total = Staffing.effective_carry(_serve_seconds(pt.seat), staffing)
 				_server_left = _server_total
 				_server_state = S_CARRY
 		S_CARRY:
@@ -447,7 +534,7 @@ func _update_server() -> void:
 				pt2.wait_total = (pt2.seated_t - pt2.queued_t) + (time - pt2.waiting_t)
 				if pt2.wait_total > pt2.patience:
 					pt2.stars = maxi(1, pt2.base_stars - 1)
-				_server_total = Staffing.effective_return(SEAT_SERVE[pt2.seat], SERVE_BACK_PERCENT, staffing)
+				_server_total = Staffing.effective_return(_serve_seconds(pt2.seat), SERVE_BACK_PERCENT, staffing)
 				_server_left = _server_total
 				_server_state = S_RETURN
 		S_RETURN:
@@ -485,7 +572,7 @@ func pending_revenue() -> int:
 
 func stats() -> Dictionary:
 	var seated: int = 0
-	for i in SEAT_COUNT:
+	for i in seat_count:
 		if _seat_owner[i] != -1:
 			seated += 1
 	return {
@@ -525,7 +612,7 @@ func summary() -> Dictionary:
 	var avg: float = 0.0
 	if count > 0:
 		avg = float(star_sum) / float(count)
-	return {
+	var result: Dictionary = {
 		"error": "",
 		"day": day,
 		"record_id": record_id,
@@ -544,6 +631,25 @@ func summary() -> Dictionary:
 		"avg_stars": avg,
 		"finished_at": time,
 	}
+	if _multi:
+		var rows: Array = menus.duplicate(true)
+		for row in rows:
+			for key in ["units", "revenue", "ingredient_cost", "margin"]:
+				row[key] = 0
+			row["wait_total"] = 0
+			for key in row["by_source"]:
+				row["by_source"][key] = 0
+		for order in completed:
+			var row: Dictionary = rows[int(order["menu_index"])]
+			row["units"] += 1
+			row["revenue"] += int(order["price"])
+			row["ingredient_cost"] += int(order["unit_cost"])
+			row["margin"] += int(order["price"]) - int(order["unit_cost"])
+			row["wait_total"] += int(order["wait"])
+			row["by_source"][order["source"]] += 1
+		result["menus"] = rows
+		result["seat_count"] = seat_count
+	return result
 
 
 ## 지금까지 기다린 시간(줄 + 음식). 아직 줄/주문 대기 단계가 아니면 0.
@@ -560,7 +666,7 @@ func _duration_of(pt: Patron) -> int:
 		P_APPROACH:
 			return APPROACH_GS
 		P_TO_SEAT:
-			return SEAT_WALK[maxi(0, pt.seat)]
+			return _walk_seconds(maxi(0, pt.seat))
 		P_ORDERING:
 			return ORDER_GS
 		P_EATING:
@@ -632,16 +738,19 @@ func entities() -> Dictionary:
 			"bubble": bubble,
 			"balk": not pt.will_order,
 		})
+		if _multi:
+			list[-1]["config"] = menus[pt.menu_index]["config"].duplicate(true)
+			list[-1]["record_id"] = menus[pt.menu_index]["record_id"]
 	var chef_p: float = 0.0
 	if _chef_busy:
-		chef_p = 1.0 - float(_chef_left) / float(prep)
+		chef_p = 1.0 - float(_chef_left) / float(_chef_total)
 	var server_p: float = 0.0
 	var server_seat: int = -1
 	if _server_state != S_IDLE:
 		server_p = 1.0 - float(_server_left) / float(maxi(1, _server_total))
 		var sp: Patron = _patrons[_server_patron]
 		server_seat = sp.seat
-	return {
+	var result: Dictionary = {
 		"time": time,
 		"patrons": list,
 		"chef_cooking": _chef_busy,
@@ -651,3 +760,11 @@ func entities() -> Dictionary:
 		"server_p": server_p,
 		"server_seat": server_seat,
 	}
+	if _multi:
+		var configs: Array = []
+		for id in _ready:
+			configs.append(menus[(_patrons[id] as Patron).menu_index]["config"].duplicate(true))
+		result["ready_configs"] = configs
+		if _server_state != S_IDLE:
+			result["server_config"] = menus[(_patrons[_server_patron] as Patron).menu_index]["config"].duplicate(true)
+	return result

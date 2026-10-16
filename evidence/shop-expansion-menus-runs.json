@@ -1,0 +1,269 @@
+{
+  "date": "2026-10-16",
+  "scope": "Shop expansion schema7: visible 8 to 12 seats, pinned 1 to 2 selling menus, shared visitors/kitchen, per-menu completed sales/margin/wait",
+  "roles": {
+    "Claude Code": "Pure menu demand/allocation helper and focused tests; bounded read-only integration review",
+    "Codex": "Task contracts, state/session/persistence/art/UI integration, independent tests/reproduction/corrections, automatic native QA and publication"
+  },
+  "runs": [
+    {
+      "phase": "menu-service-core-v1",
+      "requested_max_turns": 18,
+      "actual_exit_status": 1,
+      "observed_turns": 1,
+      "subtype": "success",
+      "is_error": true,
+      "report_present": true,
+      "permission_denials": [],
+      "duration_ms": 226,
+      "usage": {
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "input_tokens": 0,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "output_tokens": 0,
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "",
+        "iterations": [],
+        "speed": "standard",
+        "fallback_credit": null
+      },
+      "model_usage": {},
+      "reported_total_cost_usd": 0
+    },
+    {
+      "phase": "menu-service-core-v2",
+      "requested_max_turns": 18,
+      "actual_exit_status": 0,
+      "observed_turns": 23,
+      "subtype": "success",
+      "is_error": false,
+      "report_present": true,
+      "permission_denials": [],
+      "duration_ms": 178442,
+      "usage": {
+        "input_tokens": 22,
+        "cache_creation_input_tokens": 54243,
+        "cache_read_input_tokens": 315775,
+        "output_tokens": 26922,
+        "output_tokens_details": {
+          "thinking_tokens": 9532
+        },
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 54243,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "global",
+        "iterations": [
+          {
+            "input_tokens": 2,
+            "output_tokens": 1740,
+            "cache_read_input_tokens": 55963,
+            "cache_creation_input_tokens": 1973,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 1973
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard",
+        "fallback_credit": null
+      },
+      "model_usage": {
+        "claude-sonnet-5-5": {
+          "inputTokens": 22,
+          "outputTokens": 26922,
+          "cacheReadInputTokens": 315775,
+          "cacheCreationInputTokens": 54243,
+          "webSearchRequests": 0,
+          "costUSD": 0.5178135,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 9532,
+          "canonicalModel": "claude-sonnet-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "reported_total_cost_usd": 0.5178135
+    },
+    {
+      "phase": "menu-service-review-v1",
+      "requested_max_turns": 8,
+      "actual_exit_status": 0,
+      "observed_turns": 14,
+      "subtype": "success",
+      "is_error": false,
+      "report_present": true,
+      "permission_denials": [],
+      "duration_ms": 58655,
+      "usage": {
+        "input_tokens": 16,
+        "cache_creation_input_tokens": 38878,
+        "cache_read_input_tokens": 206404,
+        "output_tokens": 6893,
+        "output_tokens_details": {
+          "thinking_tokens": 3828
+        },
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 38878,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "global",
+        "iterations": [
+          {
+            "input_tokens": 2,
+            "output_tokens": 3924,
+            "cache_read_input_tokens": 41102,
+            "cache_creation_input_tokens": 885,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 885
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard",
+        "fallback_credit": null
+      },
+      "model_usage": {
+        "claude-sonnet-5-5": {
+          "inputTokens": 16,
+          "outputTokens": 6893,
+          "cacheReadInputTokens": 206404,
+          "cacheCreationInputTokens": 38878,
+          "webSearchRequests": 0,
+          "costUSD": 0.24511439999999998,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 3828,
+          "canonicalModel": "claude-sonnet-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "reported_total_cost_usd": 0.24511439999999998
+    }
+  ],
+  "interpretation": [
+    "The first invocation failed OAuth refresh, not game acceptance; same contract succeeded after scoped existing-login refresh. No credentials are published.",
+    "Actual turn counts23 and14 exceeded requested18 and8. These flags are not demonstrated subscription quota limits.",
+    "Reported cost is the CLI API-equivalent estimate, not a subscription bill. Codex and Claude quota percentages are not inferred from tokens."
+  ],
+  "review": {
+    "reproducible_valid_state_defects": 0,
+    "unproven_candidate": "Second-menu locked config at begin_service. Codex checked taste, every serialized record/config, and monotonic discovery/topping slots: no normal-play or accepted-save path creates it. Not treated as a reproduced defect.",
+    "tests_executed_by_claude": false
+  },
+  "corrections": [
+    {
+      "initial": "focused menu core1637/1",
+      "cause": "The test fixtures did not actually saturate shared kitchen.",
+      "fix": "Retained capacity assertion and added real 78sec/186sec menus on day5, demand19 but18 complete bowls consume2268sec.",
+      "final": "1638/0/exit0"
+    },
+    {
+      "initial": "full UI13120/36; focused832/36",
+      "cause": "QA created two extra records despite full six-slot notebook.",
+      "fix": "Purchase real bench_1 before new tastings; no capacity assertion weakened."
+    },
+    {
+      "initial": "focused corrected-fixture870/4",
+      "cause": "Deletion rejection not surfaced and portrait forecast/report537px exceeded472px scroll viewport.",
+      "fix": "Propagate actual delete result/reset confirmation; compact repeated units and blank lines while retaining menu source quantities, financial details and actual waiting.",
+      "final": "focused870/0/exit0; full layout13158/0/exit0"
+    }
+  ],
+  "checks": {
+    "domain": {
+      "tests": 105,
+      "checks": 56283,
+      "failures": 0,
+      "exit_status": 0
+    },
+    "menu_core": {
+      "checks": 1638,
+      "failures": 0,
+      "exit_status": 0
+    },
+    "actual_v6_fixtures": {
+      "cases": 10,
+      "generation_checks": 139,
+      "migration_backup_roundtrip_checks": 60,
+      "independent_python_all_value_comparisons": 10,
+      "failures": 0,
+      "exit_status": 0,
+      "retroactive_rewards": false
+    },
+    "actual_v6_legacy_golden": {
+      "service_cases": 56,
+      "default_cpu_rasters": 2,
+      "checks": 226,
+      "failures": 0,
+      "exit_status": 0
+    },
+    "layout": {
+      "profiles": [
+        "1280x800",
+        "390x844"
+      ],
+      "checks": 13158,
+      "failures": 0,
+      "exit_status": 0,
+      "rendering_evidence": false
+    },
+    "packed_main": {
+      "frames": 60,
+      "isolated_save": true,
+      "exit_status": 0,
+      "engine_errors": 0
+    },
+    "native": {
+      "date": "2026-10-16",
+      "run_utc": "20261016T050549Z",
+      "mode": "actual OpenGL renderer",
+      "checks": 13450,
+      "failures": 0,
+      "exit_status": 0,
+      "engine_errors": 0,
+      "png_count": 146,
+      "profiles": {
+        "desktop": 73,
+        "portrait": 73
+      },
+      "published_new_images": 22,
+      "bundled_source_files": 73,
+      "source_mismatches": 0,
+      "pack_sha256": "dc863f61a8abcf6f2b61a16dcdde50edbd5e3b8ad9a2111aac5b4949843c9f11",
+      "status": "PASSED",
+      "visual_inspection": "PASSED: actual desktop/portrait expansion confirmation, four-table shop, selling roster, menu forecast/results/report and save failure/recovery images inspected",
+      "user_approved_exact_qa_app_after_auto_review_rejection": true
+    }
+  },
+  "limitations": [
+    "Free furniture editing, city construction, broth/noodle production and branching regular stories are outside this milestone.",
+    "iOS export and iPhone physical-device/play-feel acceptance not performed.",
+    "No automated tests or launch against the live player save; 47 unknown original copies must remain preserved."
+  ]
+}

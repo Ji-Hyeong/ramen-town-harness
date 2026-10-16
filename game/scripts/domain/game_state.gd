@@ -20,6 +20,8 @@ const Training = preload("res://scripts/domain/staff_training.gd")
 const Exploration = preload("res://scripts/domain/ingredient_exploration.gd")
 const Contest = preload("res://scripts/domain/ramen_contest.gd")
 const ContestProgress = preload("res://scripts/domain/contest_progress.gd")
+const MenuSales = preload("res://scripts/domain/menu_sales.gd")
+const MenuReport = preload("res://scripts/domain/menu_report.gd")
 
 ## 스키마 v2: 최상위에 "research"(완료한 연구 의뢰 영수증 목록)가 추가됐다.
 ## v1 저장은 "research" 키가 없는 것이 정상이며, 불러올 때 빈 연구 진행(완료 없음)으로 이행한다(load_from_dict 참고).
@@ -35,7 +37,9 @@ const ContestProgress = preload("res://scripts/domain/contest_progress.gd")
 ## v5에는 출품 영수증·최고 메달·잡지 영수증을 보존한다. v1~v4 이행은 보상 없이 빈 진행으로 시작한다.
 ## v6 육성은 고용 직원별 완료 주문 경험과 최대 두 훈련 영수증을 보존한다.
 ## v1~v5는 기존 값 모두 유지, 고용된 직원의 경험/훈련만 0부터 시작한다(소급 지급 없음).
-const SCHEMA_VERSION: int = 6
+## v7은 보이는 매장 증축과 명시적 판매 목록을 보존한다. v1~6에는 미확장/자동 선택만 추가한다.
+const SCHEMA_VERSION: int = 7
+const EXPANSION_PRICE: int = 60000
 const MIN_SCHEMA_VERSION: int = 1
 const MAX_RECORDS: int = 30
 const START_WALLET: int = 30000
@@ -52,7 +56,8 @@ const TOP_KEYS_V3: Array = ["schema_version", "day", "wallet", "next_record_id",
 const TOP_KEYS_V4: Array = ["schema_version", "day", "wallet", "next_record_id", "next_lineage_id",
 	"records", "selected_record_id", "last_feedback_record_id", "draft", "last_report", "research", "growth", "exploration"]
 const TOP_KEYS_V5: Array = TOP_KEYS_V4 + ["contests"]
-const TOP_KEYS: Array = TOP_KEYS_V5 + ["training"]
+const TOP_KEYS_V6: Array = TOP_KEYS_V5 + ["training"]
+const TOP_KEYS: Array = TOP_KEYS_V6 + ["shop"]
 const RECORD_KEYS: Array = ["record_id", "lineage_id", "name", "version", "tasted_day", "config", "scores", "comparison"]
 const COMPARISON_KEYS: Array = ["prev_record_id", "prev_version", "prev_scores", "prev_config"]
 const DRAFT_KEYS: Array = ["config", "name", "lineage_id"]
@@ -77,6 +82,8 @@ var _rank: int = 1
 var _facilities: Array = []
 var _hired: Array = []
 var _training: Dictionary = {}
+var _expanded: bool = false
+var _menu_ids: Array = []
 ## 재료 탐험 상태(저장). 발견한 재료(영구), 마지막 출발일(하루 1번 규칙), 누적 완료/포기 횟수, 진행 중 탐험, 최근 영수증. 구조는 ingredient_exploration.gd 참고.
 ## 이 값은 항상 Exploration 의 전이 함수가 돌려준 "새 딕셔너리"로 통째로 교체한다(부분 수정 없음). 외부에는 deep copy만 내보낸다.
 var _exploration: Dictionary = Exploration.empty_state()
@@ -252,6 +259,8 @@ func delete_record(id: int) -> Dictionary:
 	var idx: int = _index_of(id)
 	if idx < 0:
 		return _fail("노트에 없는 기록이에요.")
+	if _menu_ids.has(id):
+		return _fail("판매 중인 메뉴예요. [영업]에서 판매 목록에서 뺀 뒤 삭제하세요.")
 	var removed: Dictionary = _records[idx]
 	var lineage: int = int(removed["lineage_id"])
 	_records.remove_at(idx)
@@ -361,7 +370,10 @@ func taste() -> Dictionary:
 # ---------- 영업(하루) ----------
 
 func forecast() -> Dictionary:
-	var rec: Dictionary = get_record(selected_record_id)
+	var selling: Array = selling_records()
+	if _expanded:
+		return MenuSales.simulate(selling, day, current_staffing())
+	var rec: Dictionary = {} if selling.is_empty() else selling[0]
 	if rec.is_empty():
 		return {"error": "노트에서 영업할 레시피를 먼저 선택하세요."}
 	return Sim.simulate(rec["config"], rec["scores"], day, current_staffing())
@@ -373,7 +385,17 @@ func forecast() -> Dictionary:
 func serve() -> Dictionary:
 	if _busy():
 		return _locked_fail()
-	var rec: Dictionary = get_record(selected_record_id)
+	if _expanded:
+		var opened: Dictionary = begin_service()
+		if not bool(opened["ok"]):
+			return opened
+		_active_session.run_to_end()
+		var result: Dictionary = settle_service()
+		if not bool(result["ok"]):
+			cancel_service()
+		return result
+	var selling: Array = selling_records()
+	var rec: Dictionary = {} if selling.is_empty() else selling[0]
 	if rec.is_empty():
 		return _fail("노트에서 영업할 레시피를 먼저 선택하세요.")
 	var serve_lock: String = Exploration.locked_in(rec["config"], _discovered_list())
@@ -433,7 +455,8 @@ func begin_service() -> Dictionary:
 		return _fail("이미 영업 중이에요.")
 	if exploration_active():
 		return _trip_fail()
-	var rec: Dictionary = get_record(selected_record_id)
+	var selling: Array = selling_records()
+	var rec: Dictionary = {} if selling.is_empty() else selling[0]
 	if rec.is_empty():
 		return _fail("노트에서 영업할 레시피를 먼저 선택하세요.")
 	var rec_lock: String = Exploration.locked_in(rec["config"], _discovered_list())
@@ -443,6 +466,8 @@ func begin_service() -> Dictionary:
 		return _fail("더 이상 영업일을 늘릴 수 없어요.")
 	# 직원/성장 스냅샷은 여기서 한 번만 복사한다. 이후 세션은 이 값만 쓴다(영업 중 고용/구매는 막혀 있다).
 	var plan: Dictionary = Session.make_plan(rec, day, current_staffing(), growth_snapshot())
+	if _expanded:
+		plan = Session.make_menu_plan(selling, day, current_staffing(), growth_snapshot(), seat_count())
 	if str(plan["error"]) != "":
 		return _fail(str(plan["error"]))
 	var fc: Dictionary = plan["forecast"]
@@ -472,12 +497,15 @@ func settle_service() -> Dictionary:
 		return _fail("이미 정산된 영업이에요.")
 	if not s.is_finished():
 		return _fail("영업이 아직 끝나지 않았어요. 끝나지 않은 영업은 정산되지 않아요.")
+	if _expanded:
+		return _settle_menu_session(s)
 	var sm: Dictionary = s.summary()
 	if str(sm["error"]) != "":
 		return _fail(str(sm["error"]))
 	if int(sm["day"]) != day:
 		return _fail("영업일이 달라져 정산할 수 없어요.")
-	var rec: Dictionary = get_record(selected_record_id)
+	var selling: Array = selling_records()
+	var rec: Dictionary = {} if selling.is_empty() else selling[0]
 	if rec.is_empty() or int(rec["record_id"]) != int(sm["record_id"]):
 		return _fail("영업한 레시피와 선택된 레시피가 달라 정산할 수 없어요.")
 	var rec_cfg: Dictionary = rec["config"]
@@ -543,6 +571,109 @@ func settle_service() -> Dictionary:
 	res["turned_away"] = int(sm["turned_away"])
 	res["avg_stars"] = float(sm["avg_stars"])
 	return res
+
+
+func shop_expanded() -> bool:
+	return _expanded
+
+
+func seat_count() -> int:
+	return 12 if _expanded else 8
+
+
+func selling_capacity() -> int:
+	return 2 if _expanded else 1
+
+
+func pinned_menu_ids() -> Array:
+	return _menu_ids.duplicate()
+
+
+## 빈 판매 목록은 예전처럼 선택된 시식 기록을 사용한다. 고정 목록은 초안/시식 대상과 별개다.
+func selling_records() -> Array:
+	var ids: Array = _menu_ids if not _menu_ids.is_empty() else ([selected_record_id] if selected_record_id != 0 else [])
+	var out: Array = []
+	for id in ids:
+		out.append(get_record(int(id)))
+	return out
+
+
+func set_selling_menus(ids: Array) -> Dictionary:
+	if _busy():
+		return _locked_fail()
+	if ids.size() > selling_capacity():
+		return _fail("지금은 메뉴 %d종까지 판매해요. 매장을 증축하면 두 메뉴를 함께 팔 수 있어요." % selling_capacity())
+	var seen: Dictionary = {}
+	for id in ids:
+		if typeof(id) != TYPE_INT or seen.has(id) or get_record(int(id)).is_empty():
+			return _fail("판매 메뉴는 노트의 서로 다른 시식 기록이어야 해요.")
+		seen[id] = true
+	_menu_ids = ids.duplicate()
+	return _ok("선택한 시식 기록을 자동으로 판매해요." if ids.is_empty() else "%d종의 판매 메뉴를 고정했어요. 개발·시식 대상과 따로 유지돼요." % ids.size())
+
+
+func expansion_review() -> Dictionary:
+	var reason: String = ""
+	if _expanded:
+		reason = "이미 증축했어요."
+	elif _rank < 2:
+		reason = "가게 등급 2부터 증축할 수 있어요."
+	elif wallet < EXPANSION_PRICE:
+		reason = "증축비 %s가 필요해요." % Growth._won(EXPANSION_PRICE)
+	return {"owned": _expanded, "can_buy": reason == "", "reason": reason, "price": EXPANSION_PRICE}
+
+
+func expand_shop() -> Dictionary:
+	if _busy():
+		return _locked_fail()
+	var review: Dictionary = expansion_review()
+	if not bool(review["can_buy"]):
+		return _fail(str(review["reason"]))
+	wallet -= EXPANSION_PRICE
+	_expanded = true
+	return _ok("매장을 넓혔어요. 8석→12석 · 판매 메뉴 1종→2종. 기존 메뉴는 유지돼요. 증축비는 돌려받지 못해요.")
+
+
+func _settle_menu_session(s: Session) -> Dictionary:
+	var sm: Dictionary = s.summary()
+	if str(sm["error"]) != "":
+		return _fail(str(sm["error"]))
+	if int(sm["day"]) != day or s.seat_count != seat_count() or MenuReport._json(sm["staffing"]) != MenuReport._json(current_staffing()):
+		return _fail("영업일/좌석/직원 구성이 시작 때와 달라 정산할 수 없어요.")
+	var today: Array = selling_records()
+	if not sm.has("menus") or sm["menus"].size() != today.size():
+		return _fail("판매 메뉴 수가 영업 중 바뀌었어요.")
+	for i in today.size():
+		if int(sm["menus"][i]["record_id"]) != int(today[i]["record_id"]):
+			return _fail("영업한 판매 메뉴가 달라졌어요.")
+	var after: int = wallet + int(sm["revenue"]) - int(sm["ingredient_cost"]) - int(sm["overhead"])
+	if day >= MAX_DAY or after < 0 or after > MAX_WALLET:
+		return _fail("영업일 또는 자금 한도를 벗어나 정산할 수 없어요.")
+	var report: Dictionary = {"day": day, "recipe_name": "오늘의 메뉴", "version": 1, "price": 0,
+		"units": sm["units"], "revenue": sm["revenue"], "ingredient_cost": sm["ingredient_cost"], "overhead": sm["overhead"],
+		"net": after - wallet, "wallet_after": after, "by_source": sm["by_source"].duplicate(true),
+		"menus": sm["menus"].duplicate(true), "seat_count": seat_count(), "staffing": sm["staffing"].duplicate(true)}
+	var retained: Dictionary = {}
+	for record in _records:
+		retained[int(record["record_id"])] = record
+	var parsed: Dictionary = MenuReport.parse(report, day + 1, next_record_id, retained, _discovered_list(), topping_slots())
+	if str(parsed["error"]) != "":
+		return _fail(str(parsed["error"]))
+	var trained: Dictionary = _service_experience(int(sm["units"]))
+	if str(trained["error"]) != "":
+		return _fail(str(trained["error"]))
+	# 검사 뒤에만 비용/경험/일차/불변 보고를 함께 반영한다. 공통 운영비는 이 한 번뿐이다.
+	wallet = after
+	_training = trained["state"]
+	last_report = parsed["report"]
+	day += 1
+	s.mark_settled()
+	_active_session = null
+	var result: Dictionary = _ok("%d일차 메뉴 영업을 마쳤어요." % int(last_report["day"]))
+	result["report"] = last_report.duplicate(true)
+	result["turned_away"] = sm["turned_away"]
+	result["avg_stars"] = sm["avg_stars"]
+	return result
 
 
 ## 영업 중이거나 탐험 중이면 레시피/일차/성장/연구를 건드리는 행동은 도메인이 거부한다(화면 잠금과 별개의 마지막 방어선).
@@ -1130,6 +1261,7 @@ func to_dict() -> Dictionary:
 		"exploration": _exploration.duplicate(true),
 		"contests": _contests.duplicate(true),
 		"training": _training.duplicate(true),
+		"shop": {"expanded": _expanded, "menu_ids": _menu_ids.duplicate()},
 	}
 
 
@@ -1155,7 +1287,9 @@ func load_from_dict(raw: Variant) -> String:
 		expected_keys = TOP_KEYS_V4
 	elif version == 5:
 		expected_keys = TOP_KEYS_V5
-	elif version >= 6:
+	elif version == 6:
+		expected_keys = TOP_KEYS_V6
+	elif version >= 7:
 		expected_keys = TOP_KEYS
 	var key_err: String = Check.keys_error(d, expected_keys, "저장")
 	if key_err != "":
@@ -1234,7 +1368,10 @@ func load_from_dict(raw: Variant) -> String:
 		if str(lineage_names[dlin]) != dname:
 			return "초안 이름이 레시피 이름과 달라요."
 
-	var rep_result: Dictionary = _parse_report(d["last_report"], int(d["day"]), seen_ids)
+	var new_report: bool = typeof(d["last_report"]) == TYPE_DICTIONARY and d["last_report"].has("menus")
+	if new_report and version < 7:
+		return "이전 버전에 메뉴별 영업 보고가 들어 있어요."
+	var rep_result: Dictionary = {"error": "", "report": {}} if new_report else _parse_report(d["last_report"], int(d["day"]), seen_ids)
 	if str(rep_result["error"]) != "":
 		return str(rep_result["error"])
 
@@ -1322,7 +1459,39 @@ func load_from_dict(raw: Variant) -> String:
 		if str(contest_result["error"]) != "":
 			return str(contest_result["error"])
 		contests_parsed = contest_result["state"]
+	var expanded: bool = false
+	var menu_ids: Array = []
+	if version >= 7:
+		if typeof(d["shop"]) != TYPE_DICTIONARY or Check.keys_error(d["shop"], ["expanded", "menu_ids"], "매장") != "":
+			return "매장 상태 구조가 올바르지 않아요."
+		if typeof(d["shop"]["expanded"]) != TYPE_BOOL or typeof(d["shop"]["menu_ids"]) != TYPE_ARRAY:
+			return "매장 확장/판매 목록 형식이 올바르지 않아요."
+		expanded = d["shop"]["expanded"]
+		if expanded and growth_rank < 2:
+			return "증축에 필요한 가게 등급이 없어요."
+		var used: Dictionary = {}
+		if d["shop"]["menu_ids"].size() > (2 if expanded else 1):
+			return "판매 메뉴 수가 열린 칸을 넘었어요."
+		for id in d["shop"]["menu_ids"]:
+			if not Check.in_range(id, 1, n_record - 1) or not seen_ids.has(int(id)) or used.has(int(id)):
+				return "판매 목록의 기록 번호가 올바르지 않아요."
+			menu_ids.append(int(id))
+			used[int(id)] = true
+	if new_report:
+		if not expanded:
+			return "증축하지 않은 매장의 확장 영업 보고예요."
+		var retained: Dictionary = {}
+		for record in parsed:
+			retained[int(record["record_id"])] = record
+		rep_result = MenuReport.parse(d["last_report"], int(d["day"]), n_record, retained, discovered_now, slot_limit)
+		if str(rep_result["error"]) != "":
+			return str(rep_result["error"])
+		var staff_error: String = _report_staff_error(rep_result["report"]["staffing"], growth_staff, training_parsed, int(rep_result["report"]["day"]))
+		if staff_error != "":
+			return staff_error
 	# 모든 검증 통과 후 반영
+	_expanded = expanded
+	_menu_ids = menu_ids
 	_rank = growth_rank
 	_facilities = growth_facilities
 	_hired = growth_staff
@@ -1341,6 +1510,22 @@ func load_from_dict(raw: Variant) -> String:
 	draft_name = dname
 	draft_lineage_id = dlin
 	last_report = rep_result["report"]
+	return ""
+
+
+## 보고일 뒤에 훈련을 받았더라도 당시 자격을 소급하지 않는다. 과거에 없었던 고용/자격을 주장하면 거부한다.
+static func _report_staff_error(staff: Dictionary, hired: Array, training: Dictionary, on_day: int) -> String:
+	var historical: Dictionary = {}
+	for id in staff.get("hired", []):
+		if not hired.has(id):
+			return "영업 보고에 고용한 적 없는 직원이 있어요."
+		var e: Dictionary = Training.empty()
+		for lesson in training[id]["lessons"]:
+			if int(lesson["day"]) <= on_day:
+				e["lessons"].append(lesson.duplicate(true))
+		historical[id] = e
+	if MenuReport._json(Staffing.snapshot(staff.get("hired", []), historical)) != MenuReport._json(staff):
+		return "영업 보고의 자격이 당시 훈련과 달라요."
 	return ""
 
 

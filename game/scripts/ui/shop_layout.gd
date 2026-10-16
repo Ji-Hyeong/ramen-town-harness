@@ -71,16 +71,16 @@ static func variant_for(width: float, height: float) -> String:
 ## 바닥 격자 → 화면. h 는 바닥에서의 높이(픽셀). 정수 픽셀로 반올림한다(모든 모서리가 같은 격자 위에 놓이게).
 static func proj(layout: Dictionary, g: Vector2, h: float = 0.0) -> Vector2:
 	var o: Vector2 = layout["origin"]
-	return Vector2(roundf(o.x + (g.x - g.y) * HALF_W), roundf(o.y + (g.x + g.y) * HALF_H - h))
+	return Vector2(roundf(o.x + (g.x - g.y) * float(layout.get("half_w", HALF_W))), roundf(o.y + (g.x + g.y) * float(layout.get("half_h", HALF_H)) - h))
 
 
 ## 바닥 위 화면 점의 깊이(gx+gy). 사람/그릇처럼 바닥 좌표만 아는 것의 정렬 키다.
 static func depth_of_screen(layout: Dictionary, p: Vector2) -> float:
 	var o: Vector2 = layout["origin"]
-	return (p.y - o.y) / HALF_H
+	return (p.y - o.y) / float(layout.get("half_h", HALF_H))
 
 
-static func make(variant: String) -> Dictionary:
+static func make(variant: String, expanded: bool = false) -> Dictionary:
 	var landscape: bool = variant == LANDSCAPE
 	var layout: Dictionary = {
 		"variant": LANDSCAPE if landscape else PORTRAIT,
@@ -91,12 +91,38 @@ static func make(variant: String) -> Dictionary:
 		"kitchen": KITCHEN,
 		"wall_h": WALL_H,
 	}
+	if expanded:
+		# 세로에서는 192 논리픽셀을 2배(384px)로 유지한다. 바닥 타일만 14x7로 맞추며 인물 도트 크기는 바꾸지 않는다.
+		layout["room"] = Rect2(0, 0, 16.8, ROOM_D)
+		layout["size"] = Vector2i(320, 152) if landscape else Vector2i(192, 264)
+		layout["origin"] = Vector2(134, 42) if landscape else Vector2(68, 84)
+		layout["half_w"] = 8.0 if landscape else 7.0
+		layout["half_h"] = 4.0 if landscape else 3.5
+	layout["expanded"] = expanded
 	layout["furniture"] = _furniture(landscape)
+	if expanded:
+		var extended: Array = []
+		for item in layout["furniture"]:
+			var f: Dictionary = item.duplicate(true)
+			if f["id"] == "rail_x":
+				f["rect"] = Rect2(16.65, 0, 0.15, ROOM_D)
+			elif f["id"] == "rail_y":
+				f["rect"] = Rect2(7.2, ROOM_D - 0.15, 9.6, 0.15)
+			elif f["id"] == "stall" or f["id"] == "neighbor_e":
+				f["rect"].position.x += 5.0
+			f["rects"] = [f["rect"]] if f["id"] != "facade" else f["rects"]
+			extended.append(f)
+		for t in TABLE_Y.size():
+			extended.append(_f("annex_table%d" % t, "table", Rect2(14.1, float(TABLE_Y[t]) - 1.0, 1.2, 2.0), TABLE_H))
+		layout["furniture"] = extended
 	layout["counters"] = [{"rect": COUNTER, "h": COUNTER_H}]
 	var tables: Array = []
 	for cy in TABLE_Y:
 		tables.append({"rect": Rect2(TABLE_X - TABLE_SIZE.x * 0.5, float(cy) - TABLE_SIZE.y * 0.5, TABLE_SIZE.x, TABLE_SIZE.y), "h": TABLE_H})
 	layout["tables"] = tables
+	if expanded:
+		for cy in TABLE_Y:
+			tables.append({"rect": Rect2(14.1, float(cy) - 1.0, 1.2, 2.0), "h": TABLE_H})
 	var seats: Array = []
 	for gx in COUNTER_SEAT_X:
 		seats.append(_counter_seat(layout, float(gx)))
@@ -105,6 +131,23 @@ static func make(variant: String) -> Dictionary:
 		# 테이블 양끝: 안쪽(gy 작은 쪽)은 정면을 보고, 바깥쪽은 등을 보이고 앉는다. 그릇은 각자 자기 쪽 상판에 놓인다.
 		seats.append(_table_seat(layout, t, Vector2(TABLE_X, cy - 1.5), Vector2(TABLE_X + 0.3, cy - 0.45), false))
 		seats.append(_table_seat(layout, t, Vector2(TABLE_X, cy + 1.5), Vector2(TABLE_X - 0.3, cy + 0.45), true))
+	if expanded:
+		for t in TABLE_Y.size():
+			var cy: float = float(TABLE_Y[t])
+			for back in [false, true]:
+				var pos: Vector2 = Vector2(14.7, cy + (1.5 if back else -1.5))
+				var bowl: Vector2 = Vector2(14.7 + (-0.3 if back else 0.3), cy + (0.45 if back else -0.45))
+				var seat: Dictionary = _table_seat(layout, t, pos, bowl, back)
+				# 새 방은 기존 두 테이블 사이의 통로로 들어간다. 기존 상판을 관통하지 않는다.
+				var path: Array = [DOOR_IN, Vector2(DOOR_X, AISLE_Y), Vector2(SIDE_X, AISLE_Y), Vector2(SIDE_X, 4.0), Vector2(13.2, 4.0), Vector2(13.2, pos.y), pos]
+				var serve: Array = [PASS, Vector2(SIDE_X, SERVE_Y), Vector2(SIDE_X, 4.0), Vector2(13.2, 4.0), Vector2(13.2, pos.y)]
+				seat["path_grid"] = path
+				seat["path"] = _pts(layout, path)
+				seat["serve_grid"] = serve
+				seat["serve_path"] = _pts(layout, serve)
+				seat["bowl_depth"] = 14.7 + cy + TABLE_SIZE.y * 0.5 + 0.1
+				seat["table"] = t + 2
+				seats.append(seat)
 	layout["seats"] = seats
 	var prep: Rect2 = Rect2(4.9, 0.2, 1.8, 1.0)
 	layout["chef_grid"] = CHEF
