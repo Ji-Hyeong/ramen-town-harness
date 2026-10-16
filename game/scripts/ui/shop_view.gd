@@ -49,6 +49,14 @@ func _ready() -> void:
 
 ## 영업 전(닫힌 가게)에 보여 줄 실제 고용 목록. 영업 중에는 이 값이 아니라 세션의 직원 스냅샷을 쓴다(영업 중 바뀌지 않는다).
 var idle_staff: Array = []
+var expanded: bool = false
+
+
+func set_expanded(value: bool) -> void:
+	if expanded != value:
+		expanded = value
+		_bg = null
+		queue_redraw()
 
 
 func set_idle_staff(ids: Array) -> void:
@@ -81,6 +89,8 @@ func scene_info() -> Dictionary:
 	var world: Vector2i = _layout["size"]
 	return {
 		"variant": _variant,
+		"seat_count": (_layout["seats"] as Array).size(),
+		"room": _layout["room"],
 		"scale": _scale,
 		"origin": _origin,
 		"rect": Rect2(_origin, Vector2(world) * float(_scale)),
@@ -104,9 +114,10 @@ func _process(delta: float) -> void:
 
 func _ensure_layout() -> void:
 	var variant: String = Layouts.variant_for(size.x, size.y)
-	if variant != _variant or _bg == null:
+	var enlarged: bool = session.seat_count == 12 if session != null else expanded
+	if variant != _variant or _bg == null or bool(_layout.get("expanded", false)) != enlarged:
 		_variant = variant
-		_layout = Layouts.make(variant)
+		_layout = Layouts.make(variant, enlarged)
 		_bg = Art.tex(Painter.base(_layout))
 		_furniture = Painter.items(_layout)
 		_tex_cache.clear()

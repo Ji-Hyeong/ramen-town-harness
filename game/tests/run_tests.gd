@@ -27,6 +27,7 @@ const ShopViewScript = preload("res://scripts/ui/shop_view.gd")
 const TravelScript = preload("res://scripts/ui/expedition_travel.gd")
 const Contest = preload("res://scripts/domain/ramen_contest.gd")
 const ContestProgress = preload("res://scripts/domain/contest_progress.gd")
+const MenuSales = preload("res://scripts/domain/menu_sales.gd")
 
 const ARG: String = "--test-data-dir="
 
@@ -96,6 +97,9 @@ func _initialize() -> void:
 		test_training_runtime_settlement, test_training_persistence, test_training_legacy_v5,
 		test_training_invalid_saves, test_training_snapshot_validation,
 		test_training_zero_sales_between_lessons,
+		test_shop_expansion_transaction, test_selling_roster, test_menu_runtime_and_accounting,
+		test_expanded_seats_and_paths, test_order_specific_bowls, test_menu_report_persistence,
+		test_expansion_invalid_saves, test_menu_zero_sales_and_funds,
 	]
 	var ran: int = 0
 	for t in tests:
@@ -124,6 +128,219 @@ func _check(cond: bool, message: String) -> void:
 
 func _end() -> void:
 	_finished = true
+
+
+func _menu_state() -> GameStateScript:
+	var s: GameStateScript = _grown_state(3)
+	_check(bool(s.expand_shop()["ok"]), "판매 준비: 실제 증축")
+	var ids: Array = []
+	for witness in ["hayoung_basic", "dohyun_advanced"]:
+		s.start_new_recipe()
+		_apply_cfg(s, Research.WITNESSES[witness])
+		s.set_draft_price(5000)
+		s.set_draft_name("판매 " + witness)
+		_check(bool(s.taste()["ok"]), "판매 준비: 메뉴 시식")
+		ids.append(s.selected_record_id)
+	_check(bool(s.set_selling_menus(ids)["ok"]), "판매 준비: 목록 등록")
+	return s
+
+
+func test_shop_expansion_transaction() -> void:
+	var fresh: GameStateScript = GameStateScript.new()
+	var before: String = _json(fresh)
+	_check(not bool(fresh.expand_shop()["ok"]) and _json(fresh) == before, "등급 부족 증축은 불변")
+	var s: GameStateScript = _ranked_state(2)
+	s.wallet = 59999
+	before = _json(s)
+	_check(not bool(s.expand_shop()["ok"]) and _json(s) == before, "증축비 부족 불변")
+	s.wallet = 60000
+	_check(bool(s.expand_shop()["ok"]) and s.wallet == 0 and s.seat_count() == 12 and s.selling_capacity() == 2, "정확비용/12석/2종 한 번 반영")
+	before = _json(s)
+	_check(not bool(s.expand_shop()["ok"]) and _json(s) == before, "중복 구매/돈 중복차감 없음")
+	var g: GameStateScript = _ranked_state(2)
+	_check(bool(g.begin_service()["ok"]), "증축 영업 잠금")
+	before = _json(g)
+	_check(not bool(g.expand_shop()["ok"]) and _json(g) == before, "영업 중 증축 거부")
+	g.cancel_service()
+	_check(bool(g.start_expedition("market")["ok"]), "증축 탐색 잠금")
+	before = _json(g)
+	_check(not bool(g.expand_shop()["ok"]) and _json(g) == before, "탐색 중 증축 거부")
+	_end()
+
+
+func test_selling_roster() -> void:
+	var s: GameStateScript = _ranked_state(2)
+	var records: Array = s.records()
+	var a: int = records[0]["record_id"]
+	var b: int = records[1]["record_id"]
+	var before: String = _json(s)
+	_check(not bool(s.set_selling_menus([a, b])["ok"]) and _json(s) == before, "증축 전 두 메뉴 거부")
+	_check(bool(s.set_selling_menus([a])["ok"]), "한 메뉴 판매 고정")
+	s.start_new_recipe()
+	_check(s.selected_record_id == 0 and int(s.selling_records()[0]["record_id"]) == a, "개발 선택 해제와 판매 목록 독립")
+	_check(bool(s.serve()["ok"]), "선택 초안 없어도 고정 판매 가능")
+	_check(bool(s.expand_shop()["ok"]) and bool(s.set_selling_menus([a, b])["ok"]), "증축 후 두 메뉴 등록")
+	before = _json(s)
+	for ids in [[a, a], [999999], ["1"], [a, b, a]]:
+		_check(not bool(s.set_selling_menus(ids)["ok"]) and _json(s) == before, "잘못된 판매 목록 원자적 거부")
+	_check(not bool(s.delete_record(a)["ok"]) and _json(s) == before, "판매 중 기록 삭제 금지")
+	s.pinned_menu_ids().clear()
+	s.selling_records()[0]["config"]["price"] = 30000
+	_check(_json(s) == before, "판매 조회 사본 안전")
+	_check(bool(s.set_selling_menus([b])["ok"]) and bool(s.delete_record(a)["ok"]), "판매에서 뺀 뒤 삭제 가능")
+	_check(bool(s.set_selling_menus([])["ok"]) and s.selling_records().is_empty(), "자동 판매 복귀 시 현재 선택 없음도 정직하게 표시")
+	_end()
+
+
+func test_menu_runtime_and_accounting() -> void:
+	var s: GameStateScript = _menu_state()
+	_check(bool(s.hire_staff("prep_assistant")["ok"]), "메뉴 영업 보조 고용")
+	var fc: Dictionary = s.forecast()
+	var before: String = _json(s)
+	_check(bool(s.begin_service()["ok"]) and _json(s) == before, "시작 시 돈/경험/판매 기록 불변")
+	var session: SessionScript = s.active_session()
+	var frozen: String = JSON.stringify(session.menus)
+	for result in [s.set_selling_menus([]), s.expand_shop(), s.delete_record(s.pinned_menu_ids()[0]), s.train_staff("prep_assistant", "basic")]:
+		_check(not bool(result["ok"]) and _json(s) == before, "영업 중 판매/증축/삭제/훈련 거부")
+	s.selling_records().clear()
+	_check(JSON.stringify(session.menus) == frozen, "영업 메뉴 스냅샷 독립")
+	session.run_to_end()
+	_check(session.is_finished(), "두 메뉴 실제 세션 종료")
+	var money: int = s.wallet
+	_check(bool(s.settle_service()["ok"]), "두 메뉴 정산 성공")
+	var report: Dictionary = s.last_report
+	_check(report["units"] == fc["units"] and report["revenue"] == fc["revenue"] and report["net"] == fc["net"], "메뉴별 주문 합계가 예측/정산과 동일")
+	_check(report["overhead"] == 3600 and s.wallet == money + int(fc["net"]), "공통 운영비/보조 일당은 한 번")
+	_check(s.staff_training()["prep_assistant"]["bowls"] == fc["units"] and s.staff_training()["prep_assistant"]["work_days"] == 1, "두 메뉴 전체완료 주문만 경험 한번")
+	var cook_time: int = 0
+	for row in report["menus"]:
+		cook_time += int(row["units"]) * int(row["prep"])
+		_check(row["margin"] == row["revenue"] - row["ingredient_cost"] and row["wait_total"] > 0, "메뉴 공헌이익/실제 대기 합계")
+	_check(cook_time <= 2400, "실제 두 메뉴의 조리 시간도 하나의 주방 예산")
+	before = _json(s)
+	_check(not bool(s.settle_service()["ok"]) and _json(s) == before, "두 메뉴 중복 정산 거부")
+	_end()
+
+
+func test_expanded_seats_and_paths() -> void:
+	var s: GameStateScript = _menu_state()
+	var plan: Dictionary = SessionScript.make_menu_plan(s.selling_records(), s.day, s.current_staffing(), s.growth_snapshot())
+	for arrival in plan["arrivals"]:
+		arrival["t"] = 0
+	var runtime: SessionScript = SessionScript.new(plan)
+	runtime.advance(80.0)
+	_check(runtime.stats()["seated"] == 12, "12명의 실제 손님이 동시에 새 좌석까지 사용")
+	for variant in [LayoutScript.PORTRAIT, LayoutScript.LANDSCAPE]:
+		var layout: Dictionary = LayoutScript.make(variant, true)
+		_check(layout["seats"].size() == 12 and layout["tables"].size() == 4 and layout["room"].size.x > LayoutScript.ROOM_W, "좌석뿐 아니라 바닥/테이블이 실제로 증가")
+		for seat in layout["seats"]:
+			_check((layout["room"] as Rect2).has_point(seat["grid"]), "확장 좌석은 방 안")
+			for route_key in ["path_grid", "serve_grid"]:
+				var route: Array = seat[route_key]
+				for i in range(route.size() - 1):
+					var sweep: Rect2 = _grid_sweep(route[i], route[i + 1])
+					for furniture in layout["furniture"]:
+						if not bool(furniture["solid"]):
+							continue
+						for rect in furniture["rects"]:
+							_check(not _hits(sweep, rect), "확장 이동이 가구 관통하지 않음: " + furniture["id"])
+		var image: Image = SceneScript.compose_for(layout, runtime, 0.5)
+		_check(not image.is_invisible() and image.get_size() == layout["size"], "실제12석 사람/가구 합성")
+	runtime.run_to_end()
+	_check(runtime.is_finished() and runtime.summary()["units"] == plan["forecast"]["units"], "새 좌석을 이용한 모든 주문이 종료/정산 가능")
+	_end()
+
+
+func test_order_specific_bowls() -> void:
+	var s: GameStateScript = _menu_state()
+	_check(bool(s.begin_service()["ok"]), "그릇 구분 영업")
+	var runtime: SessionScript = s.active_session()
+	var seen: Dictionary = {}
+	for tick in 3500:
+		runtime.tick()
+		var entities: Dictionary = runtime.entities()
+		for patron in entities["patrons"]:
+			if patron["state"] == SessionScript.P_EATING:
+				seen[patron["record_id"]] = ArtScript.bowl_image(patron["config"]).get_data()
+		if seen.size() == 2:
+			break
+	_check(seen.size() == 2, "실제 손님이 서로 다른 두 메뉴를 먹음")
+	if seen.size() == 2:
+		_check(seen.values()[0] != seen.values()[1], "각 메뉴의 실제 재료가 다른 그릇 픽셀로 표현")
+	s.cancel_service()
+	_end()
+
+
+func test_menu_report_persistence() -> void:
+	var s: GameStateScript = _menu_state()
+	_check(bool(s.serve()["ok"]), "메뉴 보고 준비 영업")
+	var report: Dictionary = s.last_report.duplicate(true)
+	_check(bool(s.set_selling_menus([])["ok"]), "과거 메뉴 삭제 전 판매 해제")
+	for row in report["menus"]:
+		_check(bool(s.delete_record(row["record_id"])["ok"]), "과거 판매 메뉴 삭제")
+	var dir: String = _case_dir("menu_report")
+	var saver: SaveServiceScript = SaveServiceScript.new(dir)
+	saver.remove_known_files()
+	_check(bool(saver.save_state(s)["ok"]), "삭제된 메뉴의 자급 보고 저장")
+	var back: GameStateScript = GameStateScript.new()
+	_check(str(saver.load_into(back)["status"]) == "ok" and _json(back) == _json(s) and back.last_report == report, "삭제한 메뉴도 과거 구성/판매/대기 보존")
+	_cleanup_case(saver)
+	_end()
+
+
+func test_expansion_invalid_saves() -> void:
+	var s: GameStateScript = _menu_state()
+	_check(bool(s.serve()["ok"]), "불량 저장 시험 영업")
+	var source: Dictionary = JSON.parse_string(_json(s))
+	var target: GameStateScript = _populated_state()
+	var before: String = _json(target)
+	for kind in ["missing", "type", "bool", "extra", "unknown_id", "duplicate", "too_many", "unexpanded", "price", "staff", "units", "sum", "cost", "score", "wait", "config", "name", "id", "report_day"]:
+		var d: Dictionary = source.duplicate(true)
+		var row: Dictionary = d["last_report"]["menus"][0]
+		match kind:
+			"missing": d.erase("shop")
+			"type": d["shop"] = []
+			"bool": d["shop"]["expanded"] = 1
+			"extra": d["shop"]["unknown"] = true
+			"unknown_id": d["shop"]["menu_ids"] = [999999]
+			"duplicate": d["shop"]["menu_ids"] = [1, 1]
+			"too_many": d["shop"]["menu_ids"] = [1, 2, 3]
+			"unexpanded": d["shop"]["expanded"] = false
+			"price": d["last_report"]["price"] = 5000
+			"staff": d["last_report"]["staffing"]["wage"] = 100
+			"units": row["units"] = int(row["units"]) + 1
+			"sum": d["last_report"]["revenue"] = 0
+			"cost": row["ingredient_cost"] = 0
+			"score": row["scores"]["dohyun"] = 100
+			"wait": row["wait_total"] = -1
+			"config": row["config"]["toppings"] = []
+			"name": row["recipe_name"] = "다른 메뉴"
+			"id": row["record_id"] = s.next_record_id
+			"report_day": d["last_report"]["day"] = s.day
+		_check(target.load_from_dict(d) != "" and _json(target) == before, "메뉴 불가능 저장 원자 거부 " + kind)
+	_end()
+
+
+func test_menu_zero_sales_and_funds() -> void:
+	var s: GameStateScript = _menu_state()
+	var before: String = _json(s)
+	_check(bool(s.begin_service()["ok"]), "중단 영업 준비")
+	s.active_session().advance(500)
+	s.cancel_service()
+	_check(_json(s) == before, "두 메뉴 부분 영업 중단 무정산")
+	var ids: Array = []
+	for row in s.selling_records():
+		s.select_record(row["record_id"])
+		s.set_draft_price(30000)
+		_check(bool(s.taste()["ok"]), "고가 개정 시식")
+		ids.append(s.selected_record_id)
+	_check(bool(s.set_selling_menus(ids)["ok"]) and s.forecast()["units"] == 0, "두 고가 메뉴는 손님0")
+	s.wallet = 2999
+	before = _json(s)
+	_check(not bool(s.begin_service()["ok"]) and _json(s) == before, "판매0 운영비 부족 시작 거부")
+	s.wallet = 3000
+	_check(bool(s.serve()["ok"]) and s.wallet == 0 and s.last_report["units"] == 0 and s.last_report["overhead"] == 3000, "판매0의 운영비는 두 메뉴에도 한번")
+	_end()
 
 
 ## 고용 이후 실제 완료 영업으로만 경험을 만든다. 성장 준비 영업은 고용 전이므로 소급되지 않는다.
@@ -290,6 +507,7 @@ func test_training_legacy_v5() -> void:
 	var raw: Dictionary = s.to_dict()
 	raw["schema_version"] = 5
 	raw.erase("training")
+	raw.erase("shop")
 	var old: String = JSON.stringify(raw, "\t", true)
 	var dir: String = _case_dir("training_v5")
 	var saver: SaveServiceScript = SaveServiceScript.new(dir)
@@ -549,6 +767,7 @@ func test_contest_migration_v4() -> void:
 	v4["schema_version"] = 4
 	v4.erase("contests")
 	v4.erase("training")
+	v4.erase("shop")
 	var dir: String = _case_dir("contest_v4")
 	var saver: SaveServiceScript = SaveServiceScript.new(dir)
 	saver.remove_known_files()
@@ -2739,6 +2958,7 @@ func _as_legacy(src: Dictionary, version: int) -> Dictionary:
 	d.erase("exploration")
 	d.erase("contests")
 	d.erase("training")
+	d.erase("shop")
 	if version == 1:
 		d.erase("research")
 	for r in d["records"]:
@@ -3473,6 +3693,7 @@ func test_schema_migration_v1_v2() -> void:
 	v2_new_cfg.erase("exploration")
 	v2_new_cfg.erase("contests")
 	v2_new_cfg.erase("training")
+	v2_new_cfg.erase("shop")
 	_check(GameStateScript.new().load_from_dict(v2_new_cfg) != "", "toppings 배열을 쓴 v2 거부")
 	var v3_old_cfg: Dictionary = _as_legacy(_populated_state().to_dict(), 3)
 	v3_old_cfg["growth"] = v3["growth"]
@@ -3731,6 +3952,7 @@ func _as_v3(src: Dictionary) -> Dictionary:
 	d.erase("exploration")
 	d.erase("contests")
 	d.erase("training")
+	d.erase("shop")
 	return d
 
 
