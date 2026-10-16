@@ -2,7 +2,7 @@
 """자체 포함 로컬 QA 앱(Ramen QA.app)을 만든다. 개발용이며 서명/배포/iOS 빌드가 아니다.
 
 순서: 경로·엔진 검증(부작용 없음) → output-dir 생성 → 허용 목록만 담은 프로젝트 스냅샷 →
-헤드리스 import → --export-pack → PCK 확인 → 검증된 Godot.app 통째 복사 → 런처/Info.plist 조립.
+서명을 유지한 엔진 복사 → 헤드리스 import → --export-pack → PCK 확인 → 별도 QA 런처 앱 조립.
 원본 프로젝트와 원본 엔진 번들은 건드리지 않는다. HOME 은 바꾸지 않는다. 대신 검증한 엔진 번들을 output-dir 로
 복사하고 그 옆에 Godot 포터블 마커(_sc_)를 만들어, 복사본으로 준비(import/export)와 실행을 모두 해서 editor_data 가 output-dir 안에 생기게 한다.
 이미 있는 output-dir 은 덮어쓰거나 지우지 않고 거부한다. 준비 실패 시 output-dir/prep 의 로그와 FAILED.txt 를 남긴다.
@@ -27,6 +27,7 @@ from fnmatch import fnmatch
 from pathlib import Path
 
 APP_NAME = "Ramen QA.app"
+RUNTIME_DIR = "runtime"
 PRESET_NAME = "Ramen QA Pack"
 LAUNCHER_NAME = "ramen-qa-launcher"
 PACK_NAME = "ramen-qa.pck"
@@ -266,15 +267,50 @@ exit "$STATUS"
 
 
 def copy_engine(output_dir: Path, engine_app: Path, engine_name: str) -> tuple:
-    """검증된 엔진 번들을 output-dir 로 복사하고 그 옆에 포터블 마커를 만든다. (앱, 복사된 실행 파일)을 돌려준다."""
-    dest = output_dir / APP_NAME
-    shutil.copytree(engine_app, dest, symlinks=True)  # dest 가 이미 있으면 실패한다.
-    with open(output_dir / PORTABLE_MARKER, "x", encoding="utf-8"):
+    """공급자 Info.plist/실행 파일/서명을 그대로 보존하고 QA 런처와 별도 위치에 복사한다."""
+    runtime = output_dir / RUNTIME_DIR
+    runtime.mkdir()
+    dest = runtime / engine_app.name
+    # 일부 Python 빌드에는 xattr API가 없어 copytree가 quarantine 등 속성을 놓친다.
+    # macOS 기본 복사 도구로 보안 속성/ACL/심볼릭 링크까지 유지한다. 목적지는 새 폴더뿐이다.
+    if sys.platform == "darwin":
+        copied = subprocess.run(["/usr/bin/ditto", "--rsrc", "--extattr", "--acl", str(engine_app), str(dest)],
+                                capture_output=True, text=True, check=False)
+        if copied.returncode:
+            raise BuildError(f"공급자 엔진 복사에 실패했습니다: {copied.stderr.strip()}")
+    else:
+        shutil.copytree(engine_app, dest, symlinks=True)
+    # Finder의 표시 정보는 Documents 복사본에 상속될 수 있으며 엄격 서명 검증이 거부한다.
+    # 소유한 복사본의 해당 속성만 제거한다. quarantine/provenance 등 보안 속성과 원본은 보존한다.
+    if sys.platform == "darwin":
+        for copied_path in (dest, *dest.rglob("*")):
+            if copied_path.is_symlink():
+                continue
+            listed = subprocess.run(["/usr/bin/xattr", str(copied_path)],
+                                    capture_output=True, text=True, check=False)
+            if listed.returncode:
+                raise BuildError(f"복사한 엔진의 표시 속성을 확인하지 못했습니다: {copied_path}: {listed.stderr.strip()}")
+            if "com.apple.FinderInfo" in listed.stdout.splitlines():
+                removed = subprocess.run(["/usr/bin/xattr", "-d", "com.apple.FinderInfo", str(copied_path)],
+                                         capture_output=True, text=True, check=False)
+                if removed.returncode:
+                    raise BuildError(f"복사한 엔진의 Finder 표시 속성을 정리하지 못했습니다: {copied_path}: {removed.stderr.strip()}")
+    # 과거 개발 실행에서 원본 번들 안에 추가한 빈 포터블 마커만 복사본에서 제외한다.
+    # 공급자 번들 안의 추가 파일은 엄격 서명 검증을 깨뜨린다. 원본/서명/실행 파일은 변경하지 않는다.
+    copied_marker = dest / "Contents" / "MacOS" / PORTABLE_MARKER
+    if copied_marker.exists() or copied_marker.is_symlink():
+        if copied_marker.is_symlink() or not copied_marker.is_file() or copied_marker.stat().st_size != 0:
+            raise BuildError("복사된 엔진 안의 포터블 마커가 빈 일반 파일이 아닙니다. 자동 정리하지 않습니다.")
+        copied_marker.unlink()
+    with open(runtime / PORTABLE_MARKER, "x", encoding="utf-8"):
         pass
     return dest, dest / "Contents" / "MacOS" / engine_name
 
 
 def assemble_app(output_dir: Path, dest: Path, engine: Path, pack: Path) -> Path:
+    # 공급자 앱의 CFBundleExecutable/Identifier를 바꾸면 Mach-O 서명이 깨진다.
+    # 자체 제작 런처 앱만 새로 쓰고, 엔진은 서명이 유효한 별도 번들을 참조한다.
+    (dest / "Contents" / "MacOS").mkdir(parents=True)
     resources = dest / "Contents" / "Resources"
     resources.mkdir(exist_ok=True)
     packed = resources / PACK_NAME
@@ -284,17 +320,16 @@ def assemble_app(output_dir: Path, dest: Path, engine: Path, pack: Path) -> Path
         fh.write(launcher_script(output_dir, engine, packed))
     os.chmod(launcher, 0o755)
     plist_path = dest / "Contents" / "Info.plist"
-    os.chmod(plist_path, 0o644)
-    with open(plist_path, "rb") as fh:
-        info = plistlib.load(fh)
     digest = hashlib.sha256(str(output_dir).encode("utf-8")).hexdigest()[:10]
-    info.update({
+    info = {
         "CFBundleExecutable": LAUNCHER_NAME,
         "CFBundleIdentifier": f"local.ramenatelier.dev.qa.{digest}",
         "CFBundleName": "Ramen QA",
         "CFBundleDisplayName": "Ramen QA",
         "CFBundleShortVersionString": "0.1-local",
-    })
+        "CFBundlePackageType": "APPL",
+        "CFBundleVersion": "1",
+    }
     with open(plist_path, "wb") as fh:
         plistlib.dump(info, fh)
     return dest
@@ -315,7 +350,14 @@ def prepare(godot: Path, project: Path, output_dir: Path, runner=subprocess.run,
         (output_dir / "runs").mkdir()
         env = scoped_env(prep)
         # 원본 엔진은 실행하지 않는다. 복사본(+_sc_ 마커)으로 준비와 런타임을 모두 하므로 editor_data 도 output-dir 안에 생긴다.
-        app, engine = copy_engine(output_dir, engine_app, godot.name)
+        runtime_app, engine = copy_engine(output_dir, engine_app, godot.name)
+        signature_verified = False
+        if (runtime_app / "Contents" / "_CodeSignature").is_dir():
+            signature_log = prep / "engine-signature.log"
+            if run_logged(["/usr/bin/codesign", "--verify", "--deep", "--strict", "--verbose=2", str(runtime_app)],
+                          signature_log, env, prep, runner, timeout=60) != 0:
+                raise BuildError(f"복사한 공급자 엔진 서명 검증이 실패했습니다(로그: {signature_log})")
+            signature_verified = True
 
         version_log = prep / "godot-version.log"
         if run_logged([str(engine), "--version"], version_log, env, prep, runner, timeout=60) != 0:
@@ -341,11 +383,12 @@ def prepare(godot: Path, project: Path, output_dir: Path, runner=subprocess.run,
             raise BuildError(f"--export-pack 이 실패했습니다(로그: {export_log})")
         verify_pack(pack)
 
-        assemble_app(output_dir, app, engine, pack)
+        app = assemble_app(output_dir, output_dir / APP_NAME, engine, pack)
         manifest = {
             "created_utc": datetime.now(timezone.utc).isoformat(),
             "godot": str(godot), "godot_version": version_text, "godot_sha256": sha256_of(godot),
             "project_source": str(project), "pack_sha256": sha256_of(pack),
+            "copied_godot": str(engine), "vendor_signature_verified": signature_verified,
             "bundled_files": scope["included"], "excluded_files": scope["excluded"],
             "local_development_only": True,
         }

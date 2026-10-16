@@ -578,6 +578,17 @@ static func exploration_image(region: String, progress: float = 1.0, moving: boo
 	return img
 
 static func broth_color(config: Dictionary) -> Color:
+	var base: Color = _base_broth_color(config)
+	var process: Dictionary = config.get("process", {})
+	# 제조한 육수의 맑기 차이만 표현한다. 기본 공법은 이전 픽셀/색을 그대로 돌려준다.
+	if process.get("broth", "standard") == "gentle":
+		return base.lightened(0.10)
+	if process.get("broth", "standard") == "rolling":
+		return base.darkened(0.12)
+	return base
+
+
+static func _base_broth_color(config: Dictionary) -> Color:
 	match str(config.get("broth", "")):
 		"broth_tonkotsu":
 			return Color(0.95, 0.88, 0.74)
@@ -658,6 +669,11 @@ static func bowl_image(config: Dictionary) -> Image:
 	var n: String = str(config.get("noodle", ""))
 	if n == "noodle_thick":
 		noodle = Color(0.93, 0.80, 0.44)
+	var process: Dictionary = config.get("process", {})
+	if process.get("noodle", "standard") == "moist":
+		noodle = noodle.lightened(0.12)
+	elif process.get("noodle", "standard") == "rested":
+		noodle = noodle.darkened(0.10)
 	for x in range(3, 9, 1 if n == "noodle_thin" else 2):
 		px(img, x, 1, noodle)
 		px(img, x + 1 if n != "noodle_thin" else x, 2, noodle)

@@ -1,0 +1,237 @@
+{
+  "date": "2026-10-16",
+  "scope": "Schema8: three broth methods x three noodle methods, rank locks, real taste/cost/prep effects, 4 to 7.5-second trial presentation; no inventory or offline timer",
+  "roles": {
+    "Codex": "Primary state/persistence/UI/art/test integration, independent review/corrections, QA packaging fix and publication",
+    "Claude Code": "Only pure recipe_process.gd and recipe_process_core_tests.gd; optional later review cancelled before execution"
+  },
+  "runs": [
+    {
+      "phase": "recipe-process-core-v1",
+      "requested_max_turns": 14,
+      "actual_exit_status": 1,
+      "observed_turns": 1,
+      "subtype": "success",
+      "is_error": true,
+      "report_present": true,
+      "permission_denials": [],
+      "duration_ms": 258,
+      "usage": {
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "input_tokens": 0,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "output_tokens": 0,
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "",
+        "iterations": [],
+        "speed": "standard",
+        "fallback_credit": null
+      },
+      "model_usage": {},
+      "reported_total_cost_usd": 0
+    },
+    {
+      "phase": "recipe-process-core-v2",
+      "requested_max_turns": 14,
+      "actual_exit_status": 0,
+      "observed_turns": 5,
+      "subtype": "success",
+      "is_error": false,
+      "report_present": true,
+      "permission_denials": [],
+      "duration_ms": 42149,
+      "usage": {
+        "input_tokens": 6,
+        "cache_creation_input_tokens": 13073,
+        "cache_read_input_tokens": 23274,
+        "output_tokens": 7218,
+        "output_tokens_details": {
+          "thinking_tokens": 756
+        },
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 13073,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "global",
+        "iterations": [
+          {
+            "input_tokens": 2,
+            "output_tokens": 780,
+            "cache_read_input_tokens": 11214,
+            "cache_creation_input_tokens": 6471,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 6471
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard",
+        "fallback_credit": null
+      },
+      "model_usage": {
+        "claude-sonnet-5-5": {
+          "inputTokens": 6,
+          "outputTokens": 7218,
+          "cacheReadInputTokens": 23274,
+          "cacheCreationInputTokens": 13073,
+          "webSearchRequests": 0,
+          "costUSD": 0.12681140000000002,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 756,
+          "canonicalModel": "claude-sonnet-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "reported_total_cost_usd": 0.12681140000000002
+    }
+  ],
+  "optional_review": {
+    "status": "CANCELLED_BEFORE_EXECUTION",
+    "reason": "Automatic approval review rejected source transmission without payload-specific authorization. No process created, no response/usage/exit; Codex reviewed independently. No retry or bypass."
+  },
+  "checks": {
+    "pure_core": {
+      "checks": 118,
+      "failures": 0,
+      "exit_status": 0
+    },
+    "full_domain": {
+      "tests": 112,
+      "checks": 56595,
+      "failures": 0,
+      "exit_status": 0,
+      "engine_errors": 0
+    },
+    "focused_ui": {
+      "checks": 1256,
+      "failures": 0,
+      "exit_status": 0
+    },
+    "full_two_size_layout": {
+      "checks": 14510,
+      "failures": 0,
+      "exit_status": 0,
+      "rendering_evidence": false
+    },
+    "actual_v7_migration": {
+      "fixture_source": "Actual accepted v7 aaf1da6 code, scratch synthetic operations; not live saves",
+      "fixtures": 12,
+      "generator_checks": 148,
+      "checks": 72,
+      "full_value_comparisons": 12,
+      "failures": 0,
+      "exit_status": 0,
+      "permanent_original_backups": true
+    },
+    "actual_v7_golden": {
+      "service_cases": 64,
+      "cpu_rasters": 4,
+      "comparisons": 260,
+      "failures": 0,
+      "exit_status": 0
+    },
+    "builder": {
+      "tests": 20,
+      "failures": 0,
+      "exit_status": 0,
+      "real_vendor_signature_verified_on_new_private_tmp_bundle": true
+    },
+    "native": {
+      "date": "2026-10-16",
+      "run_utc": "20261016T062322Z",
+      "mode": "actual OpenGL renderer",
+      "checks": 14842,
+      "failures": 0,
+      "exit_status": 0,
+      "engine_errors": 0,
+      "png_count": 166,
+      "profiles": {
+        "desktop": 83,
+        "portrait": 83
+      },
+      "published_new_images": 20,
+      "bundled_source_files": 77,
+      "source_mismatches": 0,
+      "vendor_signature_verified": true,
+      "vendor_info_and_binary_unchanged": true,
+      "pack_sha256": "3eb423c0fc770edd2950e2f259e7f142f505327bfdaa5aefea6107ac4c8ee6d3",
+      "visual_inspection": "PASSED: all20 new desktop/portrait locked methods, tradeoffs, broth/dough progress, feedback, revision, mixed-menu report, restart, save failure/recovery",
+      "status": "PASSED",
+      "user_approved_exact_new_qa_app": true,
+      "cua_launcher_observation": "Timed out after37 seconds; actual engine running. Selected exact copied official engine via CUA and Raise. Actual run completed successfully; no duplicate run."
+    },
+    "player_packed_smoke": {
+      "status": "PASSED",
+      "frames": 60,
+      "exit_status": 0,
+      "engine_errors": 0,
+      "isolated_test_save": true,
+      "pack_sha256": "3eb423c0fc770edd2950e2f259e7f142f505327bfdaa5aefea6107ac4c8ee6d3"
+    }
+  },
+  "iterations": [
+    {
+      "phase": "added-domain-tests-first",
+      "tests": 112,
+      "checks": 56588,
+      "failures": 2,
+      "reason": "Test-only nonexistent contest API/history key; fixed fixture, did not change game behavior"
+    },
+    {
+      "phase": "first-full-ui",
+      "checks": 14510,
+      "failures": 2,
+      "reason": "Notebook note lacked established simultaneous-selling phrase; clarified displayed wording, preserved assertions"
+    },
+    {
+      "phase": "qa-v1",
+      "actual_exit_status": 137,
+      "png_count": 0,
+      "acceptance": false,
+      "observed": "CUA startup timed out; run exit137; copied vendor Info.plist separately failed signature verification"
+    },
+    {
+      "phase": "qa-documents-v2-v3-v4",
+      "acceptance": false,
+      "observed": "Preparation stopped before engine execution because strict vendor signature rejected reappearing FinderInfo. Outputs retained."
+    },
+    {
+      "phase": "builder-tests-first",
+      "tests": 19,
+      "errors": 1,
+      "reason": "Missing json import in new test; fixed test"
+    },
+    {
+      "phase": "builder-tests-second",
+      "tests": 20,
+      "failures": 1,
+      "reason": "Python copytree lacked xattr support; regression detected loss of unrelated attribute. Used macOS ditto to preserve xattrs/ACLs; all20 pass."
+    }
+  ],
+  "limits": [
+    "iOS/iPhone unverified",
+    "Long-term player feel and balance unverified",
+    "Local saves are not cryptographically authenticated",
+    "No live player-save test or automatic launch",
+    "Subscription percentage split is not inferred from token counts; reported API estimates are not subscription charges"
+  ]
+}

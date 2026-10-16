@@ -1,4 +1,5 @@
 extends RefCounted
+const ProcessRules = preload("res://scripts/domain/recipe_process.gd")
 ## 콘테스트 거래와 영수증은 UI 시간과 분리한다. 모든 검증이 끝난 새 상태만 돌려주므로
 ## 잔액 부족/잘못된 입력/보상 상한에서 비용이나 진행 일부만 반영되지 않는다.
 const Contest = preload("res://scripts/domain/ramen_contest.gd")
@@ -112,6 +113,8 @@ static func _parse_receipt(raw: Variant, day: int, rank: int, next_id: int, reco
 	if str(parsed["error"]) != "":
 		return _error(str(parsed["error"]))
 	var config: Dictionary = parsed["config"]
+	if int(ProcessRules.effects(config.get("process", {}))["rank"]) > rank:
+		return _error("출품 공법에 필요한 가게 등급이 없어요.")
 	if Catalog.toppings_of(config).size() > slots:
 		return _error("출품 토핑 수가 열린 슬롯을 넘어요.")
 	for ingredient in Catalog.item_ids(config):

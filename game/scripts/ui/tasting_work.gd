@@ -9,6 +9,7 @@ extends RefCounted
 ## "작업 중"인 동안에만 스냅샷(시작 때 복사한 초안)이 남고, 끝나면 비운다. 저장 파일에는 어떤 형태로도 들어가지 않는다.
 
 const DURATION: float = 4.0
+const ProcessRules = preload("res://scripts/domain/recipe_process.gd")
 ## 단계 경계(전체 진행률 0~1 기준): 국물 0~0.45, 면 0.45~0.8, 시식 0.8~1.0.
 const PHASES: Array = [
 	{"id": "broth", "name": "국물 우리기", "end": 0.45},
@@ -19,6 +20,7 @@ const PHASES: Array = [
 var _running: bool = false
 var _elapsed: float = 0.0
 var _snapshot: Dictionary = {}
+var _duration: float = DURATION
 
 
 func is_running() -> bool:
@@ -30,6 +32,11 @@ func is_running() -> bool:
 func start(snapshot: Dictionary) -> bool:
 	if _running:
 		return false
+	var config: Dictionary = snapshot.get("config", {})
+	var effects: Dictionary = ProcessRules.effects(config.get("process", {}))
+	if str(effects["error"]) != "":
+		return false
+	_duration = float(effects["work_seconds"])
 	_snapshot = snapshot.duplicate(true)
 	_elapsed = 0.0
 	_running = true
@@ -43,8 +50,8 @@ func advance(seconds: float) -> bool:
 		return false
 	if not is_finite(seconds) or seconds <= 0.0:
 		return false
-	_elapsed = minf(DURATION, _elapsed + seconds)
-	if _elapsed >= DURATION:
+	_elapsed = minf(_duration, _elapsed + seconds)
+	if _elapsed >= _duration:
 		_running = false
 		return true
 	return false
@@ -71,7 +78,12 @@ func snapshot() -> Dictionary:
 
 
 func progress() -> float:
-	return clampf(_elapsed / DURATION, 0.0, 1.0)
+	return clampf(_elapsed / _duration, 0.0, 1.0)
+
+
+## 제조를 포함한 이번 시제품 연출 시간. 기본 공법은 기존4초이며 영업 조리시간과 다르다.
+func duration() -> float:
+	return _duration
 
 
 func elapsed() -> float:

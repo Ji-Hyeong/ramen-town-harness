@@ -22,6 +22,7 @@ const Contest = preload("res://scripts/domain/ramen_contest.gd")
 const ContestProgress = preload("res://scripts/domain/contest_progress.gd")
 const MenuSales = preload("res://scripts/domain/menu_sales.gd")
 const MenuReport = preload("res://scripts/domain/menu_report.gd")
+const ProcessRules = preload("res://scripts/domain/recipe_process.gd")
 
 ## 스키마 v2: 최상위에 "research"(완료한 연구 의뢰 영수증 목록)가 추가됐다.
 ## v1 저장은 "research" 키가 없는 것이 정상이며, 불러올 때 빈 연구 진행(완료 없음)으로 이행한다(load_from_dict 참고).
@@ -38,7 +39,8 @@ const MenuReport = preload("res://scripts/domain/menu_report.gd")
 ## v6 육성은 고용 직원별 완료 주문 경험과 최대 두 훈련 영수증을 보존한다.
 ## v1~v5는 기존 값 모두 유지, 고용된 직원의 경험/훈련만 0부터 시작한다(소급 지급 없음).
 ## v7은 보이는 매장 증축과 명시적 판매 목록을 보존한다. v1~6에는 미확장/자동 선택만 추가한다.
-const SCHEMA_VERSION: int = 7
+## v8은 비기본 제조 공법만 config.process로 보존한다. 이전1~7의 기본 구성과 값은 변경하지 않는다.
+const SCHEMA_VERSION: int = 8
 const EXPANSION_PRICE: int = 60000
 const MIN_SCHEMA_VERSION: int = 1
 const MAX_RECORDS: int = 30
@@ -148,6 +150,31 @@ func _suggest_name() -> String:
 
 
 # ---------- 초안 편집 ----------
+
+## 공법은 재료와 독립인 레시피 선택이다. 두 기본 공법으로 돌아가면 새 키를 없애 과거 구성과 같게 만든다.
+func set_draft_process(slot: String, id: String) -> Dictionary:
+	if _busy():
+		return _locked_fail()
+	var definition: Dictionary = ProcessRules.method(slot, id)
+	if definition.is_empty():
+		return _fail("알 수 없는 제조 공법이에요.")
+	if _rank < int(definition["rank"]):
+		return _fail("이 공법은 가게 등급 %d부터 사용할 수 있어요." % definition["rank"])
+	var selected: Dictionary = draft_config.get("process", {"broth": "standard", "noodle": "standard"}).duplicate(true)
+	selected[slot] = id
+	var next: Dictionary = draft_config.duplicate(true)
+	next["process"] = selected
+	draft_config = Catalog.normalize_config(next)
+	return _ok("제조 공법을 바꿨어요. 시식하면 새 구성으로 기록돼요.")
+
+
+static func _process_error(config: Dictionary, rank: int) -> String:
+	var effects: Dictionary = ProcessRules.effects(config.get("process", {}))
+	if str(effects["error"]) != "":
+		return str(effects["error"])
+	if rank < int(effects["rank"]):
+		return "제조 공법에 필요한 가게 등급 %d가 없어요." % effects["rank"]
+	return ""
 
 func set_draft_choice(slot: String, id: String) -> Dictionary:
 	if _busy():
@@ -285,6 +312,9 @@ func taste() -> Dictionary:
 	var cfg_err: String = Check.config_error(draft_config)
 	if cfg_err != "":
 		return _fail(cfg_err)
+	var method_error: String = _process_error(draft_config, _rank)
+	if method_error != "":
+		return _fail(method_error)
 	# 초안이 발견 전 재료를 담고 있으면(변조된 외부 대입 등) 시식하지 않는다: 기록에는 발견한 재료만 들어간다.
 	var draft_lock: String = Exploration.locked_in(draft_config, _discovered_list())
 	if draft_lock != "":
@@ -401,6 +431,9 @@ func serve() -> Dictionary:
 	var serve_lock: String = Exploration.locked_in(rec["config"], _discovered_list())
 	if serve_lock != "":
 		return _fail(_lock_message(serve_lock))
+	var method_error: String = _process_error(rec["config"], _rank)
+	if method_error != "":
+		return _fail(method_error)
 	if day >= MAX_DAY:
 		return _fail("더 이상 영업일을 늘릴 수 없어요.")
 	var sim: Dictionary = Sim.simulate(rec["config"], rec["scores"], day, current_staffing())
@@ -459,9 +492,13 @@ func begin_service() -> Dictionary:
 	var rec: Dictionary = {} if selling.is_empty() else selling[0]
 	if rec.is_empty():
 		return _fail("노트에서 영업할 레시피를 먼저 선택하세요.")
-	var rec_lock: String = Exploration.locked_in(rec["config"], _discovered_list())
-	if rec_lock != "":
-		return _fail(_lock_message(rec_lock))
+	for menu in selling:
+		var method_error: String = _process_error(menu["config"], _rank)
+		if method_error != "":
+			return _fail(method_error)
+		var rec_lock: String = Exploration.locked_in(menu["config"], _discovered_list())
+		if rec_lock != "":
+			return _fail(_lock_message(rec_lock))
 	if day >= MAX_DAY:
 		return _fail("더 이상 영업일을 늘릴 수 없어요.")
 	# 직원/성장 스냅샷은 여기서 한 번만 복사한다. 이후 세션은 이 값만 쓴다(영업 중 고용/구매는 막혀 있다).
@@ -656,7 +693,7 @@ func _settle_menu_session(s: Session) -> Dictionary:
 	var retained: Dictionary = {}
 	for record in _records:
 		retained[int(record["record_id"])] = record
-	var parsed: Dictionary = MenuReport.parse(report, day + 1, next_record_id, retained, _discovered_list(), topping_slots())
+	var parsed: Dictionary = MenuReport.parse(report, day + 1, next_record_id, retained, _discovered_list(), topping_slots(), _rank)
 	if str(parsed["error"]) != "":
 		return _fail(str(parsed["error"]))
 	var trained: Dictionary = _service_experience(int(sm["units"]))
@@ -1294,6 +1331,8 @@ func load_from_dict(raw: Variant) -> String:
 	var key_err: String = Check.keys_error(d, expected_keys, "저장")
 	if key_err != "":
 		return key_err
+	if version < 8 and _has_process(d):
+		return "이전 저장 버전에는 제조 공법을 기록할 수 없어요."
 	# v1/v2 저장의 레시피 구성은 "topping" 문자열 하나다(정규 모양으로 읽어 들인다). v3는 "toppings" 배열만 허용한다.
 	var legacy_cfg: bool = version < 3
 	if not Check.in_range(d["day"], 1, MAX_DAY):
@@ -1428,6 +1467,12 @@ func load_from_dict(raw: Variant) -> String:
 	var discovered_now: Array = Exploration.discovered_ids(exploration_parsed)
 	for pe0 in parsed:
 		var pcfg: Dictionary = (pe0 as Dictionary)["config"]
+		var process_error: String = _process_error(pcfg, growth_rank)
+		if process_error != "":
+			return process_error
+		var previous: Dictionary = (pe0 as Dictionary)["comparison"]
+		if not previous.is_empty() and _process_error(previous["prev_config"], growth_rank) != "":
+			return "비교 기록의 제조 공법에 필요한 등급이 없어요."
 		if Exploration.locked_in(pcfg, discovered_now) != "":
 			return "기록에 아직 발견하지 못한 재료가 있어요."
 		var pcmp: Dictionary = (pe0 as Dictionary)["comparison"]
@@ -1435,6 +1480,8 @@ func load_from_dict(raw: Variant) -> String:
 			return "비교 기록에 아직 발견하지 못한 재료가 있어요."
 	if Exploration.locked_in(dcfg["config"], discovered_now) != "":
 		return "초안에 아직 발견하지 못한 재료가 있어요."
+	if _process_error(dcfg["config"], growth_rank) != "":
+		return "초안의 제조 공법에 필요한 등급이 없어요."
 	# 어떤 구성(기록/비교의 이전 구성/초안)도 이 상태의 토핑 슬롯 수를 넘을 수 없다(슬롯은 줄지 않으므로 정상 저장은 항상 통과).
 	# 기록 개수가 노트 용량을 넘는 예전 저장은 거부하지 않는다(grandfather: 모두 보존, 새 시식만 용량 아래로 내려갈 때까지 불가).
 	var slot_limit: int = Growth.topping_slots(growth_rank, growth_facilities)
@@ -1483,7 +1530,7 @@ func load_from_dict(raw: Variant) -> String:
 		var retained: Dictionary = {}
 		for record in parsed:
 			retained[int(record["record_id"])] = record
-		rep_result = MenuReport.parse(d["last_report"], int(d["day"]), n_record, retained, discovered_now, slot_limit)
+		rep_result = MenuReport.parse(d["last_report"], int(d["day"]), n_record, retained, discovered_now, slot_limit, growth_rank)
 		if str(rep_result["error"]) != "":
 			return str(rep_result["error"])
 		var staff_error: String = _report_staff_error(rep_result["report"]["staffing"], growth_staff, training_parsed, int(rep_result["report"]["day"]))
@@ -1511,6 +1558,21 @@ func load_from_dict(raw: Variant) -> String:
 	draft_lineage_id = dlin
 	last_report = rep_result["report"]
 	return ""
+
+
+## 구버전의 어느 스냅샷에도 새 공법이 섞이지 않도록 노트/비교/출품/삭제된 보고까지 확인한다.
+static func _has_process(raw: Variant) -> bool:
+	if typeof(raw) == TYPE_DICTIONARY:
+		if raw.has("process"):
+			return true
+		for value in raw.values():
+			if _has_process(value):
+				return true
+	elif typeof(raw) == TYPE_ARRAY:
+		for value in raw:
+			if _has_process(value):
+				return true
+	return false
 
 
 ## 보고일 뒤에 훈련을 받았더라도 당시 자격을 소급하지 않는다. 과거에 없었던 고용/자격을 주장하면 거부한다.

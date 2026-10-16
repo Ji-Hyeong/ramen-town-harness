@@ -111,9 +111,15 @@ func _draw() -> void:
 	fill.call(2, 25, 24, 3, STEEL_D)
 	# 불꽃
 	var flame_t: int = int(fp["flame"])
+	var process: Dictionary = _config.get("process", {})
+	var heat: String = str(process.get("broth", "standard"))
 	for i in 4:
 		var fx: int = 6 + i * 5
 		var fh: int = 3 if (i + flame_t) % 2 == 0 else 2
+		if heat == "gentle":
+			fh = 1
+		elif heat == "rolling":
+			fh += 2
 		fill.call(fx, 25 - fh, 3, fh, FLAME_A)
 		fill.call(fx + 1, 25 - fh + 1, 1, maxi(1, fh - 1), FLAME_B)
 	# 솥: 몸통, 안쪽(어둡게), 국물, 테두리, 손잡이
@@ -147,6 +153,21 @@ func _draw() -> void:
 		for i in 5:
 			var wig: int = 1 if (int(floor(_t * 8.0)) + i) % 2 == 0 else 0
 			fill.call(11 + i * 2, by2 + 2, 1, 3 + wig, NOODLE)
+
+	# 비기본 반죽은 화구 옆 작업판에서 밀대를 굴린다. 숙성은 작은 시계 문양으로 표현하며 글자를 찍지 않는다.
+	var dough: String = str(process.get("noodle", "standard"))
+	if int(fp["phase"]) == 1 and dough != "standard":
+		fill.call(30, 11, 16, 9, Color(0.65, 0.43, 0.22))
+		fill.call(31, 12, 14, 7, Color(0.84, 0.66, 0.40))
+		fill.call(34, 13, 8, 5, NOODLE.lightened(0.12) if dough == "moist" else NOODLE.darkened(0.08))
+		var roll_y: int = 13 + int(round((sin(_t * 5.0) + 1.0) * 1.5))
+		fill.call(32, roll_y, 12, 2, STEEL_D)
+		fill.call(34, roll_y, 8, 2, STEEL)
+		if dough == "rested":
+			fill.call(39, 3, 6, 6, INK)
+			fill.call(40, 4, 4, 4, Color(0.97, 0.95, 0.90))
+			fill.call(42, 4, 1, 3, INK)
+			fill.call(42, 6, 2, 1, INK)
 
 	# 면이 솥에서 그릇으로 옮겨진다(시식 단계): 세 가닥이 시차를 두고 포물선으로 날아간다.
 	var transfer: float = float(fp["transfer"])

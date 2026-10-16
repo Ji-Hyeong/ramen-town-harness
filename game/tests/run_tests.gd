@@ -28,6 +28,7 @@ const TravelScript = preload("res://scripts/ui/expedition_travel.gd")
 const Contest = preload("res://scripts/domain/ramen_contest.gd")
 const ContestProgress = preload("res://scripts/domain/contest_progress.gd")
 const MenuSales = preload("res://scripts/domain/menu_sales.gd")
+const ProcessRules = preload("res://scripts/domain/recipe_process.gd")
 
 const ARG: String = "--test-data-dir="
 
@@ -100,6 +101,9 @@ func _initialize() -> void:
 		test_shop_expansion_transaction, test_selling_roster, test_menu_runtime_and_accounting,
 		test_expanded_seats_and_paths, test_order_specific_bowls, test_menu_report_persistence,
 		test_expansion_invalid_saves, test_menu_zero_sales_and_funds,
+		test_process_config, test_process_evaluation, test_process_state_revision,
+		test_process_work_duration, test_process_service_and_contest,
+		test_process_save_validation, test_process_bowl_art,
 	]
 	var ran: int = 0
 	for t in tests:
@@ -128,6 +132,192 @@ func _check(cond: bool, message: String) -> void:
 
 func _end() -> void:
 	_finished = true
+
+
+func test_process_config() -> void:
+	var base: Dictionary = Catalog.normalize_config(_light_cfg())
+	var explicit: Dictionary = base.duplicate(true)
+	explicit["process"] = {"broth": "standard", "noodle": "standard"}
+	_check(Check.same_config(base, explicit) and Catalog.normalize_config(explicit) == base, "기본 공법은 기존 구성과 같은 중복/정규 표현")
+	_check(str(Check.parse_config(explicit, "공법")["error"]) != "", "저장된 기본 공법 중복 표현은 거부")
+	for bad in [null, [], 1, true, {}, {"broth":"gentle"}, {"broth":"moist","noodle":"standard"}, {"broth":"gentle","noodle":1}, {"broth":"gentle","noodle":"standard","extra":0}]:
+		var cfg: Dictionary = base.duplicate(true)
+		cfg["process"] = bad
+		_check(str(Check.parse_config(cfg, "공법")["error"]) != "", "잘못된 저장 공법 타입/키/값 거부")
+	var changed: Dictionary = base.duplicate(true)
+	changed["process"] = {"broth":"gentle", "noodle":"moist"}
+	_check(Check.config_error(changed) == "" and not Check.same_config(base, changed), "공법만 다른 레시피도 별개 구성")
+	var copy: Dictionary = Catalog.normalize_config(changed)
+	copy["process"]["broth"] = "rolling"
+	_check(changed["process"]["broth"] == "gentle", "공법 정규화는 깊은 사본")
+	_end()
+
+
+func test_process_evaluation() -> void:
+	# 기대 델타는 계약값이다. 실제 재료 합을 따로 구해 공법의 정확히1회 적용과 범위 제한을 대조한다.
+	var specs: Array = [["standard", "standard", 0,0,0,0,0], ["standard","moist",0,0,-2,80,-8], ["standard","rested",0,-1,2,140,10], ["gentle","standard",-1,2,0,180,8], ["gentle","moist",-1,2,-2,260,0], ["gentle","rested",-1,1,2,320,18], ["rolling","standard",2,-1,0,300,12], ["rolling","moist",2,-1,-2,380,4], ["rolling","rested",2,-2,2,440,22]]
+	var more_happy: bool = false
+	var less_happy: bool = false
+	for witness in Research.WITNESSES.values():
+		var base: Dictionary = Catalog.normalize_config(witness)
+		var raw: Dictionary = {"rich":0,"salt":0,"aroma":0,"chew":0,"spice":0}
+		var cost: int = 0
+		var prep: int = 0
+		for id in Catalog.item_ids(base):
+			var ingredient: Dictionary = Catalog.find(id)
+			cost += int(ingredient["cost"])
+			prep += int(ingredient["seconds"])
+			for axis in ingredient["axes"]:
+				raw[axis] += int(ingredient["axes"][axis])
+		var old: Dictionary = _scores_of(base)
+		for spec in specs:
+			var cfg: Dictionary = base.duplicate(true)
+			cfg["process"] = {"broth":spec[0],"noodle":spec[1]}
+			cfg = Catalog.normalize_config(cfg)
+			var expected: Dictionary = raw.duplicate()
+			expected["rich"] += int(spec[2])
+			expected["aroma"] += int(spec[3])
+			expected["chew"] += int(spec[4])
+			for axis in Catalog.AXES:
+				expected[axis] = clampi(int(expected[axis]),0,10)
+			var ev: Dictionary = Evaluator.evaluate(cfg)
+			_check(ev["error"] == "" and ev["profile"] == expected and ev["unit_cost"] == cost + int(spec[5]) and ev["prep_seconds"] == prep + int(spec[6]), "9공법의 재료합/맛/원가/조리시간 정확")
+			for customer in ev["customers"]:
+				more_happy = more_happy or int(customer["score"]) > int(old[customer["id"]])
+				less_happy = less_happy or int(customer["score"]) < int(old[customer["id"]])
+	_check(more_happy and less_happy, "제조 공법은 손님 만족을 올리기도 내리기도 함")
+	_end()
+
+
+func test_process_state_revision() -> void:
+	var s: GameStateScript = GameStateScript.new()
+	var initial: String = _json(s)
+	for choice in [["broth","rolling"],["noodle","rested"],["unknown","standard"],["broth","moist"]]:
+		_check(not bool(s.set_draft_process(choice[0],choice[1])["ok"]) and _json(s) == initial, "미해금/모르는 공법 선택 거부는 무료/불변")
+	_check(bool(s.taste()["ok"]), "기본 공법 첫 시식")
+	var id: int = s.selected_record_id
+	var original: Dictionary = s.get_record(id)
+	_check(bool(s.set_selling_menus([id])["ok"]), "시식 전 판매 고정")
+	var forecast: Dictionary = s.forecast()
+	s.set_draft_process("broth","gentle")
+	s.set_draft_process("noodle","moist")
+	_check(s.forecast() == forecast and s.get_record(id) == original, "제조 초안 편집은 판매/과거 기록을 바꾸지 않음")
+	var money: int = s.wallet
+	var cost: int = s.trial_cost()
+	_check(bool(s.taste()["ok"]) and s.wallet == money-cost, "제조 시식은 실제 그릇 원가 한 번 차감")
+	var revised: Dictionary = s.get_record(s.selected_record_id)
+	_check(revised["version"] == 2 and revised["comparison"]["prev_config"] == original["config"] and revised["config"].has("process"), "공법만 바꿔 개정/이전 구성 보존")
+	var before: String = _json(s)
+	_check(not bool(s.taste()["ok"]) and _json(s) == before, "같은 제조 구성 중복 시식 거부")
+	s.select_record(id)
+	_check(not s.draft_config.has("process"), "옛 기본 메뉴를 불러오면 공법도 기본으로 복원")
+	_check(bool(s.begin_service()["ok"]), "판매 고정 기본 영업")
+	before = _json(s)
+	_check(not bool(s.set_draft_process("broth","gentle")["ok"]) and _json(s) == before, "영업 중 제조 선택 잠금")
+	s.cancel_service()
+	_end()
+
+
+func test_process_work_duration() -> void:
+	var cfg: Dictionary = Catalog.normalize_config(_light_cfg())
+	cfg["process"] = {"broth":"rolling","noodle":"rested"}
+	var work: WorkScript = WorkScript.new()
+	_check(work.start({"config":cfg}) and work.duration() == 7.5, "제조시간은 조합별7.5초")
+	cfg["process"]["broth"] = "gentle"
+	_check(work.snapshot()["config"]["process"]["broth"] == "rolling", "제조 진행 구성은 불변 스냅샷")
+	_check(not work.advance(4.0) and work.is_running() and work.progress() < 1.0, "고급 제조는 기본4초에서 조기 완료하지 않음")
+	_check(not work.advance(NAN) and not work.advance(-1.0), "비정상 시간 거부")
+	_check(work.advance(3.5) and not work.advance(100) and not work.is_running(), "제조 완료 신호는 한번")
+	_check(work.take_snapshot()["config"].has("process") and work.take_snapshot().is_empty(), "제조 스냅샷도 한번 소비")
+	_check(work.start({"config":cfg}), "다른 제조 재시작")
+	work.advance(2.0)
+	work.cancel()
+	_check(not work.is_running() and work.snapshot().is_empty() and not work.advance(100), "제조 취소는 완료/재료비 신호 없음")
+	_check(work.start({"config":Catalog.default_config()}) and work.duration() == 4.0 and work.advance(4.0), "기본 제조는 기존4초 유지")
+	_end()
+
+
+func _process_selling_state() -> GameStateScript:
+	var s: GameStateScript = _menu_state()
+	var ids: Array = s.pinned_menu_ids()
+	s.select_record(ids[1])
+	_check(bool(s.set_draft_process("broth","rolling")["ok"]) and bool(s.set_draft_process("noodle","rested")["ok"]) and bool(s.taste()["ok"]), "제조 메뉴 실제 시식")
+	_check(bool(s.set_selling_menus([ids[0],s.selected_record_id])["ok"]), "기본/제조 메뉴 함께 판매")
+	return s
+
+
+func test_process_service_and_contest() -> void:
+	var s: GameStateScript = _process_selling_state()
+	var cfg: Dictionary = s.selling_records()[1]["config"]
+	var base: Dictionary = cfg.duplicate(true)
+	base.erase("process")
+	_check(Evaluator.unit_cost(cfg) == Evaluator.unit_cost(base)+440 and Evaluator.prep_seconds(cfg) == Evaluator.prep_seconds(base)+22, "실제 제조 원가/시간 차이")
+	_check(bool(s.hire_staff("prep_assistant")["ok"]), "제조 영업 보조 고용")
+	var fc: Dictionary = s.forecast()
+	_check(bool(s.begin_service()["ok"]), "제조 두 메뉴 영업 시작")
+	s.active_session().run_to_end()
+	_check(bool(s.settle_service()["ok"]) and s.last_report["net"] == fc["net"] and s.last_report["overhead"] == 3600, "제조/직원/공통비 실제 정산")
+	_check(s.last_report["menus"][1]["config"] == cfg and s.last_report["menus"][1]["unit_cost"] == Evaluator.unit_cost(cfg), "판매 보고에 실제 제조 스냅샷")
+	_check(bool(s.enter_contest("clear_bowl",s.selected_record_id)["ok"]), "제조 메뉴 대회 출품")
+	var entry: Dictionary = s.contest_progress()["history"][0]
+	_check(entry["config"] == cfg, "대회 영수증도 실제 제조 구성을 보존")
+	_end()
+
+
+func test_process_save_validation() -> void:
+	var s: GameStateScript = _process_selling_state()
+	_check(bool(s.serve()["ok"]) and bool(s.enter_contest("clear_bowl",s.selected_record_id)["ok"]), "제조 저장용 보고/출품")
+	var raw: Dictionary = JSON.parse_string(_json(s))
+	var target: GameStateScript = _populated_state()
+	var before: String = _json(target)
+	for kind in ["v7", "missing", "unknown", "type", "default", "score", "comparison", "report", "contest"]:
+		var d: Dictionary = raw.duplicate(true)
+		var last: Dictionary = d["records"][-1]
+		match kind:
+			"v7": d["schema_version"] = 7
+			"missing": last["config"]["process"].erase("noodle")
+			"unknown": last["config"]["process"]["broth"] = "unknown"
+			"type": last["config"]["process"] = []
+			"default": last["config"]["process"] = {"broth":"standard","noodle":"standard"}
+			"score": last["scores"]["hayoung"] = 999
+			"comparison": last["comparison"]["prev_config"]["process"] = {"broth":"bad","noodle":"standard"}
+			"report": d["last_report"]["menus"][1]["config"]["process"]["noodle"] = false
+			"contest": d["contests"]["history"][0]["config"]["process"]["broth"] = "gentle"
+		_check(target.load_from_dict(d) != "" and _json(target) == before, "제조 불가능 저장 원자 거부 "+kind)
+	_check(bool(s.set_selling_menus([])["ok"]), "삭제 전 판매 해제")
+	var removed: int = s.selected_record_id
+	_check(bool(s.delete_record(removed)["ok"]), "제조 과거 메뉴 삭제")
+	var saver: SaveServiceScript = SaveServiceScript.new(_case_dir("process"))
+	saver.remove_known_files()
+	_check(bool(saver.save_state(s)["ok"]), "제조 스냅샷 저장")
+	var back: GameStateScript = GameStateScript.new()
+	_check(saver.load_into(back)["status"] == "ok" and _json(back) == _json(s), "삭제 후에도 제조 보고/출품/비교 전체 값 왕복")
+	_cleanup_case(saver)
+	# 낮은 등급에 정확히 재계산된 고급 공법 점수를 넣어도 등급 검사가 따로 거부한다.
+	var low: GameStateScript = GameStateScript.new()
+	low.taste()
+	var forged: Dictionary = low.to_dict()
+	forged["records"][0]["config"]["process"] = {"broth":"rolling","noodle":"standard"}
+	forged["records"][0]["scores"] = _scores_of(forged["records"][0]["config"])
+	_check(target.load_from_dict(forged).contains("등급") and _json(target) == before, "재평가 점수가 맞아도 미해금 공법 거부")
+	_end()
+
+
+func test_process_bowl_art() -> void:
+	var base: Dictionary = Catalog.normalize_config(_light_cfg())
+	var original: PackedByteArray = ArtScript.bowl_image(base).get_data()
+	var seen: Dictionary = {}
+	for broth in ProcessRules.ids("broth"):
+		for noodle in ProcessRules.ids("noodle"):
+			var cfg: Dictionary = base.duplicate(true)
+			cfg["process"] = {"broth":broth,"noodle":noodle}
+			var image: Image = ArtScript.bowl_image(cfg)
+			_check(image.get_size() == Vector2i(12,7), "공법 그릇 크기/도트 규칙 유지")
+			seen[image.get_data().hex_encode()] = true
+			if broth == "standard" and noodle == "standard":
+				_check(image.get_data() == original, "기본 제조 그릇은 픽셀까지 기존 동일")
+	_check(seen.size() >= 3, "제조에 따라 국물/면 색이 다른 실제 그릇")
+	_end()
 
 
 func _menu_state() -> GameStateScript:

@@ -7,5 +7,6 @@ smoke/result*.json
 .godot/
 build/
 exports/
+__pycache__/
 *.p12
 *.mobileprovision

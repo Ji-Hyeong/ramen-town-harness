@@ -16,7 +16,7 @@ Godot 4.7(타입 지정 GDScript) 프로젝트입니다. 기본 화면은 작은
 
 > **이전 직원 육성 버전(v6)**: 보조 직원의 실제 완료 영업 경험과 숙련/속도·절약 전문화를 연결했습니다. 전체97개 테스트/50,982개 확인, 육성96개, 배치12,096개, 실제OpenGL12,344개·124장·실패0·종료0·엔진오류0. [육성 규칙](#직원-육성), [새 화면20장](docs/staff-training-screenshots), [증거](../evidence/staff-training-runs.json). 사용자 플레이 감·iPhone은 미검증입니다.
 
-> **현재 증축·복수 메뉴 버전(v7)**: 8→12석의 실제 홀과 판매1→2종, 공유 손님/주방 및 메뉴별 실제 이익/대기 보고를 추가했습니다. 전체105개 테스트/56,283개 확인·공유 계산1,638개·배치13,158개·실제OpenGL13,450개/146장·실패0·종료0·엔진오류0. [새 화면22장](docs/expansion-screenshots), [선별 증거](../evidence/shop-expansion-menus-runs.json).
+> **이전 증축·복수 메뉴 버전(v7)**: 8→12석의 실제 홀과 판매1→2종, 공유 손님/주방 및 메뉴별 실제 이익/대기 보고를 추가했습니다. 전체105개 테스트/56,283개 확인·공유 계산1,638개·배치13,158개·실제OpenGL13,450개/146장·실패0·종료0·엔진오류0. [새 화면22장](docs/expansion-screenshots), [선별 증거](../evidence/shop-expansion-menus-runs.json).
 
 ## 플레이 흐름
 1. **가게(기본 화면)**: 위쪽 HUD(일차·자금·시각·진행률), 가운데 도트 가게(주방·카운터·테이블·입구·골목 줄), 아래 상태 줄과 하단 바(`메뉴 개발` / `영업 시작` / 영업 중 `속도`)로 구성됩니다.
@@ -26,6 +26,27 @@ Godot 4.7(타입 지정 GDScript) 프로젝트입니다. 기본 화면은 작은
 4. **영업**: 아래 [영업 런타임](#영업-런타임) 참조. 끝나면 결과 창에서 판매·매출·재료비·운영비·순이익이 정산됩니다.
 
 보조 직원 육성을 추가했으며, 기본 요리사·서버 육성·배치 편집·단골 분기 이야기는 아직 없습니다. 시작 직원은 요리사 1명·서버 1명이고, 직원 공간을 확장하면 조리 보조와 홀 보조를 별도로 고용해 총 4명이 됩니다. 기본 자리는 8석(카운터4, 테이블4)이며 매장 증축으로 12석이 됩니다.
+
+## 육수 공법과 면 반죽
+
+개발 탭의 육수/면 재료 아래에서 각각 공법을 하나씩 고릅니다. **육수3 × 면3 = 9가지 제조 조합**이며, 기본 공법은 이전 메뉴와 평가·원가·시간·그릇이 같습니다. 공법만 바꾸어 시식해도 같은 메뉴의 새 개정이 되고 시식/노트에 실제 제조법이 표시됩니다. 판매 목록을 고정한 경우 기존 판매는 유지되므로 새 개정을 팔려면 영업 탭에서 바꿔주세요.
+
+| 구분 | 공법 | 필요 등급 | 맛 변화 | 그릇당 추가 원가 | 영업 조리 증감 | 시제품 연출 추가 |
+| --- | --- | --- | --- | --- | --- | --- |
+| 육수 | 기본 우림 | 1 | 없음 | 0원 | 0초 | 0초 |
+| 육수 | 약불 우림 | 1 | 진함−1, 향+2 | 180원 | +8초 | +1초 |
+| 육수 | 강불 추출 | 2 | 진함+2, 향−1 | 300원 | +12초 | +1.5초 |
+| 면 | 기본 반죽 | 1 | 없음 | 0원 | 0초 | 0초 |
+| 면 | 고가수 반죽 | 1 | 면 식감−2 | 80원 | −8초 | +0.5초 |
+| 면 | 저가수 숙성 | 2 | 면 식감+2, 향−1 | 140원 | +10초 | +2초 |
+
+맛 변화는 재료 합에 한 번 적용한 뒤0~10 범위로 제한합니다. 향·진함·식감에 대한 손님 취향이 달라 점수가 오르기도 내려가기도 합니다. 추가 원가와 영업 조리시간은 시제품/실제 영업의 계산에 반영되며, 직원 시간율은 공법까지 더한 뒤 적용됩니다. 공법을 고르는 것 자체는 무료입니다.
+
+시식 버튼을 누르면 선택한 공법의 제조·조리를 진행합니다. 국물 불꽃/색, 반죽 작업판·움직이는 밀대와 숙성 시계 문양, 그릇 색을 기존 도트로 표현합니다. 연출은 기본4초에 공법 시간을 더해 최대7.5초이며, 영업 조리초와 별개입니다. 시작/취소/제조 중 종료는 재료비·기록을 만들지 않습니다. 끝날 때 시제품 전체 원가를 한 번 내고 기록/자동 저장을 처리합니다. 제조 중 편집·다른 거래·중간 저장은 막습니다. 실제 쓰기 실패는 안내하고 기존 파일을 보존하며 수동 저장 복구 후 재시작으로 확인합니다.
+
+저장v8은 비기본 조합에만 `config.process: {broth, noodle}`를 추가합니다. 두 기본 공법은 이 키를 생략해 기존 구성/중복 판정을 유지합니다. 이전1~7의 모든 값은 그대로 읽고 최초 새 저장 전 원본을 영구 버전 백업합니다(v7는 `.v7.bak`). 시식 점수는 구성으로 다시 계산하며 미지/누락/잘못된 형식/미해금 공법과 이전 버전에 섞인 공법을 전체 상태 변경 없이 거부합니다. 개정 비교, 확장 영업 보고, 대회·잡지의 자체 스냅샷에도 제조법이 보존됩니다.
+
+배치 재고·반복 재료 생산·오프라인 숙성·영구 기술 연구·별도 제조 시설은 구현하지 않았습니다. 이번 범위는 비용과 시간에 영향을 주는 레시피 제조 선택과 시제품 진행입니다. 기능112개/56,595개 확인·순수 공법118개·이전 실제v7 합성 저장12종 이행72개+전체값12건·기존 경제/그림 골든260건과 집중 화면1256개가 통과했습니다. 두 크기 전체 배치14,510개도 실패0/종료0으로 통과했습니다. 실제OpenGL14,842개/166장도 실패0/종료0/엔진오류0으로 통과했고 새20장을 직접 검토했습니다. [새 화면과 전체 해시](docs/process-screenshots), [실행 증거](../evidence/recipe-process-runs.json). iPhone 실기기는 미검증입니다. [작업 계약](../tasks/recipe-process-v1.md).
 
 ## 매장 증축과 판매 메뉴
 
@@ -233,10 +254,10 @@ Claude가 새 채점 카탈로그·독립 채점 시험을 작성(11턴)하고 �
 ## 실행과 검증
 Godot 4.7.2에서 `game/project.godot`를 가져오고 프로젝트 실행(F5)을 사용합니다. 다른 컴퓨터에서는 Godot을 별도로 설치해야 합니다. 엔진 바이너리는 Git에 포함하지 않습니다.
 
-현재 Mac에서는 검증된 PCK를 담은 로컬 `outputs/ramen-play-growth-v1/Ramen Atelier.app`을 사용합니다. 기존 게임 창을 닫고 실행하면 이전 `work/player-save`를 읽으며 첫 v3 저장 전 원본 백업을 남깁니다. 원래 체크아웃의 출처 불명 복사본은 보존했으므로 그 소스 폴더를 실행하지 않고 깨끗한 작업 폴더에서 만든 PCK를 사용합니다. iTerm에서도 아래 한 명령으로 같은 PCK를 실행할 수 있습니다.
+현재 Mac에서는 검증된 PCK를 담은 로컬 `outputs/ramen-play-process-v2/Ramen Atelier.app`을 사용합니다. 기존 게임 창을 닫고 실행하면 이전 `work/player-save`를 읽으며 첫 v8 저장 전 원본 버전 백업을 남깁니다. 원래 체크아웃의 출처 불명 복사본은 보존했으므로 그 소스 폴더를 실행하지 않고 깨끗한 작업 폴더에서 만든 PCK를 사용합니다. iTerm에서도 아래 한 명령으로 같은 PCK를 실행할 수 있습니다.
 
 ```sh
-/Users/ji/Documents/Codex/2026-10-13/referenced-chatgpt-conversation-this-is-an/work/tools/godot-4.7.2/Godot.app/Contents/MacOS/Godot --main-pack '/Users/ji/Documents/Codex/2026-10-13/referenced-chatgpt-conversation-this-is-an/outputs/ramen-play-growth-v1/Ramen Atelier.app/Contents/Resources/ramen-play.pck' -- --dev-data-dir=/Users/ji/Documents/Codex/2026-10-13/referenced-chatgpt-conversation-this-is-an/work/player-save
+/Users/ji/Documents/Codex/2026-10-13/referenced-chatgpt-conversation-this-is-an/work/tools/godot-4.7.2/Godot.app/Contents/MacOS/Godot --main-pack '/Users/ji/Documents/Codex/2026-10-13/referenced-chatgpt-conversation-this-is-an/outputs/ramen-play-process-v2/Ramen Atelier.app/Contents/Resources/ramen-play.pck' -- --dev-data-dir=/Users/ji/Documents/Codex/2026-10-13/referenced-chatgpt-conversation-this-is-an/work/player-save
 ```
 
 검증용 예시는 저장소 루트에서 실행하며, 먼저 아래 변수를 설정합니다. 다른 컴퓨터에서는 자신의 실행 파일 경로로 바꿉니다.
@@ -268,7 +289,7 @@ RAMEN_GODOT=/Users/ji/Documents/Codex/2026-10-13/referenced-chatgpt-conversation
 
 ## 로컬 macOS 런처 앱 (개발 편의용)
 
-현재 증축·복수 메뉴 런처: `outputs/ramen-play-expansion-v1/Ramen Atelier.app`(저장소 밖 로컬 작업 공간). 기존 게임 창을 닫은 뒤 실행합니다. 실제 렌더링 검증을 통과한 동일 PCK를 사용하고 `work/player-save`를 유지하므로 이전 진행을 읽습니다. 저장 v7 첫 기록 전에 이전 버전의 영구 백업을 보존합니다. 정상 저장 경로에서는 QA나 자동 플레이를 실행하지 않았습니다. 이 새 PCK의 메인 씬 60프레임 시작 검사는 별도 저장 경로에서 종료 0·엔진 오류 없이 통과했습니다. 로컬 설치된 Godot를 참조하는 개발용 앱으로 iOS 배포물이 아닙니다.
+현재 제조 공법 런처: `outputs/ramen-play-process-v2/Ramen Atelier.app`(저장소 밖 로컬 작업 공간). 기존 게임 창을 닫은 뒤 실행합니다. 실제 렌더링 검증을 통과한 동일 PCK를 사용하고 `work/player-save`를 유지하므로 이전 진행을 읽습니다. 저장 v8 첫 기록 전에 이전 버전의 영구 백업을 보존합니다. 정상 저장 경로에서는 QA나 자동 플레이를 실행하지 않았습니다. 이 새 PCK의 메인 씬 60프레임 시작 검사는 별도 저장 경로에서 종료 0·엔진 오류 없이 통과했습니다. 로컬 설치된 Godot를 참조하는 개발용 앱으로 iOS 배포물이 아닙니다.
 `tools/build_local_apps.py`(표준 라이브러리만 사용)가 `Ramen Atelier.app`(게임)과 `Ramen QA.app`(`tests/qa_capture.gd`)을 `--output-dir`에 만듭니다. 각 앱은 `Info.plist`와 셸 런처만 가진 얇은 번들로, 지정한 Godot 실행 파일을 프로젝트 경로·`--log-file`(output-dir 안)·`--dev-data-dir`와 함께 `exec` 합니다. QA 앱은 `--qa-out`에 스크린샷을 저장하고 저장 폴더는 `<data-dir>/qa`를 씁니다. 스크립트는 파일만 쓰며 Godot를 실행하지 않고, 이미 있는 `.app`이 있으면 덮어쓰거나 지우지 않고 중단합니다.
 
 ```sh
@@ -294,10 +315,12 @@ python3 game/tools/build_qa_app.py \
 ```
 1. 엔진 확인: macOS 앱 번들 안 Mach-O 바이너리인지, `--version`이 프로젝트의 `config/features`(4.7)와 같은 계열인지 봅니다. 다르면 오류로 멈춥니다.
 2. `project.godot`, `scenes/`, `scripts/`, `assets/`, `tests/`만 담은 임시 스냅샷(`<output-dir>/prep/project`)을 만들고(Git, docs, tools, evidence, tasks, 숨김 파일, 자격 증명처럼 보이는 파일 제외; 심볼릭 링크는 거부), 거기서 `--headless --import` 후 `--export-pack`으로 PCK를 만듭니다. 원본 프로젝트는 읽기만 합니다. 프로젝트 폴더나 `project.godot`가 심볼릭 링크면 내용을 복사·읽기 전에 거부합니다.
-3. 엔진 설정: `HOME`·`home`·`CODEX_HOME`은 바꾸지 않습니다(호출자의 `HOME`이 있으면 그대로 전달). 대신 검증한 `Godot.app`을 먼저 `<output-dir>/Ramen QA.app`으로 통째로 복사하고 그 옆에 Godot 포터블 마커 `<output-dir>/_sc_`를 만듭니다. 버전 확인·import·export와 실행 모두 이 복사본으로 하므로 `editor_data` 등 캐시가 `<output-dir>` 안에 생기고, 원본 엔진(과 그 옆 포터블 설정)은 실행하지 않습니다. `TMPDIR`/`XDG_*` 스크래치만 `<output-dir>/prep` 안으로 돌립니다.
-4. 복사본에 PCK와 런처를 넣고 런처가 쓰도록 복사본의 `Info.plist`만 고칩니다(재서명하지 않음).
+3. 엔진 설정: `HOME`·`home`·`CODEX_HOME`은 바꾸지 않습니다. 공식 `Godot.app`을 `<output-dir>/runtime/Godot.app`으로 복사하고 그 옆 `runtime/_sc_`로 캐시를 격리합니다. macOS 기본 `ditto`로 ACL과 보안 속성을 보존합니다. 과거 개발 실행이 추가한 번들 내부의 빈 `_sc_`와 복사본의 `com.apple.FinderInfo` 표시 정보만 제외하며 원본·quarantine·provenance는 수정하지 않습니다. 공급자 서명이 있으면 **엔진을 실행하기 전에 엄격 검증**하고 실패 시 중단합니다. 버전/import/export와 실행 모두 복사본을 쓰며 `TMPDIR`/`XDG_*` 준비 경로는 `prep` 안입니다.
+4. 공급자 엔진의 `Info.plist`·실행 파일·서명은 그대로 두고, 별도 얇은 `Ramen QA.app`에 PCK와 셸 런처를 넣습니다. 이 런처가 위 런타임을 참조합니다. 공급자 번들의 실행 파일 설정을 바꾸거나 재서명하지 않습니다.
 5. 진단 기록이 실패하면(`FAILED.txt`를 쓰지 못함) 그 오류도 최종 오류 메시지에 명시합니다.
 6. 준비 로그와 `build-manifest.json`(포함/제외 파일, 해시)은 `<output-dir>/prep/`에 남고, 실패하면 `prep/FAILED.txt`와 단계별 로그(`godot-version.log`, `import.log`, `export.log`)가 보존됩니다. 준비 성공만으로는 그래픽 성공이 아닙니다.
+
+Documents의 파일 제공자 경로는 복사본에 Finder 정보를 다시 붙여 엄격 서명을 거부할 수 있습니다. 이번 제조 검사는 별도 `/private/tmp/ramen-process-qa-20261016-v1`에서 준비했습니다. 실패한 출력은 보존하고 새 경로에서 다시 준비하며, 서명 검증을 생략하거나 OS 보안을 낮추지 않습니다. 임시 경로의 앱/엔진은 정리 후 다시 준비해야 하며 저장소에는 엔진을 게시하지 않습니다.
 
 **도구 테스트** (엔진·GUI를 실행하지 않는 가짜 runner와 가짜 엔진 셸 스크립트 사용):
 ```sh
@@ -319,11 +342,11 @@ python3 -m unittest discover -s game/tools -p 'test_build_qa_app.py' -v
 
 ## 화면 미리보기
 
-현재 등각 매장의 실제 Godot 렌더링 캡처입니다. 검사 전용 메뉴와 저장 경로로 실행했습니다. [최신 26장 전체](docs/research-screenshots)와 [검증 기록](VERIFICATION.md)을 확인할 수 있습니다. [AI 생성 콘셉트](docs/concepts/shop-main-v1.png)는 방향 검토용 이미지이며 구현 화면이나 에셋이 아닙니다.
+현재 제조 공법과 등각 매장의 실제 Godot 렌더링 캡처입니다. 검사 전용 메뉴와 저장 경로로 실행했습니다. [최신20장과 전체166장 해시](docs/process-screenshots)와 [검증 기록](VERIFICATION.md)을 확인할 수 있습니다. [AI 생성 콘셉트](docs/concepts/shop-main-v1.png)는 방향 검토용 이미지이며 구현 화면이나 에셋이 아닙니다.
 
-![현재 UI: 데스크톱 영업](docs/isometric-screenshots/desktop_7_service_mid.png)
+![현재 UI: 제조·시식 진행](docs/process-screenshots/desktop_76_process_dough_work.png)
 
-![현재 UI: 세로 시식 피드백](docs/isometric-screenshots/portrait_4_feedback_v1.png)
+![현재 UI: 세로 제조 공법 비교](docs/process-screenshots/portrait_78_process_revision.png)
 
 교체 전 연구소 UI는 [이전 비교 화면](docs/screenshots/desktop-comparison.png)과 [이전 시식 화면](docs/screenshots/portrait-feedback.png)에 역사적 기록으로 보존합니다.
 

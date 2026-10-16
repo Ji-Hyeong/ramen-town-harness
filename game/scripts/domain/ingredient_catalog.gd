@@ -268,6 +268,14 @@ static func normalize_config(config: Dictionary) -> Dictionary:
 			out[slot] = config[slot]
 	if config.has("price"):
 		out["price"] = config["price"]
+	if config.has("process"):
+		# 기본 공법은 예전 구성과 동일한 표현을 쓴다. 검증은 DataCheck가 하고 여기서는 사본만 만든다.
+		var process: Variant = config["process"]
+		if typeof(process) == TYPE_DICTIONARY:
+			if not (process.size() == 2 and process.get("broth") == "standard" and process.get("noodle") == "standard") and not process.is_empty():
+				out["process"] = process.duplicate(true)
+		else:
+			out["process"] = process
 	return out
 
 

@@ -16,6 +16,7 @@ extends RefCounted
 const Catalog = preload("res://scripts/domain/ingredient_catalog.gd")
 const Customers = preload("res://scripts/domain/customer_catalog.gd")
 const Check = preload("res://scripts/domain/data_check.gd")
+const ProcessRules = preload("res://scripts/domain/recipe_process.gd")
 
 const PROFILE_MAX: int = 10
 const GAP_K: float = 14.0
@@ -114,6 +115,11 @@ static func build_profile(config: Dictionary) -> Dictionary:
 		var axes: Dictionary = item["axes"]
 		for axis in axes:
 			profile[axis] = int(profile[axis]) + int(axes[axis])
+	if config.has("process"):
+		# 재료 합계에 공법 차이를 한 번 더한 뒤 0~10 범위로 제한한다. 기본 구성은 예전 계산을 유지한다.
+		var effects: Dictionary = ProcessRules.effects(config["process"])
+		for axis in Catalog.AXES:
+			profile[axis] += int(effects["axes"][axis])
 	for axis in Catalog.AXES:
 		profile[axis] = clampi(int(profile[axis]), 0, PROFILE_MAX)
 	return profile
@@ -124,6 +130,8 @@ static func unit_cost(config: Dictionary) -> int:
 	for id in Catalog.item_ids(config):
 		var item: Dictionary = Catalog.find(id)
 		total += int(item["cost"])
+	if config.has("process"):
+		total += int(ProcessRules.effects(config["process"])["cost"])
 	return total
 
 
@@ -133,6 +141,8 @@ static func prep_seconds(config: Dictionary) -> int:
 	for id in Catalog.item_ids(config):
 		var item: Dictionary = Catalog.find(id)
 		total += int(item["seconds"])
+	if config.has("process"):
+		total += int(ProcessRules.effects(config["process"])["seconds"])
 	return total
 
 

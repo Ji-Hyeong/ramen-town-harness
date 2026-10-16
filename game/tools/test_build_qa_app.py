@@ -7,6 +7,7 @@
 import contextlib
 import hashlib
 import io
+import json
 import os
 import plistlib
 import subprocess
@@ -75,7 +76,7 @@ class FakeGodot:
     def __call__(self, args, **kwargs):
         self.calls.append((list(args), kwargs))
         out = kwargs["stdout"]
-        step = "version" if "--version" in args else "import" if "--import" in args else "export"
+        step = "signature" if args[0] == "/usr/bin/codesign" else "version" if "--version" in args else "import" if "--import" in args else "export"
         if step == self.fail_step:
             out.write(f"ERROR: simulated {step} failure\n")
             return subprocess.CompletedProcess(args, 1)
@@ -201,7 +202,7 @@ class PreparedBundleScope(unittest.TestCase):
             source_before = tree_digest(root / "Godot.app")
             qa.prepare(engine, project, out, runner=runner, platform="darwin")
             self.assertEqual(len(runner.calls), 3)
-            copied = out / qa.APP_NAME / "Contents" / "MacOS" / "Godot"
+            copied = out / qa.RUNTIME_DIR / "Godot.app" / "Contents" / "MacOS" / "Godot"
             for args, kwargs in runner.calls:
                 self.assertIsInstance(args, list)
                 self.assertFalse(kwargs["shell"])
@@ -215,7 +216,7 @@ class PreparedBundleScope(unittest.TestCase):
                     self.assertTrue(env[key].startswith(str(out / "prep")), key)
                 self.assertTrue(all(isinstance(a, str) for a in args))
             # 포터블 마커는 복사본 .app 바로 옆에만 있고, 원본 엔진 번들과 그 옆에는 아무것도 생기지 않는다.
-            self.assertTrue((out / qa.PORTABLE_MARKER).is_file())
+            self.assertTrue((out / qa.RUNTIME_DIR / qa.PORTABLE_MARKER).is_file())
             self.assertFalse((root / qa.PORTABLE_MARKER).exists())
             self.assertEqual(tree_digest(root / "Godot.app"), source_before)
             export_args = runner.calls[2][0]
@@ -229,7 +230,10 @@ class PreparedBundleScope(unittest.TestCase):
             project, engine, out, runner = self.prepare(root)
             app = qa.prepare(engine, project, out, runner=runner, platform="darwin")["app"]
             self.assertEqual(app, out / "Ramen QA.app")
-            self.assertTrue((app / "Contents" / "MacOS" / "Godot").is_file())
+            copied = out / qa.RUNTIME_DIR / "Godot.app" / "Contents" / "MacOS" / "Godot"
+            self.assertTrue(copied.is_file())
+            self.assertEqual(copied.read_bytes(), engine.read_bytes())
+            self.assertEqual((copied.parent.parent / "Info.plist").read_bytes(), (engine.parent.parent / "Info.plist").read_bytes())
             self.assertTrue((app / "Contents" / "Resources" / qa.PACK_NAME).is_file())
             launcher = app / "Contents" / "MacOS" / qa.LAUNCHER_NAME
             self.assertTrue(os.access(launcher, os.X_OK))
@@ -244,8 +248,54 @@ class PreparedBundleScope(unittest.TestCase):
             self.assertNotIn("eval", script)
             self.assertNotIn(str(project), script)
             self.assertNotIn("HOME", script)
-            self.assertIn(str(app / "Contents" / "MacOS" / "Godot"), script)
+            self.assertIn(str(copied), script)
             self.assertTrue((out / "prep" / "build-manifest.json").is_file())
+
+    def test_copy_preserves_vendor_metadata_and_excludes_only_local_marker(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            project, engine, out, runner = self.prepare(root)
+            (engine.parent / qa.PORTABLE_MARKER).touch()
+            original = tree_digest(root / "Godot.app")
+            qa.prepare(engine, project, out, runner=runner, platform="darwin")
+            runtime = out / qa.RUNTIME_DIR / "Godot.app"
+            self.assertEqual(tree_digest(root / "Godot.app"), original)
+            self.assertFalse((runtime / "Contents" / "MacOS" / qa.PORTABLE_MARKER).exists())
+            self.assertEqual((runtime / "Contents" / "Info.plist").read_bytes(), (engine.parent.parent / "Info.plist").read_bytes())
+
+    @unittest.skipUnless(sys.platform == "darwin", "macOS extended attributes")
+    def test_finder_display_metadata_only_removed_on_copy(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            project, engine, out, runner = self.prepare(root)
+            source = root / "Godot.app"
+            # 서명 검사에서 거부하는 Finder 표시 정보와 보존할 다른 속성을 함께 준비한다.
+            subprocess.run(["/usr/bin/xattr", "-wx", "com.apple.FinderInfo", "01" + "00" * 31, str(source)], check=True)
+            subprocess.run(["/usr/bin/xattr", "-w", "local.ramen.test", "keep", str(source)], check=True)
+            original = tree_digest(source)
+            qa.prepare(engine, project, out, runner=runner, platform="darwin")
+            names = lambda p: subprocess.run(["/usr/bin/xattr", str(p)], capture_output=True, text=True, check=True).stdout.splitlines()
+            self.assertIn("com.apple.FinderInfo", names(source))
+            self.assertNotIn("com.apple.FinderInfo", names(out / qa.RUNTIME_DIR / "Godot.app"))
+            self.assertIn("local.ramen.test", names(out / qa.RUNTIME_DIR / "Godot.app"))
+            self.assertEqual(tree_digest(source), original)
+
+    def test_signed_engine_is_verified_before_any_execution_and_failure_stops(self):
+        for fail in (None, "signature"):
+            with self.subTest(fail=fail), tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                project, engine, out, runner = self.prepare(root, FakeGodot(fail_step=fail))
+                (engine.parent.parent / "_CodeSignature").mkdir()
+                if fail:
+                    with self.assertRaisesRegex(qa.BuildError, "서명 검증"):
+                        qa.prepare(engine, project, out, runner=runner, platform="darwin")
+                    self.assertEqual(len(runner.calls), 1)
+                    self.assertFalse((out / qa.APP_NAME).exists())
+                else:
+                    qa.prepare(engine, project, out, runner=runner, platform="darwin")
+                    meta = json.loads((out / "prep" / "build-manifest.json").read_text())
+                    self.assertTrue(meta["vendor_signature_verified"])
+                self.assertEqual(runner.calls[0][0][0], "/usr/bin/codesign")
 
     def test_failed_step_keeps_diagnostics_and_builds_no_app(self):
         for step in ("version", "import", "export"):
