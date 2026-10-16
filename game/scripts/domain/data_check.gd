@@ -4,6 +4,7 @@ extends RefCounted
 ## (bool, 문자열, 소수, NaN/무한대는 모두 거부한다.)
 
 const Catalog = preload("res://scripts/domain/ingredient_catalog.gd")
+const ProcessRules = preload("res://scripts/domain/recipe_process.gd")
 
 ## 정규 구성의 키(토핑은 "toppings" 배열). 옛 구성(v1/v2 저장, 예전 시험 조합)은 "topping" 문자열 하나를 쓴다.
 const CONFIG_KEYS: Array = ["broth", "tare", "oil", "noodle", "toppings", "cook", "price"]
@@ -57,9 +58,16 @@ static func name_error(text: String, allow_empty: bool) -> String:
 ## 슬롯 수 한도(등급/조리대)는 상태(GameState)가 정하므로 여기서는 절대 상한만 본다.
 static func config_error(config: Dictionary) -> String:
 	var legacy: bool = not config.has("toppings")
-	var key_err: String = keys_error(config, LEGACY_CONFIG_KEYS if legacy else CONFIG_KEYS, "레시피 구성")
+	var expected: Array = LEGACY_CONFIG_KEYS if legacy else CONFIG_KEYS
+	if not legacy and config.has("process"):
+		expected = CONFIG_KEYS + ["process"]
+	var key_err: String = keys_error(config, expected, "레시피 구성")
 	if key_err != "":
 		return key_err
+	if config.has("process"):
+		var process_error: String = ProcessRules.error(config["process"])
+		if process_error != "":
+			return process_error
 	for slot in Catalog.SLOTS:
 		if slot == Catalog.TOPPING_SLOT:
 			continue
@@ -110,7 +118,10 @@ static func parse_config(raw: Variant, ctx: String, legacy: bool = false) -> Dic
 	if typeof(raw) != TYPE_DICTIONARY:
 		return {"error": ctx + ": 구조가 올바르지 않아요.", "config": {}}
 	var d: Dictionary = raw
-	var key_err: String = keys_error(d, LEGACY_CONFIG_KEYS if legacy else CONFIG_KEYS, ctx)
+	var expected: Array = LEGACY_CONFIG_KEYS if legacy else CONFIG_KEYS
+	if not legacy and d.has("process"):
+		expected = CONFIG_KEYS + ["process"]
+	var key_err: String = keys_error(d, expected, ctx)
 	if key_err != "":
 		return {"error": key_err, "config": {}}
 	var config: Dictionary = {}
@@ -122,6 +133,8 @@ static func parse_config(raw: Variant, ctx: String, legacy: bool = false) -> Dic
 		config["topping"] = d["topping"]
 	else:
 		config["toppings"] = d["toppings"]
+	if d.has("process"):
+		config["process"] = d["process"]
 	if not is_whole(d["price"]):
 		return {"error": ctx + ": 가격 형식이 올바르지 않아요.", "config": {}}
 	config["price"] = int(d["price"])
@@ -129,6 +142,8 @@ static func parse_config(raw: Variant, ctx: String, legacy: bool = false) -> Dic
 	if err != "":
 		return {"error": ctx + ": " + err, "config": {}}
 	var canonical: Dictionary = Catalog.normalize_config(config)
+	if d.has("process") and not canonical.has("process"):
+		return {"error": ctx + ": 기본 공법은 별도 키 없이 저장해야 해요.", "config": {}}
 	if not legacy:
 		var given: Array = []
 		for t in Catalog.toppings_of(config):
@@ -150,4 +165,4 @@ static func same_config(a: Dictionary, b: Dictionary) -> bool:
 				return false
 		elif na[k] != nb[k]:
 			return false
-	return true
+	return na.get("process", {}) == nb.get("process", {})

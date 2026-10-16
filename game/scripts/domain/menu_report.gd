@@ -7,6 +7,7 @@ const Customers = preload("res://scripts/domain/customer_catalog.gd")
 const Staffing = preload("res://scripts/domain/shop_staffing.gd")
 const MenuSales = preload("res://scripts/domain/menu_sales.gd")
 const Exploration = preload("res://scripts/domain/ingredient_exploration.gd")
+const ProcessRules = preload("res://scripts/domain/recipe_process.gd")
 
 const KEYS: Array = ["day", "recipe_name", "version", "price", "units", "revenue", "ingredient_cost", "overhead", "net", "wallet_after", "by_source", "menus", "seat_count", "staffing"]
 const ROW_KEYS: Array = ["record_id", "recipe_name", "version", "config", "scores", "prep", "price", "unit_cost", "demand", "units", "revenue", "ingredient_cost", "margin", "by_source", "wait_total"]
@@ -29,7 +30,7 @@ static func normalize(value: Variant) -> Variant:
 	return value
 
 
-static func parse(raw: Variant, current_day: int, next_id: int, retained: Dictionary, discovered: Array, slots: int) -> Dictionary:
+static func parse(raw: Variant, current_day: int, next_id: int, retained: Dictionary, discovered: Array, slots: int, rank: int = 3) -> Dictionary:
 	if typeof(raw) != TYPE_DICTIONARY:
 		return _fail("구조가 올바르지 않아요.")
 	var d: Dictionary = normalize(raw)
@@ -68,6 +69,8 @@ static func parse(raw: Variant, current_day: int, next_id: int, retained: Dictio
 		if str(config["error"]) != "":
 			return _fail(str(config["error"]))
 		row["config"] = config["config"]
+		if int(ProcessRules.effects(row["config"].get("process", {}))["rank"]) > rank:
+			return _fail("메뉴 공법에 필요한 가게 등급이 없어요.")
 		if Catalog.toppings_of(row["config"]).size() > slots or Exploration.locked_in(row["config"], discovered) != "":
 			return _fail("아직 열리지 않은 구성의 메뉴가 있어요.")
 		if not Check.in_range(row["units"], 0, 200) or not Check.in_range(row["wait_total"], 0, int(row["units"]) * 4800):

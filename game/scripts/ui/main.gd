@@ -17,6 +17,7 @@ const Research = preload("res://scripts/domain/ramen_research.gd")
 const Growth = preload("res://scripts/domain/shop_growth.gd")
 const Staffing = preload("res://scripts/domain/shop_staffing.gd")
 const Training = preload("res://scripts/domain/staff_training.gd")
+const ProcessRules = preload("res://scripts/domain/recipe_process.gd")
 const SaveServiceScript = preload("res://scripts/services/save_service.gd")
 const LocationScript = preload("res://scripts/services/data_location.gd")
 const StarMeterScript = preload("res://scripts/ui/star_meter.gd")
@@ -143,6 +144,8 @@ var _expansion_armed_until: int = 0
 var _selling_box: VBoxContainer
 var _selling_message: Label
 var _selling_buttons: Array[Button] = []
+var _process_buttons: Dictionary = {}
+var _process_infos: Dictionary = {}
 ## 훈련은 두 번 눌러 확정한다. 확정 직후 저장하며 2초 연습 연출은 거래/경험을 다시 만들지 않는다.
 var _training_armed: String = ""
 var _training_armed_until: int = 0
@@ -825,6 +828,8 @@ func _build_lab(box: VBoxContainer) -> void:
 		_discovery_hints[slot] = discovery_hint
 		sb.add_child(discovery_hint)
 		box.add_child(sec)
+		if ProcessRules.SLOTS.has(slot):
+			box.add_child(_process_card(slot))
 
 	var price_card: PanelContainer = _card("PriceCard")
 	var pb: VBoxContainer = _vbox(8)
@@ -1361,6 +1366,56 @@ func _work_reject(message: String) -> Dictionary:
 	_work_notice.text = message
 	_flash(message)
 	return {"ok": false, "message": message}
+
+
+## 공법도 다른 초안 편집과 같은 잠금을 통과한다. 선택은 무료이고 시제품 완료 때 실제 원가를 한 번 낸다.
+func _on_process_choice(slot: String, id: String) -> void:
+	if _work_blocked("제조 공법을 바꿀"):
+		return
+	var result: Dictionary = state.set_draft_process(slot, id)
+	_taste_message.text = str(result["message"])
+	_taste_message.add_theme_color_override("font_color", TEAL if bool(result["ok"]) else VERMILION)
+	_refresh_lab()
+
+
+func _process_card(slot: String) -> PanelContainer:
+	var card: PanelContainer = _card("ProcessSection_" + slot)
+	var box: VBoxContainer = _vbox(6)
+	card.add_child(box)
+	box.add_child(_label("육수 추출 공법" if slot == "broth" else "면 반죽과 숙성", 18, VERMILION))
+	var flow: HFlowContainer = HFlowContainer.new()
+	flow.add_theme_constant_override("h_separation", 6)
+	flow.add_theme_constant_override("v_separation", 6)
+	box.add_child(flow)
+	for id in ProcessRules.ids(slot):
+		var definition: Dictionary = ProcessRules.method(slot, id)
+		var button: Button = _button(str(definition["name"]) + "\n등급 %d부터" % definition["rank"], "ProcessOpt_" + slot + "_" + id)
+		button.custom_minimum_size = Vector2(98, 54)
+		button.toggle_mode = true
+		button.pressed.connect(_on_process_choice.bind(slot, id))
+		_process_buttons[slot + ":" + id] = button
+		flow.add_child(button)
+	var info: Label = _label("", 14, INK)
+	info.name = "ProcessInfo_" + slot
+	box.add_child(info)
+	_process_infos[slot] = info
+	return card
+
+
+func _refresh_process_controls() -> void:
+	var chosen: Dictionary = state.draft_config.get("process", {})
+	for slot in ProcessRules.SLOTS:
+		var current: String = ProcessRules.selected(chosen, slot)
+		for id in ProcessRules.ids(slot):
+			var button: Button = _process_buttons[slot + ":" + id]
+			button.set_pressed_no_signal(current == id)
+		var definition: Dictionary = ProcessRules.method(slot, current)
+		var axes: Dictionary = {}
+		for axis in Catalog.AXES:
+			if int(definition["axes"][axis]) != 0:
+				axes[axis] = definition["axes"][axis]
+		var label: Label = _process_infos[slot]
+		label.text = "%s — %s\n%s\n그릇당 추가 원가 %s · 영업 조리 %+d초\n시제품 제조 연출 +%.1f초 · 고급 공법은 등급2부터 열려요." % [definition["name"], definition["desc"], Catalog.axes_text({"axes": axes}), _won(int(definition["cost"])), definition["seconds"], definition["work_extra"]]
 
 
 func _on_name_changed(text: String) -> void:
@@ -2187,16 +2242,23 @@ func _refresh_work_ui() -> void:
 	if active:
 		var p: float = _work.progress()
 		var phase: int = _work.phase_index()
+		var snap: Dictionary = _work.snapshot()
+		var process: Dictionary = snap.get("config", {}).get("process", {})
 		_work_progress.value = p * 100.0
 		_work_percent.text = "%d%%" % int(floor(p * 100.0))
 		_work_title.text = "시식 준비 중 (%d/%d)" % [phase + 1, WorkScript.PHASES.size()]
+		if not process.is_empty():
+			_work_title.text = "제조·시식 준비 (%d/3)\n약 %.1f초" % [phase + 1, _work.duration()]
 		var marks: Array[String] = ["①", "②", "③"]
 		for i in _work_phase_labels.size():
 			var lab: Label = _work_phase_labels[i]
 			var done: bool = i < phase
-			lab.text = "%s %s%s" % [marks[i], WorkScript.phase_name(i), " · 끝" if done else (" · 진행 중" if i == phase else "")]
+			var phase_name: String = WorkScript.phase_name(i)
+			if i < 2 and not process.is_empty():
+				var slot: String = ProcessRules.SLOTS[i]
+				phase_name = str(ProcessRules.method(slot, ProcessRules.selected(process, slot))["name"])
+			lab.text = "%s %s%s" % [marks[i], phase_name, " · 끝" if done else (" · 진행 중" if i == phase else "")]
 			lab.add_theme_color_override("font_color", TEAL if done else (VERMILION if i == phase else MUTED))
-		var snap: Dictionary = _work.snapshot()
 		_work_view.set_state(p, snap["config"] if snap.has("config") else {})
 	_apply_work_lock()
 
@@ -2209,6 +2271,10 @@ func _apply_work_lock() -> void:
 		(_buttons[id] as Button).disabled = busy or not state.ingredient_unlocked(str(id))
 	for b in _price_buttons:
 		b.disabled = busy
+	for slot in ProcessRules.SLOTS:
+		for id in ProcessRules.ids(slot):
+			var button: Button = _process_buttons[slot + ":" + id]
+			button.disabled = busy or state.rank() < int(ProcessRules.method(slot, id)["rank"])
 	for b in _selling_buttons:
 		if is_instance_valid(b):
 			b.disabled = busy
@@ -2391,6 +2457,9 @@ func _refresh_lab() -> void:
 		parts.append("%s %d" % [str(Catalog.AXIS_NAMES[axis]), int(profile[axis])])
 	_profile_label.text = "맛 프로필(0~10): " + " · ".join(parts) + "\n원가 %s · 준비 %d초\n시식하면 시제품 재료비 %s가 자금에서 빠져요." % [_won(cost), prep, _won(cost)]
 	var staffed_prep: int = Staffing.effective_prep(prep, state.current_staffing())
+	_refresh_process_controls()
+	if state.draft_config.has("process"):
+		_profile_label.text += "\n공법: " + ProcessRules.summary(state.draft_config["process"]) + "\n제조·시식 연출 약 %.1f초 (영업 조리시간과 별개)" % float(ProcessRules.effects(state.draft_config["process"])["work_seconds"])
 	if staffed_prep != prep:
 		_profile_label.text += "\n영업 중 실제 준비 %d초 (조리 보조 효과, 맛 점수는 그대로)" % staffed_prep
 	var applied: Array = Evaluator.applied_compat(state.draft_config)
@@ -2434,6 +2503,10 @@ func _refresh_feedback() -> void:
 	var recipe_details: Label = _label(" · ".join(ingredients), 14, MUTED)
 	recipe_details.name = "FeedbackRecipeDetails"
 	tcb.add_child(recipe_details)
+	if config.has("process"):
+		var method_label: Label = _label("제조: " + ProcessRules.summary(config["process"]), 15, TEAL)
+		method_label.name = "FeedbackProcess"
+		tcb.add_child(method_label)
 	_feedback_box.add_child(title_card)
 
 	for c in evaluation["customers"]:
@@ -2522,6 +2595,8 @@ func _comparison_card(rec: Dictionary, evaluation: Dictionary) -> PanelContainer
 			changes.append("%s: %s → %s" % [str(Catalog.SLOT_NAMES[slot]), str(old_item["name"]), str(new_item["name"])])
 	if int(prev_cfg["price"]) != int(cfg["price"]):
 		changes.append("가격: %s → %s" % [_won(int(prev_cfg["price"])), _won(int(cfg["price"]))])
+	if prev_cfg.get("process", {}) != cfg.get("process", {}):
+		changes.append("제조: %s → %s" % [ProcessRules.summary(prev_cfg.get("process", {})), ProcessRules.summary(cfg.get("process", {}))])
 	lines.append("바뀐 점 — " + ", ".join(changes))
 	var up: int = 0
 	var down: int = 0
@@ -2552,7 +2627,7 @@ func _refresh_notebook() -> void:
 	var cap: int = state.record_capacity()
 	_notebook_count.text = "레시피 노트 %d/%d (메뉴 개정 기록)" % [all_records.size(), cap]
 	# 한 칸 = 메뉴 개정 기록 하나. 동시에 파는 메뉴가 아니라 영업 메뉴는 선택한 기록 하나다.
-	var note: String = "노트 한 칸은 시식한 메뉴 개정 기록 하나예요. 동시에 파는 메뉴 칸이 아니라 영업 메뉴는 고른 기록 하나예요."
+	var note: String = "노트 한 칸은 시식한 메뉴 개정 기록 하나예요. 동시에 파는 메뉴 칸은 별개이며 [영업]에서 고정해요(기본1종, 증축 후2종)."
 	if all_records.size() > cap:
 		note += "\n예전 저장의 기록이 지금 용량보다 많아 모두 보관 중이에요. 삭제로 %d개 아래가 되거나 조리대를 확장하기 전에는 새 시식을 만들 수 없어요." % cap
 	elif cap < GameStateScript.MAX_RECORDS:
@@ -2579,7 +2654,7 @@ func _notebook_row(rec: Dictionary) -> PanelContainer:
 	var selected: bool = id == state.selected_record_id
 	var title: String = "%s v%d" % [str(rec["name"]), int(rec["version"])]
 	if selected:
-		title += " · 영업 메뉴"
+		title += " · 개발·시식 대상"
 	rb.add_child(_label(title, 20, TEAL if selected else VERMILION))
 	# 선택한 재료 전부(토핑 포함)를 이름으로 보여 준다.
 	var names: Array[String] = []
@@ -2587,6 +2662,10 @@ func _notebook_row(rec: Dictionary) -> PanelContainer:
 		var item: Dictionary = Catalog.find(iid)
 		names.append(str(item["name"]))
 	rb.add_child(_label(" · ".join(names), 14, MUTED))
+	if cfg.has("process"):
+		var method_label: Label = _label("제조: " + ProcessRules.summary(cfg["process"]), 14, TEAL)
+		method_label.name = "RecordProcess_%d" % id
+		rb.add_child(method_label)
 	var ratings: Array[String] = []
 	for c in Customers.all():
 		var cd: Dictionary = c
