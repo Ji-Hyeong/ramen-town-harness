@@ -43,10 +43,13 @@ const Stories = preload("res://scripts/domain/regular_stories.gd")
 ## v7은 보이는 매장 증축과 명시적 판매 목록을 보존한다. v1~6에는 미확장/자동 선택만 추가한다.
 ## v8은 비기본 제조 공법만 config.process로 보존한다. 이전1~7의 기본 구성과 값은 변경하지 않는다.
 ## v9는 선택형 단골 사연/완료 영업 메뉴의 답례 영수증을 추가한다. 과거 진행을 소급 지급하지 않는다.
-const SCHEMA_VERSION: int = 9
+## v10 separates menu families from revision history and retains best-taste witnesses.
+const SCHEMA_VERSION: int = 10
 const EXPANSION_PRICE: int = 60000
 const MIN_SCHEMA_VERSION: int = 1
-const MAX_RECORDS: int = 30
+const LEGACY_MAX_RECORDS: int = 30
+const MAX_RECORDS: int = 300
+const MAX_MENUS: int = 30
 const START_WALLET: int = 30000
 const MAX_WALLET: int = 1000000000
 const MAX_DAY: int = 99999
@@ -63,7 +66,8 @@ const TOP_KEYS_V4: Array = ["schema_version", "day", "wallet", "next_record_id",
 const TOP_KEYS_V5: Array = TOP_KEYS_V4 + ["contests"]
 const TOP_KEYS_V6: Array = TOP_KEYS_V5 + ["training"]
 const TOP_KEYS_V7: Array = TOP_KEYS_V6 + ["shop"]
-const TOP_KEYS: Array = TOP_KEYS_V7 + ["stories"]
+const TOP_KEYS_V9: Array = TOP_KEYS_V7 + ["stories"]
+const TOP_KEYS: Array = TOP_KEYS_V9 + ["taste_achievements"]
 const RECORD_KEYS: Array = ["record_id", "lineage_id", "name", "version", "tasted_day", "config", "scores", "comparison"]
 const COMPARISON_KEYS: Array = ["prev_record_id", "prev_version", "prev_scores", "prev_config"]
 const DRAFT_KEYS: Array = ["config", "name", "lineage_id"]
@@ -81,6 +85,9 @@ var draft_config: Dictionary = {}
 var draft_name: String = ""
 var draft_lineage_id: int = 0
 var _records: Array = []
+## At most one immutable best-score witness per customer; deleting notebook rows
+## never erases earned promotion evidence. Existing saves seed only retained rows.
+var _taste_achievements: Dictionary = _empty_taste_achievements()
 ## 완료한 연구 의뢰 영수증(완료 순서). 총점/칭호/해금은 여기서 계산한다. 항목 구조는 ramen_research.gd 참고.
 var _research_done: Array = []
 ## 가게 성장 상태(저장). 등급 1~3, 산 확장 id(구매 순서), 고용한 직원 id(고용 순서). 용량은 여기서 파생한다.
@@ -108,6 +115,14 @@ func _init() -> void:
 
 func record_count() -> int:
 	return _records.size()
+
+
+## A revision shares its menu family's slot, including legacy over-capacity saves.
+func menu_count() -> int:
+	var seen: Dictionary = {}
+	for row in _records:
+		seen[row["lineage_id"]] = true
+	return seen.size()
 
 
 func records() -> Array:
@@ -347,10 +362,12 @@ func taste() -> Dictionary:
 		var existing_cfg: Dictionary = rd2["config"]
 		if Check.same_config(existing_cfg, draft_config):
 			return _fail("이미 같은 구성이 '%s v%d'로 기록돼 있어요. 재료나 가격을 바꿔 보세요." % [str(rd2["name"]), int(rd2["version"])])
-	# 노트 용량은 조리대 확장에서 파생한다(6→12→30, 절대 상한 MAX_RECORDS). 예전 저장이 용량보다 많이 가지고 있으면(grandfather)
-	# 기록은 모두 남지만 새 기록은 개수가 용량 아래로 내려갈 때까지 만들 수 없다.
-	if _records.size() >= record_capacity():
-		return _fail("노트가 가득 찼어요 (%d/%d). 기록을 삭제하거나 조리대를 확장한 뒤 시식하세요." % [_records.size(), record_capacity()])
+	# Capacity limits new families only. Revisions remain possible at/above the
+	# facility limit; history has its own hard bound and is never silently pruned.
+	if _records.size() >= MAX_RECORDS:
+		return _fail("실험 이력 보관함이 가득 찼어요 (%d/%d). 필요 없는 개정 기록을 직접 정리한 뒤 시식하세요. 최고 시식 성적은 유지돼요." % [_records.size(), MAX_RECORDS])
+	if base.is_empty() and menu_count() >= menu_capacity():
+		return _fail("등록 메뉴가 가득 찼어요 (%d/%d종). 기존 메뉴를 개정하거나 조리대를 확장하세요. 종류를 줄이려면 해당 메뉴의 모든 개정본을 정리하세요." % [menu_count(), menu_capacity()])
 	var version: int = 1
 	if not base.is_empty():
 		version = int(base["version"]) + 1
@@ -392,6 +409,7 @@ func taste() -> Dictionary:
 	}
 	next_record_id += 1
 	_records.append(record)
+	_taste_achievements = _updated_taste_achievements(_taste_achievements, [record])
 	wallet -= cost
 	draft_name = clean_name
 	draft_lineage_id = lineage
@@ -910,9 +928,22 @@ func topping_slots() -> int:
 	return Growth.topping_slots(_rank, _facilities)
 
 
-## 노트(메뉴 개정 기록) 용량. 기록 하나가 한 칸을 쓰는 "개정 기록"이고 동시에 파는 메뉴 칸이 아니다(영업 메뉴는 선택한 기록 하나).
+## Legacy API/saved service snapshot field: now denotes registered menu families.
+## Preserve its numeric values so historical service reports remain unchanged.
 func record_capacity() -> int:
-	return mini(Growth.notebook_capacity(_facilities), MAX_RECORDS)
+	return menu_capacity()
+
+
+func menu_capacity() -> int:
+	return mini(Growth.notebook_capacity(_facilities), MAX_MENUS)
+
+
+func record_history_capacity() -> int:
+	return MAX_RECORDS
+
+
+func best_taste_records() -> Dictionary:
+	return _taste_achievements.duplicate(true)
 
 
 ## 고용 가능한 총 직원 수(요리사+서버 포함)와 남은 고용 자리.
@@ -941,7 +972,11 @@ func growth_snapshot() -> Dictionary:
 
 ## 등급 심사표(읽기 전용). 화면은 이 결과를 그대로 보여 준다: 현재/다음 등급, 조건별 달성 여부와 지금 값, 신청 가능 여부.
 func promotion_review() -> Dictionary:
-	var best: Dictionary = Growth.best_scores(_records)
+	var witnesses: Array = []
+	for row in _taste_achievements.values():
+		if not row.is_empty():
+			witnesses.append(row)
+	var best: Dictionary = Growth.best_scores(witnesses)
 	return Growth.promotion_review(_rank, completed_service_days(), _research_done.size(), best)
 
 
@@ -1359,6 +1394,7 @@ func to_dict() -> Dictionary:
 		"training": _training.duplicate(true),
 		"shop": {"expanded": _expanded, "menu_ids": _menu_ids.duplicate()},
 		"stories": {"arcs":_stories.duplicate(true)},
+		"taste_achievements": _taste_achievements.duplicate(true),
 	}
 
 
@@ -1388,7 +1424,9 @@ func load_from_dict(raw: Variant) -> String:
 		expected_keys = TOP_KEYS_V6
 	elif version == 7 or version == 8:
 		expected_keys = TOP_KEYS_V7
-	elif version >= 9:
+	elif version == 9:
+		expected_keys = TOP_KEYS_V9
+	elif version >= 10:
 		expected_keys = TOP_KEYS
 	var key_err: String = Check.keys_error(d, expected_keys, "저장")
 	if key_err != "":
@@ -1406,8 +1444,9 @@ func load_from_dict(raw: Variant) -> String:
 	if typeof(d["records"]) != TYPE_ARRAY:
 		return "기록 목록 구조가 올바르지 않아요."
 	var raw_records: Array = d["records"]
-	if raw_records.size() > MAX_RECORDS:
-		return "기록 수가 한도(%d)를 넘었어요." % MAX_RECORDS
+	var history_limit: int = LEGACY_MAX_RECORDS if version < 10 else MAX_RECORDS
+	if raw_records.size() > history_limit:
+		return "기록 수가 한도(%d)를 넘었어요." % history_limit
 	var n_record: int = int(d["next_record_id"])
 	var n_lineage: int = int(d["next_lineage_id"])
 
@@ -1434,6 +1473,8 @@ func load_from_dict(raw: Variant) -> String:
 		seen_versions[vkey] = true
 		parsed.append(rec)
 
+	if lineage_names.size() > MAX_MENUS:
+		return "등록 메뉴 종류가 절대 한도(%d)를 넘었어요." % MAX_MENUS
 	var sel_ok: bool = Check.in_range(d["selected_record_id"], 0, 1000000000)
 	var fb_ok: bool = Check.in_range(d["last_feedback_record_id"], 0, 1000000000)
 	if not sel_ok or not fb_ok:
@@ -1545,7 +1586,7 @@ func load_from_dict(raw: Variant) -> String:
 	if _process_error(dcfg["config"], growth_rank) != "":
 		return "초안의 제조 공법에 필요한 등급이 없어요."
 	# 어떤 구성(기록/비교의 이전 구성/초안)도 이 상태의 토핑 슬롯 수를 넘을 수 없다(슬롯은 줄지 않으므로 정상 저장은 항상 통과).
-	# 기록 개수가 노트 용량을 넘는 예전 저장은 거부하지 않는다(grandfather: 모두 보존, 새 시식만 용량 아래로 내려갈 때까지 불가).
+	# Preserve legacy families above the facility limit; only a new family is gated.
 	var slot_limit: int = Growth.topping_slots(growth_rank, growth_facilities)
 	for pe2 in parsed:
 		var rec_cfg2: Dictionary = (pe2 as Dictionary)["config"]
@@ -1607,7 +1648,14 @@ func load_from_dict(raw: Variant) -> String:
 		if str(story_result["error"]) != "":
 			return str(story_result["error"])
 		stories_parsed = story_result["arcs"]
+	var achievements: Dictionary = _updated_taste_achievements(_empty_taste_achievements(), parsed)
+	if version >= 10:
+		var achieved: Dictionary = _parse_taste_achievements(d["taste_achievements"], parsed, int(d["day"]), n_record, n_lineage, growth_rank, slot_limit, discovered_now)
+		if str(achieved["error"]) != "":
+			return str(achieved["error"])
+		achievements = achieved["records"]
 	# 모든 검증 통과 후 반영
+	_taste_achievements = achievements
 	_stories = stories_parsed
 	_expanded = expanded
 	_menu_ids = menu_ids
@@ -1736,6 +1784,69 @@ func _parse_record(raw: Variant, index: int, n_record: int, n_lineage: int, curr
 		"comparison": comparison,
 	}
 	return {"error": "", "record": record}
+
+
+static func _empty_taste_achievements() -> Dictionary:
+	var out: Dictionary = {}
+	for id in Customers.ids():
+		out[id] = {}
+	return out
+
+
+static func _updated_taste_achievements(previous: Dictionary, records_to_add: Array) -> Dictionary:
+	var out: Dictionary = previous.duplicate(true)
+	for row in records_to_add:
+		for id in Customers.ids():
+			if out[id].is_empty() or int(row["scores"][id]) > int(out[id]["scores"][id]):
+				out[id] = row.duplicate(true)
+	return out
+
+
+## Reuse the normal record parser, then validate historical unlocks and agreement
+## with retained rows. Scores alone are never accepted as promotion evidence.
+func _parse_taste_achievements(raw: Variant, retained: Array, current_day: int, n_record: int, n_lineage: int, current_rank: int, slots: int, discovered: Array) -> Dictionary:
+	if typeof(raw) != TYPE_DICTIONARY or Check.keys_error(raw, Customers.ids(), "최고 시식 성적") != "":
+		return {"error": "최고 시식 성적의 항목이 올바르지 않아요."}
+	var out: Dictionary = {}
+	var witnesses_by_id: Dictionary = {}
+	var names: Dictionary = {}
+	for row in retained:
+		witnesses_by_id[row["record_id"]] = row
+		names[row["lineage_id"]] = row["name"]
+	var filled: int = 0
+	for id in Customers.ids():
+		if typeof(raw[id]) != TYPE_DICTIONARY:
+			return {"error": "최고 시식 증빙의 구조가 올바르지 않아요."}
+		if raw[id].is_empty():
+			out[id] = {}
+			continue
+		var checked: Dictionary = _parse_record(raw[id], 0, n_record, n_lineage, current_day)
+		if str(checked["error"]) != "":
+			return {"error": "최고 시식 증빙: " + str(checked["error"])}
+		var row: Dictionary = checked["record"]
+		var configs: Array = [row["config"]]
+		if not row["comparison"].is_empty():
+			configs.append(row["comparison"]["prev_config"])
+		for cfg in configs:
+			if _process_error(cfg, current_rank) != "" or Exploration.locked_in(cfg, discovered) != "" or Catalog.toppings_of(cfg).size() > slots:
+				return {"error": "최고 시식 증빙에 아직 열리지 않은 구성이 있어요."}
+		if witnesses_by_id.has(row["record_id"]) and JSON.stringify(witnesses_by_id[row["record_id"]], "", true) != JSON.stringify(row, "", true):
+			return {"error": "최고 시식 증빙이 같은 번호의 기록과 달라요."}
+		if names.has(row["lineage_id"]) and names[row["lineage_id"]] != row["name"]:
+			return {"error": "최고 시식 증빙의 메뉴 이름이 달라요."}
+		witnesses_by_id[row["record_id"]] = row
+		names[row["lineage_id"]] = row["name"]
+		out[id] = row
+		filled += 1
+	if filled != 0 and filled != Customers.ids().size():
+		return {"error": "최고 시식 성적이 일부만 남아 있어요."}
+	# Every retained or historical witness is also a real tasting for the other
+	# customers. A deliberately lowered/missing best score must not hide it.
+	for row in witnesses_by_id.values():
+		for id in Customers.ids():
+			if out[id].is_empty() or int(out[id]["scores"][id]) < int(row["scores"][id]):
+				return {"error": "이미 받은 최고 시식 성적이 빠져 있어요."}
+	return {"error": "", "records": out}
 
 
 func _parse_scores(raw: Variant, ctx: String) -> Dictionary:

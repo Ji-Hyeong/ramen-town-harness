@@ -125,6 +125,8 @@ var _icon_cache: Dictionary = {}
 var _feedback_box: VBoxContainer
 var _notebook_count: Label
 var _notebook_box: VBoxContainer
+var _notebook_page: int = 0
+const NOTEBOOK_PAGE_SIZE: int = 20
 var _serve_intro: Label
 var _serve_menu: Label
 var _serve_forecast: Label
@@ -910,7 +912,7 @@ func _build_notebook(box: VBoxContainer) -> void:
 	_notebook_count = _label("", 18, INK)
 	_notebook_count.name = "NotebookCount"
 	box.add_child(_notebook_count)
-	# 노트 한 칸 = 메뉴 "개정 기록" 하나(동시에 파는 메뉴 칸이 아니다). 용량/다음 확장/초과 보관 안내가 여기 보인다.
+	# Registered families and immutable revision history have independent limits.
 	_notebook_note = _label("", 14, MUTED)
 	_notebook_note.name = "NotebookNote"
 	box.add_child(_notebook_note)
@@ -1563,6 +1565,8 @@ func _complete_work() -> void:
 		_refresh_all()
 		return
 	var res: Dictionary = state.taste()
+	if bool(res["ok"]):
+		_notebook_page = 0
 	_taste_message.text = str(res["message"])
 	if not bool(res["ok"]):
 		_taste_message.add_theme_color_override("font_color", VERMILION)
@@ -2643,24 +2647,51 @@ func _comparison_card(rec: Dictionary, evaluation: Dictionary) -> PanelContainer
 func _refresh_notebook() -> void:
 	_clear(_notebook_box)
 	var all_records: Array = state.records()
-	var cap: int = state.record_capacity()
-	_notebook_count.text = "레시피 노트 %d/%d (메뉴 개정 기록)" % [all_records.size(), cap]
-	# 한 칸 = 메뉴 개정 기록 하나. 동시에 파는 메뉴가 아니라 영업 메뉴는 선택한 기록 하나다.
-	var note: String = "노트 한 칸은 시식한 메뉴 개정 기록 하나예요. 동시에 파는 메뉴 칸은 별개이며 [영업]에서 고정해요(기본1종, 증축 후2종)."
-	if all_records.size() > cap:
-		note += "\n예전 저장의 기록이 지금 용량보다 많아 모두 보관 중이에요. 삭제로 %d개 아래가 되거나 조리대를 확장하기 전에는 새 시식을 만들 수 없어요." % cap
-	elif cap < GameStateScript.MAX_RECORDS:
+	var cap: int = state.menu_capacity()
+	var menus: int = state.menu_count()
+	_notebook_count.text = "등록 메뉴 %d/%d종 · 개정 이력 %d/%d" % [menus, cap, all_records.size(), state.record_history_capacity()]
+	var note: String = "같은 메뉴의 개정은 등록 자리를 더 쓰지 않아요. 동시에 파는 메뉴 칸은 별개이며 [영업]에서 고정해요(기본1종, 증축 후2종). 기록을 지워도 최고 시식 성적은 유지돼요."
+	if menus > cap:
+		note += "\n예전 메뉴를 모두 보관 중이에요. 기존 메뉴 개정과 영업은 가능해요. 새 종류는 조리대 확장 또는 한 메뉴의 모든 개정본 정리 후 추가하세요."
+	elif cap < GameStateScript.MAX_MENUS:
 		var nxt: Dictionary = Growth.facility_review("bench_1" if not state.facilities_owned().has("bench_1") else "bench_2", state.rank(), state.facilities_owned(), state.wallet)
 		note += "\n다음 확장 「%s」(%s)으로 늘려요: %s" % [str(nxt["name"]), str(nxt["price_text"]), str(nxt["effect_text"])]
+	if all_records.size() >= state.record_history_capacity():
+		note += "\n실험 이력 보관함이 가득 찼어요. 필요 없는 개정본을 직접 정리해야 시식할 수 있어요. 자동 삭제는 하지 않아요."
 	_notebook_note.text = note
 	if all_records.is_empty():
 		var empty: PanelContainer = _card("EmptyNotebookCard")
 		empty.add_child(_label("노트가 비어 있어요. 시식한 레시피가 이곳에 기록돼요.", 16, INK))
 		_notebook_box.add_child(empty)
 		return
-	for i in range(all_records.size() - 1, -1, -1):
+	# Only materialize a bounded page of rows, rather than300 complex mobile cards.
+	var pages: int = maxi(1, (all_records.size() + NOTEBOOK_PAGE_SIZE - 1) / NOTEBOOK_PAGE_SIZE)
+	_notebook_page = clampi(_notebook_page, 0, pages - 1)
+	if pages > 1:
+		var pager: HBoxContainer = HBoxContainer.new()
+		pager.name = "NotebookPager"
+		var newer: Button = _button("더 최근 기록", "NotebookNewer")
+		var older: Button = _button("더 오래된 기록", "NotebookOlder")
+		for button in [newer, older]:
+			button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			button.custom_minimum_size = Vector2(0.0, 48.0)
+		newer.disabled = _notebook_page == 0
+		older.disabled = _notebook_page == pages - 1
+		newer.pressed.connect(_on_notebook_page.bind(-1))
+		older.pressed.connect(_on_notebook_page.bind(1))
+		pager.add_child(newer)
+		pager.add_child(older)
+		_notebook_box.add_child(_label("개정 이력 %d/%d쪽 · 최신 순" % [_notebook_page + 1, pages], 14, MUTED))
+		_notebook_box.add_child(pager)
+	var first: int = all_records.size() - 1 - _notebook_page * NOTEBOOK_PAGE_SIZE
+	for i in range(first, maxi(-1, first - NOTEBOOK_PAGE_SIZE), -1):
 		var rec: Dictionary = all_records[i]
 		_notebook_box.add_child(_notebook_row(rec))
+
+
+func _on_notebook_page(offset: int) -> void:
+	_notebook_page += offset
+	_refresh_notebook()
 
 
 func _notebook_row(rec: Dictionary) -> PanelContainer:
@@ -3010,11 +3041,11 @@ func _refresh_growth() -> void:
 	_growth_summary.text = "가게 등급 %d단계 「%s」 · 영업 %d일 마침 · 자금 %s" % [state.rank(), state.rank_title(), days, _won(state.wallet)]
 	var slots: int = state.topping_slots()
 	var picked: int = Catalog.toppings_of(state.draft_config).size()
-	var count: int = state.record_count()
-	var cap: int = state.record_capacity()
+	var count: int = state.menu_count()
+	var cap: int = state.menu_capacity()
 	var cap_lines: Array[String] = []
 	cap_lines.append("토핑 슬롯 %d/%d개 (지금 레시피 %d개)" % [slots, Catalog.MAX_TOPPINGS, picked])
-	cap_lines.append("레시피 노트 %d/%d칸%s (메뉴 개정 기록, 동시에 파는 메뉴 칸이 아니에요)" % [count, cap, " · 초과 보관 중" if count > cap else ""])
+	cap_lines.append("등록 메뉴 %d/%d종%s · 개정 이력 %d/%d (동시 판매 칸은 별개)" % [count, cap, " · 초과 보관 중" if count > cap else "", state.record_count(), state.record_history_capacity()])
 	cap_lines.append("직원 %d/%d명 (요리사·서버 + 보조 %d) · 빈 자리 %d · 보조 하루 운영비 %s" % [Staffing.BASE_STAFF + hired.size(), state.staff_capacity(), hired.size(), state.free_staff_slots(), _won(int(staffing["wage"]))])
 	_growth_capacity.text = "\n".join(cap_lines)
 

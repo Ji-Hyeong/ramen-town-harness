@@ -7,12 +7,12 @@ extends RefCounted
 ## 승급은 "등급 심사 신청"이라는 명시적 행동으로만 일어나고, 금전 보상은 없다(조건만 본다). 조건은 지금 게임으로 달성 가능한 것뿐이다:
 ##   - 영업 마친 날 수 = 일차 - 1 (일차는 정산/영업 완료로만 오른다)
 ##   - 완료한 연구 의뢰 수 (연구 영수증 개수)
-##   - 노트에 남은 시식 기록을 평가기로 다시 계산한 점수로, 단골별 최고점이 기준 이상인 단골 수(기록은 달라도 된다)
+##   - GameState가 보존한 최고 시식 증빙을 재평가해 단골별 최고점 조건을 확인한다.
 ##   2단계: 영업 3일 + 연구 1건 + 단골 2명에게 75점 이상
 ##   3단계: 영업 10일 + 연구 4건 + 단골 3명 모두에게 80점 이상
 ## 증인(손으로 계산, 테스트가 평가기로 다시 확인): 연구 입문 증인 둘(도윤 입문 80점 이상, 하영 입문 80점 이상)이 2단계 점수 조건을
 ## 채우고, 여섯 연구 증인을 모두 시식하면 도윤 심화(88+)/하영 심화(90+)/마루 심화(84+)가 3단계 점수 조건(80 이상)을 채운다.
-## 노트에서 기록을 지우면 신청 전에는 조건이 다시 부족해질 수 있다(신청 순간의 기록만 본다). 승급한 등급은 내려가지 않는다.
+## 개정 기록을 지워도 최고 시식 증빙은 유지된다. 승급한 등급도 내려가지 않는다.
 
 const Catalog = preload("res://scripts/domain/ingredient_catalog.gd")
 const Customers = preload("res://scripts/domain/customer_catalog.gd")
@@ -21,7 +21,7 @@ const Evaluator = preload("res://scripts/domain/recipe_evaluator.gd")
 const Staffing = preload("res://scripts/domain/shop_staffing.gd")
 
 const RANK_MAX: int = 3
-## 노트(메뉴 개정 기록) 용량: 조리대 확장 단계(0~2)로 정해지는 파생값. 절대 상한은 GameState.MAX_RECORDS(30)와 같다.
+## 등록 메뉴 종류 용량. 개정 이력300개/동시 판매1~2종은 별개다.
 const NOTEBOOK_BY_TIER: Array = [6, 12, 30]
 
 const RANKS: Array = [
@@ -34,12 +34,12 @@ const RANKS: Array = [
 
 ## 유료 확장. 두 줄(조리대 = 레시피 작업 공간, 직원 공간)에 각 2단계. 한 번만 살 수 있고 환불은 없다.
 ## min_rank: 이 등급 이상이어야 살 수 있음, requires: 먼저 사야 하는 같은 줄의 앞 단계.
-## 조리대 확장은 토핑 슬롯 한도와 노트 용량을, 직원 공간은 고용 가능한 총 직원 수를 올린다(자동 고용 없음).
+## 조리대는 토핑 슬롯과 등록 메뉴 종류를, 직원 공간은 고용 가능한 총 직원 수를 올린다.
 const FACILITIES: Array = [
 	{"id": "bench_1", "track": "recipe", "tier": 1, "name": "조리대 확장 I", "price": 12000, "min_rank": 2, "requires": "",
-		"desc": "작업대를 넓혀 토핑을 2개까지 올리고, 레시피 노트를 12개까지 써요."},
+		"desc": "토핑을 2개까지 올리고 메뉴를 12종까지 등록해요. 같은 메뉴의 개정은 자리를 더 쓰지 않아요."},
 	{"id": "bench_2", "track": "recipe", "tier": 2, "name": "조리대 확장 II", "price": 30000, "min_rank": 3, "requires": "bench_1",
-		"desc": "토핑을 3개까지 올리고, 레시피 노트를 30개까지 써요."},
+		"desc": "토핑을 3개까지 올리고 메뉴를 30종까지 등록해요. 실험 이력 보관함은 별도예요."},
 	{"id": "staff_1", "track": "staff", "tier": 1, "name": "직원 공간 I", "price": 15000, "min_rank": 2, "requires": "",
 		"desc": "휴게 공간을 만들어 직원을 3명까지 둘 수 있어요(자동 고용 없음)."},
 	{"id": "staff_2", "track": "staff", "tier": 2, "name": "직원 공간 II", "price": 36000, "min_rank": 3, "requires": "staff_1",
@@ -177,7 +177,7 @@ static func promotion_review(rank: int, completed_days: int, research_count: int
 	var conds: Array = [
 		{"id": "days", "text": "영업을 %d일 마침" % days, "measured_text": "지금 %d일" % completed_days, "met": completed_days >= days},
 		{"id": "research", "text": "연구 의뢰 %d건 완료" % research, "measured_text": "지금 %d건" % research_count, "met": research_count >= research},
-		{"id": "scores", "text": "노트 기록으로 단골 %d명 이상에게 %d점 이상 받음(기록은 달라도 돼요)" % [need_customers, min_score], "measured_text": "지금 %d명" % have_customers, "met": have_customers >= need_customers},
+		{"id": "scores", "text": "최고 시식 성적으로 단골 %d명 이상에게 %d점 이상 받음(기록을 지워도 유지돼요)" % [need_customers, min_score], "measured_text": "지금 %d명" % have_customers, "met": have_customers >= need_customers},
 	]
 	var all_met: bool = true
 	for c in conds:
@@ -214,7 +214,7 @@ static func facility_review(id: String, rank: int, facilities: Array, wallet: in
 	if str(f["track"]) == "recipe":
 		# 등급이 모자라 아직 못 사는 시설도 "사게 되면 얼마가 되는지"를 보이도록 필요 등급을 가정해 센다.
 		var eff_rank: int = maxi(rank, int(f["min_rank"]))
-		effect = "토핑 슬롯 %d→%d · 노트 %d→%d" % [topping_slots(eff_rank, facilities), topping_slots(eff_rank, after), notebook_capacity(facilities), notebook_capacity(after)]
+		effect = "토핑 슬롯 %d→%d · 등록 메뉴 %d→%d종" % [topping_slots(eff_rank, facilities), topping_slots(eff_rank, after), notebook_capacity(facilities), notebook_capacity(after)]
 	else:
 		effect = "직원 %d→%d명까지(자동 고용 없음)" % [staff_capacity(facilities), staff_capacity(after)]
 	return {
