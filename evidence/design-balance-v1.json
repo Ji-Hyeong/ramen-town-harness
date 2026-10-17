@@ -1,0 +1,372 @@
+{
+  "best_minimum_taste_at_9000": {
+    "config": {
+      "broth": "broth_tonkotsu",
+      "cook": "cook_firm",
+      "noodle": "noodle_thin",
+      "oil": "oil_chili",
+      "price": 9000,
+      "tare": "tare_shoyu",
+      "toppings": [
+        "topping_sprouts"
+      ]
+    },
+    "minimum_score": 77,
+    "scores": {
+      "dohyun": 77,
+      "hayoung": 78,
+      "maru": 87
+    }
+  },
+  "best_sampled_forecast": {
+    "config": {
+      "broth": "broth_chicken",
+      "cook": "cook_firm",
+      "noodle": "noodle_medium",
+      "oil": "oil_chili",
+      "price": 9000,
+      "tare": "tare_miso",
+      "toppings": [
+        "topping_nori"
+      ]
+    },
+    "scores": {
+      "dohyun": 82,
+      "hayoung": 74,
+      "maru": 86
+    },
+    "weekly_forecast_net": 577030
+  },
+  "days": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+  ],
+  "failures": 0,
+  "forecast_cases": 34020,
+  "format": 1,
+  "ingredient_configs": 972,
+  "prices": [
+    6000,
+    7500,
+    9000,
+    10500,
+    12000
+  ],
+  "process_cases": 8748,
+  "runtime_samples": [
+    {
+      "config": {
+        "broth": "broth_tonkotsu",
+        "cook": "cook_firm",
+        "noodle": "noodle_thin",
+        "oil": "oil_garlic",
+        "price": 9000,
+        "tare": "tare_shoyu",
+        "toppings": [
+          "topping_chashu"
+        ]
+      },
+      "days": [
+        {
+          "day": 1,
+          "forecast_net": 58200,
+          "ingredient_cost": 19800,
+          "net": 58200,
+          "overhead": 3000,
+          "revenue": 81000,
+          "turned_away": 0,
+          "units": 9
+        },
+        {
+          "day": 2,
+          "forecast_net": 65000,
+          "ingredient_cost": 22000,
+          "net": 65000,
+          "overhead": 3000,
+          "revenue": 90000,
+          "turned_away": 0,
+          "units": 10
+        },
+        {
+          "day": 3,
+          "forecast_net": 85400,
+          "ingredient_cost": 28600,
+          "net": 85400,
+          "overhead": 3000,
+          "revenue": 117000,
+          "turned_away": 0,
+          "units": 13
+        },
+        {
+          "day": 4,
+          "forecast_net": 85400,
+          "ingredient_cost": 28600,
+          "net": 85400,
+          "overhead": 3000,
+          "revenue": 117000,
+          "turned_away": 0,
+          "units": 13
+        },
+        {
+          "day": 5,
+          "forecast_net": 92200,
+          "ingredient_cost": 30800,
+          "net": 92200,
+          "overhead": 3000,
+          "revenue": 126000,
+          "turned_away": 0,
+          "units": 14
+        },
+        {
+          "day": 6,
+          "forecast_net": 58200,
+          "ingredient_cost": 19800,
+          "net": 58200,
+          "overhead": 3000,
+          "revenue": 81000,
+          "turned_away": 0,
+          "units": 9
+        },
+        {
+          "day": 7,
+          "forecast_net": 65000,
+          "ingredient_cost": 22000,
+          "net": 65000,
+          "overhead": 3000,
+          "revenue": 90000,
+          "turned_away": 0,
+          "units": 10
+        }
+      ],
+      "label": "default",
+      "scores": {
+        "dohyun": 87,
+        "hayoung": 86,
+        "maru": 65
+      },
+      "weekly_net": 509400
+    },
+    {
+      "config": {
+        "broth": "broth_chicken",
+        "cook": "cook_firm",
+        "noodle": "noodle_medium",
+        "oil": "oil_chili",
+        "price": 9000,
+        "tare": "tare_miso",
+        "toppings": [
+          "topping_nori"
+        ]
+      },
+      "days": [
+        {
+          "day": 1,
+          "forecast_net": 72700,
+          "ingredient_cost": 14300,
+          "net": 72700,
+          "overhead": 3000,
+          "revenue": 90000,
+          "turned_away": 0,
+          "units": 10
+        },
+        {
+          "day": 2,
+          "forecast_net": 80270,
+          "ingredient_cost": 15730,
+          "net": 80270,
+          "overhead": 3000,
+          "revenue": 99000,
+          "turned_away": 0,
+          "units": 11
+        },
+        {
+          "day": 3,
+          "forecast_net": 80270,
+          "ingredient_cost": 15730,
+          "net": 80270,
+          "overhead": 3000,
+          "revenue": 99000,
+          "turned_away": 0,
+          "units": 11
+        },
+        {
+          "day": 4,
+          "forecast_net": 95410,
+          "ingredient_cost": 18590,
+          "net": 95410,
+          "overhead": 3000,
+          "revenue": 117000,
+          "turned_away": 0,
+          "units": 13
+        },
+        {
+          "day": 5,
+          "forecast_net": 102980,
+          "ingredient_cost": 20020,
+          "net": 102980,
+          "overhead": 3000,
+          "revenue": 126000,
+          "turned_away": 0,
+          "units": 14
+        },
+        {
+          "day": 6,
+          "forecast_net": 65130,
+          "ingredient_cost": 12870,
+          "net": 65130,
+          "overhead": 3000,
+          "revenue": 81000,
+          "turned_away": 0,
+          "units": 9
+        },
+        {
+          "day": 7,
+          "forecast_net": 80270,
+          "ingredient_cost": 15730,
+          "net": 80270,
+          "overhead": 3000,
+          "revenue": 99000,
+          "turned_away": 0,
+          "units": 11
+        }
+      ],
+      "label": "best_sampled_forecast",
+      "scores": {
+        "dohyun": 82,
+        "hayoung": 74,
+        "maru": 86
+      },
+      "weekly_net": 577030
+    },
+    {
+      "config": {
+        "broth": "broth_tonkotsu",
+        "cook": "cook_firm",
+        "noodle": "noodle_thin",
+        "oil": "oil_chili",
+        "price": 9000,
+        "tare": "tare_shoyu",
+        "toppings": [
+          "topping_sprouts"
+        ]
+      },
+      "days": [
+        {
+          "day": 1,
+          "forecast_net": 62880,
+          "ingredient_cost": 15120,
+          "net": 62880,
+          "overhead": 3000,
+          "revenue": 81000,
+          "turned_away": 0,
+          "units": 9
+        },
+        {
+          "day": 2,
+          "forecast_net": 77520,
+          "ingredient_cost": 18480,
+          "net": 77520,
+          "overhead": 3000,
+          "revenue": 99000,
+          "turned_away": 0,
+          "units": 11
+        },
+        {
+          "day": 3,
+          "forecast_net": 84840,
+          "ingredient_cost": 20160,
+          "net": 84840,
+          "overhead": 3000,
+          "revenue": 108000,
+          "turned_away": 0,
+          "units": 12
+        },
+        {
+          "day": 4,
+          "forecast_net": 84840,
+          "ingredient_cost": 20160,
+          "net": 84840,
+          "overhead": 3000,
+          "revenue": 108000,
+          "turned_away": 0,
+          "units": 12
+        },
+        {
+          "day": 5,
+          "forecast_net": 106800,
+          "ingredient_cost": 25200,
+          "net": 106800,
+          "overhead": 3000,
+          "revenue": 135000,
+          "turned_away": 0,
+          "units": 15
+        },
+        {
+          "day": 6,
+          "forecast_net": 62880,
+          "ingredient_cost": 15120,
+          "net": 62880,
+          "overhead": 3000,
+          "revenue": 81000,
+          "turned_away": 0,
+          "units": 9
+        },
+        {
+          "day": 7,
+          "forecast_net": 77520,
+          "ingredient_cost": 18480,
+          "net": 77520,
+          "overhead": 3000,
+          "revenue": 99000,
+          "turned_away": 0,
+          "units": 11
+        }
+      ],
+      "label": "best_minimum_taste_at_9000",
+      "scores": {
+        "dohyun": 77,
+        "hayoung": 78,
+        "maru": 87
+      },
+      "weekly_net": 557280
+    }
+  ],
+  "same_scores_but_costlier_and_no_faster_than_default": {},
+  "scope": "Base ingredients, exactly one topping, no discoveries/helpers/expansion. Forecast sweep uses default processes. Process comparisons include rank-2 methods. Fresh runtime record_id=1 for each sampled day; no campaign progression, taste costs or rewards.",
+  "provenance": {
+    "date": "2026-10-17",
+    "gameplay_commit": "d7863f6a60bd7f23a1bb11b10972370a395d76c2",
+    "sources": {
+      "game/scripts/domain/contest_progress.gd": "3c0dd2c23c4c8963f1879b92e776213f8a4f57a3bbe46eaf610376d34187a480",
+      "game/scripts/domain/customer_catalog.gd": "7774ff905e1fd4110b28f5ce067d6ef020f77147331a32cdd712286c3df853e4",
+      "game/scripts/domain/data_check.gd": "1101fcec77f5e0bed464469428192a7696e2b420b55065c47ad27762bbfbb784",
+      "game/scripts/domain/game_state.gd": "a692cf30063702314ae75d29e2adaf26fbd2c9bcc358fd73b382b6175c4a0cfb",
+      "game/scripts/domain/ingredient_catalog.gd": "6454428240a5b1acc663324cf4d92adcc6a382d3c8bd41b3f5f3faf478c5721b",
+      "game/scripts/domain/ingredient_exploration.gd": "cc3068b257b8fd6eefa1b7cd4791c301e1ceed749b60b518dbe485e3f8c5add2",
+      "game/scripts/domain/menu_report.gd": "f953ad8b46703361143a100360cf1670f73f9060fe08afc715c1ce0dc6a9e210",
+      "game/scripts/domain/menu_sales.gd": "267572c3afe628a878c4c1b4e87277a56f46aa54bcd0b5db9f35b0e1e7320911",
+      "game/scripts/domain/ramen_contest.gd": "f9084a6844eb3dc7e5a0bd589d541c9713f1f6eea9ddb8c4d6311f61d8571965",
+      "game/scripts/domain/ramen_research.gd": "ef09a17a2a603e509050c94ca6bbffd33dd0a174e84c877e41142f4d2e905eb0",
+      "game/scripts/domain/recipe_evaluator.gd": "9492f008ef8399e9e4662b5e121c453c06861c84c0f51775f6681b79524e6de1",
+      "game/scripts/domain/recipe_process.gd": "1be7f24720fa402c92e70d0533f48bf37c381693282a2776d9cd901876d5d5a7",
+      "game/scripts/domain/regular_stories.gd": "cecbab691db41e3ada73f6642e5c878999a3f686072db63b5d19fef2d51c9a61",
+      "game/scripts/domain/regular_story_catalog.gd": "59d36c878835f31b064ec1f5c04f76832e477a22b4d98dea61e939b70275fcef",
+      "game/scripts/domain/sales_simulator.gd": "63d19509fc931ea9c9c5eda4ab3b6b4081717b4ee9756210e995eb6dec9cf0ff",
+      "game/scripts/domain/service_session.gd": "afb471b695177e5038daa4ac4f0f0100de16188308a2f26bc3be03c02c61ff84",
+      "game/scripts/domain/shop_growth.gd": "41b8e0d099c825f857ed4f6b718ce1a6d13be159c32363a56d7180e916798ed7",
+      "game/scripts/domain/shop_staffing.gd": "5d464774d3a2b969d55eaa2dd1b75b0923f3baa7e898411874fa6db432228b35",
+      "game/scripts/domain/staff_training.gd": "10dc1f3e9050396d1ddec06420074c0c62b0fa23712b01177e4df8acaba8aced"
+    },
+    "probe_sha256": "033db98b3ead362e8a8ea39b08f9102d27c5f6abde9e04927cb74011b3713441",
+    "engine_sha256": "c7cccbf8fb143e34e02fd6521e09be2c2b974f0d5db080b19071c9c570718ccf",
+    "exit_code": 0,
+    "script_errors": 0,
+    "independent_checks": 83,
+    "engine_note": "Headless macOS system CA lookup error present; native signing/rendering not tested."
+  }
+}
