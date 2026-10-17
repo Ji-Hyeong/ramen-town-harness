@@ -29,6 +29,9 @@ const Contest = preload("res://scripts/domain/ramen_contest.gd")
 const ContestProgress = preload("res://scripts/domain/contest_progress.gd")
 const MenuSales = preload("res://scripts/domain/menu_sales.gd")
 const ProcessRules = preload("res://scripts/domain/recipe_process.gd")
+const StoryCatalog = preload("res://scripts/domain/regular_story_catalog.gd")
+const Stories = preload("res://scripts/domain/regular_stories.gd")
+const StoryFixtures = preload("res://tests/regular_story_fixtures.gd")
 
 const ARG: String = "--test-data-dir="
 
@@ -104,6 +107,9 @@ func _initialize() -> void:
 		test_process_config, test_process_evaluation, test_process_state_revision,
 		test_process_work_duration, test_process_service_and_contest,
 		test_process_save_validation, test_process_bowl_art,
+		test_story_witnesses, test_story_start_and_atomic, test_story_all_routes,
+		test_story_wrong_menu_and_customer, test_story_busy_and_funds, test_story_persistence,
+		test_story_three_customers,
 	]
 	var ran: int = 0
 	for t in tests:
@@ -132,6 +138,189 @@ func _check(cond: bool, message: String) -> void:
 
 func _end() -> void:
 	_finished = true
+
+
+func _story_taste(s: GameStateScript, cfg: Dictionary, name: String) -> int:
+	s.start_new_recipe()
+	for slot in ["broth","tare","oil","noodle","cook"]:
+		_check(bool(s.set_draft_choice(slot,cfg[slot])["ok"]), "사연 메뉴 재료")
+	_check(bool(s.set_draft_toppings(cfg["toppings"])["ok"]), "사연 토핑")
+	s.set_draft_price(cfg["price"])
+	s.set_draft_name(name)
+	_check(bool(s.taste()["ok"]), "사연 메뉴 실제 시식")
+	return s.selected_record_id
+
+
+func _story_started(customer: String, route: String) -> GameStateScript:
+	var s: GameStateScript = _state_with_wallet(500000)
+	s.taste()
+	_check(bool(s.serve()["ok"]) and s.day == 2, "첫 영업 이후 사연 해금")
+	_check(bool(s.start_story(customer,route)["ok"]), "사연 방향 수락")
+	return s
+
+
+func test_story_witnesses() -> void:
+	for customer in StoryCatalog.ids():
+		for route in StoryCatalog.story(customer)["routes"]:
+			for chapter in 2:
+				var cfg: Dictionary = StoryFixtures.config(customer,route["id"],chapter)
+				var metrics: Dictionary = Stories.metrics(customer,cfg)
+				_check(StoryCatalog.assess(customer,route["id"],chapter,metrics)["all_met"], "모든12단계 실제 재료/평가기로 달성 가능")
+	_end()
+
+
+func test_story_start_and_atomic() -> void:
+	var s: GameStateScript = GameStateScript.new()
+	var before: String = _json(s)
+	_check(not s.start_story("dohyun","hearty")["ok"] and _json(s) == before, "첫 영업 전 사연 거부")
+	s.taste()
+	s.serve()
+	before = _json(s)
+	_check(not s.start_story("bad","hearty")["ok"] and not s.start_story("dohyun","bad")["ok"] and _json(s) == before, "미지 단골/선택 원자 거부")
+	var cash: int = s.wallet
+	_check(s.start_story("dohyun","hearty")["ok"] and s.wallet == cash, "방향 선택 무료")
+	before = _json(s)
+	_check(not s.start_story("dohyun","quick")["ok"] and _json(s) == before, "선택 이후 다른 분기 덮기 금지")
+	var arcs: Array = s.story_arcs()
+	arcs[0]["route"] = "bad"
+	_check(s.story_arc("dohyun")["route"] == "hearty", "외부 진행 사본 불변")
+	var id: int = _story_taste(s,StoryFixtures.config("dohyun","hearty",0),"이야기 첫 국물")
+	before = _json(s)
+	_check(not s.complete_story("dohyun",id)["ok"] and _json(s) == before, "시식만/이전 영업으로 답례 없음")
+	_end()
+
+
+func test_story_all_routes() -> void:
+	for customer in StoryCatalog.ids():
+		for route in StoryCatalog.story(customer)["routes"]:
+			var s: GameStateScript = _story_started(customer,route["id"])
+			for chapter in 2:
+				var id: int = _story_taste(s,StoryFixtures.config(customer,route["id"],chapter),"사연 "+str(chapter+1))
+				var before: String = _json(s)
+				_check(not s.complete_story(customer,id)["ok"] and _json(s)==before, "각 장은 수락/첫 답례 이후 새 영업 필요")
+				_check(s.begin_service()["ok"], "실제 사연 영업 시작")
+				s.active_session().run_to_end()
+				_check(s.settle_service()["ok"], "먹기 완료 후 실제 영업 정산")
+				var wallet: int = s.wallet
+				_check(s.story_check(customer,id)["all_met"] and s.complete_story(customer,id)["ok"] and s.wallet == wallet+Stories.REWARDS[chapter], "실제 해당 메뉴/손님 완료 뒤 답례 한번")
+				before = _json(s)
+				_check(not s.complete_story(customer,id)["ok"] and _json(s)==before, "같은 메뉴/보고/장 재호출 무보상")
+				var back: GameStateScript = GameStateScript.new()
+				_check(back.load_from_dict(JSON.parse_string(_json(s))) == "" and _json(back)==_json(s), "두 장 각각 JSON 왕복")
+			_check(s.story_arc(customer)["receipts"].size()==2, "선택한 결말 두 장 완료")
+	_end()
+
+
+func test_story_wrong_menu_and_customer() -> void:
+	var s: GameStateScript = _menu_state()
+	_check(s.start_story("dohyun","hearty")["ok"], "복수 영업 사연 시작")
+	var id: int = _story_taste(s,StoryFixtures.config("dohyun","hearty",0),"사연 판매 제외")
+	_check(s.serve()["ok"], "고정 목록으로만 실제 메뉴 정산")
+	var before: String = _json(s)
+	_check(not s.complete_story("dohyun",id)["ok"] and _json(s)==before, "다른 메뉴가 팔렸어도 선택 메뉴는 미완료")
+	_check(s.set_selling_menus([id,s.pinned_menu_ids()[0]])["ok"] and s.serve()["ok"], "사연 메뉴를 정확히 판매 목록에 포함")
+	_check(s.complete_story("dohyun",id)["ok"], "복수메뉴의 정확한 손님/메뉴 완료 인정")
+	var report: Dictionary = s.last_report.duplicate(true)
+	for row in report["menus"]:
+		row["by_source"]["dohyun"] = 0
+	_check(Stories.served(report,s.get_record(id),"dohyun")==0, "전체 판매가 있어도 해당 손님 완료0이면 인정 안 함")
+	var other: Dictionary = s.get_record(id)
+	other["record_id"] += 100
+	_check(Stories.served(s.last_report,other,"dohyun")==0, "이름/구성이 같아도 다른 기록은 인정 안 함")
+	var zero: GameStateScript = _story_started("maru","budget")
+	var expensive: Dictionary = StoryFixtures.config("maru","budget",0)
+	expensive["price"] = Catalog.PRICE_MAX
+	var zero_id: int = _story_taste(zero,expensive,"방문하지 않는 가격")
+	_check(zero.serve()["ok"] and int(zero.last_report["by_source"]["maru"])==0 and Stories.served(zero.last_report,zero.get_record(zero_id),"maru")==0, "실제 가격 상한 영업에서 마루 완료0그릇")
+	before = _json(zero)
+	_check(not zero.complete_story("maru",zero_id)["ok"] and _json(zero)==before, "실제0그릇 영업도 답례 없음")
+	_end()
+
+
+func test_story_busy_and_funds() -> void:
+	var s: GameStateScript = _story_started("hayoung","aroma")
+	var id: int = _story_taste(s,StoryFixtures.config("hayoung","aroma",0),"향의 약속")
+	s.begin_service()
+	var before: String = _json(s)
+	_check(not s.complete_story("hayoung",id)["ok"] and not s.start_story("maru","budget")["ok"] and _json(s)==before, "영업 중 사연 거래 원자 거부")
+	s.cancel_service()
+	_check(not s.story_check("hayoung",id)["all_met"], "영업 중단은 대접 완료가 아님")
+	_check(s.start_expedition("market")["ok"], "사연 중 탐색 시작")
+	before = _json(s)
+	_check(not s.complete_story("hayoung",id)["ok"] and not s.start_story("maru","budget")["ok"] and _json(s)==before, "탐색 중에도 사연 거래 원자 거부")
+	_check(s.retire_expedition()["ok"], "탐색 포기 뒤 정상 영업 복귀")
+	s.serve()
+	s.wallet = GameStateScript.MAX_WALLET-1999
+	before = _json(s)
+	_check(not s.complete_story("hayoung",id)["ok"] and _json(s)==before, "답례 지갑 상한 원자 거부")
+	s.wallet -= 1
+	_check(s.complete_story("hayoung",id)["ok"] and s.wallet==GameStateScript.MAX_WALLET, "정확한 지갑 상한 허용")
+	_end()
+
+
+func test_story_persistence() -> void:
+	var s: GameStateScript = _story_started("maru","budget")
+	var id: int = _story_taste(s,StoryFixtures.config("maru","budget",0),"한 주의 식비")
+	s.serve()
+	_check(s.complete_story("maru",id)["ok"], "이야기 저장 준비")
+	var raw: Dictionary = JSON.parse_string(_json(s))
+	var target: GameStateScript = _populated_state()
+	var before: String = _json(target)
+	for kind in ["unknown","duplicate","choice","float","bool","dates","units","config","snapshot","unmet","extra","oldversion","orphan","older_report","late_claim"]:
+		var d: Dictionary = raw.duplicate(true)
+		var arc: Dictionary = d["stories"]["arcs"][0]
+		var e: Dictionary = arc["receipts"][0]
+		match kind:
+			"unknown": arc["customer"]="bad"
+			"duplicate": d["stories"]["arcs"].append(arc.duplicate(true))
+			"choice": arc["route"]="bad"
+			"float": e["day"]=3.5
+			"bool": e["units"]=true
+			"dates": e["service_day"]=1
+			"units": e["units"]=199
+			"config": e["config"]["price"]=0
+			"snapshot": e["name"]="다른 이름"
+			"unmet": e["config"]["price"]=9000
+			"extra": arc["extra"]=0
+			"oldversion": d["schema_version"]=8
+			"orphan": d["last_report"]={}
+			"older_report": d["last_report"]["day"]=1
+			"late_claim":
+				d["day"]+=1
+				e["day"]+=1
+		_check(target.load_from_dict(d)!="" and _json(target)==before, "단골 불가능 저장 원자 거부 "+kind)
+	_check(s.delete_record(id)["ok"], "메뉴 삭제는 과거 사연을 지우지 않음")
+	var saver: SaveServiceScript = SaveServiceScript.new(_case_dir("stories"))
+	saver.remove_known_files()
+	_check(saver.save_state(s)["ok"], "삭제된 사연 메뉴 저장")
+	var back: GameStateScript = GameStateScript.new()
+	_check(saver.load_into(back)["status"]=="ok" and _json(back)==_json(s) and back.story_arc("maru")["receipts"][0]["config"]==s.story_arc("maru")["receipts"][0]["config"], "삭제된 과거 메뉴/사연/선택 왕복")
+	_cleanup_case(saver)
+	_end()
+
+
+func test_story_three_customers() -> void:
+	var s: GameStateScript = _state_with_wallet(500000)
+	s.taste()
+	s.serve()
+	var routes: Dictionary = {"dohyun":"hearty","hayoung":"aroma","maru":"budget"}
+	for customer in routes:
+		_check(s.start_story(customer,routes[customer])["ok"], "세 단골의 방향을 독립적으로 수락")
+	var thanks: int = 0
+	for chapter in 2:
+		for customer in routes:
+			var id: int = _story_taste(s,StoryFixtures.config(customer,routes[customer],chapter),str(customer)+str(chapter))
+			_check(s.serve()["ok"], "세 단골 교차 진행의 완료 영업")
+			var before: int = s.wallet
+			_check(s.complete_story(customer,id)["ok"], "다른 단골 진행과 독립인 답례")
+			thanks += s.wallet-before
+			_check(s.delete_record(id)["ok"], "완료 메뉴를 삭제해도 사연 보존/노트 용량 회복")
+	_check(thanks==18000 and s.story_arcs().size()==3, "세 사람의 여섯 답례는 정확히18000원")
+	for arc in s.story_arcs():
+		_check(arc["receipts"].size()==2, "교차 진행에서도 각 결말 두 장 유지")
+	var back: GameStateScript = GameStateScript.new()
+	_check(back.load_from_dict(JSON.parse_string(_json(s)))=="" and _json(back)==_json(s), "여섯 과거 메뉴를 삭제한 세 사연 전체 왕복")
+	_end()
 
 
 func test_process_config() -> void:
@@ -698,6 +887,7 @@ func test_training_legacy_v5() -> void:
 	raw["schema_version"] = 5
 	raw.erase("training")
 	raw.erase("shop")
+	raw.erase("stories")
 	var old: String = JSON.stringify(raw, "\t", true)
 	var dir: String = _case_dir("training_v5")
 	var saver: SaveServiceScript = SaveServiceScript.new(dir)
@@ -958,6 +1148,7 @@ func test_contest_migration_v4() -> void:
 	v4.erase("contests")
 	v4.erase("training")
 	v4.erase("shop")
+	v4.erase("stories")
 	var dir: String = _case_dir("contest_v4")
 	var saver: SaveServiceScript = SaveServiceScript.new(dir)
 	saver.remove_known_files()
@@ -3149,6 +3340,7 @@ func _as_legacy(src: Dictionary, version: int) -> Dictionary:
 	d.erase("contests")
 	d.erase("training")
 	d.erase("shop")
+	d.erase("stories")
 	if version == 1:
 		d.erase("research")
 	for r in d["records"]:
@@ -3884,6 +4076,7 @@ func test_schema_migration_v1_v2() -> void:
 	v2_new_cfg.erase("contests")
 	v2_new_cfg.erase("training")
 	v2_new_cfg.erase("shop")
+	v2_new_cfg.erase("stories")
 	_check(GameStateScript.new().load_from_dict(v2_new_cfg) != "", "toppings 배열을 쓴 v2 거부")
 	var v3_old_cfg: Dictionary = _as_legacy(_populated_state().to_dict(), 3)
 	v3_old_cfg["growth"] = v3["growth"]
@@ -4143,6 +4336,7 @@ func _as_v3(src: Dictionary) -> Dictionary:
 	d.erase("contests")
 	d.erase("training")
 	d.erase("shop")
+	d.erase("stories")
 	return d
 
 

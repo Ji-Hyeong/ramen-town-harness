@@ -23,6 +23,8 @@ const ContestProgress = preload("res://scripts/domain/contest_progress.gd")
 const MenuSales = preload("res://scripts/domain/menu_sales.gd")
 const MenuReport = preload("res://scripts/domain/menu_report.gd")
 const ProcessRules = preload("res://scripts/domain/recipe_process.gd")
+const StoryCatalog = preload("res://scripts/domain/regular_story_catalog.gd")
+const Stories = preload("res://scripts/domain/regular_stories.gd")
 
 ## 스키마 v2: 최상위에 "research"(완료한 연구 의뢰 영수증 목록)가 추가됐다.
 ## v1 저장은 "research" 키가 없는 것이 정상이며, 불러올 때 빈 연구 진행(완료 없음)으로 이행한다(load_from_dict 참고).
@@ -40,7 +42,8 @@ const ProcessRules = preload("res://scripts/domain/recipe_process.gd")
 ## v1~v5는 기존 값 모두 유지, 고용된 직원의 경험/훈련만 0부터 시작한다(소급 지급 없음).
 ## v7은 보이는 매장 증축과 명시적 판매 목록을 보존한다. v1~6에는 미확장/자동 선택만 추가한다.
 ## v8은 비기본 제조 공법만 config.process로 보존한다. 이전1~7의 기본 구성과 값은 변경하지 않는다.
-const SCHEMA_VERSION: int = 8
+## v9는 선택형 단골 사연/완료 영업 메뉴의 답례 영수증을 추가한다. 과거 진행을 소급 지급하지 않는다.
+const SCHEMA_VERSION: int = 9
 const EXPANSION_PRICE: int = 60000
 const MIN_SCHEMA_VERSION: int = 1
 const MAX_RECORDS: int = 30
@@ -59,7 +62,8 @@ const TOP_KEYS_V4: Array = ["schema_version", "day", "wallet", "next_record_id",
 	"records", "selected_record_id", "last_feedback_record_id", "draft", "last_report", "research", "growth", "exploration"]
 const TOP_KEYS_V5: Array = TOP_KEYS_V4 + ["contests"]
 const TOP_KEYS_V6: Array = TOP_KEYS_V5 + ["training"]
-const TOP_KEYS: Array = TOP_KEYS_V6 + ["shop"]
+const TOP_KEYS_V7: Array = TOP_KEYS_V6 + ["shop"]
+const TOP_KEYS: Array = TOP_KEYS_V7 + ["stories"]
 const RECORD_KEYS: Array = ["record_id", "lineage_id", "name", "version", "tasted_day", "config", "scores", "comparison"]
 const COMPARISON_KEYS: Array = ["prev_record_id", "prev_version", "prev_scores", "prev_config"]
 const DRAFT_KEYS: Array = ["config", "name", "lineage_id"]
@@ -90,6 +94,7 @@ var _menu_ids: Array = []
 ## 이 값은 항상 Exploration 의 전이 함수가 돌려준 "새 딕셔너리"로 통째로 교체한다(부분 수정 없음). 외부에는 deep copy만 내보낸다.
 var _exploration: Dictionary = Exploration.empty_state()
 var _contests: Dictionary = ContestProgress.empty_state()
+var _stories: Array = []
 ## 진행 중인 영업 런타임. 저장하지 않는다(재시작하면 영업 전 상태로 돌아온다). 있는 동안은 레시피/초안/일차를 잠근다.
 var _active_session: Session = null
 
@@ -820,6 +825,60 @@ func submit_research(request_id: String, record_id: int) -> Dictionary:
 	return res
 
 
+# ---------- 단골 사연 (선택/실제 대접/명시적 답례) ----------
+func story_arcs() -> Array:
+	return _stories.duplicate(true)
+
+
+func story_arc(customer: String) -> Dictionary:
+	return Stories.find(_stories, customer)
+
+
+func start_story(customer: String, route: String) -> Dictionary:
+	if _busy():
+		return _locked_fail()
+	if day < 2:
+		return _fail("첫 영업을 마친 뒤 단골의 이야기를 들을 수 있어요.")
+	if StoryCatalog.route(customer, route).is_empty():
+		return _fail("알 수 없는 단골이나 이야기 방향이에요.")
+	if not story_arc(customer).is_empty():
+		return _fail("이미 선택한 이야기예요. 이번 사연의 방향은 바꿀 수 없어요.")
+	_stories.append({"customer":customer, "route":route, "opened_day":day, "receipts":[]})
+	return _ok(StoryCatalog.route(customer, route)["reply"])
+
+
+func story_check(customer: String, record_id: int) -> Dictionary:
+	return Stories.check(story_arc(customer), get_record(record_id), last_report)
+
+
+## 조건/최근 실제 완료 영업/자금 상한을 모두 확인한 뒤 이야기와 지갑을 함께 바꾼다.
+func complete_story(customer: String, record_id: int) -> Dictionary:
+	if _busy():
+		return _locked_fail()
+	var arc: Dictionary = story_arc(customer)
+	var checked: Dictionary = story_check(customer, record_id)
+	if str(checked["error"]) != "":
+		return _fail(str(checked["error"]))
+	if not bool(checked["all_met"]):
+		return _fail("메뉴 조건과 새 영업을 확인해 주세요. 시식만으로는 이야기를 마칠 수 없어요.")
+	var index: int = arc["receipts"].size()
+	var reward: int = Stories.REWARDS[index]
+	if wallet > MAX_WALLET - reward:
+		return _fail("보유 자금 한도에 도달해 답례를 받을 수 없어요.")
+	var rec: Dictionary = get_record(record_id)
+	var entry: Dictionary = {"service_day":int(last_report["day"]), "day":day, "units":int(checked["units"])}
+	for key in ["record_id", "name", "version", "tasted_day", "config"]:
+		entry[key] = rec[key]
+	arc["receipts"].append(entry.duplicate(true))
+	for i in _stories.size():
+		if _stories[i]["customer"] == customer:
+			_stories[i] = arc
+	wallet += reward
+	var result: Dictionary = _ok(StoryCatalog.chapter(customer, arc["route"], index)["success"] + " 답례 +%d원 (한 번만)" % reward)
+	result["cash"] = reward
+	return result
+
+
 # ---------- 가게 성장 (등급 / 유료 확장 / 직원 고용) ----------
 ##
 ## 거래 규칙: 승급/구매/고용은 명시적 호출로만 일어나고, 영업 중에는 도메인이 거부한다(화면 잠금과 별개).
@@ -1299,6 +1358,7 @@ func to_dict() -> Dictionary:
 		"contests": _contests.duplicate(true),
 		"training": _training.duplicate(true),
 		"shop": {"expanded": _expanded, "menu_ids": _menu_ids.duplicate()},
+		"stories": {"arcs":_stories.duplicate(true)},
 	}
 
 
@@ -1326,7 +1386,9 @@ func load_from_dict(raw: Variant) -> String:
 		expected_keys = TOP_KEYS_V5
 	elif version == 6:
 		expected_keys = TOP_KEYS_V6
-	elif version >= 7:
+	elif version == 7 or version == 8:
+		expected_keys = TOP_KEYS_V7
+	elif version >= 9:
 		expected_keys = TOP_KEYS
 	var key_err: String = Check.keys_error(d, expected_keys, "저장")
 	if key_err != "":
@@ -1536,7 +1598,17 @@ func load_from_dict(raw: Variant) -> String:
 		var staff_error: String = _report_staff_error(rep_result["report"]["staffing"], growth_staff, training_parsed, int(rep_result["report"]["day"]))
 		if staff_error != "":
 			return staff_error
+	var stories_parsed: Array = []
+	if version >= 9:
+		var retained: Dictionary = {}
+		for record in parsed:
+			retained[int(record["record_id"])] = record
+		var story_result: Dictionary = Stories.parse(d["stories"], int(d["day"]), n_record, retained, growth_rank, slot_limit, discovered_now, rep_result["report"])
+		if str(story_result["error"]) != "":
+			return str(story_result["error"])
+		stories_parsed = story_result["arcs"]
 	# 모든 검증 통과 후 반영
+	_stories = stories_parsed
 	_expanded = expanded
 	_menu_ids = menu_ids
 	_rank = growth_rank
