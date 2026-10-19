@@ -13,23 +13,8 @@ var failures: Array[String] = []
 
 
 func _initialize() -> void:
-	var output: String = ""
-	for arg in OS.get_cmdline_user_args():
-		if arg.begins_with("--out-dir="):
-			output = arg.substr(10)
-	# Refuse before mkdir/write, including a file or dangling link at the target.
-	if not output.is_absolute_path() or output != output.simplify_path() or output.ends_with("/"):
-		printerr("--out-dir must be a new absolute, normalized directory path.")
-		quit(2)
-		return
-	var parent: DirAccess = DirAccess.open(output.get_base_dir())
-	if parent == null or parent.file_exists(output.get_file()) or parent.dir_exists(output.get_file()) or parent.is_link(output.get_file()):
-		printerr("Output parent must exist and output must not exist; existing paths are preserved.")
-		quit(2)
-		return
-	if DirAccess.make_dir_absolute(output) != OK:
-		printerr("Cannot create new audit directory.")
-		quit(2)
+	var output: String = _new_output_from_args()
+	if output == "":
 		return
 	var campaigns: Array = []
 	for menu in ["fast", "slow"]:
@@ -48,7 +33,34 @@ func _initialize() -> void:
 	quit(0 if failures.is_empty() else 1)
 
 
-func _campaign(menu: String, policy: String, output: String) -> Dictionary:
+## Shared by bounded diagnostic drivers. Refuse before touching any existing
+## output; a derived driver must use the SAME guard rather than open a live save.
+func _new_output_from_args() -> String:
+	var output: String = ""
+	for arg in OS.get_cmdline_user_args():
+		if arg.begins_with("--out-dir="):
+			output = arg.substr(10)
+	# Refuse before mkdir/write, including a file or dangling link at the target.
+	if not output.is_absolute_path() or output != output.simplify_path() or output.ends_with("/"):
+		printerr("--out-dir must be a new absolute, normalized directory path.")
+		quit(2)
+		return ""
+	var parent: DirAccess = DirAccess.open(output.get_base_dir())
+	if parent == null or parent.file_exists(output.get_file()) or parent.dir_exists(output.get_file()) or parent.is_link(output.get_file()):
+		printerr("Output parent must exist and output must not exist; existing paths are preserved.")
+		quit(2)
+		return ""
+	if DirAccess.make_dir_absolute(output) != OK:
+		printerr("Cannot create new audit directory.")
+		quit(2)
+		return ""
+	return output
+
+
+func _campaign(menu: String, policy: String, output: String, duration: int = DAYS) -> Dictionary:
+	if duration < 1 or duration > 60 or not ["fast", "slow"].has(menu) or not POLICIES.has(policy):
+		_check(false, "invalid bounded campaign duration/menu/policy")
+		return {}
 	var label: String = menu + "_" + policy
 	var folder: String = output.path_join(label)
 	if not _check(DirAccess.make_dir_absolute(folder) == OK, label + ": create isolated save directory"):
@@ -66,7 +78,7 @@ func _campaign(menu: String, policy: String, output: String) -> Dictionary:
 	var prior_save: String = ""
 	var rows: Array = []
 	var research_id: int = 0
-	for expected_day in range(1, DAYS + 1):
+	for expected_day in range(1, duration + 1):
 		if not _check(state.day == expected_day, label + ": calendar before service"):
 			return {}
 		var before: int = State.START_WALLET if expected_day == 1 else state.wallet
@@ -99,6 +111,7 @@ func _campaign(menu: String, policy: String, output: String) -> Dictionary:
 		if not _check(state.active_session().run_to_end(), label + ": actual runtime finished"):
 			return {}
 		var runtime: Dictionary = state.active_session().summary()
+		var metrics: Dictionary = _runtime_metrics(state.active_session(), runtime)
 		var settled: Dictionary = state.settle_service()
 		if not _success(settled, label + ": settle actual orders"):
 			return {}
@@ -127,11 +140,14 @@ func _campaign(menu: String, policy: String, output: String) -> Dictionary:
 			retry = reloaded.submit_research(Research.ids()[expected_day - 1], research_id)
 			if not _check(not bool(retry["ok"]) and _json(reloaded) == serialized, label + ": reload cannot claim research twice"):
 				return {}
-		rows.append({"day": expected_day, "wallet_before_preparation": before,
+		var row: Dictionary = {"day": expected_day, "wallet_before_preparation": before,
 			"actions": events.duplicate(true), "gates_before_investment": gates, "ready": ready,
 			"service": report.duplicate(true), "turned_away": runtime["turned_away"],
 			"wallet_after": state.wallet, "training_after": state.staff_training(),
-			"snapshot": "day-%02d.json" % expected_day, "save_sha256": FileAccess.get_sha256(store.main_path())})
+			"snapshot": "day-%02d.json" % expected_day, "save_sha256": FileAccess.get_sha256(store.main_path())}
+		if not metrics.is_empty():
+			row["runtime_metrics"] = metrics
+		rows.append(row)
 		events.clear()
 		state = reloaded
 	return {"id": label, "menu": menu, "policy": policy, "sale_config": cfg,
@@ -180,13 +196,27 @@ func _invest(state: State, policy: String, events: Array) -> bool:
 			return false
 		if not state.hired_staff().has(id):
 			continue
-		var style: String = "basic" if state.staff_training()[id]["lessons"].is_empty() else "speed"
+		var style: String = _training_choice(state, str(id))
+		if style == "":
+			continue  # An explicit diagnostic policy can stop at a chosen level.
 		review = state.training_review(str(id), style)
 		if not _check(str(review["error"]) == "", "valid training review: " + str(id)):
 			return false
 		if bool(review["eligible"]) and not _transaction(state, "train:" + str(id) + ":" + style, "training", -int(review["cost"]), func() -> Dictionary: return state.train_staff(str(id), style), events):
 			return false
 	return true
+
+
+## Default14-day policy remains basic followed by speed when actually eligible.
+## Specialized drivers override this choice, never the gameplay transaction.
+func _training_choice(state: State, id: String) -> String:
+	return "basic" if state.staff_training()[id]["lessons"].is_empty() else "speed"
+
+
+## Optional observer runs BEFORE settlement clears the session. The default is
+## deliberately empty, preserving every original14-day result and save byte.
+func _runtime_metrics(_session: RefCounted, _summary: Dictionary) -> Dictionary:
+	return {}
 
 
 ## Expected transaction amounts come from the public cost/reward catalog before

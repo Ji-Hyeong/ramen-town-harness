@@ -6,6 +6,7 @@ not replacement gameplay calculations. A later balance change must review them.
 All input is read-only; only the caller chooses where stdout is persisted.
 """
 import argparse
+from copy import deepcopy
 import hashlib
 import json
 from pathlib import Path
@@ -22,7 +23,10 @@ def digest(path):
 
 
 class Verifier:
-    def __init__(self):
+    def __init__(self, days=14):
+        if type(days) is not int or not 1 <= days <= 60:
+            raise ValueError("Campaign verification requires 1..60 whole days")
+        self.days = days
         self.checks = 0
 
     def check(self, condition, message):
@@ -35,7 +39,7 @@ class Verifier:
         label = campaign["id"]
         menu, policy = campaign["menu"], campaign["policy"]
         self.check(label == f"{menu}_{policy}", "case identity")
-        self.check(len(campaign["days"]) == 14, f"{label}: fourteen days")
+        self.check(len(campaign["days"]) == self.days, f"{label}: expected campaign length")
         wallet, rank = 30000, 1
         facilities, hired, promotions, seen_research = [], [], [], []
         totals = {"trial": 0, "research": 0, "facility": 0, "hire": 0, "training": 0, "service_net": 0}
@@ -46,6 +50,9 @@ class Verifier:
         for day, row in enumerate(campaign["days"], 1):
             context = f"{label}: day {day}"
             self.check(row["day"] == day and row["wallet_before_preparation"] == wallet, context + ": start ledger")
+            # Rebuild the qualification transition from recorded public actions,
+            # not from the ready snapshot whose honesty we are checking.
+            expected_training = deepcopy(prior_training)
             for action in row["actions"]:
                 label_action, kind, delta = action["action"], action["kind"], action["delta"]
                 self.check(action["day"] == day and action["wallet_before"] == wallet, context + ": transaction starts here")
@@ -81,14 +88,18 @@ class Verifier:
                     self.check(len(hired) < (2 if "staff_2" in facilities else 1), context + ": staff capacity")
                     self.check(policy == "all" or policy == ("prep" if staff == "prep_assistant" else "floor"), context + ": hire policy")
                     hired.append(staff)
+                    expected_training[staff] = {"bowls": 0, "work_days": 0, "last_work_day": 0, "lessons": []}
                     purchases.append({"day": day, "action": label_action, "cost": -delta})
                 elif kind == "training":
                     staff, style = parts[1:]
-                    entry = prior_training[staff]
+                    entry = expected_training[staff]
                     level = len(entry["lessons"])
-                    self.check(staff in hired and style == ("basic" if level == 0 else "speed") and level < 2, context + ": training stage")
+                    valid_style = style == "basic" if level == 0 else style in ("speed", "economy")
+                    self.check(staff in hired and valid_style and level < 2, context + ": training stage")
                     self.check(entry["bowls"] >= (40 if level == 0 else 160) and entry["work_days"] >= (2 if level == 0 else 5) and rank >= (2 if level == 0 else 3), context + ": actual experience gate")
                     self.check(delta == (-4000 if level == 0 else -12000), context + ": training price")
+                    self.check(entry["last_work_day"] < day and (not entry["lessons"] or entry["lessons"][-1]["day"] < day), context + ": training calendar")
+                    entry["lessons"].append({"day": day, "rank": rank, "bowls": entry["bowls"], "work_days": entry["work_days"], "style": style})
                     purchases.append({"day": day, "action": label_action, "cost": -delta})
                 else:
                     raise ValueError(context + ": unknown transaction kind " + kind)
@@ -98,13 +109,15 @@ class Verifier:
                     totals[kind] += delta
             ready = row["ready"]
             self.check(ready["wallet"] == wallet and ready["rank"] == rank, context + ": prepared wallet/rank")
+            self.check(ready["training"] == expected_training, context + ": exact training receipts and prior experience")
             self.check(ready["facilities"] == [f for f in facilities if f != "expand"] and ready["hired"] == hired, context + ": ownership")
             self.check(ready["expanded"] == ("expand" in facilities) and ready["seats"] == (12 if "expand" in facilities else 8), context + ": seats")
             service = row["service"]
             wage = 0
             for staff in hired:
                 lessons = ready["training"][staff]["lessons"]
-                wage += WAGES[staff] + (0 if not lessons else (150 if len(lessons) == 1 else 400))
+                wage_delta = 0 if not lessons else (150 if len(lessons) == 1 else (-100 if lessons[-1]["style"] == "economy" else 400))
+                wage += WAGES[staff] + wage_delta
                 after = row["training_after"][staff]
                 self.check(after["lessons"] == lessons, context + ": service does not train")
                 self.check(after["bowls"] == ready["training"][staff]["bowls"] + service["units"], context + ": real bowls experience")
@@ -130,7 +143,7 @@ class Verifier:
             self.check(snapshot["training"] == row["training_after"] and snapshot["last_report"] == service, context + ": saved service/experience")
             self.check(snapshot["growth"]["rank"] == rank and snapshot["growth"]["staff"] == hired, context + ": saved growth")
             self.check(snapshot["shop"]["menu_ids"] == [1] and snapshot["records"][0]["config"] == campaign["sale_config"], context + ": unchanged sale menu")
-            if day == 14:
+            if day == self.days:
                 self.check((root / campaign["id"] / "ramen_lab_save.json").read_bytes() == raw, context + ": main is final snapshot")
                 self.check((root / campaign["id"] / "ramen_lab_save.json.bak").read_bytes() == prior_snapshot, context + ": backup is exact prior day")
                 self.check(snapshot == campaign["final_state"], context + ": complete final state")
