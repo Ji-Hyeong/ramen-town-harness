@@ -942,6 +942,11 @@ func _build_serve(box: VBoxContainer) -> void:
 	_serve_forecast = _label("", 16, INK)
 	_serve_forecast.name = "ServeForecast"
 	mb.add_child(_serve_forecast)
+	# Keep explanatory prose separate so a two-menu forecast remains readable
+	# as a whole on portrait screens without shrinking its type or touch targets.
+	var forecast_policy: Label = _label("수요는 가격·맛·조리 시간을 보고 올 것으로 예상한 손님이에요. 매장 앞에서 돌아간 손님과는 달라요. 실제 정산은 완료 주문 기준이에요.", 14, MUTED)
+	forecast_policy.name = "ServeForecastPolicy"
+	mb.add_child(forecast_policy)
 	box.add_child(menu_card)
 	var selling_card: PanelContainer = _card("SellingCard")
 	_selling_box = _vbox(7)
@@ -1352,7 +1357,7 @@ func _finish_service() -> void:
 	var experience: String = ""
 	if not state.hired_staff().is_empty() and int(report["units"]) > 0:
 		experience = "\n함께 일한 보조 직원: 각자 실무 +1일 · 경험 +%d그릇" % int(report["units"])
-	_result_note.text = "평균 만족도 %.1f / 5 · 줄이 길어 돌아간 손님 %d명%s\n%s" % [float(res["avg_stars"]), int(res["turned_away"]), experience, save_line]
+	_result_note.text = "평균 만족도 %.1f / 5 · 매장 앞에서 돌아간 손님 %d명%s\n%s" % [float(res["avg_stars"]), int(res["turned_away"]), experience, save_line]
 	_result_note.add_theme_color_override("font_color", TEAL if saved else VERMILION)
 	_result_layer.visible = true
 	_refresh_all()
@@ -3076,6 +3081,9 @@ func _refresh_growth() -> void:
 	var head2: Label = _label("보조 직원 (직원 공간을 넓혀도 자동으로 고용되지 않아요)", 18, VERMILION)
 	head2.name = "GrowthStaffHeader"
 	_growth_box.add_child(head2)
+	var hiring_policy: Label = _label("현재 판매 메뉴·가격·날짜로 비교해요. 고용 조건은 별도이며 실제 정산은 완료 주문 기준이에요.", 14, MUTED)
+	hiring_policy.name = "GrowthHiringPolicy"
+	_growth_box.add_child(hiring_policy)
 	for sv in state.staff_reviews():
 		_growth_box.add_child(_staff_card(sv))
 	_sync_growth_lock()
@@ -3107,6 +3115,9 @@ func _expansion_card() -> PanelContainer:
 	var info: Label = _label("%d석 · 판매 %d종\n증축하면 테이블 2개와 4석이 실제로 생기고 두 메뉴를 함께 팔아요. 주방은 하나라 조리 시간과 손님을 공유해요.\n가게 등급 2 · 비용 %s · 한 번만 구매 · 환불 없음\n%s" % [state.seat_count(), state.selling_capacity(), _won(int(review["price"])), "증축 완료" if bool(review["owned"]) else str(review["reason"])], 14, INK)
 	info.name = "ShopExpansionInfo"
 	box.add_child(info)
+	var usage: Label = _label("좌석과 판매 칸을 늘리는 투자예요. 방문 손님이 자동으로 늘지는 않아요. 두 메뉴를 직접 판매 목록에 넣어 새 칸을 활용하세요.", 14, MUTED)
+	usage.name = "ShopExpansionUsage"
+	box.add_child(usage)
 	var armed: bool = _expansion_armed_until != 0 and Time.get_ticks_msec() <= _expansion_armed_until
 	var button: Button = _growth_button("증축 완료" if bool(review["owned"]) else ("다시 눌러 증축 확정" if armed else "증축 · " + _won(int(review["price"]))), "ShopExpandButton", not bool(review["can_buy"]))
 	button.pressed.connect(_on_expand_shop)
@@ -3240,6 +3251,9 @@ func _facility_card(rv: Dictionary) -> PanelContainer:
 	var info: Label = _label("\n".join(lines), 14, INK)
 	info.name = "FacilityInfo_" + id
 	cb.add_child(info)
+	var usage: Label = _label("새 토핑과 메뉴를 직접 개발해 열린 용량을 활용하세요. 설치만으로 맛 점수나 방문 손님이 늘지는 않아요." if str(def["track"]) == "recipe" else "고용할 자리를 여는 투자예요. 직원은 따로 골라야 하고, 고용비와 영업할 때의 일당이 추가돼요.", 14, MUTED)
+	usage.name = "FacilityUsage_" + id
+	cb.add_child(usage)
 	var text: String = "설치 완료" if owned else ("구매 · %s" % str(rv["price_text"]) if bool(rv["can_buy"]) else "구매 불가")
 	var btn: Button = _growth_button(text, "FacilityBuy_" + id, not bool(rv["can_buy"]))
 	btn.pressed.connect(_on_facility_buy.bind(id))
@@ -3278,11 +3292,38 @@ func _staff_card(sv: Dictionary) -> PanelContainer:
 	var info: Label = _label("%s\n%s" % [str(sv["desc"]), status], 14, INK)
 	info.name = "StaffInfo_" + id
 	cb.add_child(info)
+	if not is_hired:
+		var preview: Label = _label(_hiring_preview_text(state.hiring_preview(id), str(Staffing.find(id)["role"])), 14, TEAL)
+		preview.name = "StaffPreview_" + id
+		cb.add_child(preview)
 	var text: String = "고용 완료" if is_hired else ("고용 · %s" % _won(int(sv["hire_price"])) if bool(sv["can_hire"]) else "고용 불가")
 	var btn: Button = _growth_button(text, "StaffHire_" + id, not bool(sv["can_hire"]))
 	btn.pressed.connect(_on_staff_hire.bind(id))
 	cb.add_child(btn)
 	return card
+
+
+## Show a same-day comparison without promising future sales or payback. The
+## existing hire control/lock remains the sole action; building this text is pure.
+func _hiring_preview_text(preview: Dictionary, role: String) -> String:
+	if str(preview["error"]) != "":
+		return str(preview["error"])
+	var before: Dictionary = preview["before"]
+	var after: Dictionary = preview["after"]
+	var lines: Array[String] = ["오늘 판매 메뉴 · 고용 후 예상"]
+	for i in before["menus"].size():
+		var row: Dictionary = before["menus"][i]
+		lines.append("%s v%d: 한 그릇 조리 %d→%d초(게임 시간)" % [row["recipe_name"], row["version"], row["prep"], after["menus"][i]["prep"]])
+	lines.append("예상 판매 %d→%d그릇 · 하루 운영비 %s→%s" % [before["units"], after["units"], _won(int(before["overhead"])), _won(int(after["overhead"]))])
+	var delta: int = int(preview["delta_net"])
+	var change: String = ("+" if delta > 0 else ("−" if delta < 0 else "")) + _won(absi(delta))
+	lines.append("순영업이익 %s→%s (%s)" % [_won(int(before["net"])), _won(int(after["net"])), change])
+	lines.append("별도 고용비 %s (일회성·이익에 미포함)" % _won(int(preview["hire_price"])))
+	if int(preview["delta_units"]) <= 0:
+		lines.append("오늘 판매 증가 예상은 없어요.")
+	if role == "floor":
+		lines.append("서빙 대기 단축은 이 예상 이익에 미포함.")
+	return "\n".join(lines)
 
 
 func _source_text(by_source: Dictionary) -> String:
@@ -3314,7 +3355,7 @@ func _forecast_text(fc: Dictionary) -> String:
 	lines.append("손님 수요 %d그릇, 만들 수 있는 양 %d그릇 → 판매 %d그릇" % [int(fc["demand"]), int(fc["capacity"]), int(fc["units"])])
 	lines.append(_source_text(fc["by_source"]))
 	lines.append("매출 %s − 재료비 %s − 운영비 %s" % [_won(int(fc["revenue"])), _won(int(fc["ingredient_cost"])), _won(int(fc["overhead"]))])
-	lines.append("순영업이익 %s (영업을 끝까지 마치면 이 값으로 정산돼요)" % _won(int(fc["net"])))
+	lines.append("순영업이익 %s (실제 완료한 주문으로 정산해요)" % _won(int(fc["net"])))
 	return "\n".join(lines)
 
 

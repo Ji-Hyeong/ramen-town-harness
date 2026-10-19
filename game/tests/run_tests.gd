@@ -111,6 +111,7 @@ func _initialize() -> void:
 		test_story_wrong_menu_and_customer, test_story_busy_and_funds, test_story_persistence,
 		test_story_three_customers,
 		test_taste_achievement_persistence, test_taste_achievement_rejections, test_notebook_version_limits,
+		test_hiring_preview, test_hiring_preview_context,
 	]
 	var ran: int = 0
 	for t in tests:
@@ -5829,4 +5830,75 @@ func test_notebook_version_limits() -> void:
 	many["next_lineage_id"] = 32
 	var over: GameStateScript = GameStateScript.new()
 	_check(over.load_from_dict(many).contains("등록 메뉴"), "종류 절대 상한30 유지")
+	_end()
+
+
+## Match the displayed conditional change against a REAL same-day hire, keeping
+## recipes/day constant. This guards costs, trained coworkers and two-menu use.
+func test_hiring_preview() -> void:
+	for mode in ["fast", "slow", "pair"]:
+		var s: GameStateScript = _grown_state(3)
+		var records: Array = s.records()
+		var fast: int = int(records[1]["record_id"])
+		var slow: int = int(records[3]["record_id"])
+		if mode != "fast":
+			_check(bool(s.select_record(slow)["ok"]) and bool(s.set_draft_price(10000)["ok"]), "감사와 같은 느린 메뉴 가격")
+			var revised: Dictionary = s.taste()
+			_check(bool(revised["ok"]), "느린 메뉴 실제 개정")
+			slow = int(revised["record_id"])
+		if mode == "pair":
+			_check(bool(s.expand_shop()["ok"]), "고용 비교 두 메뉴 증축")
+		_check(bool(s.set_selling_menus([fast, slow] if mode == "pair" else [fast if mode == "fast" else slow])["ok"]), "판매 메뉴 고정 " + mode)
+		var before: String = _json(s)
+		var preview: Dictionary = s.hiring_preview("prep_assistant")
+		_check(preview["error"] == "" and _json(s) == before, "미리보기는 전체 상태 불변 " + mode)
+		_check(int(preview["hire_price"]) == 8000 and int(preview["after"]["overhead"]) - int(preview["before"]["overhead"]) == 600, "일회성 고용비와 하루 일당 분리 " + mode)
+		if mode == "fast":
+			_check(int(preview["delta_units"]) == 0 and int(preview["delta_net"]) == -600, "빠른 메뉴: 판매 증가 없이 일당 추가")
+		if mode == "slow":
+			_check(int(preview["delta_units"]) > 0 and int(preview["delta_net"]) > 0, "느린 메뉴: 조리 보조의 오늘 판매 이점")
+		var cash: int = s.wallet
+		_check(bool(s.hire_staff("prep_assistant")["ok"]) and s.wallet == cash - 8000, "실제 고용비는 한번 차감")
+		for key in ["units", "revenue", "ingredient_cost", "overhead", "net", "demand", "capacity", "by_source"]:
+			_check(s.forecast()[key] == preview["after"][key], "미리보기와 실제 고용 뒤 예측 일치 " + mode + ":" + key)
+		# Earn a real qualification before previewing a DIFFERENT coworker; do
+		# not let the comparison reset the already trained employee's effects.
+		for i in 6:
+			_check(bool(s.serve()["ok"]), "동료 훈련 경험을 실제 정산")
+		_check(bool(s.train_staff("prep_assistant", "basic")["ok"]), "동료 입문 훈련")
+		before = _json(s)
+		preview = s.hiring_preview("floor_assistant")
+		_check(preview["error"] == "" and _json(s) == before, "훈련 동료 포함 비교 불변")
+		_check(int(preview["delta_units"]) == 0 and int(preview["delta_net"]) == -500, "홀 보조 대기 개선을 판매 증가로 꾸미지 않음")
+		_check(bool(s.hire_staff("floor_assistant")["ok"]), "실제 홀 보조 고용")
+		for key in ["units", "revenue", "ingredient_cost", "overhead", "net", "by_source"]:
+			_check(s.forecast()[key] == preview["after"][key], "기존 동료 훈련 유지 " + key)
+	_end()
+
+
+func test_hiring_preview_context() -> void:
+	var s: GameStateScript = GameStateScript.new()
+	var initial: String = _json(s)
+	_check(str(s.hiring_preview("unknown")["error"]) != "", "모르는 직원 비교 거부")
+	_check(str(s.hiring_preview("prep_assistant")["error"]).contains("판매"), "기록 없는 비교는 판매 기록 안내")
+	_check(_json(s) == initial, "실패한 비교도 불변")
+	_check(bool(s.taste()["ok"]), "잠긴 비교용 시식")
+	s.wallet = 0
+	var before: String = _json(s)
+	var preview: Dictionary = s.hiring_preview("prep_assistant")
+	_check(preview["error"] == "" and _json(s) == before, "돈/공간 부족해도 조건부 계산은 가능")
+	_check(not bool(s.staff_review("prep_assistant")["can_hire"]) and not bool(s.hire_staff("prep_assistant")["ok"]) and _json(s) == before, "비교가 고용 권한을 열지 않음")
+	preview["after"]["menus"][0]["config"]["price"] = 100
+	preview["before"]["menus"][0]["scores"]["dohyun"] = 0
+	_check(_json(s) == before and int(s.hiring_preview("prep_assistant")["after"]["menus"][0]["config"]["price"]) != 100, "반환값 수정은 기록/후속 비교에 전파되지 않음")
+	_check(bool(s.begin_service()["ok"]), "비교 중 실제 세션 준비")
+	var active: SessionScript = s.active_session()
+	var session_before: Dictionary = active.stats()
+	preview = s.hiring_preview("prep_assistant")
+	_check(preview["error"] == "" and s.active_session() == active and active.stats() == session_before and _json(s) == before, "조회는 영업 세션/시계/지갑을 바꾸지 않음")
+	s.cancel_service()
+	var hired: GameStateScript = _grown_state(2)
+	_check(bool(hired.hire_staff("prep_assistant")["ok"]), "중복 고용 비교용 직원")
+	before = _json(hired)
+	_check(str(hired.hiring_preview("prep_assistant")["error"]).contains("이미") and _json(hired) == before, "이미 고용된 직원은 중복 이익을 제안하지 않음")
 	_end()

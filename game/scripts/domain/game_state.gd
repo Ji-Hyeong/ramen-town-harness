@@ -1045,6 +1045,36 @@ func staff_reviews() -> Array:
 	return out
 
 
+## Read-only conditional comparison, not a hiring transaction or permission.
+## Keep the sale records/day/other employees fixed. Space and money locks still
+## belong to staff_review()/hire_staff(); no fabricated state is saved or loaded.
+func hiring_preview(id: String) -> Dictionary:
+	var definition: Dictionary = Staffing.find(id)
+	if definition.is_empty():
+		return {"error": "비교할 직원을 찾을 수 없어요."}
+	if _hired.has(id):
+		return {"error": "이미 함께 일하고 있어요. 지금 효과는 직원 육성에서 확인하세요."}
+	var selling: Array = selling_records()
+	if selling.is_empty():
+		return {"error": "판매할 시식 기록을 고르면 고용 전후를 비교해요."}
+	var before: Dictionary = MenuSales.simulate(selling, day, current_staffing())
+	if str(before["error"]) != "":
+		return {"error": str(before["error"])}
+	var candidates: Array = _hired.duplicate()
+	candidates.append(id)
+	var qualifications: Dictionary = _training.duplicate(true)
+	qualifications[id] = Training.empty()
+	var after: Dictionary = MenuSales.simulate(selling, day, Staffing.snapshot(candidates, qualifications))
+	if str(after["error"]) != "":
+		return {"error": str(after["error"])}
+	# Return fresh forecasts so editing a view model cannot mutate game records,
+	# qualifications, pinned menus, the current session, or persisted receipts.
+	return {"error": "", "before": before, "after": after,
+		"hire_price": int(definition["hire_price"]),
+		"delta_units": int(after["units"]) - int(before["units"]),
+		"delta_net": int(after["net"]) - int(before["net"])}
+
+
 ## 보조 직원 고용(명시적 행동). 직원 공간 확장은 자동 고용을 하지 않는다. 고용비는 지금 한 번, 하루 운영비는 영업 정산마다 한 번씩 든다.
 ## 거부(상태 불변): 영업 중, 알 수 없음, 이미 고용, 자리 없음, 자금 부족. 해고는 없다.
 func hire_staff(id: String) -> Dictionary:
