@@ -1,0 +1,296 @@
+{
+  "branch": "feature/ramen-investment-guide-v1",
+  "claude_invoked": false,
+  "date": "2026-10-19",
+  "domain": {
+    "checks": 58045,
+    "exit_code": 0,
+    "failures": 0,
+    "tests": 124
+  },
+  "focused_ui": {
+    "actual_rendering_verified": false,
+    "checks": 1270,
+    "exit_code": 0,
+    "failures": 0,
+    "mode": "layout-only",
+    "profiles": [
+      "1280x800",
+      "390x844"
+    ],
+    "whole_cards_and_two_long_menu_forecast_checked": true
+  },
+  "format": 1,
+  "full_layout": {
+    "actual_rendering_verified": false,
+    "checks": 17200,
+    "engine_errors": 0,
+    "exit_code": 0,
+    "failures": 0,
+    "log": "work/investment-layout-v2.log",
+    "mode": "layout-only",
+    "script_errors": 0
+  },
+  "implementation_commit": "513888a39101da23fcd3d545527d97232584ac66",
+  "independent_review": {
+    "artifact_sha256": "f3779b5d09cbdf6edf50fbf3d34ef5b71d609eea6d440aaa7b5d72bbe19f8396",
+    "base": "4a654d81bc7dcfeaf5b6f16e48da95d9674869f3",
+    "changed_ui_method_regions": [
+      "_build_serve",
+      "_finish_service",
+      "_refresh_growth",
+      "_expansion_card",
+      "_facility_card",
+      "_staff_card",
+      "_forecast_text"
+    ],
+    "counterfactual_does_not_open_locked_hiring": true,
+    "existing_trained_coworker_preserved": true,
+    "new_ui_methods": [
+      "_hiring_preview_text"
+    ],
+    "only_existing_domain_change": "Added hiring_preview; removing only this new block reproduces prior GameState bytes exactly. All other domain/services unchanged.",
+    "other_domain_and_services_byte_unchanged": true,
+    "persist_method_unchanged": true,
+    "qa_gui_executed": false,
+    "qa_source_match_files": 87,
+    "query_only_domain_addition": true,
+    "schema": 10,
+    "source_commit": "513888a39101da23fcd3d545527d97232584ac66",
+    "ui_callbacks_unchanged": 38,
+    "upfront_cost_excluded_from_daily_forecast": true
+  },
+  "initial_failures": [
+    {
+      "cause": "Test used price11000 instead of audited10000 for slow witness and nonexistent Session.status rather than stats; corrected tests only.",
+      "checks": 57977,
+      "exit_code": 1,
+      "failures": 2,
+      "run": "investment-tests-v1.log",
+      "tests": 124
+    },
+    {
+      "accepted": false,
+      "cause": "Recovered checkout had no imported font cache. Engine resource errors invalidate layout acceptance. Imported assets in a new frozen project, preserved all source hashes, reran focused UI without errors.",
+      "checks": 1190,
+      "exit_code": 0,
+      "failures": 0,
+      "run": "investment-focused-v1.log"
+    }
+  ],
+  "layout_attempts": [
+    {
+      "cause": "Portrait staff floor card517/492px and forecast537px exceed actual scroll viewport472px. Compact duplicate prose and separate forecast policy; assertions retained and strengthened in focused scenario.",
+      "checks": 17084,
+      "exit_code": 1,
+      "failures": 4,
+      "log": "work/investment-layout-v1.log",
+      "status": "failed; corrected UI pending rerun"
+    }
+  ],
+  "logs": {
+    "investment-focused-v1.log": {
+      "engine_errors": 12,
+      "script_errors": 0,
+      "sha256": "986984f6aaf41f4b1393d098833d2c15d09410dc2388c421b62e77d1788c10d3"
+    },
+    "investment-focused-v2.log": {
+      "engine_errors": 0,
+      "script_errors": 0,
+      "sha256": "f4163f3b431ae63cb52d1ecae4a4a182498d3c6756b60486e527569824db0f87"
+    },
+    "investment-focused-v3.log": {
+      "engine_errors": 0,
+      "script_errors": 0,
+      "sha256": "c0a2e5839fa2f57a68424359077808e98130e561dbdef91a5cf201e9d58dc32b"
+    },
+    "investment-layout-v1.log": {
+      "engine_errors": 0,
+      "script_errors": 0,
+      "sha256": "b24253444b0b3beed690864c6a658b872f575bb093250542c4f7900cb0d4c97e"
+    },
+    "investment-layout-v2.log": {
+      "engine_errors": 0,
+      "script_errors": 0,
+      "sha256": "5f67195a19fd789b313b28ed30e1daa453747f7ac8a69e9972cd8eb66ed80c80"
+    },
+    "investment-native-prep-v1.log": {
+      "engine_errors": 0,
+      "script_errors": 0,
+      "sha256": "bb2afe8e0f036bb4c6155a7057b9424ebb469e26b76c3b5cde57df05bf34ede2"
+    },
+    "investment-native-prep-v2.log": {
+      "engine_errors": 0,
+      "script_errors": 0,
+      "sha256": "99e7ccb5a7de9e27f6560fded3dc28c15197b7a40b592945bd4a504b632e3bee"
+    },
+    "investment-packed-focused-v1.log": {
+      "engine_errors": 0,
+      "script_errors": 0,
+      "sha256": "255eecae64f6305637097f3adb3b80394c882c827313893102e91aaa1d325356"
+    },
+    "investment-signature-after.log": {
+      "engine_errors": 0,
+      "script_errors": 0,
+      "sha256": "64b6f10ae7dfed4e933982aff4dfbce94ff39da4724675b17748615ef13e8c31"
+    },
+    "investment-test-import-v1.log": {
+      "engine_errors": 0,
+      "script_errors": 0,
+      "sha256": "4f6dbc3041bf9af8ff1f3d5139709fb4c2252b7cd342ac24e6358cedc7586c89"
+    },
+    "investment-test-import-v2.log": {
+      "engine_errors": 0,
+      "script_errors": 0,
+      "sha256": "4f6dbc3041bf9af8ff1f3d5139709fb4c2252b7cd342ac24e6358cedc7586c89"
+    },
+    "investment-tests-v1.log": {
+      "engine_errors": 0,
+      "script_errors": 1,
+      "sha256": "00b52ed5eb5ad58615f30fe2fe30230ee894a676556c850982c13f866b023816"
+    },
+    "investment-tests-v2.log": {
+      "engine_errors": 0,
+      "script_errors": 0,
+      "sha256": "2ad4a59d0f0794a1a117d7678c4ff017bb44a8e620edcd56cee5882f2c313c52"
+    }
+  },
+  "no_live_save_access": true,
+  "not_claimed": [
+    "actual graphics",
+    "new accepted player app",
+    "public PR/main merge",
+    "iPhone or human fun test"
+  ],
+  "owner": "Codex",
+  "packed_focused": {
+    "actual_rendering_verified": false,
+    "checks": 1270,
+    "engine_errors": 0,
+    "exit_code": 0,
+    "failures": 0,
+    "mode": "headless layout-only; actual shipped QA PCK",
+    "script_errors": 0
+  },
+  "preparation_attempts": [
+    {
+      "app": "/private/tmp/ramen-investment-qa-20261019-v1/Ramen QA.app",
+      "build_manifest_sha256": "6f190dc180e0ca0c549bc27dd53ea12f1576d728f143f126d6ba0b579fed9ae5",
+      "confirmation": "Previous exact-app request superseded by UI correction; do not launch v1 even if approved.",
+      "executed": false,
+      "exit_code": 0,
+      "pack_sha256": "c8fdadd8ef67ee0bde4e4a7e3019a869a7fa340b1e84a58f57630aeee45e6758",
+      "source_files": 87,
+      "source_files_match": true,
+      "superseded": true,
+      "vendor_signature_verified": true
+    }
+  ],
+  "public_main": "f99877e92c3f710806817e04c11b310e5b44ea41",
+  "qa_preparation": {
+    "app": "/private/tmp/ramen-investment-qa-20261019-v2/Ramen QA.app",
+    "build_manifest_sha256": "a22e410ae96f83efa6879aaa6c6c53541f00b67efa8ae6e32440067bcf87edb7",
+    "confirmation": "Exact corrected v2 app action-time confirmation requested after final full-layout pass; no reply yet. Prior v1 request superseded, do not launch v1.",
+    "engine_info_sha256": "1e345d4fcac1d46a1d04339d03a44e42a6644e9c8b9807ee5524f5d55b28942d",
+    "engine_sha256": "c7cccbf8fb143e34e02fd6521e09be2c2b974f0d5db080b19071c9c570718ccf",
+    "executed": false,
+    "exit_code": 0,
+    "launcher_sha256": "441679b933f35861785d92399421944d330789d271421fff6e10c989f3e8dc3f",
+    "pack_sha256": "30e48ae438d2624a65c3032b57edbcce0c837f8de7ffb00fb4ab4f1649c0b730",
+    "source_files": 87,
+    "source_files_match_current_and_test_snapshot": true,
+    "vendor_signature_after_packed_test": true,
+    "vendor_signature_verified": true
+  },
+  "scope": "Readonly same-current-sale-menu hiring comparison plus facility use/forecast/result wording; no economic, reward, save-schema or existing transaction changes.",
+  "source_head_before_feature": "4a654d81bc7dcfeaf5b6f16e48da95d9674869f3",
+  "source_sha256": {
+    "game/assets/fonts/GowunDodum-Regular.ttf": "a6e457933227483a11758fd0947bc74422a106d46f0bf057fdaa5af94a30067d",
+    "game/assets/fonts/GowunDodum-Regular.ttf.import": "da88a173d8646ce80879a30dc02756abbe3b5e61076ba1652084a68900e11104",
+    "game/assets/fonts/OFL.txt": "a7c73f9521cd646bbdfb6684c99a62311bbd7bce11898dc11ef0b3c69eda1aca",
+    "game/project.godot": "dc51a895d342d40ae50c597fa243266e6f5044507b3ef85e27b228c7c4f60d72",
+    "game/scenes/main.tscn": "024518581dfb9fc07e1bb5ba66316964b321c6eecd784758b5ea566ebe292af4",
+    "game/scripts/domain/contest_progress.gd": "3c0dd2c23c4c8963f1879b92e776213f8a4f57a3bbe46eaf610376d34187a480",
+    "game/scripts/domain/contest_progress.gd.uid": "d9d9dff87927cac42dbac088144b59395d3e92f8dcbf8f210fb0cd45b1e7b11b",
+    "game/scripts/domain/customer_catalog.gd": "7774ff905e1fd4110b28f5ce067d6ef020f77147331a32cdd712286c3df853e4",
+    "game/scripts/domain/customer_catalog.gd.uid": "f0f1ec5aa64ac8d303e9206bd338e44d2d66768580db0da2343cfd4836eddd9a",
+    "game/scripts/domain/data_check.gd": "1101fcec77f5e0bed464469428192a7696e2b420b55065c47ad27762bbfbb784",
+    "game/scripts/domain/data_check.gd.uid": "f7cba21ed3f3a5774c28c3cd4d0a784b44acabeead34c3a32dddb0e6facab491",
+    "game/scripts/domain/game_state.gd": "ca083d72851d1b2ab703745805a336b637ec3ffb04268bcf348ded15934e37d0",
+    "game/scripts/domain/game_state.gd.uid": "d24724aed0274f6104fdcadf6049584bea78705c9696f446175307791dc5b710",
+    "game/scripts/domain/ingredient_catalog.gd": "6454428240a5b1acc663324cf4d92adcc6a382d3c8bd41b3f5f3faf478c5721b",
+    "game/scripts/domain/ingredient_catalog.gd.uid": "388d11c65c86874d287b262618ff50fe2aca77e3e4c248fd2cd3d4342206256c",
+    "game/scripts/domain/ingredient_exploration.gd": "cc3068b257b8fd6eefa1b7cd4791c301e1ceed749b60b518dbe485e3f8c5add2",
+    "game/scripts/domain/ingredient_exploration.gd.uid": "1f0a69bfe20bbec6ee384c98ae24e7366d4c56a0b9724cb48e59005bb28dc70e",
+    "game/scripts/domain/menu_report.gd": "f953ad8b46703361143a100360cf1670f73f9060fe08afc715c1ce0dc6a9e210",
+    "game/scripts/domain/menu_report.gd.uid": "31f17ebae3215dec90a196fa466afcb1627c99cd31644dccf2121534f660e249",
+    "game/scripts/domain/menu_sales.gd": "267572c3afe628a878c4c1b4e87277a56f46aa54bcd0b5db9f35b0e1e7320911",
+    "game/scripts/domain/menu_sales.gd.uid": "27fff1048359801a90045f6b023dbb76225fadba9af932e31ac102e783e33fb5",
+    "game/scripts/domain/ramen_contest.gd": "f9084a6844eb3dc7e5a0bd589d541c9713f1f6eea9ddb8c4d6311f61d8571965",
+    "game/scripts/domain/ramen_contest.gd.uid": "e851e9e4282bc401e92eebbebdf2085e8a579a6a8901ae51148426972c58b255",
+    "game/scripts/domain/ramen_research.gd": "ef09a17a2a603e509050c94ca6bbffd33dd0a174e84c877e41142f4d2e905eb0",
+    "game/scripts/domain/ramen_research.gd.uid": "a77c27491e6ed0b14acf4ba2b17e07acb29416a14ff21ed5e566306b13a6c887",
+    "game/scripts/domain/recipe_evaluator.gd": "9492f008ef8399e9e4662b5e121c453c06861c84c0f51775f6681b79524e6de1",
+    "game/scripts/domain/recipe_evaluator.gd.uid": "94a37fbffc55e2e1aad342d19ea4f4f203c7128acd6d1e89a669060c1f2fcab1",
+    "game/scripts/domain/recipe_process.gd": "1be7f24720fa402c92e70d0533f48bf37c381693282a2776d9cd901876d5d5a7",
+    "game/scripts/domain/recipe_process.gd.uid": "1fced988385208b512db50a0000168ae7980967119a46b91bbd283480f087481",
+    "game/scripts/domain/regular_stories.gd": "cecbab691db41e3ada73f6642e5c878999a3f686072db63b5d19fef2d51c9a61",
+    "game/scripts/domain/regular_stories.gd.uid": "58f2dc92555c1874787f0e3c96cf947c8254d3894299e569497baf2478630a39",
+    "game/scripts/domain/regular_story_catalog.gd": "59d36c878835f31b064ec1f5c04f76832e477a22b4d98dea61e939b70275fcef",
+    "game/scripts/domain/regular_story_catalog.gd.uid": "33f7142109e51a1542b32ac8c2dfc7f05f3e958146c7b4a8890a28f3fce27e6b",
+    "game/scripts/domain/sales_simulator.gd": "63d19509fc931ea9c9c5eda4ab3b6b4081717b4ee9756210e995eb6dec9cf0ff",
+    "game/scripts/domain/sales_simulator.gd.uid": "d017a82c4607830cf428a7f1c8448a413844b4e2f4a04a62498df8185d368caa",
+    "game/scripts/domain/service_session.gd": "afb471b695177e5038daa4ac4f0f0100de16188308a2f26bc3be03c02c61ff84",
+    "game/scripts/domain/service_session.gd.uid": "22ef060f79b93995e77c997aadf8712001bbae08f9b99dcb768a2fc444d0442c",
+    "game/scripts/domain/shop_growth.gd": "70555ad42a3a8b52fe7cc27eb047f3e87d34acac4b6632e291d067216013ea83",
+    "game/scripts/domain/shop_growth.gd.uid": "4edc075c1675f517238ccd691f7198d31b757339ff485f4a04038aae39e4fc1d",
+    "game/scripts/domain/shop_staffing.gd": "5d464774d3a2b969d55eaa2dd1b75b0923f3baa7e898411874fa6db432228b35",
+    "game/scripts/domain/shop_staffing.gd.uid": "e1d53b09eaaea52551acd332943ad3748d74a16930a67bd75acd7fd969235605",
+    "game/scripts/domain/staff_training.gd": "10dc1f3e9050396d1ddec06420074c0c62b0fa23712b01177e4df8acaba8aced",
+    "game/scripts/domain/staff_training.gd.uid": "71c535ec37937ace9fa53aad425857d1667c885bc8f6bfed4888746e7c6f4bc1",
+    "game/scripts/services/data_location.gd": "6caf1b6faa4119c93252942716ce86ab96ffe89f5fb8fbed5ba83fb1f29a0382",
+    "game/scripts/services/data_location.gd.uid": "48b2b18791e7201f7ba3219092d40a94cb0dbc19ece53d8dad3758db283b98f0",
+    "game/scripts/services/save_service.gd": "dbd3ab88f674f611c2d69eb67119a99bd2ad608b50c6c600aaf39cdc988b9d57",
+    "game/scripts/services/save_service.gd.uid": "83f51962de4e6472f59854dc837c5b84ab8c41a63b2056cc5bd2182789a64e63",
+    "game/scripts/ui/bowl_view.gd": "df1a6585ee8bcf27162f2ab4bb0da1bddc3d64efe3def80dcdf0f1d86e452ec1",
+    "game/scripts/ui/bowl_view.gd.uid": "c392422404452afaf0042a9fe4850f3c7ac29028cc94c3075deaa3f462ffe58d",
+    "game/scripts/ui/expedition_travel.gd": "06daa75107e2f7c3d53a4720b2dd7fd28c568a06b576279172d7b547ffb1c50e",
+    "game/scripts/ui/expedition_travel.gd.uid": "95f2de2e64084192bcc4007385e26e836d3ba5d33372a3e70f6809588e641fa9",
+    "game/scripts/ui/main.gd": "a1ccd4a397aac859f551239e4348056f3da7a2ded9242d6f12544fafee0368c7",
+    "game/scripts/ui/main.gd.uid": "4c843d7e87a7f840dd7fb476f9b92ae9f85ebe1aceff93785e0a7501ac8f623a",
+    "game/scripts/ui/pixel_art.gd": "5df1dccda96e97180470e18e9193dd961098b762767884911a01c0756524d0fc",
+    "game/scripts/ui/pixel_art.gd.uid": "820a64bf221536fd19128d73082ae7efc9fa594177f11ed3dd3b940d45faca26",
+    "game/scripts/ui/shop_layout.gd": "2494c07572efe0fd33fc8d3e7ac33a9ffc11ec22e47ef8f0c4d4caaa5a447ffb",
+    "game/scripts/ui/shop_layout.gd.uid": "b161ec1a303b2552643e55dc41a738f381296679dd6ad494c028e2f2c43c7091",
+    "game/scripts/ui/shop_painter.gd": "4e4c0745454d3326df812894305a28c4d2d23cd24c0e070edbcc7b6e1bb88c35",
+    "game/scripts/ui/shop_painter.gd.uid": "315d0c51661b3b0ae371b66b41209a6d5343eda93ac9a4b44abb4adcffa99881",
+    "game/scripts/ui/shop_scene.gd": "010b8938043f3e566dc8bbeff9c532190379abe5cbf63f307036c7eafc385649",
+    "game/scripts/ui/shop_scene.gd.uid": "c3fca130d4e078daa7083a5efa1f3fa8c392ab8ada24d50725db1baa9a741880",
+    "game/scripts/ui/shop_view.gd": "542d152b9ac4011825b36e48d89b0e8051ea6d2ec9fd002b95419d23bcaa6c75",
+    "game/scripts/ui/shop_view.gd.uid": "f1194eab001c594a4f1d88da37ab8cc88e70163f4a709e72629b29fc49643113",
+    "game/scripts/ui/star_meter.gd": "caa1933f319a15dd76497c125dfec8a9d64011f8e8162cf17d8fa45473139070",
+    "game/scripts/ui/star_meter.gd.uid": "4dc6ce5b399e895a58e69e9c1f2a76d6be3365a57cd7d358b05be7179261779f",
+    "game/scripts/ui/tasting_work.gd": "89a6913f9ecad8892f6a44cee706bdec26b5b0aa94c91fdb2c0e751266eedec4",
+    "game/scripts/ui/tasting_work.gd.uid": "115a9a0049c8b0734d3a2d91aaad8314f91413828d7539899755081fe1203b3a",
+    "game/scripts/ui/tasting_work_view.gd": "6bca774413853b0c7514ea1b6cf37a24b84a88952ea8e85ea7b4a96d617d95a1",
+    "game/scripts/ui/tasting_work_view.gd.uid": "66ce0e9c185b26a16a5475885508d5b00a476dcc392198a1054a32d0634aee23",
+    "game/tests/contest_scoring_tests.gd": "95c24a17e69cf1498f8435cf90c5b35f61058ae435a42b136de2ff92f20ba557",
+    "game/tests/contest_scoring_tests.gd.uid": "61cc517e37d461c1bd6f920f80dbfec72222fd6b51dd1c20442ea90838a97486",
+    "game/tests/investment_preview_ui_tests.gd": "d351bce1f509adbaf77a16e3f791e1bde17d9bab954ca986f3de1f3099276115",
+    "game/tests/investment_preview_ui_tests.gd.uid": "a32636dea5a9c84b7fef167200558202854b1d2fdf17faeb8cfc1ac19771aa1a",
+    "game/tests/menu_sales_core_tests.gd": "dd1d6a061652ace04e34500a4d6d170be41bebea7be5b92d372e4ec76b33a6ed",
+    "game/tests/menu_sales_core_tests.gd.uid": "90bbf52854e5b394945b17408dbf2c197e71b1aaa730bc26d892a6f266454983",
+    "game/tests/qa_capture.gd": "771f16dab2b6c66c7be57aa5f05e43ec5712864abadf4c19d138c6608c60034f",
+    "game/tests/qa_capture.gd.uid": "46b5a6fa9d45e3adc90a609f3183b24097f44cc0929b6e32e55945720ac06618",
+    "game/tests/recipe_process_core_tests.gd": "b8f92c1b8840b6dbac0a819c7c9ca7a9d10887d2c5dec042cab0dfb9a87d272d",
+    "game/tests/recipe_process_core_tests.gd.uid": "86e72332aaf5df57bbb56119cab074ee0ec273e13e4f27f1ff2fc4bc5a65d885",
+    "game/tests/regular_story_core_tests.gd": "6d292cb7ac02dbae05fce5cdd4ffb8ec969e1f3720d9417c9a1af05b83ffc5d7",
+    "game/tests/regular_story_core_tests.gd.uid": "a88c04156013cdbe81b5938de68c0068616113757e0fea34e3db68347b92f8c2",
+    "game/tests/regular_story_fixtures.gd": "39285aded025da4da9c16686d0b0b8003d80cf4351939fe459b6675b3a53f2be",
+    "game/tests/regular_story_fixtures.gd.uid": "97a352c03eeb0b99965fc847e31fef258e2d7f8c69d1ab9238e0bee0d0e9c6f2",
+    "game/tests/run_tests.gd": "cb9c3700d7a6f4242abbd9688642340025944772a65aec74165d8645ac161e51",
+    "game/tests/run_tests.gd.uid": "fccfb5f77972907a479b7fe7de13df1942b01afd5f00c0c4b84d361b5707cc89",
+    "game/tests/staff_training_core_tests.gd": "7b756cb79654c25dbd28a90ce4e4ba925aa36b8702d1e40d3b409b0781706dcc",
+    "game/tests/staff_training_core_tests.gd.uid": "e8e270a8884886c8e64d70e20ac8d121e69f1db7734a9a2273caaee7fa9aafb9"
+  }
+}
