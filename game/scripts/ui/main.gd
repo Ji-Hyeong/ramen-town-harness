@@ -14,6 +14,8 @@ const Sim = preload("res://scripts/domain/sales_simulator.gd")
 const SessionScript = preload("res://scripts/domain/service_session.gd")
 const GameStateScript = preload("res://scripts/domain/game_state.gd")
 const Research = preload("res://scripts/domain/ramen_research.gd")
+const StoryCatalog = preload("res://scripts/domain/regular_story_catalog.gd")
+const Stories = preload("res://scripts/domain/regular_stories.gd")
 const Growth = preload("res://scripts/domain/shop_growth.gd")
 const Staffing = preload("res://scripts/domain/shop_staffing.gd")
 const Training = preload("res://scripts/domain/staff_training.gd")
@@ -123,6 +125,8 @@ var _icon_cache: Dictionary = {}
 var _feedback_box: VBoxContainer
 var _notebook_count: Label
 var _notebook_box: VBoxContainer
+var _notebook_page: int = 0
+const NOTEBOOK_PAGE_SIZE: int = 20
 var _serve_intro: Label
 var _serve_menu: Label
 var _serve_forecast: Label
@@ -131,6 +135,10 @@ var _research_summary: Label
 var _research_target: Label
 var _research_message: Label
 var _research_box: VBoxContainer
+var _story_mode: bool = false
+var _story_armed: String = ""
+var _story_armed_until: int = 0
+var _story_history: Dictionary = {}
 
 ## "성장" 탭(5): 가게 등급 / 유료 확장 / 보조 직원 고용. 위쪽 요약·메시지 라벨은 고정이고 카드 목록은 갱신 때마다 다시 만든다.
 var _growth_summary: Label
@@ -247,6 +255,10 @@ func _process(delta: float) -> void:
 		_training_armed_until = 0
 		_training_armed = ""
 		_refresh_growth()
+	if _story_armed_until != 0 and now > _story_armed_until:
+		_story_armed_until = 0
+		_story_armed = ""
+		_refresh_research()
 	if _flash_until != 0 and now > _flash_until:
 		_flash_until = 0
 		_flash_text = ""
@@ -900,7 +912,7 @@ func _build_notebook(box: VBoxContainer) -> void:
 	_notebook_count = _label("", 18, INK)
 	_notebook_count.name = "NotebookCount"
 	box.add_child(_notebook_count)
-	# 노트 한 칸 = 메뉴 "개정 기록" 하나(동시에 파는 메뉴 칸이 아니다). 용량/다음 확장/초과 보관 안내가 여기 보인다.
+	# Registered families and immutable revision history have independent limits.
 	_notebook_note = _label("", 14, MUTED)
 	_notebook_note.name = "NotebookNote"
 	box.add_child(_notebook_note)
@@ -930,6 +942,11 @@ func _build_serve(box: VBoxContainer) -> void:
 	_serve_forecast = _label("", 16, INK)
 	_serve_forecast.name = "ServeForecast"
 	mb.add_child(_serve_forecast)
+	# Keep explanatory prose separate so a two-menu forecast remains readable
+	# as a whole on portrait screens without shrinking its type or touch targets.
+	var forecast_policy: Label = _label("수요는 가격·맛·조리 시간을 보고 올 것으로 예상한 손님이에요. 매장 앞에서 돌아간 손님과는 달라요. 실제 정산은 완료 주문 기준이에요.", 14, MUTED)
+	forecast_policy.name = "ServeForecastPolicy"
+	mb.add_child(forecast_policy)
 	box.add_child(menu_card)
 	var selling_card: PanelContainer = _card("SellingCard")
 	_selling_box = _vbox(7)
@@ -977,6 +994,15 @@ func _build_serve(box: VBoxContainer) -> void:
 
 ## "연구" 탭: 단골 세 분의 의뢰 여섯 개. 위쪽은 진행 요약/제출 대상/결과 메시지(고정), 아래는 의뢰 카드(갱신 때마다 다시 만든다).
 func _build_research(box: VBoxContainer) -> void:
+	var modes: HBoxContainer = HBoxContainer.new()
+	for item in [["연구 의뢰", false], ["단골 이야기", true]]:
+		# 기존 연구를 기본으로 두고 같은 탭 안에서 전환한다. 새 탭으로 터치 영역을 더 쪼개지 않는다.
+		var text: String = "연구 의뢰" if not bool(item[1]) else str(item[0])
+		var mode: Button = _button(text, "ResearchModeStories" if bool(item[1]) else "ResearchModeResearch")
+		mode.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		mode.pressed.connect(_on_research_mode.bind(bool(item[1])))
+		modes.add_child(mode)
+	box.add_child(modes)
 	var sum_card: PanelContainer = _card("ResearchSummaryCard")
 	var sb: VBoxContainer = _vbox(6)
 	sum_card.add_child(sb)
@@ -1331,7 +1357,7 @@ func _finish_service() -> void:
 	var experience: String = ""
 	if not state.hired_staff().is_empty() and int(report["units"]) > 0:
 		experience = "\n함께 일한 보조 직원: 각자 실무 +1일 · 경험 +%d그릇" % int(report["units"])
-	_result_note.text = "평균 만족도 %.1f / 5 · 줄이 길어 돌아간 손님 %d명%s\n%s" % [float(res["avg_stars"]), int(res["turned_away"]), experience, save_line]
+	_result_note.text = "평균 만족도 %.1f / 5 · 매장 앞에서 돌아간 손님 %d명%s\n%s" % [float(res["avg_stars"]), int(res["turned_away"]), experience, save_line]
 	_result_note.add_theme_color_override("font_color", TEAL if saved else VERMILION)
 	_result_layer.visible = true
 	_refresh_all()
@@ -1544,6 +1570,8 @@ func _complete_work() -> void:
 		_refresh_all()
 		return
 	var res: Dictionary = state.taste()
+	if bool(res["ok"]):
+		_notebook_page = 0
 	_taste_message.text = str(res["message"])
 	if not bool(res["ok"]):
 		_taste_message.add_theme_color_override("font_color", VERMILION)
@@ -2624,24 +2652,51 @@ func _comparison_card(rec: Dictionary, evaluation: Dictionary) -> PanelContainer
 func _refresh_notebook() -> void:
 	_clear(_notebook_box)
 	var all_records: Array = state.records()
-	var cap: int = state.record_capacity()
-	_notebook_count.text = "레시피 노트 %d/%d (메뉴 개정 기록)" % [all_records.size(), cap]
-	# 한 칸 = 메뉴 개정 기록 하나. 동시에 파는 메뉴가 아니라 영업 메뉴는 선택한 기록 하나다.
-	var note: String = "노트 한 칸은 시식한 메뉴 개정 기록 하나예요. 동시에 파는 메뉴 칸은 별개이며 [영업]에서 고정해요(기본1종, 증축 후2종)."
-	if all_records.size() > cap:
-		note += "\n예전 저장의 기록이 지금 용량보다 많아 모두 보관 중이에요. 삭제로 %d개 아래가 되거나 조리대를 확장하기 전에는 새 시식을 만들 수 없어요." % cap
-	elif cap < GameStateScript.MAX_RECORDS:
+	var cap: int = state.menu_capacity()
+	var menus: int = state.menu_count()
+	_notebook_count.text = "등록 메뉴 %d/%d종 · 개정 이력 %d/%d" % [menus, cap, all_records.size(), state.record_history_capacity()]
+	var note: String = "같은 메뉴의 개정은 등록 자리를 더 쓰지 않아요. 동시에 파는 메뉴 칸은 별개이며 [영업]에서 고정해요(기본1종, 증축 후2종). 기록을 지워도 최고 시식 성적은 유지돼요."
+	if menus > cap:
+		note += "\n예전 메뉴를 모두 보관 중이에요. 기존 메뉴 개정과 영업은 가능해요. 새 종류는 조리대 확장 또는 한 메뉴의 모든 개정본 정리 후 추가하세요."
+	elif cap < GameStateScript.MAX_MENUS:
 		var nxt: Dictionary = Growth.facility_review("bench_1" if not state.facilities_owned().has("bench_1") else "bench_2", state.rank(), state.facilities_owned(), state.wallet)
 		note += "\n다음 확장 「%s」(%s)으로 늘려요: %s" % [str(nxt["name"]), str(nxt["price_text"]), str(nxt["effect_text"])]
+	if all_records.size() >= state.record_history_capacity():
+		note += "\n실험 이력 보관함이 가득 찼어요. 필요 없는 개정본을 직접 정리해야 시식할 수 있어요. 자동 삭제는 하지 않아요."
 	_notebook_note.text = note
 	if all_records.is_empty():
 		var empty: PanelContainer = _card("EmptyNotebookCard")
 		empty.add_child(_label("노트가 비어 있어요. 시식한 레시피가 이곳에 기록돼요.", 16, INK))
 		_notebook_box.add_child(empty)
 		return
-	for i in range(all_records.size() - 1, -1, -1):
+	# Only materialize a bounded page of rows, rather than300 complex mobile cards.
+	var pages: int = maxi(1, (all_records.size() + NOTEBOOK_PAGE_SIZE - 1) / NOTEBOOK_PAGE_SIZE)
+	_notebook_page = clampi(_notebook_page, 0, pages - 1)
+	if pages > 1:
+		var pager: HBoxContainer = HBoxContainer.new()
+		pager.name = "NotebookPager"
+		var newer: Button = _button("더 최근 기록", "NotebookNewer")
+		var older: Button = _button("더 오래된 기록", "NotebookOlder")
+		for button in [newer, older]:
+			button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			button.custom_minimum_size = Vector2(0.0, 48.0)
+		newer.disabled = _notebook_page == 0
+		older.disabled = _notebook_page == pages - 1
+		newer.pressed.connect(_on_notebook_page.bind(-1))
+		older.pressed.connect(_on_notebook_page.bind(1))
+		pager.add_child(newer)
+		pager.add_child(older)
+		_notebook_box.add_child(_label("개정 이력 %d/%d쪽 · 최신 순" % [_notebook_page + 1, pages], 14, MUTED))
+		_notebook_box.add_child(pager)
+	var first: int = all_records.size() - 1 - _notebook_page * NOTEBOOK_PAGE_SIZE
+	for i in range(first, maxi(-1, first - NOTEBOOK_PAGE_SIZE), -1):
 		var rec: Dictionary = all_records[i]
 		_notebook_box.add_child(_notebook_row(rec))
+
+
+func _on_notebook_page(offset: int) -> void:
+	_notebook_page += offset
+	_refresh_notebook()
 
 
 func _notebook_row(rec: Dictionary) -> PanelContainer:
@@ -2755,6 +2810,9 @@ func _refresh_selling() -> void:
 func _refresh_research() -> void:
 	if _research_box == null:
 		return
+	if _story_mode:
+		_refresh_stories()
+		return
 	var done: Array = state.research_completed_ids()
 	var stage: Dictionary = state.research_stage()
 	_research_summary.text = "연구 점수 %d점 · 완료 %d/%d · %s (%d/%d단계)" % [state.research_points(), done.size(), Research.REQUESTS.size(), str(stage["title"]), int(stage["stage"]), int(stage["stages"])]
@@ -2771,6 +2829,131 @@ func _refresh_research() -> void:
 	for r in Research.REQUESTS:
 		var req: Dictionary = r
 		_research_box.add_child(_research_card(req, rec))
+
+
+func _on_research_mode(stories: bool) -> void:
+	_story_mode = stories
+	_story_armed = ""
+	_story_armed_until = 0
+	_research_message.text = _story_save_notice("") if stories else ""
+	_refresh_research()
+	(tabs.get_child(TAB_RESEARCH) as ScrollContainer).scroll_vertical = 0
+
+
+func _on_story_choice(customer: String, route: String) -> void:
+	if _work_blocked("이야기를 시작할"):
+		return
+	var key: String = customer + ":" + route
+	if _story_armed != key or Time.get_ticks_msec() > _story_armed_until:
+		_story_armed = key
+		_story_armed_until = Time.get_ticks_msec() + 6000
+		_research_message.text = _story_save_notice("이번 사연의 방향은 선택 후 바꿀 수 없어요. 같은 버튼을6초 안에 다시 누르면 확정해요. 비용은 없어요.")
+		_refresh_research()
+		return
+	_story_armed = ""
+	_story_armed_until = 0
+	_story_result(state.start_story(customer, route))
+
+
+func _on_story_complete(customer: String) -> void:
+	if _work_blocked("단골과 대화할"):
+		return
+	_story_result(state.complete_story(customer, state.selected_record_id))
+
+
+## UI 성공 안내는 실제 저장 결과를 포함한다. 거래를 재호출해 저장 실패를 보상하지 않는다.
+func _story_result(result: Dictionary) -> void:
+	var text: String = str(result["message"])
+	var saved: bool = false
+	if bool(result["ok"]):
+		saved = _persist()
+		text += " 저장했어요." if saved else " 저장하지 못했어요: " + _last_save_message + " 수동 저장 후 닫아 주세요."
+	else:
+		text = _story_save_notice(text)
+	_refresh_all()
+	_research_message.text = text
+	_research_message.add_theme_color_override("font_color", TEAL if saved else VERMILION)
+
+
+## 거부/화면 전환 같은 부수 조작이 미저장 거래의 경고를 가리지 않게 한다.
+func _story_save_notice(text: String) -> String:
+	return text + ("\n아직 저장하지 못했어요: " + _last_save_message + " 수동 저장 후 닫아 주세요." if _save_error_shown else "")
+
+
+func _on_story_history(customer: String) -> void:
+	_story_history[customer] = not bool(_story_history.get(customer, false))
+	_refresh_stories()
+
+
+func _refresh_stories() -> void:
+	var finished: int = 0
+	for arc in state.story_arcs():
+		finished += arc["receipts"].size()
+	_research_summary.text = "단골 이야기 · 대접 %d/6 · 세 사람의 두 가지 요리 방향" % finished
+	_research_target.text = "방향 선택 → 메뉴 시식 → 실제 영업에서 그 손님에게 대접 → 이야기 마치기. 시식만으로는 완료되지 않아요. 두 번째 장에는 첫 답례 이후 새로 시식한 다른 구성과 새 영업이 필요해요."
+	_clear(_research_box)
+	for customer in StoryCatalog.ids():
+		_research_box.add_child(_story_card(customer))
+
+
+func _story_card(customer: String) -> PanelContainer:
+	var definition: Dictionary = StoryCatalog.story(customer)
+	var arc: Dictionary = state.story_arc(customer)
+	var card: PanelContainer = _card("Story_" + customer)
+	var box: VBoxContainer = _vbox(6)
+	card.add_child(box)
+	var header: HBoxContainer = HBoxContainer.new()
+	var face: TextureRect = TextureRect.new()
+	face.texture = _portrait_tex(customer, 2)
+	face.custom_minimum_size = Vector2(48, 48)
+	face.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	header.add_child(face)
+	var title: Label = _label(Customers.find(customer)["name"] + " · " + definition["title"], 18, VERMILION)
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	header.add_child(title)
+	box.add_child(header)
+	if arc.is_empty():
+		box.add_child(_label(definition["opening"], 15, INK))
+		box.add_child(_label("무료 선택 · 첫 영업 후 열림 · 확정하면 이번 사연의 방향 고정", 14, TEAL))
+		for route in definition["routes"]:
+			var key: String = customer + ":" + str(route["id"])
+			var button: Button = _button(("확정: " if _story_armed == key else "선택: ") + str(route["label"]), "StoryChoice_" + customer + "_" + str(route["id"]))
+			button.disabled = state.day < 2 or state.service_active() or state.exploration_active() or _work.is_running() or _training_left > 0 or _contest_left > 0
+			button.pressed.connect(_on_story_choice.bind(customer, str(route["id"])))
+			box.add_child(button)
+		return card
+	var route: Dictionary = StoryCatalog.route(customer, arc["route"])
+	var chapter: int = arc["receipts"].size()
+	box.add_child(_label("선택: " + str(route["label"]) + " · 완료 %d/2" % chapter, 15, TEAL))
+	if chapter < 2:
+		var current: Dictionary = StoryCatalog.chapter(customer, arc["route"], chapter)
+		box.add_child(_label("%d장 · %s" % [chapter + 1, current["title"]], 17, VERMILION))
+		box.add_child(_label(current["dialogue"], 15, INK))
+		var rec: Dictionary = state.get_record(state.selected_record_id)
+		box.add_child(_label("대접 대상: " + ("노트에서 시식한 메뉴를 골라 주세요." if rec.is_empty() else "%s v%d" % [rec["name"],rec["version"]]), 15, TEAL))
+		var checked: Dictionary = state.story_check(customer, state.selected_record_id)
+		var condition: Label = _label(str(checked["error"]) if str(checked["error"]) != "" else "\n".join(checked["lines"]), 14, INK)
+		condition.name = "StoryConditions_" + customer
+		box.add_child(condition)
+		box.add_child(_label("이 장을 마칠 때 답례 %s · 한 번만. 초안/시식만/이전 영업은 인정하지 않아요." % _won(Stories.REWARDS[chapter]), 14, MUTED))
+		var complete: Button = _button("대접 결과로 이야기 마치기", "StoryComplete_" + customer)
+		complete.disabled = rec.is_empty() or state.service_active() or state.exploration_active() or _work.is_running() or _training_left > 0 or _contest_left > 0
+		complete.pressed.connect(_on_story_complete.bind(customer))
+		box.add_child(complete)
+	else:
+		var ending: Label = _label("사연 완료\n" + str(route["ending"]), 16, TEAL)
+		ending.name = "StoryEnding_" + customer
+		box.add_child(ending)
+	var history: Button = _button("지난 대화 접기" if bool(_story_history.get(customer, false)) else "지난 대화와 대접 기록", "StoryHistory_" + customer)
+	history.pressed.connect(_on_story_history.bind(customer))
+	box.add_child(history)
+	if bool(_story_history.get(customer, false)):
+		box.add_child(_label(definition["opening"] + "\n" + route["reply"], 14, INK))
+		for i in arc["receipts"].size():
+			var receipt: Dictionary = arc["receipts"][i]
+			var text: String = StoryCatalog.chapter(customer, arc["route"], i)["success"] + "\n%d일차 %s v%d · %d그릇 · 답례 %s" % [receipt["service_day"], receipt["name"], receipt["version"], receipt["units"], _won(Stories.REWARDS[i])]
+			box.add_child(_label(text, 14, INK))
+	return card
 
 
 func _research_card(req: Dictionary, rec: Dictionary) -> PanelContainer:
@@ -2863,11 +3046,11 @@ func _refresh_growth() -> void:
 	_growth_summary.text = "가게 등급 %d단계 「%s」 · 영업 %d일 마침 · 자금 %s" % [state.rank(), state.rank_title(), days, _won(state.wallet)]
 	var slots: int = state.topping_slots()
 	var picked: int = Catalog.toppings_of(state.draft_config).size()
-	var count: int = state.record_count()
-	var cap: int = state.record_capacity()
+	var count: int = state.menu_count()
+	var cap: int = state.menu_capacity()
 	var cap_lines: Array[String] = []
 	cap_lines.append("토핑 슬롯 %d/%d개 (지금 레시피 %d개)" % [slots, Catalog.MAX_TOPPINGS, picked])
-	cap_lines.append("레시피 노트 %d/%d칸%s (메뉴 개정 기록, 동시에 파는 메뉴 칸이 아니에요)" % [count, cap, " · 초과 보관 중" if count > cap else ""])
+	cap_lines.append("등록 메뉴 %d/%d종%s · 개정 이력 %d/%d (동시 판매 칸은 별개)" % [count, cap, " · 초과 보관 중" if count > cap else "", state.record_count(), state.record_history_capacity()])
 	cap_lines.append("직원 %d/%d명 (요리사·서버 + 보조 %d) · 빈 자리 %d · 보조 하루 운영비 %s" % [Staffing.BASE_STAFF + hired.size(), state.staff_capacity(), hired.size(), state.free_staff_slots(), _won(int(staffing["wage"]))])
 	_growth_capacity.text = "\n".join(cap_lines)
 
@@ -2898,6 +3081,9 @@ func _refresh_growth() -> void:
 	var head2: Label = _label("보조 직원 (직원 공간을 넓혀도 자동으로 고용되지 않아요)", 18, VERMILION)
 	head2.name = "GrowthStaffHeader"
 	_growth_box.add_child(head2)
+	var hiring_policy: Label = _label("현재 판매 메뉴·가격·날짜로 비교해요. 고용 조건은 별도이며 실제 정산은 완료 주문 기준이에요.", 14, MUTED)
+	hiring_policy.name = "GrowthHiringPolicy"
+	_growth_box.add_child(hiring_policy)
 	for sv in state.staff_reviews():
 		_growth_box.add_child(_staff_card(sv))
 	_sync_growth_lock()
@@ -2929,6 +3115,9 @@ func _expansion_card() -> PanelContainer:
 	var info: Label = _label("%d석 · 판매 %d종\n증축하면 테이블 2개와 4석이 실제로 생기고 두 메뉴를 함께 팔아요. 주방은 하나라 조리 시간과 손님을 공유해요.\n가게 등급 2 · 비용 %s · 한 번만 구매 · 환불 없음\n%s" % [state.seat_count(), state.selling_capacity(), _won(int(review["price"])), "증축 완료" if bool(review["owned"]) else str(review["reason"])], 14, INK)
 	info.name = "ShopExpansionInfo"
 	box.add_child(info)
+	var usage: Label = _label("좌석과 판매 칸을 늘리는 투자예요. 방문 손님이 자동으로 늘지는 않아요. 두 메뉴를 직접 판매 목록에 넣어 새 칸을 활용하세요.", 14, MUTED)
+	usage.name = "ShopExpansionUsage"
+	box.add_child(usage)
 	var armed: bool = _expansion_armed_until != 0 and Time.get_ticks_msec() <= _expansion_armed_until
 	var button: Button = _growth_button("증축 완료" if bool(review["owned"]) else ("다시 눌러 증축 확정" if armed else "증축 · " + _won(int(review["price"]))), "ShopExpandButton", not bool(review["can_buy"]))
 	button.pressed.connect(_on_expand_shop)
@@ -3062,6 +3251,9 @@ func _facility_card(rv: Dictionary) -> PanelContainer:
 	var info: Label = _label("\n".join(lines), 14, INK)
 	info.name = "FacilityInfo_" + id
 	cb.add_child(info)
+	var usage: Label = _label("새 토핑과 메뉴를 직접 개발해 열린 용량을 활용하세요. 설치만으로 맛 점수나 방문 손님이 늘지는 않아요." if str(def["track"]) == "recipe" else "고용할 자리를 여는 투자예요. 직원은 따로 골라야 하고, 고용비와 영업할 때의 일당이 추가돼요.", 14, MUTED)
+	usage.name = "FacilityUsage_" + id
+	cb.add_child(usage)
 	var text: String = "설치 완료" if owned else ("구매 · %s" % str(rv["price_text"]) if bool(rv["can_buy"]) else "구매 불가")
 	var btn: Button = _growth_button(text, "FacilityBuy_" + id, not bool(rv["can_buy"]))
 	btn.pressed.connect(_on_facility_buy.bind(id))
@@ -3100,11 +3292,38 @@ func _staff_card(sv: Dictionary) -> PanelContainer:
 	var info: Label = _label("%s\n%s" % [str(sv["desc"]), status], 14, INK)
 	info.name = "StaffInfo_" + id
 	cb.add_child(info)
+	if not is_hired:
+		var preview: Label = _label(_hiring_preview_text(state.hiring_preview(id), str(Staffing.find(id)["role"])), 14, TEAL)
+		preview.name = "StaffPreview_" + id
+		cb.add_child(preview)
 	var text: String = "고용 완료" if is_hired else ("고용 · %s" % _won(int(sv["hire_price"])) if bool(sv["can_hire"]) else "고용 불가")
 	var btn: Button = _growth_button(text, "StaffHire_" + id, not bool(sv["can_hire"]))
 	btn.pressed.connect(_on_staff_hire.bind(id))
 	cb.add_child(btn)
 	return card
+
+
+## Show a same-day comparison without promising future sales or payback. The
+## existing hire control/lock remains the sole action; building this text is pure.
+func _hiring_preview_text(preview: Dictionary, role: String) -> String:
+	if str(preview["error"]) != "":
+		return str(preview["error"])
+	var before: Dictionary = preview["before"]
+	var after: Dictionary = preview["after"]
+	var lines: Array[String] = ["오늘 판매 메뉴 · 고용 후 예상"]
+	for i in before["menus"].size():
+		var row: Dictionary = before["menus"][i]
+		lines.append("%s v%d: 한 그릇 조리 %d→%d초(게임 시간)" % [row["recipe_name"], row["version"], row["prep"], after["menus"][i]["prep"]])
+	lines.append("예상 판매 %d→%d그릇 · 하루 운영비 %s→%s" % [before["units"], after["units"], _won(int(before["overhead"])), _won(int(after["overhead"]))])
+	var delta: int = int(preview["delta_net"])
+	var change: String = ("+" if delta > 0 else ("−" if delta < 0 else "")) + _won(absi(delta))
+	lines.append("순영업이익 %s→%s (%s)" % [_won(int(before["net"])), _won(int(after["net"])), change])
+	lines.append("별도 고용비 %s (일회성·이익에 미포함)" % _won(int(preview["hire_price"])))
+	if int(preview["delta_units"]) <= 0:
+		lines.append("오늘 판매 증가 예상은 없어요.")
+	if role == "floor":
+		lines.append("서빙 대기 단축은 이 예상 이익에 미포함.")
+	return "\n".join(lines)
 
 
 func _source_text(by_source: Dictionary) -> String:
@@ -3136,7 +3355,7 @@ func _forecast_text(fc: Dictionary) -> String:
 	lines.append("손님 수요 %d그릇, 만들 수 있는 양 %d그릇 → 판매 %d그릇" % [int(fc["demand"]), int(fc["capacity"]), int(fc["units"])])
 	lines.append(_source_text(fc["by_source"]))
 	lines.append("매출 %s − 재료비 %s − 운영비 %s" % [_won(int(fc["revenue"])), _won(int(fc["ingredient_cost"])), _won(int(fc["overhead"]))])
-	lines.append("순영업이익 %s (영업을 끝까지 마치면 이 값으로 정산돼요)" % _won(int(fc["net"])))
+	lines.append("순영업이익 %s (실제 완료한 주문으로 정산해요)" % _won(int(fc["net"])))
 	return "\n".join(lines)
 
 

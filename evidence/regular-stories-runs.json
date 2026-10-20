@@ -1,0 +1,155 @@
+{
+  "date": "2026-10-17",
+  "scope": "Schema9 regular stories: three customers, two culinary directions per customer, two chapters and original endings. Real customer/menu completed service required after acceptance; new tasted config/service for chapter2. One-time2000/4000 thanks.",
+  "roles": {
+    "Codex": "All implementation, integration, dialogue/catalog, independent tests and review after helper auth failure",
+    "Claude Code": "Narrow helper invocation failed authentication before edits; no implementation or review accepted"
+  },
+  "runs": [
+    {
+      "phase": "regular-story-core-v1",
+      "actual_exit_status": 1,
+      "requested_max_turns": 14,
+      "observed_turns": 1,
+      "subtype": "success",
+      "is_error": true,
+      "permission_denials": [],
+      "error_summary": "OAuth session expired and could not be refreshed",
+      "files_changed": 0,
+      "retry": false,
+      "usage": {
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "input_tokens": 0,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "output_tokens": 0,
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "",
+        "iterations": [],
+        "speed": "standard",
+        "fallback_credit": null
+      },
+      "reported_total_cost_usd": 0
+    }
+  ],
+  "checks": {
+    "full_domain": {
+      "tests": 119,
+      "checks": 57027,
+      "failures": 0,
+      "exit_status": 0,
+      "script_errors": 0,
+      "status": "PASSED"
+    },
+    "pure_catalog": {
+      "checks": 189,
+      "failures": 0,
+      "exit_status": 0
+    },
+    "actual_recipes": {
+      "reachable_chapters": 12,
+      "total_chapters": 12
+    },
+    "actual_v8_migration": {
+      "fixtures": 13,
+      "generator_checks": 150,
+      "checks": 78,
+      "whole_value_comparisons": 13,
+      "failures": 0,
+      "exit_status": 0,
+      "permanent_original_backups": true
+    },
+    "old_economy_art": {
+      "service_cases": 64,
+      "cpu_rasters": 4,
+      "comparisons": 260,
+      "failures": 0,
+      "exit_status": 0
+    },
+    "focused_ui": {
+      "checks": 462,
+      "failures": 0,
+      "exit_status": 0
+    },
+    "full_layout": {
+      "status": "PASSED",
+      "checks": 14990,
+      "failures": 0,
+      "exit_status": 0,
+      "script_errors": 0,
+      "rendering_evidence": false
+    },
+    "native": {
+      "status": "BLOCKED_BEFORE_ENGINE_EXECUTION",
+      "actual_app_prepared": false,
+      "reason": "Strict vendor signature verification failed in current execution sandbox; previous official engine binary SHA256 and Info.plist unchanged. System CA lookup errors also appear in headless engine. No signature check bypass or security settings change."
+    },
+    "engine_integrity": {
+      "vendor_archive_files": 80,
+      "different_files": [],
+      "extra_files": [],
+      "archive_sha256": "c58a24e31d720be9d62f60cb5627c4e695fb72f21b0cfe1bc9ccaa9a3b3ba63e",
+      "signature_verification_still_blocked": true
+    }
+  },
+  "iterations": [
+    {
+      "phase": "initial-recipe-witness-search",
+      "reachable": 11,
+      "of": 12,
+      "correction": "Current ingredients cannot reach spice6; maru spicy chapter2 uses achievable spice5 with higher80 score plus new recipe and fresh service. Existing evaluator untouched."
+    },
+    {
+      "phase": "first-domain-test-invocation",
+      "acceptance": false,
+      "error": "Test-only start_new_recipe returns void; corrected helper. Exit0 alone did not count as success."
+    },
+    {
+      "phase": "first-focused-ui",
+      "checks": 232,
+      "failures": 38,
+      "script_errors": 2,
+      "correction": "QA froze the frame that settles finished service; restored actual process frames only around service, retaining assertions."
+    },
+    {
+      "phase": "second-focused-ui",
+      "checks": 460,
+      "failures": 4,
+      "correction": "Await real container layout after repeat-action callback rebuilt cards; kept reachability checks."
+    },
+    {
+      "phase": "independent-parser-review",
+      "correction": "Reject orphan receipts, last report predating claimed service and delayed claim day. Added3 atomic rejection cases."
+    },
+    {
+      "phase": "unsaved-warning-reproduction",
+      "checks": 462,
+      "failures": 2,
+      "correction": "A rejected repeat completion hid failed-save text. Preserve it across story-mode/choice/rejected results until actual save succeeds; final focused462/0."
+    }
+  ],
+  "environment_limits": [
+    "Headless test logs include system CA certificate lookup error separately from script/domain failures; not claimed engine-error-free",
+    "Native rendering and same-pack player app not yet verified",
+    "No live player-save reads, test or automatic launch",
+    "iPhone and long-term player balance unverified",
+    "Existing47 unknown copies remain preserved",
+    "Git fetch works; remaining execution barrier is OS signing/certificate validation in current sandbox, not proven GitHub outage."
+  ],
+  "publication": {
+    "status": "BLOCKED_UNTIL_NATIVE_ACCEPTANCE",
+    "remote_main_unchanged": "f99877e92c3f710806817e04c11b310e5b44ea41",
+    "new_ready_pr_created": false,
+    "local_feature_checkpoint_only": true
+  }
+}

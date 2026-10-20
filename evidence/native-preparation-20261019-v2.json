@@ -1,0 +1,21 @@
+{
+  "all_game_files_byte_equal": true,
+  "build_manifest_sha256": "c5b10bc42ddcc5d1a6dd26cb078f0912a133875fb263f4ed77d8c9b136dc7de7",
+  "date": "2026-10-19",
+  "engine_sha256": "c7cccbf8fb143e34e02fd6521e09be2c2b974f0d5db080b19071c9c570718ccf",
+  "format": 1,
+  "game_files_compared": 85,
+  "gui_app_executed": false,
+  "native_capture_accepted": false,
+  "pack_sha256": "abec120456cdc55e1701621afa773226902cafcdd8bfb33dce13dc9505fe266d",
+  "player_app_created": false,
+  "preparation_exit": 0,
+  "preparation_note": "Effective full access. Strict signature on Documents runtime identified disallowed FinderInfo. Existing builder succeeded on fresh private/tmp copy without vendor-byte/signature/security-setting changes.",
+  "prior_attempt_preserved": "evidence/native-qa-20261019.json",
+  "published_or_merged": false,
+  "qa_app": "/private/tmp/ramen-notebook-qa-20261019-v2/Ramen QA.app",
+  "status": "Prepared. GUI execution deferred while user is away; no terminal action requested, no new-app confirmation requested in this audit task.",
+  "vendor_info_sha256": "1e345d4fcac1d46a1d04339d03a44e42a6644e9c8b9807ee5524f5d55b28942d",
+  "vendor_signature_after_headless_audit": true,
+  "vendor_signature_verified": true
+}

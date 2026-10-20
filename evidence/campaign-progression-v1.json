@@ -1,0 +1,2088 @@
+{
+  "claude_invoked": false,
+  "date": "2026-10-19",
+  "engine": {
+    "engine_or_security_settings_modified": false,
+    "sha256": "c7cccbf8fb143e34e02fd6521e09be2c2b974f0d5db080b19071c9c570718ccf",
+    "strict_signature_before_and_after": true
+  },
+  "engine_errors_in_this_run": 0,
+  "first_attempt": {
+    "cause": "Probe tried set_draft_name on revisions; public API correctly refuses. Probe corrected without changing game rules. Failed scratch retained.",
+    "exit": 1,
+    "failures": 13
+  },
+  "format": 1,
+  "game_checks": 3446,
+  "gameplay_commit": "5cfbeea94162b62136cb059e48d2c61a7a92c190",
+  "implementation_owner": "Codex",
+  "independent": {
+    "campaigns": [
+      {
+        "daily": [
+          {
+            "day": 1,
+            "service_net": 61620,
+            "turned_away": 0,
+            "units": 9,
+            "wallet": 90550
+          },
+          {
+            "day": 2,
+            "service_net": 68800,
+            "turned_away": 0,
+            "units": 10,
+            "wallet": 160030
+          },
+          {
+            "day": 3,
+            "service_net": 83160,
+            "turned_away": 0,
+            "units": 12,
+            "wallet": 243810
+          },
+          {
+            "day": 4,
+            "service_net": 83160,
+            "turned_away": 0,
+            "units": 12,
+            "wallet": 329620
+          },
+          {
+            "day": 5,
+            "service_net": 90340,
+            "turned_away": 0,
+            "units": 13,
+            "wallet": 423440
+          },
+          {
+            "day": 6,
+            "service_net": 54440,
+            "turned_away": 0,
+            "units": 8,
+            "wallet": 481500
+          },
+          {
+            "day": 7,
+            "service_net": 68800,
+            "turned_away": 0,
+            "units": 10,
+            "wallet": 550300
+          },
+          {
+            "day": 8,
+            "service_net": 61620,
+            "turned_away": 0,
+            "units": 9,
+            "wallet": 611920
+          },
+          {
+            "day": 9,
+            "service_net": 68800,
+            "turned_away": 0,
+            "units": 10,
+            "wallet": 680720
+          },
+          {
+            "day": 10,
+            "service_net": 83160,
+            "turned_away": 0,
+            "units": 12,
+            "wallet": 763880
+          },
+          {
+            "day": 11,
+            "service_net": 83160,
+            "turned_away": 0,
+            "units": 12,
+            "wallet": 847040
+          },
+          {
+            "day": 12,
+            "service_net": 90340,
+            "turned_away": 0,
+            "units": 13,
+            "wallet": 937380
+          },
+          {
+            "day": 13,
+            "service_net": 54440,
+            "turned_away": 0,
+            "units": 8,
+            "wallet": 991820
+          },
+          {
+            "day": 14,
+            "service_net": 68800,
+            "turned_away": 0,
+            "units": 10,
+            "wallet": 1060620
+          }
+        ],
+        "final_wallet": 1060620,
+        "helper_wages": 0,
+        "id": "fast_none",
+        "menu": "fast",
+        "policy": "none",
+        "promotions": [
+          {
+            "day": 4,
+            "rank": 2
+          },
+          {
+            "day": 11,
+            "rank": 3
+          }
+        ],
+        "purchases": [],
+        "snapshot_sha256": {
+          "day-01.json": "32bac1fef026aa5a5ac345fb63a7d331a19412dfca57bcd412db0b39a6972e20",
+          "day-02.json": "6872c33c0cdc249c70de401a22ad430742c1f3a4b44fe977677f6bc476a3237e",
+          "day-03.json": "d7839e15e36537bb00edf9cc28d2bc7e3f57864ecda0266640e915e4367a594a",
+          "day-04.json": "7801d39a2b9ecfee71bdae7ec91ddf56b0ecdc564873482da8a9e4b5c1f73aae",
+          "day-05.json": "20004673cf3f84c9b1c1b66f3333b86cb0e06911f4ca41f36aabfb65292633f7",
+          "day-06.json": "0cf434293a22126b3fbb7f844df0d1ef812fa5343e9747d2266626615ae62a32",
+          "day-07.json": "19e7546fa9ec2da8052202c17cecddcc3d27720bd41de6eeb8244e89caf60302",
+          "day-08.json": "f603a02f3fe315c2185f03dd0253aa0d55de3987fb7e19bbe4e7c919e15a6e66",
+          "day-09.json": "74bcc9632678da87d64314873da7d2c978bb2e6daf4cbac872cb62c2cb3e9726",
+          "day-10.json": "99ff158e124285c6220e6ef9b6cfba3c3311f2068a403b28efa8a0c72047fd7e",
+          "day-11.json": "6d8b290eb945d319b33288ee51d2f2033c07a96e29649019a0caab522273027c",
+          "day-12.json": "657f4f641e2dffedc1bee958199d106dd1571753f6fc40b9dc1ca319b13c0849",
+          "day-13.json": "94b5fbda6bb08970d1e411bea17ec2b8b81bf178828f181b491d3842f238ecd2",
+          "day-14.json": "95db6fff8671002a90d671cce764e2df21d0ebb99f2e64c48a034bc3552ec859"
+        },
+        "totals": {
+          "facility": 0,
+          "hire": 0,
+          "research": 21000,
+          "service_net": 1020640,
+          "training": 0,
+          "trial": -11020
+        },
+        "turned_away": 0,
+        "units": 148,
+        "units_delta_vs_none": 0,
+        "wallet_delta_vs_none": 0
+      },
+      {
+        "daily": [
+          {
+            "day": 1,
+            "service_net": 61620,
+            "turned_away": 0,
+            "units": 9,
+            "wallet": 90550
+          },
+          {
+            "day": 2,
+            "service_net": 68800,
+            "turned_away": 0,
+            "units": 10,
+            "wallet": 160030
+          },
+          {
+            "day": 3,
+            "service_net": 83160,
+            "turned_away": 0,
+            "units": 12,
+            "wallet": 243810
+          },
+          {
+            "day": 4,
+            "service_net": 83160,
+            "turned_away": 0,
+            "units": 12,
+            "wallet": 317620
+          },
+          {
+            "day": 5,
+            "service_net": 90340,
+            "turned_away": 0,
+            "units": 13,
+            "wallet": 411440
+          },
+          {
+            "day": 6,
+            "service_net": 54440,
+            "turned_away": 0,
+            "units": 8,
+            "wallet": 469500
+          },
+          {
+            "day": 7,
+            "service_net": 68800,
+            "turned_away": 0,
+            "units": 10,
+            "wallet": 538300
+          },
+          {
+            "day": 8,
+            "service_net": 61620,
+            "turned_away": 0,
+            "units": 9,
+            "wallet": 599920
+          },
+          {
+            "day": 9,
+            "service_net": 68800,
+            "turned_away": 0,
+            "units": 10,
+            "wallet": 668720
+          },
+          {
+            "day": 10,
+            "service_net": 83160,
+            "turned_away": 0,
+            "units": 12,
+            "wallet": 751880
+          },
+          {
+            "day": 11,
+            "service_net": 83160,
+            "turned_away": 0,
+            "units": 12,
+            "wallet": 805040
+          },
+          {
+            "day": 12,
+            "service_net": 90340,
+            "turned_away": 0,
+            "units": 13,
+            "wallet": 895380
+          },
+          {
+            "day": 13,
+            "service_net": 54440,
+            "turned_away": 0,
+            "units": 8,
+            "wallet": 949820
+          },
+          {
+            "day": 14,
+            "service_net": 68800,
+            "turned_away": 0,
+            "units": 10,
+            "wallet": 1018620
+          }
+        ],
+        "final_wallet": 1018620,
+        "helper_wages": 0,
+        "id": "fast_bench",
+        "menu": "fast",
+        "policy": "bench",
+        "promotions": [
+          {
+            "day": 4,
+            "rank": 2
+          },
+          {
+            "day": 11,
+            "rank": 3
+          }
+        ],
+        "purchases": [
+          {
+            "action": "facility:bench_1",
+            "cost": 12000,
+            "day": 4
+          },
+          {
+            "action": "facility:bench_2",
+            "cost": 30000,
+            "day": 11
+          }
+        ],
+        "snapshot_sha256": {
+          "day-01.json": "32bac1fef026aa5a5ac345fb63a7d331a19412dfca57bcd412db0b39a6972e20",
+          "day-02.json": "6872c33c0cdc249c70de401a22ad430742c1f3a4b44fe977677f6bc476a3237e",
+          "day-03.json": "d7839e15e36537bb00edf9cc28d2bc7e3f57864ecda0266640e915e4367a594a",
+          "day-04.json": "191af256ce5140d543b373ac3eeb5e25b1e89625da4952b5fe11ab0622ec8185",
+          "day-05.json": "9e4b0f8fdfee54651a1e55823d3f9e8666a0a79c3e4d66f046485fd9872c8bf7",
+          "day-06.json": "d4be2ccebe106b190f0d8eca3c1262af658c9520226107e784d4efaabc8adbed",
+          "day-07.json": "87e649f7fb4c3b1d047b4564285500a3e29d11b907ced53af1f5a9f0809bdd7c",
+          "day-08.json": "8bbc410763e04a3426f2b56210146811b12dfe7359511bb1aa3138ab5d50d93d",
+          "day-09.json": "b6c937021f0ad091be7c0f521e14c0c3112895bf1a5919ca517b63977cbeb6bc",
+          "day-10.json": "340516548926ba2360f75871503e23e1505bd7ecc48dab3368845d29f3910039",
+          "day-11.json": "808d554c06bdf6963c3224ed63cfd64ed931bca9604ae0e5c29282523ea80245",
+          "day-12.json": "d5c964c3ebb5656896669d7f643479034d26e03fb1d8c368671190163c269649",
+          "day-13.json": "cb30ef7e2f8a2e8fdff4d39dfd9ff36bfd12e3de54f18f18fe51e69f69539fec",
+          "day-14.json": "d3bfedff331b6a296a3ff31d474ab7ae8098f2c6e7b8d74b98f2c588d00936c6"
+        },
+        "totals": {
+          "facility": -42000,
+          "hire": 0,
+          "research": 21000,
+          "service_net": 1020640,
+          "training": 0,
+          "trial": -11020
+        },
+        "turned_away": 0,
+        "units": 148,
+        "units_delta_vs_none": 0,
+        "wallet_delta_vs_none": -42000
+      },
+      {
+        "daily": [
+          {
+            "day": 1,
+            "service_net": 61620,
+            "turned_away": 0,
+            "units": 9,
+            "wallet": 90550
+          },
+          {
+            "day": 2,
+            "service_net": 68800,
+            "turned_away": 0,
+            "units": 10,
+            "wallet": 160030
+          },
+          {
+            "day": 3,
+            "service_net": 83160,
+            "turned_away": 0,
+            "units": 12,
+            "wallet": 243810
+          },
+          {
+            "day": 4,
+            "service_net": 83160,
+            "turned_away": 0,
+            "units": 12,
+            "wallet": 269620
+          },
+          {
+            "day": 5,
+            "service_net": 90340,
+            "turned_away": 0,
+            "units": 13,
+            "wallet": 363440
+          },
+          {
+            "day": 6,
+            "service_net": 54440,
+            "turned_away": 0,
+            "units": 8,
+            "wallet": 421500
+          },
+          {
+            "day": 7,
+            "service_net": 68800,
+            "turned_away": 0,
+            "units": 10,
+            "wallet": 490300
+          },
+          {
+            "day": 8,
+            "service_net": 61620,
+            "turned_away": 0,
+            "units": 9,
+            "wallet": 551920
+          },
+          {
+            "day": 9,
+            "service_net": 68800,
+            "turned_away": 0,
+            "units": 10,
+            "wallet": 620720
+          },
+          {
+            "day": 10,
+            "service_net": 83160,
+            "turned_away": 0,
+            "units": 12,
+            "wallet": 703880
+          },
+          {
+            "day": 11,
+            "service_net": 83160,
+            "turned_away": 0,
+            "units": 12,
+            "wallet": 787040
+          },
+          {
+            "day": 12,
+            "service_net": 90340,
+            "turned_away": 0,
+            "units": 13,
+            "wallet": 877380
+          },
+          {
+            "day": 13,
+            "service_net": 54440,
+            "turned_away": 0,
+            "units": 8,
+            "wallet": 931820
+          },
+          {
+            "day": 14,
+            "service_net": 68800,
+            "turned_away": 0,
+            "units": 10,
+            "wallet": 1000620
+          }
+        ],
+        "final_wallet": 1000620,
+        "helper_wages": 0,
+        "id": "fast_seats",
+        "menu": "fast",
+        "policy": "seats",
+        "promotions": [
+          {
+            "day": 4,
+            "rank": 2
+          },
+          {
+            "day": 11,
+            "rank": 3
+          }
+        ],
+        "purchases": [
+          {
+            "action": "expand",
+            "cost": 60000,
+            "day": 4
+          }
+        ],
+        "snapshot_sha256": {
+          "day-01.json": "32bac1fef026aa5a5ac345fb63a7d331a19412dfca57bcd412db0b39a6972e20",
+          "day-02.json": "6872c33c0cdc249c70de401a22ad430742c1f3a4b44fe977677f6bc476a3237e",
+          "day-03.json": "d7839e15e36537bb00edf9cc28d2bc7e3f57864ecda0266640e915e4367a594a",
+          "day-04.json": "041cbf14b397c73ae0f2ce4a29eb3443cc5088845dc4c268975c995babb3dcf6",
+          "day-05.json": "611a00b862ecbd03bc4b8c1f0a039d20a0b6d43fe6ddede640e8d10a5af63972",
+          "day-06.json": "a168aab33e7d759dc6afa93f09379bb62b692cf3384b6d5fb1983dd204d331ea",
+          "day-07.json": "046bde41bbd830d061df9c9d5ef92661ed6fe9d2f5955aeec51870bdfdbe3e1a",
+          "day-08.json": "304e2a591b373f4edad0342143528eb70b958850d10f64002ffcaab4996b20a6",
+          "day-09.json": "90367f9aaa693c2e4129aa490af097c195c4d7a666406c4f3acdad5032d70c13",
+          "day-10.json": "35081e8c7e62a28c3511f79d535455ac01d92f5e2d05f3c05a1ba598463580e1",
+          "day-11.json": "13a6ed6e0f8fb9c361ea118c8d57756170f0fbfcb369dd419e2ea9e7be03ecca",
+          "day-12.json": "48f082b82a4d58ca819574edb72faa2e122b5871965ad73ea77a18cac1886e78",
+          "day-13.json": "29516b7d5a9ebfc5f633633512436cfcca327cc36afa36dc35a6dc888b64ef97",
+          "day-14.json": "8acd89da4c30ac8a5692859957bb699f129cb6daf0272c8eb9a77e5761da848e"
+        },
+        "totals": {
+          "facility": -60000,
+          "hire": 0,
+          "research": 21000,
+          "service_net": 1020640,
+          "training": 0,
+          "trial": -11020
+        },
+        "turned_away": 0,
+        "units": 148,
+        "units_delta_vs_none": 0,
+        "wallet_delta_vs_none": -60000
+      },
+      {
+        "daily": [
+          {
+            "day": 1,
+            "service_net": 61620,
+            "turned_away": 0,
+            "units": 9,
+            "wallet": 90550
+          },
+          {
+            "day": 2,
+            "service_net": 68800,
+            "turned_away": 0,
+            "units": 10,
+            "wallet": 160030
+          },
+          {
+            "day": 3,
+            "service_net": 83160,
+            "turned_away": 0,
+            "units": 12,
+            "wallet": 243810
+          },
+          {
+            "day": 4,
+            "service_net": 82560,
+            "turned_away": 0,
+            "units": 12,
+            "wallet": 306020
+          },
+          {
+            "day": 5,
+            "service_net": 89740,
+            "turned_away": 0,
+            "units": 13,
+            "wallet": 399240
+          },
+          {
+            "day": 6,
+            "service_net": 53840,
+            "turned_away": 0,
+            "units": 8,
+            "wallet": 456700
+          },
+          {
+            "day": 7,
+            "service_net": 68200,
+            "turned_away": 0,
+            "units": 10,
+            "wallet": 524900
+          },
+          {
+            "day": 8,
+            "service_net": 60870,
+            "turned_away": 0,
+            "units": 9,
+            "wallet": 581770
+          },
+          {
+            "day": 9,
+            "service_net": 68050,
+            "turned_away": 0,
+            "units": 10,
+            "wallet": 649820
+          },
+          {
+            "day": 10,
+            "service_net": 82410,
+            "turned_away": 0,
+            "units": 12,
+            "wallet": 732230
+          },
+          {
+            "day": 11,
+            "service_net": 82410,
+            "turned_away": 0,
+            "units": 12,
+            "wallet": 814640
+          },
+          {
+            "day": 12,
+            "service_net": 89590,
+            "turned_away": 0,
+            "units": 13,
+            "wallet": 904230
+          },
+          {
+            "day": 13,
+            "service_net": 53690,
+            "turned_away": 0,
+            "units": 8,
+            "wallet": 957920
+          },
+          {
+            "day": 14,
+            "service_net": 68050,
+            "turned_away": 0,
+            "units": 10,
+            "wallet": 1025970
+          }
+        ],
+        "final_wallet": 1025970,
+        "helper_wages": 7650,
+        "id": "fast_prep",
+        "menu": "fast",
+        "policy": "prep",
+        "promotions": [
+          {
+            "day": 4,
+            "rank": 2
+          },
+          {
+            "day": 11,
+            "rank": 3
+          }
+        ],
+        "purchases": [
+          {
+            "action": "facility:staff_1",
+            "cost": 15000,
+            "day": 4
+          },
+          {
+            "action": "hire:prep_assistant",
+            "cost": 8000,
+            "day": 4
+          },
+          {
+            "action": "train:prep_assistant:basic",
+            "cost": 4000,
+            "day": 8
+          }
+        ],
+        "snapshot_sha256": {
+          "day-01.json": "32bac1fef026aa5a5ac345fb63a7d331a19412dfca57bcd412db0b39a6972e20",
+          "day-02.json": "6872c33c0cdc249c70de401a22ad430742c1f3a4b44fe977677f6bc476a3237e",
+          "day-03.json": "d7839e15e36537bb00edf9cc28d2bc7e3f57864ecda0266640e915e4367a594a",
+          "day-04.json": "dcafc75465133783ae04a02f0ba6f184a3ee069fa72947617203b9fe80d85353",
+          "day-05.json": "1ef4a9000a547b7994c84339afbc73fafe294ae1be0f9161aad4d501fbe25163",
+          "day-06.json": "f609137c32702f87ef01783ee84b697de3080e90f3aa605fed482e3e531bfa72",
+          "day-07.json": "705446ef7a80120dfef1b07e924f8877feac245d8f96f5d6ef45be1e5b433898",
+          "day-08.json": "b296ab45c9e987bee62129ba6f22f455227d36790416d132ebc24c6e7c212539",
+          "day-09.json": "4be9656c8ad6e2847d764c25be23c9796a3d482de2e924190588f2cfe305563a",
+          "day-10.json": "c2a7bf3feff09cfe69d8863c658fde7aad38819358170cbc5386de0e03ecb07d",
+          "day-11.json": "e26f1b9d4935e7ae1866ef3f10d1c54f176983e8024de6b17a0e51ea1be037b8",
+          "day-12.json": "45fea1c27e075df7f13bfb3899fb65c4d9e66b67734a2e8a1d99793548f79d89",
+          "day-13.json": "123e2c8cf01c0020090c3e4f70235dd1ad4ebaa3a0ce9db47cd58b28318b4c34",
+          "day-14.json": "ce63e0d6b17c6664c1894c9c4cf3da31671aac86fb1e5e499312e326082e7dad"
+        },
+        "totals": {
+          "facility": -15000,
+          "hire": -8000,
+          "research": 21000,
+          "service_net": 1012990,
+          "training": -4000,
+          "trial": -11020
+        },
+        "turned_away": 0,
+        "units": 148,
+        "units_delta_vs_none": 0,
+        "wallet_delta_vs_none": -34650
+      },
+      {
+        "daily": [
+          {
+            "day": 1,
+            "service_net": 61620,
+            "turned_away": 0,
+            "units": 9,
+            "wallet": 90550
+          },
+          {
+            "day": 2,
+            "service_net": 68800,
+            "turned_away": 0,
+            "units": 10,
+            "wallet": 160030
+          },
+          {
+            "day": 3,
+            "service_net": 83160,
+            "turned_away": 0,
+            "units": 12,
+            "wallet": 243810
+          },
+          {
+            "day": 4,
+            "service_net": 82660,
+            "turned_away": 0,
+            "units": 12,
+            "wallet": 307120
+          },
+          {
+            "day": 5,
+            "service_net": 89840,
+            "turned_away": 0,
+            "units": 13,
+            "wallet": 400440
+          },
+          {
+            "day": 6,
+            "service_net": 53940,
+            "turned_away": 0,
+            "units": 8,
+            "wallet": 458000
+          },
+          {
+            "day": 7,
+            "service_net": 68300,
+            "turned_away": 0,
+            "units": 10,
+            "wallet": 526300
+          },
+          {
+            "day": 8,
+            "service_net": 60970,
+            "turned_away": 0,
+            "units": 9,
+            "wallet": 583270
+          },
+          {
+            "day": 9,
+            "service_net": 68150,
+            "turned_away": 0,
+            "units": 10,
+            "wallet": 651420
+          },
+          {
+            "day": 10,
+            "service_net": 82510,
+            "turned_away": 0,
+            "units": 12,
+            "wallet": 733930
+          },
+          {
+            "day": 11,
+            "service_net": 82510,
+            "turned_away": 0,
+            "units": 12,
+            "wallet": 816440
+          },
+          {
+            "day": 12,
+            "service_net": 89690,
+            "turned_away": 0,
+            "units": 13,
+            "wallet": 906130
+          },
+          {
+            "day": 13,
+            "service_net": 53790,
+            "turned_away": 0,
+            "units": 8,
+            "wallet": 959920
+          },
+          {
+            "day": 14,
+            "service_net": 68150,
+            "turned_away": 0,
+            "units": 10,
+            "wallet": 1028070
+          }
+        ],
+        "final_wallet": 1028070,
+        "helper_wages": 6550,
+        "id": "fast_floor",
+        "menu": "fast",
+        "policy": "floor",
+        "promotions": [
+          {
+            "day": 4,
+            "rank": 2
+          },
+          {
+            "day": 11,
+            "rank": 3
+          }
+        ],
+        "purchases": [
+          {
+            "action": "facility:staff_1",
+            "cost": 15000,
+            "day": 4
+          },
+          {
+            "action": "hire:floor_assistant",
+            "cost": 7000,
+            "day": 4
+          },
+          {
+            "action": "train:floor_assistant:basic",
+            "cost": 4000,
+            "day": 8
+          }
+        ],
+        "snapshot_sha256": {
+          "day-01.json": "32bac1fef026aa5a5ac345fb63a7d331a19412dfca57bcd412db0b39a6972e20",
+          "day-02.json": "6872c33c0cdc249c70de401a22ad430742c1f3a4b44fe977677f6bc476a3237e",
+          "day-03.json": "d7839e15e36537bb00edf9cc28d2bc7e3f57864ecda0266640e915e4367a594a",
+          "day-04.json": "0bfca5966ef5d0955b86cabc9a9ec130ccdcc0ecb2b7bf28f2acc9e242dd2671",
+          "day-05.json": "f61013af3fe5947e6e1629cc89098079336a2a20f472dcfc0deabff18e269c35",
+          "day-06.json": "af13c532436ae7c2000d0df31c87a96372f06283b5509899fd55d1a723cf4e8e",
+          "day-07.json": "9d1554f0c68e187108c7c212b2d30d434fc59204ba23c2e9e7ec1f617efac9a4",
+          "day-08.json": "7b33edc85cda43a8438c196c126d79c24948e174649bba4ba1bd60833f474b46",
+          "day-09.json": "8bb6e11fb6f16f13019c1819060e5e137b430bb8db0233d982fa6d25f1c9f628",
+          "day-10.json": "0c700d8d768804861db0c0d9741376a55ef9bd243e06af3ff281fc42b7182c4b",
+          "day-11.json": "1c62790dc3691da6db13206ec84125b4d273a4d5ea0a5dce5547086278301f63",
+          "day-12.json": "e14ec063ccb9448a6a60e8348005e607f6e44a9b107537be6b28ee2cfcbdfe99",
+          "day-13.json": "14c0b56d969aced7f908fa4b4dc5d8663744a52be14ecf21dba679cc312542be",
+          "day-14.json": "7ec418638d5b1425a65a10b8389781444c4c4ea6fb7ac81777d9f9099a5d1c6b"
+        },
+        "totals": {
+          "facility": -15000,
+          "hire": -7000,
+          "research": 21000,
+          "service_net": 1014090,
+          "training": -4000,
+          "trial": -11020
+        },
+        "turned_away": 0,
+        "units": 148,
+        "units_delta_vs_none": 0,
+        "wallet_delta_vs_none": -32550
+      },
+      {
+        "daily": [
+          {
+            "day": 1,
+            "service_net": 61620,
+            "turned_away": 0,
+            "units": 9,
+            "wallet": 90550
+          },
+          {
+            "day": 2,
+            "service_net": 68800,
+            "turned_away": 0,
+            "units": 10,
+            "wallet": 160030
+          },
+          {
+            "day": 3,
+            "service_net": 83160,
+            "turned_away": 0,
+            "units": 12,
+            "wallet": 243810
+          },
+          {
+            "day": 4,
+            "service_net": 82560,
+            "turned_away": 0,
+            "units": 12,
+            "wallet": 234020
+          },
+          {
+            "day": 5,
+            "service_net": 89740,
+            "turned_away": 0,
+            "units": 13,
+            "wallet": 327240
+          },
+          {
+            "day": 6,
+            "service_net": 53840,
+            "turned_away": 0,
+            "units": 8,
+            "wallet": 384700
+          },
+          {
+            "day": 7,
+            "service_net": 68200,
+            "turned_away": 0,
+            "units": 10,
+            "wallet": 452900
+          },
+          {
+            "day": 8,
+            "service_net": 60870,
+            "turned_away": 0,
+            "units": 9,
+            "wallet": 509770
+          },
+          {
+            "day": 9,
+            "service_net": 68050,
+            "turned_away": 0,
+            "units": 10,
+            "wallet": 577820
+          },
+          {
+            "day": 10,
+            "service_net": 82410,
+            "turned_away": 0,
+            "units": 12,
+            "wallet": 660230
+          },
+          {
+            "day": 11,
+            "service_net": 81910,
+            "turned_away": 0,
+            "units": 12,
+            "wallet": 669140
+          },
+          {
+            "day": 12,
+            "service_net": 89090,
+            "turned_away": 0,
+            "units": 13,
+            "wallet": 758230
+          },
+          {
+            "day": 13,
+            "service_net": 53190,
+            "turned_away": 0,
+            "units": 8,
+            "wallet": 811420
+          },
+          {
+            "day": 14,
+            "service_net": 67550,
+            "turned_away": 0,
+            "units": 10,
+            "wallet": 878970
+          }
+        ],
+        "final_wallet": 878970,
+        "helper_wages": 9650,
+        "id": "fast_all",
+        "menu": "fast",
+        "policy": "all",
+        "promotions": [
+          {
+            "day": 4,
+            "rank": 2
+          },
+          {
+            "day": 11,
+            "rank": 3
+          }
+        ],
+        "purchases": [
+          {
+            "action": "facility:bench_1",
+            "cost": 12000,
+            "day": 4
+          },
+          {
+            "action": "facility:staff_1",
+            "cost": 15000,
+            "day": 4
+          },
+          {
+            "action": "expand",
+            "cost": 60000,
+            "day": 4
+          },
+          {
+            "action": "hire:prep_assistant",
+            "cost": 8000,
+            "day": 4
+          },
+          {
+            "action": "train:prep_assistant:basic",
+            "cost": 4000,
+            "day": 8
+          },
+          {
+            "action": "facility:bench_2",
+            "cost": 30000,
+            "day": 11
+          },
+          {
+            "action": "facility:staff_2",
+            "cost": 36000,
+            "day": 11
+          },
+          {
+            "action": "hire:floor_assistant",
+            "cost": 7000,
+            "day": 11
+          }
+        ],
+        "snapshot_sha256": {
+          "day-01.json": "32bac1fef026aa5a5ac345fb63a7d331a19412dfca57bcd412db0b39a6972e20",
+          "day-02.json": "6872c33c0cdc249c70de401a22ad430742c1f3a4b44fe977677f6bc476a3237e",
+          "day-03.json": "d7839e15e36537bb00edf9cc28d2bc7e3f57864ecda0266640e915e4367a594a",
+          "day-04.json": "b6a0999d7c7f13074ffaef8f7983636c351a1225b3c33fe45e81394fbf853653",
+          "day-05.json": "3535e1fa320b826785c357f045327eeb4e48abe7a27322a7e55f5c6963d4eefb",
+          "day-06.json": "93e9e295d5e8704ecf97ab61d44e036f9275f8733696ab0e71926fe011a38c3a",
+          "day-07.json": "14824957023500cd95193dc56c9e8e4ccda2fd6a8dc43760fdb2cc19e22772ea",
+          "day-08.json": "69efea171e00393fbae28185959cf2f20111f4b05d15553c3a34d6738fdfc246",
+          "day-09.json": "0264954b5bd89415275fe21184bc57c5a0def19f022ca285c88aae91faa03d9e",
+          "day-10.json": "60cf3c335ff24d95aaa50b87479021ee12b4a8b718878112ed7a3901a90512c0",
+          "day-11.json": "693a259f4c53b3b684a6e3d43b16a0a83a99066e7e67a176e748253b1cb3cc73",
+          "day-12.json": "826a60a79d83f4e3ba2b4b9f39c7384a15ba272d8990240e5ad483fa68606d5e",
+          "day-13.json": "5d5395d7662a0ad8d32c9962e1cb2e5554595608e06726a19ce20fbad040297a",
+          "day-14.json": "18bb4384b26251485ec7c25dd483491dbd3831a6ed0077a821623eea197a5a33"
+        },
+        "totals": {
+          "facility": -153000,
+          "hire": -15000,
+          "research": 21000,
+          "service_net": 1010990,
+          "training": -4000,
+          "trial": -11020
+        },
+        "turned_away": 0,
+        "units": 148,
+        "units_delta_vs_none": 0,
+        "wallet_delta_vs_none": -181650
+      },
+      {
+        "daily": [
+          {
+            "day": 1,
+            "service_net": 50550,
+            "turned_away": 0,
+            "units": 7,
+            "wallet": 78450
+          },
+          {
+            "day": 2,
+            "service_net": 58200,
+            "turned_away": 0,
+            "units": 8,
+            "wallet": 137330
+          },
+          {
+            "day": 3,
+            "service_net": 65850,
+            "turned_away": 0,
+            "units": 9,
+            "wallet": 203800
+          },
+          {
+            "day": 4,
+            "service_net": 73500,
+            "turned_away": 0,
+            "units": 10,
+            "wallet": 279950
+          },
+          {
+            "day": 5,
+            "service_net": 73500,
+            "turned_away": 0,
+            "units": 10,
+            "wallet": 356930
+          },
+          {
+            "day": 6,
+            "service_net": 42900,
+            "turned_away": 0,
+            "units": 6,
+            "wallet": 403450
+          },
+          {
+            "day": 7,
+            "service_net": 58200,
+            "turned_away": 0,
+            "units": 8,
+            "wallet": 461650
+          },
+          {
+            "day": 8,
+            "service_net": 50550,
+            "turned_away": 0,
+            "units": 7,
+            "wallet": 512200
+          },
+          {
+            "day": 9,
+            "service_net": 58200,
+            "turned_away": 0,
+            "units": 8,
+            "wallet": 570400
+          },
+          {
+            "day": 10,
+            "service_net": 65850,
+            "turned_away": 0,
+            "units": 9,
+            "wallet": 636250
+          },
+          {
+            "day": 11,
+            "service_net": 73500,
+            "turned_away": 0,
+            "units": 10,
+            "wallet": 709750
+          },
+          {
+            "day": 12,
+            "service_net": 73500,
+            "turned_away": 0,
+            "units": 10,
+            "wallet": 783250
+          },
+          {
+            "day": 13,
+            "service_net": 42900,
+            "turned_away": 0,
+            "units": 6,
+            "wallet": 826150
+          },
+          {
+            "day": 14,
+            "service_net": 58200,
+            "turned_away": 0,
+            "units": 8,
+            "wallet": 884350
+          }
+        ],
+        "final_wallet": 884350,
+        "helper_wages": 0,
+        "id": "slow_none",
+        "menu": "slow",
+        "policy": "none",
+        "promotions": [
+          {
+            "day": 4,
+            "rank": 2
+          },
+          {
+            "day": 11,
+            "rank": 3
+          }
+        ],
+        "purchases": [],
+        "snapshot_sha256": {
+          "day-01.json": "0a98c878c1d2b7d9236387fd9aff35d3a98a9549909e4caeb6785fc5e22a27e7",
+          "day-02.json": "c5eba95f21fb3e28db0cee82f1e2867c1968479c3bc0a2b421098e03d0acc2f6",
+          "day-03.json": "8647c721ad7b6d49a97d1c04d2dddef94fdc888f71bfe975516bf8660bfa3ead",
+          "day-04.json": "95518082fe19383da622b04bd93b09dad3d538c5201426679c201168290ae04c",
+          "day-05.json": "4b4ef00d8087dd02a9a4c24470f38bcdbd93f94001831c367783c701d12b9de6",
+          "day-06.json": "f3687191a57c0c81682e5e01952c6289d8b7070ea00e26fe6b221f51ac2debc9",
+          "day-07.json": "f003514b2033572abdd0167ae73c2cf7e4bb7ca908048d886ca6cbadc382c103",
+          "day-08.json": "a9596b68f16c213871b6c48aa2dc8d7fde670a7c6614174baa4ea0ee528b63c3",
+          "day-09.json": "b0038b13b9ca17f6cd81e4cae34f876990a50415789fbeb4f63332bbfb1efe35",
+          "day-10.json": "757e8881c4f4534b2d1bc091c619fa239891865ba221b93b572184714bd647c6",
+          "day-11.json": "df4ae7dbde8651417b1488b5448d5d19f359aba4fb1a06dffbaee9c12d1444ef",
+          "day-12.json": "7a313f9764d889033033ac2af7e5138c3eadb026a789493f8a720a44c5fe07dc",
+          "day-13.json": "5ac1afb8545ba7748609918f67d167f1f36a97d69e1f7d0cf12f4cd0239f8070",
+          "day-14.json": "7b9652a81e746e9643da4c51e8609c141c3a99d032028ffa7ff1448c5c911a12"
+        },
+        "totals": {
+          "facility": 0,
+          "hire": 0,
+          "research": 21000,
+          "service_net": 845400,
+          "training": 0,
+          "trial": -12050
+        },
+        "turned_away": 0,
+        "units": 116,
+        "units_delta_vs_none": 0,
+        "wallet_delta_vs_none": 0
+      },
+      {
+        "daily": [
+          {
+            "day": 1,
+            "service_net": 50550,
+            "turned_away": 0,
+            "units": 7,
+            "wallet": 78450
+          },
+          {
+            "day": 2,
+            "service_net": 58200,
+            "turned_away": 0,
+            "units": 8,
+            "wallet": 137330
+          },
+          {
+            "day": 3,
+            "service_net": 65850,
+            "turned_away": 0,
+            "units": 9,
+            "wallet": 203800
+          },
+          {
+            "day": 4,
+            "service_net": 73500,
+            "turned_away": 0,
+            "units": 10,
+            "wallet": 267950
+          },
+          {
+            "day": 5,
+            "service_net": 73500,
+            "turned_away": 0,
+            "units": 10,
+            "wallet": 344930
+          },
+          {
+            "day": 6,
+            "service_net": 42900,
+            "turned_away": 0,
+            "units": 6,
+            "wallet": 391450
+          },
+          {
+            "day": 7,
+            "service_net": 58200,
+            "turned_away": 0,
+            "units": 8,
+            "wallet": 449650
+          },
+          {
+            "day": 8,
+            "service_net": 50550,
+            "turned_away": 0,
+            "units": 7,
+            "wallet": 500200
+          },
+          {
+            "day": 9,
+            "service_net": 58200,
+            "turned_away": 0,
+            "units": 8,
+            "wallet": 558400
+          },
+          {
+            "day": 10,
+            "service_net": 65850,
+            "turned_away": 0,
+            "units": 9,
+            "wallet": 624250
+          },
+          {
+            "day": 11,
+            "service_net": 73500,
+            "turned_away": 0,
+            "units": 10,
+            "wallet": 667750
+          },
+          {
+            "day": 12,
+            "service_net": 73500,
+            "turned_away": 0,
+            "units": 10,
+            "wallet": 741250
+          },
+          {
+            "day": 13,
+            "service_net": 42900,
+            "turned_away": 0,
+            "units": 6,
+            "wallet": 784150
+          },
+          {
+            "day": 14,
+            "service_net": 58200,
+            "turned_away": 0,
+            "units": 8,
+            "wallet": 842350
+          }
+        ],
+        "final_wallet": 842350,
+        "helper_wages": 0,
+        "id": "slow_bench",
+        "menu": "slow",
+        "policy": "bench",
+        "promotions": [
+          {
+            "day": 4,
+            "rank": 2
+          },
+          {
+            "day": 11,
+            "rank": 3
+          }
+        ],
+        "purchases": [
+          {
+            "action": "facility:bench_1",
+            "cost": 12000,
+            "day": 4
+          },
+          {
+            "action": "facility:bench_2",
+            "cost": 30000,
+            "day": 11
+          }
+        ],
+        "snapshot_sha256": {
+          "day-01.json": "0a98c878c1d2b7d9236387fd9aff35d3a98a9549909e4caeb6785fc5e22a27e7",
+          "day-02.json": "c5eba95f21fb3e28db0cee82f1e2867c1968479c3bc0a2b421098e03d0acc2f6",
+          "day-03.json": "8647c721ad7b6d49a97d1c04d2dddef94fdc888f71bfe975516bf8660bfa3ead",
+          "day-04.json": "a7b1c7d9161ef7e8ae83bf49e046d063aabe9c8a704c3578607ae3641a5b0123",
+          "day-05.json": "6f395d90ae8dc979f7872eafe6ab4bf12757edffb669330255b6267cfd8fdad5",
+          "day-06.json": "a04c9f9b82e4465ff1d0a0271a1bc75db2473a46390d272064011cd212b2ab74",
+          "day-07.json": "5b8a2c8a54cdbd02311462f46def5a1c49322bc021675db7a8834dee8eb3cfab",
+          "day-08.json": "e18dfec32b4dcf5c362b78c6987bff5556c8f2b1ed58b706b03cc4e7308e413a",
+          "day-09.json": "6d669a6319d2d3c06d17ac87feed0371d7c217406e66f82843c2a55d10fd35eb",
+          "day-10.json": "7b8641d0aba448402236d19a03b1b80175afaf51ecb5fa1411bdcd4328739535",
+          "day-11.json": "cf9bb4562d1e3cac8eadf5015077161c5bb02334e0afc58d95c1b32b563c79a5",
+          "day-12.json": "c43e37afe725e0e6cfb1d1b59c0e02986d4184dd6d08441223a498015ba008a0",
+          "day-13.json": "1fe9f8e02e956dbc1d535522c442ee3d48b955c02b910a2eac052394eb325f1d",
+          "day-14.json": "e5e2a2b3912519a5aff7271559bb5559df90664fb92d316ef77dded924123541"
+        },
+        "totals": {
+          "facility": -42000,
+          "hire": 0,
+          "research": 21000,
+          "service_net": 845400,
+          "training": 0,
+          "trial": -12050
+        },
+        "turned_away": 0,
+        "units": 116,
+        "units_delta_vs_none": 0,
+        "wallet_delta_vs_none": -42000
+      },
+      {
+        "daily": [
+          {
+            "day": 1,
+            "service_net": 50550,
+            "turned_away": 0,
+            "units": 7,
+            "wallet": 78450
+          },
+          {
+            "day": 2,
+            "service_net": 58200,
+            "turned_away": 0,
+            "units": 8,
+            "wallet": 137330
+          },
+          {
+            "day": 3,
+            "service_net": 65850,
+            "turned_away": 0,
+            "units": 9,
+            "wallet": 203800
+          },
+          {
+            "day": 4,
+            "service_net": 73500,
+            "turned_away": 0,
+            "units": 10,
+            "wallet": 219950
+          },
+          {
+            "day": 5,
+            "service_net": 73500,
+            "turned_away": 0,
+            "units": 10,
+            "wallet": 296930
+          },
+          {
+            "day": 6,
+            "service_net": 42900,
+            "turned_away": 0,
+            "units": 6,
+            "wallet": 343450
+          },
+          {
+            "day": 7,
+            "service_net": 58200,
+            "turned_away": 0,
+            "units": 8,
+            "wallet": 401650
+          },
+          {
+            "day": 8,
+            "service_net": 50550,
+            "turned_away": 0,
+            "units": 7,
+            "wallet": 452200
+          },
+          {
+            "day": 9,
+            "service_net": 58200,
+            "turned_away": 0,
+            "units": 8,
+            "wallet": 510400
+          },
+          {
+            "day": 10,
+            "service_net": 65850,
+            "turned_away": 0,
+            "units": 9,
+            "wallet": 576250
+          },
+          {
+            "day": 11,
+            "service_net": 73500,
+            "turned_away": 0,
+            "units": 10,
+            "wallet": 649750
+          },
+          {
+            "day": 12,
+            "service_net": 73500,
+            "turned_away": 0,
+            "units": 10,
+            "wallet": 723250
+          },
+          {
+            "day": 13,
+            "service_net": 42900,
+            "turned_away": 0,
+            "units": 6,
+            "wallet": 766150
+          },
+          {
+            "day": 14,
+            "service_net": 58200,
+            "turned_away": 0,
+            "units": 8,
+            "wallet": 824350
+          }
+        ],
+        "final_wallet": 824350,
+        "helper_wages": 0,
+        "id": "slow_seats",
+        "menu": "slow",
+        "policy": "seats",
+        "promotions": [
+          {
+            "day": 4,
+            "rank": 2
+          },
+          {
+            "day": 11,
+            "rank": 3
+          }
+        ],
+        "purchases": [
+          {
+            "action": "expand",
+            "cost": 60000,
+            "day": 4
+          }
+        ],
+        "snapshot_sha256": {
+          "day-01.json": "0a98c878c1d2b7d9236387fd9aff35d3a98a9549909e4caeb6785fc5e22a27e7",
+          "day-02.json": "c5eba95f21fb3e28db0cee82f1e2867c1968479c3bc0a2b421098e03d0acc2f6",
+          "day-03.json": "8647c721ad7b6d49a97d1c04d2dddef94fdc888f71bfe975516bf8660bfa3ead",
+          "day-04.json": "789e1227e37f1cd4a5740094544e6117f39460831b9012b8bbc3f132cda36042",
+          "day-05.json": "acc231b8d7200d447ffb9e80932b3b30185c16ccfa299233b042eb0ad1a8e729",
+          "day-06.json": "329fc8113d4a7aeb09062f2c12d4bda5895bc73b4a4d6a4ee37f0ff463477237",
+          "day-07.json": "e27615dc467310a5439d909d8002761c4cc537a6614c79e1b11bf1522f9661fd",
+          "day-08.json": "9e96b5d15175299cca4d0d5bc0fdabe233f1f720d4b3e0b0bd3ee64b26065870",
+          "day-09.json": "5e02913c0d07f661daea96beafaa04aa8c07e5acf487495cf281c4b2715c50b8",
+          "day-10.json": "830c5e3f2b9c2860d4d7da839e29109c14c07afd95c2e5a2ff4151c7a74bea07",
+          "day-11.json": "75b02101d6a1a04efa197902e972d194d289096080f0229621d85ef05ca6d053",
+          "day-12.json": "76b77b1444ae9720b2f068233b7cf846a4825e53c2605b1c549219d667914068",
+          "day-13.json": "c4dd368f1fa748c2187ca1b02d285b77d3b05c3dc6ccd2fc7a6d4a4de6b24dce",
+          "day-14.json": "57a624476b5414f09a5f0b44f0421d86084d6f967f9f6643731d71b6e4a33a33"
+        },
+        "totals": {
+          "facility": -60000,
+          "hire": 0,
+          "research": 21000,
+          "service_net": 845400,
+          "training": 0,
+          "trial": -12050
+        },
+        "turned_away": 0,
+        "units": 116,
+        "units_delta_vs_none": 0,
+        "wallet_delta_vs_none": -60000
+      },
+      {
+        "daily": [
+          {
+            "day": 1,
+            "service_net": 50550,
+            "turned_away": 0,
+            "units": 7,
+            "wallet": 78450
+          },
+          {
+            "day": 2,
+            "service_net": 58200,
+            "turned_away": 0,
+            "units": 8,
+            "wallet": 137330
+          },
+          {
+            "day": 3,
+            "service_net": 65850,
+            "turned_away": 0,
+            "units": 9,
+            "wallet": 203800
+          },
+          {
+            "day": 4,
+            "service_net": 80550,
+            "turned_away": 0,
+            "units": 11,
+            "wallet": 264000
+          },
+          {
+            "day": 5,
+            "service_net": 88200,
+            "turned_away": 0,
+            "units": 12,
+            "wallet": 355680
+          },
+          {
+            "day": 6,
+            "service_net": 49950,
+            "turned_away": 0,
+            "units": 7,
+            "wallet": 409250
+          },
+          {
+            "day": 7,
+            "service_net": 65250,
+            "turned_away": 0,
+            "units": 9,
+            "wallet": 474500
+          },
+          {
+            "day": 8,
+            "service_net": 65250,
+            "turned_away": 0,
+            "units": 9,
+            "wallet": 539750
+          },
+          {
+            "day": 9,
+            "service_net": 65100,
+            "turned_away": 0,
+            "units": 9,
+            "wallet": 600850
+          },
+          {
+            "day": 10,
+            "service_net": 72750,
+            "turned_away": 0,
+            "units": 10,
+            "wallet": 673600
+          },
+          {
+            "day": 11,
+            "service_net": 80400,
+            "turned_away": 0,
+            "units": 11,
+            "wallet": 754000
+          },
+          {
+            "day": 12,
+            "service_net": 88050,
+            "turned_away": 0,
+            "units": 12,
+            "wallet": 842050
+          },
+          {
+            "day": 13,
+            "service_net": 49800,
+            "turned_away": 0,
+            "units": 7,
+            "wallet": 891850
+          },
+          {
+            "day": 14,
+            "service_net": 65100,
+            "turned_away": 0,
+            "units": 9,
+            "wallet": 956950
+          }
+        ],
+        "final_wallet": 956950,
+        "helper_wages": 7500,
+        "id": "slow_prep",
+        "menu": "slow",
+        "policy": "prep",
+        "promotions": [
+          {
+            "day": 4,
+            "rank": 2
+          },
+          {
+            "day": 11,
+            "rank": 3
+          }
+        ],
+        "purchases": [
+          {
+            "action": "facility:staff_1",
+            "cost": 15000,
+            "day": 4
+          },
+          {
+            "action": "hire:prep_assistant",
+            "cost": 8000,
+            "day": 4
+          },
+          {
+            "action": "train:prep_assistant:basic",
+            "cost": 4000,
+            "day": 9
+          }
+        ],
+        "snapshot_sha256": {
+          "day-01.json": "0a98c878c1d2b7d9236387fd9aff35d3a98a9549909e4caeb6785fc5e22a27e7",
+          "day-02.json": "c5eba95f21fb3e28db0cee82f1e2867c1968479c3bc0a2b421098e03d0acc2f6",
+          "day-03.json": "8647c721ad7b6d49a97d1c04d2dddef94fdc888f71bfe975516bf8660bfa3ead",
+          "day-04.json": "416c425fda27deb5e1beec64c8f7c31d8279b55f76dbb487569379480e5a5048",
+          "day-05.json": "6bf0a45da023a72ed426fffb622734a483daaeb6098379fc71c12a821b3c409e",
+          "day-06.json": "b94db3a8cad7bc94ebe0b9430c538562c50cf50d0e9d9af7c92a7061bb022e97",
+          "day-07.json": "f9814e70fc293937a172402d4b48b7010e3929c289eab998a0db09eafcefd4f0",
+          "day-08.json": "558a71ae696e68f2a0a4281207b59f94556484c0978476e4dfb61f131632d0ba",
+          "day-09.json": "cfd496030dcaa721d2d3a9431f064752a6563c36b494cfa02b47cf13988c472c",
+          "day-10.json": "d15a08e50d067e3491193ec84c9ddfea10fdb39decd8dc5c40a166ea417ab01a",
+          "day-11.json": "2e42810232dce700d5d1b43c339f85f2d86d7dcd49d7fc02a7b5fb12c42c5bcb",
+          "day-12.json": "34338f882555bb644bc6d155872893f697641c3160549874fce9f2fe7a81138d",
+          "day-13.json": "9262e459c9eb83e1d86c99696df1f95332e1c2be2ca03cd64f5d32c3cae343e7",
+          "day-14.json": "ce2c1f831906f72ba884646d7e6cd1f2b6f0b68c9a7858463df71d852392f01a"
+        },
+        "totals": {
+          "facility": -15000,
+          "hire": -8000,
+          "research": 21000,
+          "service_net": 945000,
+          "training": -4000,
+          "trial": -12050
+        },
+        "turned_away": 0,
+        "units": 130,
+        "units_delta_vs_none": 14,
+        "wallet_delta_vs_none": 72600
+      },
+      {
+        "daily": [
+          {
+            "day": 1,
+            "service_net": 50550,
+            "turned_away": 0,
+            "units": 7,
+            "wallet": 78450
+          },
+          {
+            "day": 2,
+            "service_net": 58200,
+            "turned_away": 0,
+            "units": 8,
+            "wallet": 137330
+          },
+          {
+            "day": 3,
+            "service_net": 65850,
+            "turned_away": 0,
+            "units": 9,
+            "wallet": 203800
+          },
+          {
+            "day": 4,
+            "service_net": 73000,
+            "turned_away": 0,
+            "units": 10,
+            "wallet": 257450
+          },
+          {
+            "day": 5,
+            "service_net": 73000,
+            "turned_away": 0,
+            "units": 10,
+            "wallet": 333930
+          },
+          {
+            "day": 6,
+            "service_net": 42400,
+            "turned_away": 0,
+            "units": 6,
+            "wallet": 379950
+          },
+          {
+            "day": 7,
+            "service_net": 57700,
+            "turned_away": 0,
+            "units": 8,
+            "wallet": 437650
+          },
+          {
+            "day": 8,
+            "service_net": 50050,
+            "turned_away": 0,
+            "units": 7,
+            "wallet": 487700
+          },
+          {
+            "day": 9,
+            "service_net": 57550,
+            "turned_away": 0,
+            "units": 8,
+            "wallet": 541250
+          },
+          {
+            "day": 10,
+            "service_net": 65200,
+            "turned_away": 0,
+            "units": 9,
+            "wallet": 606450
+          },
+          {
+            "day": 11,
+            "service_net": 72850,
+            "turned_away": 0,
+            "units": 10,
+            "wallet": 679300
+          },
+          {
+            "day": 12,
+            "service_net": 72850,
+            "turned_away": 0,
+            "units": 10,
+            "wallet": 752150
+          },
+          {
+            "day": 13,
+            "service_net": 42250,
+            "turned_away": 0,
+            "units": 6,
+            "wallet": 794400
+          },
+          {
+            "day": 14,
+            "service_net": 57550,
+            "turned_away": 0,
+            "units": 8,
+            "wallet": 851950
+          }
+        ],
+        "final_wallet": 851950,
+        "helper_wages": 6400,
+        "id": "slow_floor",
+        "menu": "slow",
+        "policy": "floor",
+        "promotions": [
+          {
+            "day": 4,
+            "rank": 2
+          },
+          {
+            "day": 11,
+            "rank": 3
+          }
+        ],
+        "purchases": [
+          {
+            "action": "facility:staff_1",
+            "cost": 15000,
+            "day": 4
+          },
+          {
+            "action": "hire:floor_assistant",
+            "cost": 7000,
+            "day": 4
+          },
+          {
+            "action": "train:floor_assistant:basic",
+            "cost": 4000,
+            "day": 9
+          }
+        ],
+        "snapshot_sha256": {
+          "day-01.json": "0a98c878c1d2b7d9236387fd9aff35d3a98a9549909e4caeb6785fc5e22a27e7",
+          "day-02.json": "c5eba95f21fb3e28db0cee82f1e2867c1968479c3bc0a2b421098e03d0acc2f6",
+          "day-03.json": "8647c721ad7b6d49a97d1c04d2dddef94fdc888f71bfe975516bf8660bfa3ead",
+          "day-04.json": "7f773a9dfc5946f921224e600c871cf9e7d825c541fa81ffa6bb57efe1a88958",
+          "day-05.json": "e08e0ab58230df268c2c5eddf74c6221de9f84d953d7a10ec48c937ffdbc2333",
+          "day-06.json": "c7135c612cac7c3f454c966fe2d3e94dd0e2e114a52f93510c260cefbf538ac0",
+          "day-07.json": "b7e78c6982d57e9fdbbc4c16b4458113d1f27b31e236d42db0c989869eaad554",
+          "day-08.json": "75b1adcb5ac1db43e2c176ec7ecf81de7cc6fff67ed3796ecff8040e633c769b",
+          "day-09.json": "ededcaaac6b4d59daf2eec1cd0c6ffd6334b1ae934868c29366a39a52a63e643",
+          "day-10.json": "f42ea26ebf1fe997b72208a21cb9b2f1da3b1a0dbf793213ec864d8fb1a776c1",
+          "day-11.json": "938be84d8578c7d56f8f18b621623bf5cc8d37f2e2ac0db2658fb2e994ecfcb0",
+          "day-12.json": "0ed71cb1c9a81d9c5a9d1f182bfd68ca9dd46dc618ba15f7cdb90923f41beab8",
+          "day-13.json": "c7a7f2556906b49c484a8d1535f390f4b0df699b036294ce5b52bd8bfef14fe7",
+          "day-14.json": "67727b0a6d6421af75330f9f0b9a40c85fd744a77cce1ba17c0961497aec02c5"
+        },
+        "totals": {
+          "facility": -15000,
+          "hire": -7000,
+          "research": 21000,
+          "service_net": 839000,
+          "training": -4000,
+          "trial": -12050
+        },
+        "turned_away": 0,
+        "units": 116,
+        "units_delta_vs_none": 0,
+        "wallet_delta_vs_none": -32400
+      },
+      {
+        "daily": [
+          {
+            "day": 1,
+            "service_net": 50550,
+            "turned_away": 0,
+            "units": 7,
+            "wallet": 78450
+          },
+          {
+            "day": 2,
+            "service_net": 58200,
+            "turned_away": 0,
+            "units": 8,
+            "wallet": 137330
+          },
+          {
+            "day": 3,
+            "service_net": 65850,
+            "turned_away": 0,
+            "units": 9,
+            "wallet": 203800
+          },
+          {
+            "day": 4,
+            "service_net": 80550,
+            "turned_away": 0,
+            "units": 11,
+            "wallet": 192000
+          },
+          {
+            "day": 5,
+            "service_net": 88200,
+            "turned_away": 0,
+            "units": 12,
+            "wallet": 283680
+          },
+          {
+            "day": 6,
+            "service_net": 49950,
+            "turned_away": 0,
+            "units": 7,
+            "wallet": 337250
+          },
+          {
+            "day": 7,
+            "service_net": 65250,
+            "turned_away": 0,
+            "units": 9,
+            "wallet": 402500
+          },
+          {
+            "day": 8,
+            "service_net": 65250,
+            "turned_away": 0,
+            "units": 9,
+            "wallet": 467750
+          },
+          {
+            "day": 9,
+            "service_net": 65100,
+            "turned_away": 0,
+            "units": 9,
+            "wallet": 528850
+          },
+          {
+            "day": 10,
+            "service_net": 72750,
+            "turned_away": 0,
+            "units": 10,
+            "wallet": 601600
+          },
+          {
+            "day": 11,
+            "service_net": 79900,
+            "turned_away": 0,
+            "units": 11,
+            "wallet": 608500
+          },
+          {
+            "day": 12,
+            "service_net": 87550,
+            "turned_away": 0,
+            "units": 12,
+            "wallet": 696050
+          },
+          {
+            "day": 13,
+            "service_net": 49300,
+            "turned_away": 0,
+            "units": 7,
+            "wallet": 745350
+          },
+          {
+            "day": 14,
+            "service_net": 64600,
+            "turned_away": 0,
+            "units": 9,
+            "wallet": 809950
+          }
+        ],
+        "final_wallet": 809950,
+        "helper_wages": 9500,
+        "id": "slow_all",
+        "menu": "slow",
+        "policy": "all",
+        "promotions": [
+          {
+            "day": 4,
+            "rank": 2
+          },
+          {
+            "day": 11,
+            "rank": 3
+          }
+        ],
+        "purchases": [
+          {
+            "action": "facility:bench_1",
+            "cost": 12000,
+            "day": 4
+          },
+          {
+            "action": "facility:staff_1",
+            "cost": 15000,
+            "day": 4
+          },
+          {
+            "action": "expand",
+            "cost": 60000,
+            "day": 4
+          },
+          {
+            "action": "hire:prep_assistant",
+            "cost": 8000,
+            "day": 4
+          },
+          {
+            "action": "train:prep_assistant:basic",
+            "cost": 4000,
+            "day": 9
+          },
+          {
+            "action": "facility:bench_2",
+            "cost": 30000,
+            "day": 11
+          },
+          {
+            "action": "facility:staff_2",
+            "cost": 36000,
+            "day": 11
+          },
+          {
+            "action": "hire:floor_assistant",
+            "cost": 7000,
+            "day": 11
+          }
+        ],
+        "snapshot_sha256": {
+          "day-01.json": "0a98c878c1d2b7d9236387fd9aff35d3a98a9549909e4caeb6785fc5e22a27e7",
+          "day-02.json": "c5eba95f21fb3e28db0cee82f1e2867c1968479c3bc0a2b421098e03d0acc2f6",
+          "day-03.json": "8647c721ad7b6d49a97d1c04d2dddef94fdc888f71bfe975516bf8660bfa3ead",
+          "day-04.json": "8ac0fb9373746cf3280c1717acce734acc76c067257f7bcc1b079aaa245f9fb2",
+          "day-05.json": "c5554ed93fd48c8c91978a74c6a0ae603d8a6b846d192bbea1dfa37cb9684f42",
+          "day-06.json": "43f59102ec6a0aaf13071f277b4f8dabb96300eb9fb2f8e5ecc6e6b77e45699a",
+          "day-07.json": "df039f591a23519f895deacf9c50f6ffce0213ae004d74e8678c5d8316f13d0e",
+          "day-08.json": "629839de96ab6b5bb5a6f601e8adc6443187674418ca6dd3a14ccbbe4d801026",
+          "day-09.json": "da460fd089f657ab86f64e30e863977590959fb4e871e24c7ebf956064ad3b5c",
+          "day-10.json": "6afea25276b8e6f9a94e1b8a98b98cb805a7e6a359c387b773c1a46fad8e2b39",
+          "day-11.json": "9e1b06af10f434dd4de7f382babbd76e70497d92ea63b12601ab171c5c7af697",
+          "day-12.json": "022e4769452ec6ed27f34b025cba41c4a1e3dd39ee5c1d80192d678b80808f9b",
+          "day-13.json": "f56962f93f408cd751bf8e2fa6f31b84e36df3249154422930d246bde630b5c6",
+          "day-14.json": "c341d9d2cd7d10e504eafe5048714cb0f0dadf190010671034e7523ad53035d4"
+        },
+        "totals": {
+          "facility": -153000,
+          "hire": -15000,
+          "research": 21000,
+          "service_net": 943000,
+          "training": -4000,
+          "trial": -12050
+        },
+        "turned_away": 0,
+        "units": 130,
+        "units_delta_vs_none": 14,
+        "wallet_delta_vs_none": -74400
+      }
+    ],
+    "failures": 0,
+    "independent_checks": 4002,
+    "report_sha256": "893bf43c7dd25566d8b9dc67dd1c2fbf6a4029849e839e703996706edb1c1231",
+    "runtime_days": 168
+  },
+  "logs_sha256": {
+    "work/campaign-audit-20261019-v1.log": "cacfe5021bfa5a336ccfe888c6d6dc565f19402ce1b7f40f1959f40dedcc80f5",
+    "work/campaign-audit-20261019-v2.log": "cc86faf2d02ec90826638695d2b3e6a162f0d0da99c2b35484fc12b1f324d309",
+    "work/campaign-audit-engine-signature-after.log": "77815a4534cd0a9061af4ccbc0f7235a883e661df4db0155d71808b0a7933c24",
+    "work/campaign-audit-existing-path-refusal.log": "dd50ad31c9e31e2216f2e191f4eeb9008aff052a00b298bb6e87ecd7961940d8"
+  },
+  "persistent_raw_output": "work/campaign-progression-20261019-v1",
+  "remaining": [
+    "v9/v10 actual native rendering",
+    "new player app acceptance",
+    "public PR/main merge",
+    "human play/fun",
+    "iPhone"
+  ],
+  "runtime_exit": 0,
+  "safety_checks": {
+    "existing_path_exit": 2,
+    "negative_cases": [
+      {
+        "case": "wallet",
+        "error": "ValueError: fast_none: day 1: final wallet",
+        "exit_code": 1
+      },
+      {
+        "case": "sales",
+        "error": "ValueError: fast_none: day 1: actual sales",
+        "exit_code": 1
+      },
+      {
+        "case": "snapshot",
+        "error": "ValueError: fast_none: day 1: disk hash",
+        "exit_code": 1
+      }
+    ],
+    "persistent_copy_files": 193,
+    "preserved_output_files": 193
+  },
+  "scope": "Diagnostic tools only; no gameplay/UI/save-schema/balance changes. No live-save access or native GUI execution.",
+  "script_errors": 0,
+  "source_head_before_audit": "9df035b324f4f486b471dabbdfe69d4a2980ae5f",
+  "source_sha256": {
+    "game/assets/fonts/GowunDodum-Regular.ttf": "a6e457933227483a11758fd0947bc74422a106d46f0bf057fdaa5af94a30067d",
+    "game/assets/fonts/GowunDodum-Regular.ttf.import": "da88a173d8646ce80879a30dc02756abbe3b5e61076ba1652084a68900e11104",
+    "game/assets/fonts/OFL.txt": "a7c73f9521cd646bbdfb6684c99a62311bbd7bce11898dc11ef0b3c69eda1aca",
+    "game/project.godot": "dc51a895d342d40ae50c597fa243266e6f5044507b3ef85e27b228c7c4f60d72",
+    "game/scenes/main.tscn": "024518581dfb9fc07e1bb5ba66316964b321c6eecd784758b5ea566ebe292af4",
+    "game/scripts/domain/contest_progress.gd": "3c0dd2c23c4c8963f1879b92e776213f8a4f57a3bbe46eaf610376d34187a480",
+    "game/scripts/domain/contest_progress.gd.uid": "d9d9dff87927cac42dbac088144b59395d3e92f8dcbf8f210fb0cd45b1e7b11b",
+    "game/scripts/domain/customer_catalog.gd": "7774ff905e1fd4110b28f5ce067d6ef020f77147331a32cdd712286c3df853e4",
+    "game/scripts/domain/customer_catalog.gd.uid": "f0f1ec5aa64ac8d303e9206bd338e44d2d66768580db0da2343cfd4836eddd9a",
+    "game/scripts/domain/data_check.gd": "1101fcec77f5e0bed464469428192a7696e2b420b55065c47ad27762bbfbb784",
+    "game/scripts/domain/data_check.gd.uid": "f7cba21ed3f3a5774c28c3cd4d0a784b44acabeead34c3a32dddb0e6facab491",
+    "game/scripts/domain/game_state.gd": "0e91a6dd154d15b73d741da4faa8eab29a643082fd35bb966b8140fe7b07c5c7",
+    "game/scripts/domain/game_state.gd.uid": "d24724aed0274f6104fdcadf6049584bea78705c9696f446175307791dc5b710",
+    "game/scripts/domain/ingredient_catalog.gd": "6454428240a5b1acc663324cf4d92adcc6a382d3c8bd41b3f5f3faf478c5721b",
+    "game/scripts/domain/ingredient_catalog.gd.uid": "388d11c65c86874d287b262618ff50fe2aca77e3e4c248fd2cd3d4342206256c",
+    "game/scripts/domain/ingredient_exploration.gd": "cc3068b257b8fd6eefa1b7cd4791c301e1ceed749b60b518dbe485e3f8c5add2",
+    "game/scripts/domain/ingredient_exploration.gd.uid": "1f0a69bfe20bbec6ee384c98ae24e7366d4c56a0b9724cb48e59005bb28dc70e",
+    "game/scripts/domain/menu_report.gd": "f953ad8b46703361143a100360cf1670f73f9060fe08afc715c1ce0dc6a9e210",
+    "game/scripts/domain/menu_report.gd.uid": "31f17ebae3215dec90a196fa466afcb1627c99cd31644dccf2121534f660e249",
+    "game/scripts/domain/menu_sales.gd": "267572c3afe628a878c4c1b4e87277a56f46aa54bcd0b5db9f35b0e1e7320911",
+    "game/scripts/domain/menu_sales.gd.uid": "27fff1048359801a90045f6b023dbb76225fadba9af932e31ac102e783e33fb5",
+    "game/scripts/domain/ramen_contest.gd": "f9084a6844eb3dc7e5a0bd589d541c9713f1f6eea9ddb8c4d6311f61d8571965",
+    "game/scripts/domain/ramen_contest.gd.uid": "e851e9e4282bc401e92eebbebdf2085e8a579a6a8901ae51148426972c58b255",
+    "game/scripts/domain/ramen_research.gd": "ef09a17a2a603e509050c94ca6bbffd33dd0a174e84c877e41142f4d2e905eb0",
+    "game/scripts/domain/ramen_research.gd.uid": "a77c27491e6ed0b14acf4ba2b17e07acb29416a14ff21ed5e566306b13a6c887",
+    "game/scripts/domain/recipe_evaluator.gd": "9492f008ef8399e9e4662b5e121c453c06861c84c0f51775f6681b79524e6de1",
+    "game/scripts/domain/recipe_evaluator.gd.uid": "94a37fbffc55e2e1aad342d19ea4f4f203c7128acd6d1e89a669060c1f2fcab1",
+    "game/scripts/domain/recipe_process.gd": "1be7f24720fa402c92e70d0533f48bf37c381693282a2776d9cd901876d5d5a7",
+    "game/scripts/domain/recipe_process.gd.uid": "1fced988385208b512db50a0000168ae7980967119a46b91bbd283480f087481",
+    "game/scripts/domain/regular_stories.gd": "cecbab691db41e3ada73f6642e5c878999a3f686072db63b5d19fef2d51c9a61",
+    "game/scripts/domain/regular_stories.gd.uid": "58f2dc92555c1874787f0e3c96cf947c8254d3894299e569497baf2478630a39",
+    "game/scripts/domain/regular_story_catalog.gd": "59d36c878835f31b064ec1f5c04f76832e477a22b4d98dea61e939b70275fcef",
+    "game/scripts/domain/regular_story_catalog.gd.uid": "33f7142109e51a1542b32ac8c2dfc7f05f3e958146c7b4a8890a28f3fce27e6b",
+    "game/scripts/domain/sales_simulator.gd": "63d19509fc931ea9c9c5eda4ab3b6b4081717b4ee9756210e995eb6dec9cf0ff",
+    "game/scripts/domain/sales_simulator.gd.uid": "d017a82c4607830cf428a7f1c8448a413844b4e2f4a04a62498df8185d368caa",
+    "game/scripts/domain/service_session.gd": "afb471b695177e5038daa4ac4f0f0100de16188308a2f26bc3be03c02c61ff84",
+    "game/scripts/domain/service_session.gd.uid": "22ef060f79b93995e77c997aadf8712001bbae08f9b99dcb768a2fc444d0442c",
+    "game/scripts/domain/shop_growth.gd": "70555ad42a3a8b52fe7cc27eb047f3e87d34acac4b6632e291d067216013ea83",
+    "game/scripts/domain/shop_growth.gd.uid": "4edc075c1675f517238ccd691f7198d31b757339ff485f4a04038aae39e4fc1d",
+    "game/scripts/domain/shop_staffing.gd": "5d464774d3a2b969d55eaa2dd1b75b0923f3baa7e898411874fa6db432228b35",
+    "game/scripts/domain/shop_staffing.gd.uid": "e1d53b09eaaea52551acd332943ad3748d74a16930a67bd75acd7fd969235605",
+    "game/scripts/domain/staff_training.gd": "10dc1f3e9050396d1ddec06420074c0c62b0fa23712b01177e4df8acaba8aced",
+    "game/scripts/domain/staff_training.gd.uid": "71c535ec37937ace9fa53aad425857d1667c885bc8f6bfed4888746e7c6f4bc1",
+    "game/scripts/services/data_location.gd": "6caf1b6faa4119c93252942716ce86ab96ffe89f5fb8fbed5ba83fb1f29a0382",
+    "game/scripts/services/data_location.gd.uid": "48b2b18791e7201f7ba3219092d40a94cb0dbc19ece53d8dad3758db283b98f0",
+    "game/scripts/services/save_service.gd": "dbd3ab88f674f611c2d69eb67119a99bd2ad608b50c6c600aaf39cdc988b9d57",
+    "game/scripts/services/save_service.gd.uid": "83f51962de4e6472f59854dc837c5b84ab8c41a63b2056cc5bd2182789a64e63",
+    "game/scripts/ui/bowl_view.gd": "df1a6585ee8bcf27162f2ab4bb0da1bddc3d64efe3def80dcdf0f1d86e452ec1",
+    "game/scripts/ui/bowl_view.gd.uid": "c392422404452afaf0042a9fe4850f3c7ac29028cc94c3075deaa3f462ffe58d",
+    "game/scripts/ui/expedition_travel.gd": "06daa75107e2f7c3d53a4720b2dd7fd28c568a06b576279172d7b547ffb1c50e",
+    "game/scripts/ui/expedition_travel.gd.uid": "95f2de2e64084192bcc4007385e26e836d3ba5d33372a3e70f6809588e641fa9",
+    "game/scripts/ui/main.gd": "6900e502765d0e6e066e808900a289270b8f57c49f008c02f0ada1bb7c7d9840",
+    "game/scripts/ui/main.gd.uid": "4c843d7e87a7f840dd7fb476f9b92ae9f85ebe1aceff93785e0a7501ac8f623a",
+    "game/scripts/ui/pixel_art.gd": "5df1dccda96e97180470e18e9193dd961098b762767884911a01c0756524d0fc",
+    "game/scripts/ui/pixel_art.gd.uid": "820a64bf221536fd19128d73082ae7efc9fa594177f11ed3dd3b940d45faca26",
+    "game/scripts/ui/shop_layout.gd": "2494c07572efe0fd33fc8d3e7ac33a9ffc11ec22e47ef8f0c4d4caaa5a447ffb",
+    "game/scripts/ui/shop_layout.gd.uid": "b161ec1a303b2552643e55dc41a738f381296679dd6ad494c028e2f2c43c7091",
+    "game/scripts/ui/shop_painter.gd": "4e4c0745454d3326df812894305a28c4d2d23cd24c0e070edbcc7b6e1bb88c35",
+    "game/scripts/ui/shop_painter.gd.uid": "315d0c51661b3b0ae371b66b41209a6d5343eda93ac9a4b44abb4adcffa99881",
+    "game/scripts/ui/shop_scene.gd": "010b8938043f3e566dc8bbeff9c532190379abe5cbf63f307036c7eafc385649",
+    "game/scripts/ui/shop_scene.gd.uid": "c3fca130d4e078daa7083a5efa1f3fa8c392ab8ada24d50725db1baa9a741880",
+    "game/scripts/ui/shop_view.gd": "542d152b9ac4011825b36e48d89b0e8051ea6d2ec9fd002b95419d23bcaa6c75",
+    "game/scripts/ui/shop_view.gd.uid": "f1194eab001c594a4f1d88da37ab8cc88e70163f4a709e72629b29fc49643113",
+    "game/scripts/ui/star_meter.gd": "caa1933f319a15dd76497c125dfec8a9d64011f8e8162cf17d8fa45473139070",
+    "game/scripts/ui/star_meter.gd.uid": "4dc6ce5b399e895a58e69e9c1f2a76d6be3365a57cd7d358b05be7179261779f",
+    "game/scripts/ui/tasting_work.gd": "89a6913f9ecad8892f6a44cee706bdec26b5b0aa94c91fdb2c0e751266eedec4",
+    "game/scripts/ui/tasting_work.gd.uid": "115a9a0049c8b0734d3a2d91aaad8314f91413828d7539899755081fe1203b3a",
+    "game/scripts/ui/tasting_work_view.gd": "6bca774413853b0c7514ea1b6cf37a24b84a88952ea8e85ea7b4a96d617d95a1",
+    "game/scripts/ui/tasting_work_view.gd.uid": "66ce0e9c185b26a16a5475885508d5b00a476dcc392198a1054a32d0634aee23",
+    "game/tests/contest_scoring_tests.gd": "95c24a17e69cf1498f8435cf90c5b35f61058ae435a42b136de2ff92f20ba557",
+    "game/tests/contest_scoring_tests.gd.uid": "61cc517e37d461c1bd6f920f80dbfec72222fd6b51dd1c20442ea90838a97486",
+    "game/tests/menu_sales_core_tests.gd": "dd1d6a061652ace04e34500a4d6d170be41bebea7be5b92d372e4ec76b33a6ed",
+    "game/tests/menu_sales_core_tests.gd.uid": "90bbf52854e5b394945b17408dbf2c197e71b1aaa730bc26d892a6f266454983",
+    "game/tests/qa_capture.gd": "6901e79435bb7e7898a5f4371e808e7ff4ccb9a7a098a511b04d7dfb6b610f54",
+    "game/tests/qa_capture.gd.uid": "46b5a6fa9d45e3adc90a609f3183b24097f44cc0929b6e32e55945720ac06618",
+    "game/tests/recipe_process_core_tests.gd": "b8f92c1b8840b6dbac0a819c7c9ca7a9d10887d2c5dec042cab0dfb9a87d272d",
+    "game/tests/recipe_process_core_tests.gd.uid": "86e72332aaf5df57bbb56119cab074ee0ec273e13e4f27f1ff2fc4bc5a65d885",
+    "game/tests/regular_story_core_tests.gd": "6d292cb7ac02dbae05fce5cdd4ffb8ec969e1f3720d9417c9a1af05b83ffc5d7",
+    "game/tests/regular_story_core_tests.gd.uid": "a88c04156013cdbe81b5938de68c0068616113757e0fea34e3db68347b92f8c2",
+    "game/tests/regular_story_fixtures.gd": "39285aded025da4da9c16686d0b0b8003d80cf4351939fe459b6675b3a53f2be",
+    "game/tests/regular_story_fixtures.gd.uid": "97a352c03eeb0b99965fc847e31fef258e2d7f8c69d1ab9238e0bee0d0e9c6f2",
+    "game/tests/run_tests.gd": "d49aef877c7d5e3339cb4c6b81b767ce54f5b0c82b7e80a5e6d9e7176bf5cf75",
+    "game/tests/run_tests.gd.uid": "fccfb5f77972907a479b7fe7de13df1942b01afd5f00c0c4b84d361b5707cc89",
+    "game/tests/staff_training_core_tests.gd": "7b756cb79654c25dbd28a90ce4e4ba925aa36b8702d1e40d3b409b0781706dcc",
+    "game/tests/staff_training_core_tests.gd.uid": "e8e270a8884886c8e64d70e20ac8d121e69f1db7734a9a2273caaee7fa9aafb9",
+    "game/tools/audit_campaign_progression.gd": "21352ab1f1c7a06acc83eac5690d33f78ddb4f32cc79a6bc30e3ae1684a8730a",
+    "game/tools/verify_campaign_audit.py": "393c490bb89f43a0a31b84bc850e63430eeee77e4e4e985e17220fd394f750c9"
+  }
+}

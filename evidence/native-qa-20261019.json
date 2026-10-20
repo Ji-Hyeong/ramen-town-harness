@@ -1,0 +1,53 @@
+{
+  "date": "2026-10-19",
+  "status": "recovery complete; native execution blocked before engine start",
+  "base_commit": "5cfbeea94162b62136cb059e48d2c61a7a92c190",
+  "recovered_source_files": 85,
+  "recovered_source_hashes_equal_checkpoint": true,
+  "preserved_remaining_files": 1000,
+  "preserved_files_hashes_equal_original": true,
+  "new_repository": "work/repos/ramen-notebook-20261019",
+  "preserved_folder": "work/preserved-temp-notebook-20261019",
+  "recovery_source_remote_preserved": true,
+  "origin": "https://github.com/Ji-Hyeong/ramen-town-harness.git",
+  "source_code_changed": false,
+  "builder": {
+    "path": "game/tools/build_qa_app.py",
+    "output": "work/native-qa-20261019-v1",
+    "exit_code": 1,
+    "stage": "strict copied vendor signature verification",
+    "engine_executed": false,
+    "pck_created": false,
+    "qa_app_created": false,
+    "native_screenshots": 0
+  },
+  "copied_engine_archive_comparison": {
+    "matching_files": 80,
+    "missing": [],
+    "changed": [],
+    "extra": [],
+    "signature_validity_confirmed": false
+  },
+  "permission_reports": [
+    "user switched to Ask for approval",
+    "user switched to Full access"
+  ],
+  "effective_tool_policy_after_each_change": {
+    "sandbox_approval": false,
+    "rules": false,
+    "request_permissions": true,
+    "scoped_permission_tool_exposed": false,
+    "escalated_command": "rejected before execution/approval prompt"
+  },
+  "cause_of_signature_failure": "undetermined; cannot compare outside restricted execution context",
+  "bypass_or_resigning": false,
+  "logs": {
+    "notebook-native-prep-20261019-v1.log": "bc7337ff2c034d4fec8c569e00f4861d0df319c9202e1e74ff3bda46f400668a",
+    "native-qa-20261019-v1/prep/engine-signature.log": "1ccbf1735522ffea49bf754d1a47ffe9cc34a5c7893997bf87de647492c1b999",
+    "native-qa-20261019-v1/prep/FAILED.txt": "cc4df879e27f9aec73f4b104d75838cbed0f213a05b9b54759ea236d3f4a7a49"
+  },
+  "live_save_accessed": false,
+  "player_app_changed": false,
+  "pushed": false,
+  "merged": false
+}

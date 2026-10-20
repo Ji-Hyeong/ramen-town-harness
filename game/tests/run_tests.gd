@@ -29,6 +29,9 @@ const Contest = preload("res://scripts/domain/ramen_contest.gd")
 const ContestProgress = preload("res://scripts/domain/contest_progress.gd")
 const MenuSales = preload("res://scripts/domain/menu_sales.gd")
 const ProcessRules = preload("res://scripts/domain/recipe_process.gd")
+const StoryCatalog = preload("res://scripts/domain/regular_story_catalog.gd")
+const Stories = preload("res://scripts/domain/regular_stories.gd")
+const StoryFixtures = preload("res://tests/regular_story_fixtures.gd")
 
 const ARG: String = "--test-data-dir="
 
@@ -104,6 +107,11 @@ func _initialize() -> void:
 		test_process_config, test_process_evaluation, test_process_state_revision,
 		test_process_work_duration, test_process_service_and_contest,
 		test_process_save_validation, test_process_bowl_art,
+		test_story_witnesses, test_story_start_and_atomic, test_story_all_routes,
+		test_story_wrong_menu_and_customer, test_story_busy_and_funds, test_story_persistence,
+		test_story_three_customers,
+		test_taste_achievement_persistence, test_taste_achievement_rejections, test_notebook_version_limits,
+		test_hiring_preview, test_hiring_preview_context,
 	]
 	var ran: int = 0
 	for t in tests:
@@ -132,6 +140,189 @@ func _check(cond: bool, message: String) -> void:
 
 func _end() -> void:
 	_finished = true
+
+
+func _story_taste(s: GameStateScript, cfg: Dictionary, name: String) -> int:
+	s.start_new_recipe()
+	for slot in ["broth","tare","oil","noodle","cook"]:
+		_check(bool(s.set_draft_choice(slot,cfg[slot])["ok"]), "사연 메뉴 재료")
+	_check(bool(s.set_draft_toppings(cfg["toppings"])["ok"]), "사연 토핑")
+	s.set_draft_price(cfg["price"])
+	s.set_draft_name(name)
+	_check(bool(s.taste()["ok"]), "사연 메뉴 실제 시식")
+	return s.selected_record_id
+
+
+func _story_started(customer: String, route: String) -> GameStateScript:
+	var s: GameStateScript = _state_with_wallet(500000)
+	s.taste()
+	_check(bool(s.serve()["ok"]) and s.day == 2, "첫 영업 이후 사연 해금")
+	_check(bool(s.start_story(customer,route)["ok"]), "사연 방향 수락")
+	return s
+
+
+func test_story_witnesses() -> void:
+	for customer in StoryCatalog.ids():
+		for route in StoryCatalog.story(customer)["routes"]:
+			for chapter in 2:
+				var cfg: Dictionary = StoryFixtures.config(customer,route["id"],chapter)
+				var metrics: Dictionary = Stories.metrics(customer,cfg)
+				_check(StoryCatalog.assess(customer,route["id"],chapter,metrics)["all_met"], "모든12단계 실제 재료/평가기로 달성 가능")
+	_end()
+
+
+func test_story_start_and_atomic() -> void:
+	var s: GameStateScript = GameStateScript.new()
+	var before: String = _json(s)
+	_check(not s.start_story("dohyun","hearty")["ok"] and _json(s) == before, "첫 영업 전 사연 거부")
+	s.taste()
+	s.serve()
+	before = _json(s)
+	_check(not s.start_story("bad","hearty")["ok"] and not s.start_story("dohyun","bad")["ok"] and _json(s) == before, "미지 단골/선택 원자 거부")
+	var cash: int = s.wallet
+	_check(s.start_story("dohyun","hearty")["ok"] and s.wallet == cash, "방향 선택 무료")
+	before = _json(s)
+	_check(not s.start_story("dohyun","quick")["ok"] and _json(s) == before, "선택 이후 다른 분기 덮기 금지")
+	var arcs: Array = s.story_arcs()
+	arcs[0]["route"] = "bad"
+	_check(s.story_arc("dohyun")["route"] == "hearty", "외부 진행 사본 불변")
+	var id: int = _story_taste(s,StoryFixtures.config("dohyun","hearty",0),"이야기 첫 국물")
+	before = _json(s)
+	_check(not s.complete_story("dohyun",id)["ok"] and _json(s) == before, "시식만/이전 영업으로 답례 없음")
+	_end()
+
+
+func test_story_all_routes() -> void:
+	for customer in StoryCatalog.ids():
+		for route in StoryCatalog.story(customer)["routes"]:
+			var s: GameStateScript = _story_started(customer,route["id"])
+			for chapter in 2:
+				var id: int = _story_taste(s,StoryFixtures.config(customer,route["id"],chapter),"사연 "+str(chapter+1))
+				var before: String = _json(s)
+				_check(not s.complete_story(customer,id)["ok"] and _json(s)==before, "각 장은 수락/첫 답례 이후 새 영업 필요")
+				_check(s.begin_service()["ok"], "실제 사연 영업 시작")
+				s.active_session().run_to_end()
+				_check(s.settle_service()["ok"], "먹기 완료 후 실제 영업 정산")
+				var wallet: int = s.wallet
+				_check(s.story_check(customer,id)["all_met"] and s.complete_story(customer,id)["ok"] and s.wallet == wallet+Stories.REWARDS[chapter], "실제 해당 메뉴/손님 완료 뒤 답례 한번")
+				before = _json(s)
+				_check(not s.complete_story(customer,id)["ok"] and _json(s)==before, "같은 메뉴/보고/장 재호출 무보상")
+				var back: GameStateScript = GameStateScript.new()
+				_check(back.load_from_dict(JSON.parse_string(_json(s))) == "" and _json(back)==_json(s), "두 장 각각 JSON 왕복")
+			_check(s.story_arc(customer)["receipts"].size()==2, "선택한 결말 두 장 완료")
+	_end()
+
+
+func test_story_wrong_menu_and_customer() -> void:
+	var s: GameStateScript = _menu_state()
+	_check(s.start_story("dohyun","hearty")["ok"], "복수 영업 사연 시작")
+	var id: int = _story_taste(s,StoryFixtures.config("dohyun","hearty",0),"사연 판매 제외")
+	_check(s.serve()["ok"], "고정 목록으로만 실제 메뉴 정산")
+	var before: String = _json(s)
+	_check(not s.complete_story("dohyun",id)["ok"] and _json(s)==before, "다른 메뉴가 팔렸어도 선택 메뉴는 미완료")
+	_check(s.set_selling_menus([id,s.pinned_menu_ids()[0]])["ok"] and s.serve()["ok"], "사연 메뉴를 정확히 판매 목록에 포함")
+	_check(s.complete_story("dohyun",id)["ok"], "복수메뉴의 정확한 손님/메뉴 완료 인정")
+	var report: Dictionary = s.last_report.duplicate(true)
+	for row in report["menus"]:
+		row["by_source"]["dohyun"] = 0
+	_check(Stories.served(report,s.get_record(id),"dohyun")==0, "전체 판매가 있어도 해당 손님 완료0이면 인정 안 함")
+	var other: Dictionary = s.get_record(id)
+	other["record_id"] += 100
+	_check(Stories.served(s.last_report,other,"dohyun")==0, "이름/구성이 같아도 다른 기록은 인정 안 함")
+	var zero: GameStateScript = _story_started("maru","budget")
+	var expensive: Dictionary = StoryFixtures.config("maru","budget",0)
+	expensive["price"] = Catalog.PRICE_MAX
+	var zero_id: int = _story_taste(zero,expensive,"방문하지 않는 가격")
+	_check(zero.serve()["ok"] and int(zero.last_report["by_source"]["maru"])==0 and Stories.served(zero.last_report,zero.get_record(zero_id),"maru")==0, "실제 가격 상한 영업에서 마루 완료0그릇")
+	before = _json(zero)
+	_check(not zero.complete_story("maru",zero_id)["ok"] and _json(zero)==before, "실제0그릇 영업도 답례 없음")
+	_end()
+
+
+func test_story_busy_and_funds() -> void:
+	var s: GameStateScript = _story_started("hayoung","aroma")
+	var id: int = _story_taste(s,StoryFixtures.config("hayoung","aroma",0),"향의 약속")
+	s.begin_service()
+	var before: String = _json(s)
+	_check(not s.complete_story("hayoung",id)["ok"] and not s.start_story("maru","budget")["ok"] and _json(s)==before, "영업 중 사연 거래 원자 거부")
+	s.cancel_service()
+	_check(not s.story_check("hayoung",id)["all_met"], "영업 중단은 대접 완료가 아님")
+	_check(s.start_expedition("market")["ok"], "사연 중 탐색 시작")
+	before = _json(s)
+	_check(not s.complete_story("hayoung",id)["ok"] and not s.start_story("maru","budget")["ok"] and _json(s)==before, "탐색 중에도 사연 거래 원자 거부")
+	_check(s.retire_expedition()["ok"], "탐색 포기 뒤 정상 영업 복귀")
+	s.serve()
+	s.wallet = GameStateScript.MAX_WALLET-1999
+	before = _json(s)
+	_check(not s.complete_story("hayoung",id)["ok"] and _json(s)==before, "답례 지갑 상한 원자 거부")
+	s.wallet -= 1
+	_check(s.complete_story("hayoung",id)["ok"] and s.wallet==GameStateScript.MAX_WALLET, "정확한 지갑 상한 허용")
+	_end()
+
+
+func test_story_persistence() -> void:
+	var s: GameStateScript = _story_started("maru","budget")
+	var id: int = _story_taste(s,StoryFixtures.config("maru","budget",0),"한 주의 식비")
+	s.serve()
+	_check(s.complete_story("maru",id)["ok"], "이야기 저장 준비")
+	var raw: Dictionary = JSON.parse_string(_json(s))
+	var target: GameStateScript = _populated_state()
+	var before: String = _json(target)
+	for kind in ["unknown","duplicate","choice","float","bool","dates","units","config","snapshot","unmet","extra","oldversion","orphan","older_report","late_claim"]:
+		var d: Dictionary = raw.duplicate(true)
+		var arc: Dictionary = d["stories"]["arcs"][0]
+		var e: Dictionary = arc["receipts"][0]
+		match kind:
+			"unknown": arc["customer"]="bad"
+			"duplicate": d["stories"]["arcs"].append(arc.duplicate(true))
+			"choice": arc["route"]="bad"
+			"float": e["day"]=3.5
+			"bool": e["units"]=true
+			"dates": e["service_day"]=1
+			"units": e["units"]=199
+			"config": e["config"]["price"]=0
+			"snapshot": e["name"]="다른 이름"
+			"unmet": e["config"]["price"]=9000
+			"extra": arc["extra"]=0
+			"oldversion": d["schema_version"]=8
+			"orphan": d["last_report"]={}
+			"older_report": d["last_report"]["day"]=1
+			"late_claim":
+				d["day"]+=1
+				e["day"]+=1
+		_check(target.load_from_dict(d)!="" and _json(target)==before, "단골 불가능 저장 원자 거부 "+kind)
+	_check(s.delete_record(id)["ok"], "메뉴 삭제는 과거 사연을 지우지 않음")
+	var saver: SaveServiceScript = SaveServiceScript.new(_case_dir("stories"))
+	saver.remove_known_files()
+	_check(saver.save_state(s)["ok"], "삭제된 사연 메뉴 저장")
+	var back: GameStateScript = GameStateScript.new()
+	_check(saver.load_into(back)["status"]=="ok" and _json(back)==_json(s) and back.story_arc("maru")["receipts"][0]["config"]==s.story_arc("maru")["receipts"][0]["config"], "삭제된 과거 메뉴/사연/선택 왕복")
+	_cleanup_case(saver)
+	_end()
+
+
+func test_story_three_customers() -> void:
+	var s: GameStateScript = _state_with_wallet(500000)
+	s.taste()
+	s.serve()
+	var routes: Dictionary = {"dohyun":"hearty","hayoung":"aroma","maru":"budget"}
+	for customer in routes:
+		_check(s.start_story(customer,routes[customer])["ok"], "세 단골의 방향을 독립적으로 수락")
+	var thanks: int = 0
+	for chapter in 2:
+		for customer in routes:
+			var id: int = _story_taste(s,StoryFixtures.config(customer,routes[customer],chapter),str(customer)+str(chapter))
+			_check(s.serve()["ok"], "세 단골 교차 진행의 완료 영업")
+			var before: int = s.wallet
+			_check(s.complete_story(customer,id)["ok"], "다른 단골 진행과 독립인 답례")
+			thanks += s.wallet-before
+			_check(s.delete_record(id)["ok"], "완료 메뉴를 삭제해도 사연 보존/노트 용량 회복")
+	_check(thanks==18000 and s.story_arcs().size()==3, "세 사람의 여섯 답례는 정확히18000원")
+	for arc in s.story_arcs():
+		_check(arc["receipts"].size()==2, "교차 진행에서도 각 결말 두 장 유지")
+	var back: GameStateScript = GameStateScript.new()
+	_check(back.load_from_dict(JSON.parse_string(_json(s)))=="" and _json(back)==_json(s), "여섯 과거 메뉴를 삭제한 세 사연 전체 왕복")
+	_end()
 
 
 func test_process_config() -> void:
@@ -698,6 +889,8 @@ func test_training_legacy_v5() -> void:
 	raw["schema_version"] = 5
 	raw.erase("training")
 	raw.erase("shop")
+	raw.erase("stories")
+	raw.erase("taste_achievements")
 	var old: String = JSON.stringify(raw, "\t", true)
 	var dir: String = _case_dir("training_v5")
 	var saver: SaveServiceScript = SaveServiceScript.new(dir)
@@ -744,6 +937,7 @@ func test_training_invalid_saves() -> void:
 		_check(target.load_from_dict(d) != "" and _json(target) == before, "육성 불가능 저장 원자적 거부 " + kind)
 	var legacy: Dictionary = raw.duplicate(true)
 	legacy["schema_version"] = 5
+	legacy.erase("taste_achievements")
 	_check(target.load_from_dict(legacy) != "", "training 포함한 위장v5 거부")
 	_end()
 
@@ -958,6 +1152,8 @@ func test_contest_migration_v4() -> void:
 	v4.erase("contests")
 	v4.erase("training")
 	v4.erase("shop")
+	v4.erase("stories")
+	v4.erase("taste_achievements")
 	var dir: String = _case_dir("contest_v4")
 	var saver: SaveServiceScript = SaveServiceScript.new(dir)
 	saver.remove_known_files()
@@ -1482,8 +1678,8 @@ func test_revision_and_immutability() -> void:
 
 
 func test_duplicate_and_bounds() -> void:
-	# 적응: 노트 용량이 조리대 확장에서 파생되므로(기본 6) 30개 상한 시험은 실제 도메인 연산으로 만든 완전 성장 상태(용량 30)에서 한다.
-	# 이미 증인 기록 6개가 있으므로 개수 기준은 "처음 개수 + 새로 만든 개수"로 바꿨고, 검사하는 규칙(중복/가격 개정/30개 상한/삭제 후 재시식)은 그대로다.
+	# The existing six witnesses remain intact; fill the separate300-row archive
+	# using revisions rather than buying extra registered-menu slots.
 	var s: GameStateScript = _grown_state()
 	var base_count: int = s.record_count()
 	var w_start: int = s.wallet
@@ -1498,26 +1694,37 @@ func test_duplicate_and_bounds() -> void:
 	s.start_new_recipe()
 	s.set_draft_name("다른 이름 같은 구성")
 	_check(not bool(s.taste()["ok"]) and s.record_count() == base_count + 1, "이름만 달라도 같은 구성은 거부")
-	# 가격을 올려가며 개정해 30개를 채운다.
+	# Price/cook pairs provide enough distinct revisions to exercise the separate
+	# archive limit without violating the legal price range.
 	s.select_record(first_id)
-	var price: int = 9500
+	s.wallet = 2000000
 	var guard: int = 0
-	while s.record_count() < GameStateScript.MAX_RECORDS and guard < 100:
-		price += 100
-		s.set_draft_price(price)
+	while s.record_count() < GameStateScript.MAX_RECORDS and guard < 600:
+		s.set_draft_price(1000 + (guard % 291) * 100)
+		s.set_draft_choice("cook", Catalog.ITEMS["cook"][guard / 291]["id"])
 		var r: Dictionary = s.taste()
-		_check(bool(r["ok"]), "개정 시식 %d: %s" % [s.record_count(), str(r["message"])])
+		_check(bool(r["ok"]) or str(r["message"]).contains("이미 같은 구성"), "실험 이력 추가: " + str(r["message"]))
 		guard += 1
-	_check(s.record_count() == GameStateScript.MAX_RECORDS, "기록이 30개까지 쌓여야 해요: %d" % s.record_count())
+	_check(s.record_count() == 300, "개정 이력300개까지 보관")
 	var wallet_before: int = s.wallet
-	s.set_draft_price(price + 100)
+	s.set_draft_price(30000)
+	s.set_draft_choice("cook", Catalog.ITEMS["cook"][2]["id"])
 	var over: Dictionary = s.taste()
-	_check(not bool(over["ok"]) and s.record_count() == GameStateScript.MAX_RECORDS, "30개를 넘기면 거부")
+	_check(not bool(over["ok"]) and str(over["message"]).contains("300/300") and s.record_count() == 300, "보관 한도 거부/이유")
 	_check(s.wallet == wallet_before, "거부 시 자금 불변")
-	# 삭제 후에는 다시 시식 가능
+	var full: Dictionary = s.to_dict()
+	_check(JSON.stringify(full).to_utf8_buffer().size() < SaveServiceScript.MAX_BYTES, "최대 보관 이력이 저장 서비스 크기 제한 안에 있음")
+	var back: GameStateScript = GameStateScript.new()
+	_check(back.load_from_dict(full) == "" and _json(back) == _json(s), "300개 이력과 최고 증빙 왕복")
+	var saver: SaveServiceScript = SaveServiceScript.new(_case_dir("notebook_full_archive"))
+	saver.remove_known_files()
+	_check(bool(saver.save_state(s)["ok"]), "300개 실험 이력 실제 파일 저장")
+	var disk: GameStateScript = GameStateScript.new()
+	_check(saver.load_into(disk)["status"] == "ok" and _json(disk) == _json(s), "300개 보관함 실제 파일 재시작")
+	_cleanup_case(saver)
 	var last_id: int = int((s.records().back() as Dictionary)["record_id"])
 	_check(bool(s.delete_record(last_id)["ok"]), "삭제")
-	_check(bool(s.taste()["ok"]) and s.record_count() == GameStateScript.MAX_RECORDS, "삭제 후 시식 가능")
+	_check(bool(s.taste()["ok"]) and s.record_count() == 300, "정리 후 다시 시식")
 	_end()
 
 
@@ -3149,6 +3356,8 @@ func _as_legacy(src: Dictionary, version: int) -> Dictionary:
 	d.erase("contests")
 	d.erase("training")
 	d.erase("shop")
+	d.erase("stories")
+	d.erase("taste_achievements")
 	if version == 1:
 		d.erase("research")
 	for r in d["records"]:
@@ -3482,12 +3691,13 @@ func test_rank_promotion() -> void:
 	while s.day < 11:
 		_check(bool(s.serve()["ok"]), "영업 계속")
 	_check(bool(s.promotion_review()["eligible"]), "일수/연구/점수를 채우면 3단계 신청 가능(증인 여섯 기록)")
-	# 노트에서 기록을 모두 지우면 점수 조건이 다시 부족해지고, 증인을 다시 시식하면 채워진다(심사는 신청 순간의 기록만 본다).
+	# Deleting experiment rows must not revoke an earned tasting achievement.
+	var achievement_before: String = JSON.stringify(s.best_taste_records(), "", true)
 	for r2 in s.records():
 		s.delete_record(int((r2 as Dictionary)["record_id"]))
 	var empty_review: Dictionary = s.promotion_review()
-	_check(not bool(empty_review["eligible"]) and not bool(((empty_review["conditions"] as Array)[2] as Dictionary)["met"]), "기록이 없으면 점수 조건 부족")
-	_check(not bool(s.apply_promotion(3)["ok"]) and s.rank() == 2, "기록이 없으면 신청 거부")
+	_check(bool(empty_review["eligible"]) and bool(empty_review["conditions"][2]["met"]), "기록 정리 후에도 최고 성적 조건 유지")
+	_check(JSON.stringify(s.best_taste_records(), "", true) == achievement_before, "삭제가 증빙을 변경하지 않음")
 	for wid in ["dohyun_advanced", "hayoung_advanced", "maru_advanced"]:
 		_taste_as(s, Research.WITNESSES[wid], "재심사 " + wid)
 	var best: Dictionary = Growth.best_scores(s.records())
@@ -3527,7 +3737,7 @@ func test_facility_purchase() -> void:
 	_check(r2.record_capacity() == 6 and r2.topping_slots() == 1 and r2.staff_capacity() == 2, "승급만으로는 용량이 늘지 않아요")
 	# 구매 전 심사표의 효과 문구와 성공 메시지가 같아야 한다(구매 뒤 용량으로 다시 계산해 "2→2"가 되면 안 된다).
 	var expect_text: String = str(r2.facility_review("bench_1")["effect_text"])
-	_check(expect_text == "토핑 슬롯 1→2 · 노트 6→12", "구매 전 효과 문구: " + expect_text)
+	_check(expect_text == "토핑 슬롯 1→2 · 등록 메뉴 6→12종", "구매 전 효과 문구: " + expect_text)
 	var buy: Dictionary = r2.purchase_facility("bench_1")
 	_check(bool(buy["ok"]), "조리대 I 구매: " + str(buy["message"]))
 	_check(str(buy["message"]).find(expect_text) >= 0 and str(buy["message"]).find("2→2") < 0 and str(buy["message"]).find("12→12") < 0, "성공 메시지가 구매 전→후 변화를 그대로 알려요: " + str(buy["message"]))
@@ -3561,7 +3771,7 @@ func test_facility_purchase() -> void:
 	var w3: int = r3.wallet
 	_check(bool(r3.purchase_facility("bench_1")["ok"]), "조리대 I")
 	var bench2: Dictionary = r3.purchase_facility("bench_2")
-	_check(bool(bench2["ok"]) and str(bench2["message"]).find("토핑 슬롯 2→3 · 노트 12→30") >= 0, "조리대 II 성공 메시지: " + str(bench2["message"]))
+	_check(bool(bench2["ok"]) and str(bench2["message"]).find("토핑 슬롯 2→3 · 등록 메뉴 12→30종") >= 0, "조리대 II 성공 메시지: " + str(bench2["message"]))
 	_check(r3.wallet == w3 - 12000 - 30000 and r3.topping_slots() == 3 and r3.record_capacity() == 30, "조리대 II: 토핑 3, 노트 30, 총 42,000원")
 	# 자금 상한 근처에서도 정확히 차감.
 	r3.wallet = GameStateScript.MAX_WALLET
@@ -3777,56 +3987,72 @@ func test_staff_settlement_and_snapshot() -> void:
 
 func test_record_capacity_and_grandfather() -> void:
 	var s: GameStateScript = _state_with_wallet(500000)
-	_check(s.record_capacity() == 6, "기본 노트 용량 6")
-	s.set_draft_name("용량 시험")
-	for i in 6:
+	s.set_draft_name("개정 실험")
+	for i in 10:
 		s.set_draft_price(9000 + 100 * i)
-		_check(bool(s.taste()["ok"]), "개정 시식 %d" % i)
-	_check(s.record_count() == 6, "6개")
-	var w: int = s.wallet
-	s.set_draft_price(9700)
-	var full: String = _json(s)
-	var over: Dictionary = s.taste()
-	_check(not bool(over["ok"]) and str(over["message"]).find("6") >= 0 and _json(s) == full and s.wallet == w, "7번째는 거부, 자금/기록 불변")
-	_check(_grown_state(2).record_capacity() == 12 and _grown_state(3).record_capacity() == 30, "용량 12 / 30")
-	_check(GameStateScript.MAX_RECORDS == 30 and Growth.notebook_capacity(["bench_1", "bench_2"]) == 30, "절대 상한 30")
-
-	# grandfather: 예전 저장이 새 기본 용량(6)보다 많은 기록(8개)을 가졌다. 모두 보존되고 불러와지며, 새 시식만 막힌다.
+		_check(bool(s.taste()["ok"]), "시설 없이 같은 메뉴10회 시식")
+	_check(s.menu_count() == 1 and s.menu_capacity() == 6 and s.record_count() == 10 and s.record_history_capacity() == 300, "종류와 이력 분리")
+	for i in 5:
+		s.start_new_recipe()
+		s.set_draft_name("새 메뉴 %d" % i)
+		s.set_draft_price(11000 + i * 100)
+		_check(bool(s.taste()["ok"]), "새 종류 등록")
+	_check(s.menu_count() == 6 and s.record_count() == 15, "등록6종/이력15개")
+	s.start_new_recipe()
+	s.set_draft_name("일곱 번째")
+	s.set_draft_price(12000)
+	var before: String = _json(s)
+	var blocked: Dictionary = s.taste()
+	_check(not bool(blocked["ok"]) and str(blocked["message"]).contains("6/6종") and _json(s) == before, "새7종 거부/자금·번호·증빙 불변")
+	s.select_record(1)
+	s.set_draft_price(12100)
+	_check(bool(s.taste()["ok"]) and s.menu_count() == 6, "등록이 가득 차도 기존 메뉴 개정")
+	s.delete_record(1)
+	_check(s.menu_count() == 6, "첫 개정본만 지우면 등록 자리 유지")
+	var lineage: int = s.get_record(2)["lineage_id"]
+	for row in s.records():
+		if row["lineage_id"] == lineage:
+			_check(bool(s.delete_record(row["record_id"])["ok"]), "한 종류의 나머지 개정 정리")
+	_check(s.menu_count() == 5, "마지막 개정본 정리 때 한 자리 회수")
+	s.start_new_recipe()
+	s.set_draft_name("새로 등록")
+	s.set_draft_price(12200)
+	_check(bool(s.taste()["ok"]) and s.menu_count() == 6, "빈 자리 새 메뉴 등록")
+	_check(_grown_state(2).menu_capacity() == 12 and _grown_state(3).menu_capacity() == 30, "조리대가 종류 용량 확장")
+	for level in [2, 3]:
+		var expanded: GameStateScript = _grown_state(level)
+		for n in range(expanded.menu_count(), expanded.menu_capacity()):
+			expanded.start_new_recipe()
+			expanded.set_draft_name("확장 메뉴 %d" % n)
+			expanded.set_draft_price(20000 + n * 100)
+			_check(bool(expanded.taste()["ok"]), "시설별 실제 메뉴 종류 채우기")
+		expanded.start_new_recipe()
+		expanded.set_draft_name("확장 한도 초과")
+		expanded.set_draft_price(29000)
+		var at_limit: String = _json(expanded)
+		_check(not bool(expanded.taste()["ok"]) and _json(expanded) == at_limit, "12/30종 시설 한도 초과 원자 거부")
+	# An actual legacy-compatible8-family fixture above today's basic6 limit.
 	var g: GameStateScript = _grown_state(3)
-	g.start_new_recipe()
-	_apply_cfg(g, _rich_cfg())
-	g.set_draft_name("과거 레시피")
 	for i in 2:
-		g.set_draft_price(9500 + 100 * i)
-		_check(bool(g.taste()["ok"]), "과거 기록 추가 %d" % i)
-	_check(g.record_count() == 8, "전제: 기록 8개")
-	var src_records: String = str(g.records())
+		g.start_new_recipe()
+		g.set_draft_name("과거 메뉴 %d" % i)
+		g.set_draft_price(18000 + i * 100)
+		_check(bool(g.taste()["ok"]), "과거8종 fixture")
 	var legacy: Dictionary = _as_legacy(g.to_dict(), 2)
 	var keep: GameStateScript = GameStateScript.new()
-	_check(keep.load_from_dict(legacy) == "", "용량보다 많은 예전 저장도 불러와져요")
-	_check(keep.record_count() == 8 and str(keep.records()) == src_records, "기록/계통/개정/비교가 모두 그대로")
-	_check(keep.selected_record_id == g.selected_record_id and keep.wallet == g.wallet and keep.day == g.day and keep.research_points() == 21, "선택/자금/일차/연구 점수 보존")
-	_check(keep.rank() == 1 and keep.facilities_owned().is_empty() and keep.hired_staff().is_empty(), "예전 저장은 등급 1, 확장/직원 없음(공짜 성장 없음)")
-	_check(keep.record_capacity() == 6 and keep.topping_slots() == 1, "용량은 파생: 6, 토핑 1")
-	# 중복 구성 규칙에 걸리지 않도록 가격을 새로 정한 뒤 용량 규칙만 확인한다.
+	_check(keep.load_from_dict(legacy) == "" and keep.menu_count() == 8, "예전 초과8종을 모두 보존")
+	_check(str(keep.records()) == str(g.records()) and keep.menu_capacity() == 6 and keep.wallet == g.wallet and keep.rank() == 1, "개정·자금 보존/무료 성장 없음")
 	keep.set_draft_price(21000)
-	var k_snap: String = _json(keep)
-	var blocked: Dictionary = keep.taste()
-	_check(not bool(blocked["ok"]) and str(blocked["message"]).find("8/6") >= 0 and keep.record_count() == 8 and _json(keep) == k_snap, "초과 보관 중에는 새 시식 거부, 상태 불변: " + str(blocked["message"]))
-	# v3 로 저장했다 다시 불러와도 8개를 유지한다.
-	var rt: GameStateScript = GameStateScript.new()
-	_check(rt.load_from_dict(JSON.parse_string(JSON.stringify(keep.to_dict()))) == "" and rt.record_count() == 8, "v3 로 저장해도 8개 유지")
-	_check(bool(keep.select_record(int((keep.records()[7] as Dictionary)["record_id"]))["ok"]) and bool(keep.begin_service()["ok"]), "초과 보관 상태에서도 선택/영업은 정상")
-	keep.cancel_service()
-	# 삭제로 개수가 용량 아래(5개)로 내려가야 다시 시식할 수 있다.
-	for i in 3:
-		_check(bool(keep.delete_record(int((keep.records()[0] as Dictionary)["record_id"]))["ok"]), "삭제 %d" % i)
-	_check(keep.record_count() == 5, "5개")
+	_check(bool(keep.taste()["ok"]) and keep.menu_count() == 8, "초과 보관 중에도 기존 메뉴 개정")
 	keep.start_new_recipe()
-	keep.set_draft_name("새 시제품")
-	keep.set_draft_price(17000)
-	var fresh: Dictionary = keep.taste()
-	_check(bool(fresh["ok"]) and keep.record_count() == 6, "용량 아래로 내려오면 시식 가능: " + str(fresh["message"]))
+	keep.set_draft_name("용량 초과 새 종류")
+	keep.set_draft_price(22000)
+	before = _json(keep)
+	_check(not bool(keep.taste()["ok"]) and _json(keep) == before, "초과 상태 새 종류만 원자 거부")
+	var rt: GameStateScript = GameStateScript.new()
+	_check(rt.load_from_dict(keep.to_dict()) == "" and _json(rt) == _json(keep), "초과 보관과 증빙 재저장 왕복")
+	_check(bool(keep.select_record(keep.records()[0]["record_id"])["ok"]) and bool(keep.begin_service()["ok"]), "초과 보관 중 선택/영업 가능")
+	keep.cancel_service()
 	_end()
 
 
@@ -3884,6 +4110,8 @@ func test_schema_migration_v1_v2() -> void:
 	v2_new_cfg.erase("contests")
 	v2_new_cfg.erase("training")
 	v2_new_cfg.erase("shop")
+	v2_new_cfg.erase("stories")
+	v2_new_cfg.erase("taste_achievements")
 	_check(GameStateScript.new().load_from_dict(v2_new_cfg) != "", "toppings 배열을 쓴 v2 거부")
 	var v3_old_cfg: Dictionary = _as_legacy(_populated_state().to_dict(), 3)
 	v3_old_cfg["growth"] = v3["growth"]
@@ -4143,6 +4371,8 @@ func _as_v3(src: Dictionary) -> Dictionary:
 	d.erase("contests")
 	d.erase("training")
 	d.erase("shop")
+	d.erase("stories")
+	d.erase("taste_achievements")
 	return d
 
 
@@ -5490,4 +5720,185 @@ func test_shop_layout_and_art() -> void:
 					if icon.get_pixel(x, y).a > 0.0:
 						drawn = true
 			_check(drawn, "재료 아이콘이 비어 있어요: " + str((item as Dictionary)["id"]))
+	_end()
+
+
+# ---------- Persistent tasting evidence and version-specific archive bounds ----------
+func test_taste_achievement_persistence() -> void:
+	var s: GameStateScript = _ranked_state(2)
+	while s.day < 11:
+		_check(bool(s.serve()["ok"]), "증빙 영업일")
+	var before: String = JSON.stringify(s.best_taste_records(), "", true)
+	var external: Dictionary = s.best_taste_records()
+	external["dohyun"]["scores"]["dohyun"] = 0
+	_check(JSON.stringify(s.best_taste_records(), "", true) == before, "최고 증빙은 방어적 깊은 복사")
+	for row in s.records():
+		_check(bool(s.delete_record(row["record_id"])["ok"]), "증빙 원본 정리")
+	_check(s.record_count() == 0 and s.menu_count() == 0 and bool(s.promotion_review()["eligible"]), "모든 이력 정리 후에도 승급 조건 유지")
+	var saver: SaveServiceScript = SaveServiceScript.new(_case_dir("notebook_evidence"))
+	saver.remove_known_files()
+	_check(bool(saver.save_state(s)["ok"]), "삭제 후 증빙 저장")
+	var back: GameStateScript = GameStateScript.new()
+	_check(saver.load_into(back)["status"] == "ok" and _json(back) == _json(s), "삭제된 최고 성적 실제 파일 왕복")
+	var wallet_before: int = back.wallet
+	_check(bool(back.apply_promotion(3)["ok"]) and back.wallet == wallet_before, "재시작 후 증빙으로 승급/현금 지급 없음")
+	_cleanup_case(saver)
+	_end()
+
+
+func test_taste_achievement_rejections() -> void:
+	var source: GameStateScript = _ranked_state(2)
+	var original: Dictionary = source.to_dict()
+	var target: GameStateScript = _state_with_wallet(77777)
+	var unchanged: String = _json(target)
+	var cases: Array = ["missing", "extra", "type", "bool", "score", "date", "record", "lineage", "name", "config", "unlock", "toppings", "partial", "empty", "mismatch"]
+	for kind in cases:
+		var d: Dictionary = original.duplicate(true)
+		var proof: Dictionary = d["taste_achievements"]["dohyun"]
+		match kind:
+			"missing": d.erase("taste_achievements")
+			"extra": d["taste_achievements"]["unknown"] = {}
+			"type": d["taste_achievements"]["dohyun"] = []
+			"bool": proof["record_id"] = true
+			"score": proof["scores"]["dohyun"] = 100
+			"date": proof["tasted_day"] = d["day"] + 1
+			"record": proof["record_id"] = d["next_record_id"]
+			"lineage": proof["lineage_id"] = d["next_lineage_id"]
+			"name": proof["name"] = "변조된 최고 메뉴"
+			"config": proof["config"]["price"] = 0
+			"unlock": proof["config"]["oil"] = "oil_pepper"
+			"toppings": proof["config"]["toppings"] = ["topping_nori", "topping_egg"]
+			"partial": d["taste_achievements"]["hayoung"] = {}
+			"empty":
+				for id in Customers.ids(): d["taste_achievements"][id] = {}
+			"mismatch": proof["config"]["price"] += 100
+		_check(target.load_from_dict(d) != "" and _json(target) == unchanged, "불가능 최고 성적 원자 거부: " + kind)
+	# A correctly evaluated lower-scoring witness is invalid if another retained
+	# or historical tasting demonstrates a higher score for that customer.
+	var lowered: Dictionary = original.duplicate(true)
+	var weakest: Dictionary = source.records()[0]
+	for row in source.records():
+		if int(row["scores"]["dohyun"]) < int(weakest["scores"]["dohyun"]): weakest = row
+	_check(weakest["scores"]["dohyun"] < lowered["taste_achievements"]["dohyun"]["scores"]["dohyun"], "낮춘 최고 성적 fixture")
+	lowered["taste_achievements"]["dohyun"] = weakest
+	_check(target.load_from_dict(lowered) != "" and _json(target) == unchanged, "정상 구성이어도 최고 성적 누락 거부")
+	# Recalculate scores so these failures specifically exercise historical
+	# unlock/slot/method validation rather than the earlier score-integrity guard.
+	for kind in ["unlock", "slots", "method"]:
+		var locked: Dictionary = original.duplicate(true)
+		locked["records"] = []
+		locked["selected_record_id"] = 0
+		locked["last_feedback_record_id"] = 0
+		locked["draft"]["lineage_id"] = 0
+		var witness: Dictionary = original["records"][0].duplicate(true)
+		witness["comparison"] = {}
+		if kind == "unlock": witness["config"]["oil"] = "oil_pepper"
+		if kind == "slots": witness["config"]["toppings"] = ["topping_egg", "topping_nori"]
+		if kind == "method":
+			locked["growth"]["rank"] = 1
+			witness["config"]["process"] = {"broth":"rolling", "noodle":"standard"}
+		for row in Evaluator.evaluate(witness["config"])["customers"]:
+			witness["scores"][row["id"]] = int(row["score"])
+		for id in Customers.ids(): locked["taste_achievements"][id] = witness.duplicate(true)
+		var error: String = target.load_from_dict(locked)
+		_check(error.contains("아직 열리지 않은") and _json(target) == unchanged, "삭제된 최고 증빙 해금 검증: " + kind + " " + error)
+	_end()
+
+
+func test_notebook_version_limits() -> void:
+	var s: GameStateScript = _state_with_wallet(2000000)
+	s.set_draft_name("구버전 이력")
+	for i in 31:
+		s.set_draft_price(9000 + i * 100)
+		_check(bool(s.taste()["ok"]), "기본 시설에서31개 개정")
+	var modern: GameStateScript = GameStateScript.new()
+	_check(modern.load_from_dict(s.to_dict()) == "" and modern.record_count() == 31, "v10은31개 정상 이력 허용")
+	for version in range(3, 10):
+		var d: Dictionary = s.to_dict()
+		d.erase("taste_achievements")
+		d["schema_version"] = version
+		for pair in [["stories",9],["shop",7],["training",6],["contests",5],["exploration",4]]:
+			if version < pair[1]: d.erase(pair[0])
+		var target: GameStateScript = GameStateScript.new()
+		var before: String = _json(target)
+		var error: String = target.load_from_dict(d)
+		_check(error.contains("30") and _json(target) == before, "v%d은 과거30개 상한 유지" % version)
+	var many: Dictionary = s.to_dict()
+	for i in many["records"].size():
+		many["records"][i]["lineage_id"] = i + 1
+		many["records"][i]["name"] = "다른 종류 %d" % i
+	many["next_lineage_id"] = 32
+	var over: GameStateScript = GameStateScript.new()
+	_check(over.load_from_dict(many).contains("등록 메뉴"), "종류 절대 상한30 유지")
+	_end()
+
+
+## Match the displayed conditional change against a REAL same-day hire, keeping
+## recipes/day constant. This guards costs, trained coworkers and two-menu use.
+func test_hiring_preview() -> void:
+	for mode in ["fast", "slow", "pair"]:
+		var s: GameStateScript = _grown_state(3)
+		var records: Array = s.records()
+		var fast: int = int(records[1]["record_id"])
+		var slow: int = int(records[3]["record_id"])
+		if mode != "fast":
+			_check(bool(s.select_record(slow)["ok"]) and bool(s.set_draft_price(10000)["ok"]), "감사와 같은 느린 메뉴 가격")
+			var revised: Dictionary = s.taste()
+			_check(bool(revised["ok"]), "느린 메뉴 실제 개정")
+			slow = int(revised["record_id"])
+		if mode == "pair":
+			_check(bool(s.expand_shop()["ok"]), "고용 비교 두 메뉴 증축")
+		_check(bool(s.set_selling_menus([fast, slow] if mode == "pair" else [fast if mode == "fast" else slow])["ok"]), "판매 메뉴 고정 " + mode)
+		var before: String = _json(s)
+		var preview: Dictionary = s.hiring_preview("prep_assistant")
+		_check(preview["error"] == "" and _json(s) == before, "미리보기는 전체 상태 불변 " + mode)
+		_check(int(preview["hire_price"]) == 8000 and int(preview["after"]["overhead"]) - int(preview["before"]["overhead"]) == 600, "일회성 고용비와 하루 일당 분리 " + mode)
+		if mode == "fast":
+			_check(int(preview["delta_units"]) == 0 and int(preview["delta_net"]) == -600, "빠른 메뉴: 판매 증가 없이 일당 추가")
+		if mode == "slow":
+			_check(int(preview["delta_units"]) > 0 and int(preview["delta_net"]) > 0, "느린 메뉴: 조리 보조의 오늘 판매 이점")
+		var cash: int = s.wallet
+		_check(bool(s.hire_staff("prep_assistant")["ok"]) and s.wallet == cash - 8000, "실제 고용비는 한번 차감")
+		for key in ["units", "revenue", "ingredient_cost", "overhead", "net", "demand", "capacity", "by_source"]:
+			_check(s.forecast()[key] == preview["after"][key], "미리보기와 실제 고용 뒤 예측 일치 " + mode + ":" + key)
+		# Earn a real qualification before previewing a DIFFERENT coworker; do
+		# not let the comparison reset the already trained employee's effects.
+		for i in 6:
+			_check(bool(s.serve()["ok"]), "동료 훈련 경험을 실제 정산")
+		_check(bool(s.train_staff("prep_assistant", "basic")["ok"]), "동료 입문 훈련")
+		before = _json(s)
+		preview = s.hiring_preview("floor_assistant")
+		_check(preview["error"] == "" and _json(s) == before, "훈련 동료 포함 비교 불변")
+		_check(int(preview["delta_units"]) == 0 and int(preview["delta_net"]) == -500, "홀 보조 대기 개선을 판매 증가로 꾸미지 않음")
+		_check(bool(s.hire_staff("floor_assistant")["ok"]), "실제 홀 보조 고용")
+		for key in ["units", "revenue", "ingredient_cost", "overhead", "net", "by_source"]:
+			_check(s.forecast()[key] == preview["after"][key], "기존 동료 훈련 유지 " + key)
+	_end()
+
+
+func test_hiring_preview_context() -> void:
+	var s: GameStateScript = GameStateScript.new()
+	var initial: String = _json(s)
+	_check(str(s.hiring_preview("unknown")["error"]) != "", "모르는 직원 비교 거부")
+	_check(str(s.hiring_preview("prep_assistant")["error"]).contains("판매"), "기록 없는 비교는 판매 기록 안내")
+	_check(_json(s) == initial, "실패한 비교도 불변")
+	_check(bool(s.taste()["ok"]), "잠긴 비교용 시식")
+	s.wallet = 0
+	var before: String = _json(s)
+	var preview: Dictionary = s.hiring_preview("prep_assistant")
+	_check(preview["error"] == "" and _json(s) == before, "돈/공간 부족해도 조건부 계산은 가능")
+	_check(not bool(s.staff_review("prep_assistant")["can_hire"]) and not bool(s.hire_staff("prep_assistant")["ok"]) and _json(s) == before, "비교가 고용 권한을 열지 않음")
+	preview["after"]["menus"][0]["config"]["price"] = 100
+	preview["before"]["menus"][0]["scores"]["dohyun"] = 0
+	_check(_json(s) == before and int(s.hiring_preview("prep_assistant")["after"]["menus"][0]["config"]["price"]) != 100, "반환값 수정은 기록/후속 비교에 전파되지 않음")
+	_check(bool(s.begin_service()["ok"]), "비교 중 실제 세션 준비")
+	var active: SessionScript = s.active_session()
+	var session_before: Dictionary = active.stats()
+	preview = s.hiring_preview("prep_assistant")
+	_check(preview["error"] == "" and s.active_session() == active and active.stats() == session_before and _json(s) == before, "조회는 영업 세션/시계/지갑을 바꾸지 않음")
+	s.cancel_service()
+	var hired: GameStateScript = _grown_state(2)
+	_check(bool(hired.hire_staff("prep_assistant")["ok"]), "중복 고용 비교용 직원")
+	before = _json(hired)
+	_check(str(hired.hiring_preview("prep_assistant")["error"]).contains("이미") and _json(hired) == before, "이미 고용된 직원은 중복 이익을 제안하지 않음")
 	_end()
