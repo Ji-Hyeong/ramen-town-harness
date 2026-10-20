@@ -21,6 +21,7 @@ const Staffing = preload("res://scripts/domain/shop_staffing.gd")
 const Training = preload("res://scripts/domain/staff_training.gd")
 const ProcessRules = preload("res://scripts/domain/recipe_process.gd")
 const SaveServiceScript = preload("res://scripts/services/save_service.gd")
+const ScrollableNameEdit = preload("res://scripts/ui/scrollable_name_edit.gd")
 const LocationScript = preload("res://scripts/services/data_location.gd")
 const StarMeterScript = preload("res://scripts/ui/star_meter.gd")
 const ShopViewScript = preload("res://scripts/ui/shop_view.gd")
@@ -372,6 +373,9 @@ func _plain_label(node_name: String, font_size: int, color: Color) -> Label:
 
 func _button(text: String, node_name: String) -> Button:
 	var b: Button = Button.new()
+	# 손가락을 버튼 위에서 밀어도 부모 ScrollContainer가 드래그를 받는다.
+	# 실제 스크롤이 시작되면 Godot의 SCROLL_BEGIN이 누르기를 취소한다.
+	b.mouse_filter = Control.MOUSE_FILTER_PASS
 	b.name = node_name
 	b.text = text
 	b.custom_minimum_size = Vector2(0.0, MIN_TOUCH)
@@ -404,6 +408,8 @@ func _wood_button(b: Button) -> void:
 
 func _card(node_name: String = "") -> PanelContainer:
 	var p: PanelContainer = PanelContainer.new()
+	# 카드의 빈 곳/테두리도 손가락 스크롤을 가로막지 않는다.
+	p.mouse_filter = Control.MOUSE_FILTER_PASS
 	if node_name != "":
 		p.name = node_name
 	p.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -438,6 +444,8 @@ func _make_tab(node_name: String, title: String) -> VBoxContainer:
 	var sc: ScrollContainer = ScrollContainer.new()
 	sc.name = node_name
 	sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	# 0이면 손가락의 미세한 떨림까지 스크롤로 판단해 탭을 취소한다.
+	sc.scroll_deadzone = 10
 	tabs.add_child(sc)
 	tabs.set_tab_title(tabs.get_tab_count() - 1, title)
 	var margin: MarginContainer = MarginContainer.new()
@@ -512,6 +520,7 @@ func _build_hud() -> void:
 	_day_label = _plain_label("DayLabel", 19, CREAM)
 	row.add_child(_day_label)
 	var coin: TextureRect = TextureRect.new()
+	coin.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	coin.name = "CoinIcon"
 	coin.texture = _icon("coin", 2)
 	coin.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
@@ -775,6 +784,7 @@ func _build_lab(box: VBoxContainer) -> void:
 	bh.add_theme_constant_override("separation", 12)
 	bowl_card.add_child(bh)
 	_bowl_rect = TextureRect.new()
+	_bowl_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_bowl_rect.name = "BowlPreview"
 	_bowl_rect.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
 	_bowl_rect.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
@@ -789,8 +799,10 @@ func _build_lab(box: VBoxContainer) -> void:
 	var nb: VBoxContainer = _vbox(6)
 	name_card.add_child(nb)
 	nb.add_child(_label("시제품 이름", 16, MUTED))
-	_name_edit = LineEdit.new()
+	_name_edit = ScrollableNameEdit.new()
+	(_name_edit as ScrollableNameEdit).scroll_target = tabs.get_child(TAB_LAB) as ScrollContainer
 	_name_edit.name = "RecipeNameEdit"
+	_name_edit.mouse_filter = Control.MOUSE_FILTER_PASS
 	_name_edit.custom_minimum_size = Vector2(0.0, MIN_TOUCH)
 	_name_edit.max_length = Check.NAME_MAX
 	_name_edit.placeholder_text = "예: 새벽 돈코츠"
@@ -887,6 +899,8 @@ func _build_lab(box: VBoxContainer) -> void:
 func _make_option(slot: String, item: Dictionary, group: ButtonGroup) -> Button:
 	var id: String = str(item["id"])
 	var b: Button = Button.new()
+	# Ingredient toggles must also pass a swipe to their scroll parent.
+	b.mouse_filter = Control.MOUSE_FILTER_PASS
 	b.name = "Opt_" + id
 	b.toggle_mode = true
 	if group != null:
@@ -1887,6 +1901,7 @@ func _exploration_button(text: String, node_name: String, locked: bool, travel_g
 
 func _region_picture(region: String, node_name: String) -> TextureRect:
 	var picture: TextureRect = TextureRect.new()
+	picture.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	picture.name = node_name
 	picture.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	picture.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
@@ -2152,6 +2167,7 @@ func _build_contests(box: VBoxContainer) -> void:
 
 func _contest_picture(band: int, magazine: bool = false) -> TextureRect:
 	var picture: TextureRect = TextureRect.new()
+	picture.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	picture.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	picture.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
 	picture.texture = ArtScript.scaled_tex(ArtScript.magazine_image() if magazine else ArtScript.contest_badge_image(band), 4)
@@ -2599,6 +2615,7 @@ func _customer_card(cd: Dictionary) -> PanelContainer:
 	head.add_theme_constant_override("separation", 10)
 	cb.add_child(head)
 	var portrait: TextureRect = TextureRect.new()
+	portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	portrait.name = "Portrait_" + str(cd["id"])
 	portrait.texture = _portrait_tex(str(cd["id"]), 2)
 	portrait.stretch_mode = TextureRect.STRETCH_KEEP
@@ -2617,6 +2634,8 @@ func _customer_card(cd: Dictionary) -> PanelContainer:
 	name_label.autowrap_mode = TextServer.AUTOWRAP_OFF
 	row.add_child(name_label)
 	var meter: StarMeterScript = StarMeterScript.new()
+	# Decorative ratings never intercept the surrounding page swipe.
+	meter.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	meter.name = "Stars_" + str(cd["id"])
 	meter.stars = int(cd["stars"])
 	meter.size_flags_vertical = Control.SIZE_SHRINK_CENTER
@@ -2948,6 +2967,7 @@ func _story_card(customer: String) -> PanelContainer:
 	card.add_child(box)
 	var header: HBoxContainer = HBoxContainer.new()
 	var face: TextureRect = TextureRect.new()
+	face.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	face.texture = _portrait_tex(customer, 2)
 	face.custom_minimum_size = Vector2(48, 48)
 	face.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
@@ -3178,6 +3198,7 @@ func _training_card(id: String) -> PanelContainer:
 	head.add_theme_constant_override("separation", 10)
 	box.add_child(head)
 	var picture: TextureRect = TextureRect.new()
+	picture.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	picture.name = "TrainingPortrait_" + id
 	picture.texture = _staff_portrait_tex(id)
 	picture.custom_minimum_size = Vector2(48, 48)
@@ -3315,6 +3336,7 @@ func _staff_card(sv: Dictionary) -> PanelContainer:
 	head.add_theme_constant_override("separation", 10)
 	cb.add_child(head)
 	var portrait: TextureRect = TextureRect.new()
+	portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	portrait.name = "StaffPortrait_" + id
 	portrait.texture = _staff_portrait_tex(id)
 	portrait.stretch_mode = TextureRect.STRETCH_KEEP

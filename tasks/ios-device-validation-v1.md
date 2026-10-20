@@ -55,3 +55,9 @@ untrusted-profile error. User-owned developer-app trust/restart/unlock has been
 requested. Do not mark launch, visual, touch, save or lifecycle acceptance as
 passed until actual evidence exists. Signed app and Xcode project are preserved
 in a private app-owned durable folder; no identities/profiles/raw logs in Git.
+
+## FOLLOW-UP 2026-10-21
+User completed developer-app trust; fresh launch0/JSONsuccess and actual game/
+research screen captures confirmed. The old failed launch above is historical.
+User rejected finger scrolling; fix/validation is tracked separately in
+tasks/ios-touch-scroll-v1.md. Initial launch does not constitute touch acceptance.
