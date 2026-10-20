@@ -2,7 +2,7 @@
   "format": 1,
   "date": "2026-10-20",
   "base_commit": "de76d580ce98338bbb920a08e1464a4484916d7f",
-  "status": "Preparation tool and staged Godot project verified; compatible Xcode download waits for user Apple login. No iOS build/installation/device acceptance.",
+  "status": "Verified iOS staging/tooling. User Apple login confirmed; official Xcode26.6 arm64 XIP download not completed by automation. User download requested; no Xcode/SDK/app/device acceptance.",
   "owner": "Codex",
   "claude_invoked": false,
   "device_candidate": "iPhone15Pro (user memory; actual model/iOS unconfirmed)",
@@ -222,7 +222,7 @@
     }
   },
   "remaining": [
-    "User sign-in on official Apple download page",
+    "User completes official Xcode26.6 arm64 XIP download",
     "Compatible Xcode installation, license and iOS SDK",
     "Xcode Apple account and real team, project export and unsigned build",
     "Actual iPhone model/iOS, trusted connection and device testing"
@@ -234,5 +234,18 @@
     "https://github.com/godotengine/godot-builds/releases/tag/4.7.2-stable"
   ],
   "tool_sha256": "da0e01a60bbe65e55a4743478a4f19db89e289e98afb0491fc50407159f6a7a2",
-  "final_staging": "v2, final tool after preserving original errors if diagnostic write fails; same game sources/overrides"
+  "final_staging": "v2, final tool after preserving original errors if diagnostic write fails; same game sources/overrides",
+  "apple_login_confirmed": true,
+  "xcode_download": {
+    "official_url": "https://download.developer.apple.com/Developer_Tools/Xcode_26.6/Xcode_26.6_Apple_silicon.xip",
+    "displayed_size": "2.16GB",
+    "automated_attempts": [
+      "download event/click call timed out after30seconds and reset CUA session",
+      "supported downloadMedia timed out after50seconds"
+    ],
+    "archive_received_and_verified": false,
+    "unauthenticated_head_result": "redirected to official unauthorized HTML; not treated as an archive",
+    "user_download_requested": true,
+    "no_browser_cookie_or_credential_access": true
+  }
 }
