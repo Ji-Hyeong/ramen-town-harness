@@ -2,7 +2,7 @@
   "format": 1,
   "date": "2026-10-20",
   "base_commit": "de76d580ce98338bbb920a08e1464a4484916d7f",
-  "status": "Verified iOS staging/tooling. User Apple login confirmed; official Xcode26.6 arm64 XIP download not completed by automation. User download requested; no Xcode/SDK/app/device acceptance.",
+  "status": "Verified iOS staging/tooling and official compatible Xcode26.6 installation/trust. Actual SDK CLI and first launch blocked by license; user review/acceptance requested. No iOS project/app/device acceptance.",
   "owner": "Codex",
   "claude_invoked": false,
   "device_candidate": "iPhone15Pro (user memory; actual model/iOS unconfirmed)",
@@ -219,12 +219,32 @@
     },
     "work/ios-preparation-all-tool-tests-v2.log": {
       "sha256": "a0f2556651cddd25d5629cf095ee18d8cfde20f9f0882d06cfce01d4bffb09cf"
+    },
+    "work/tools/xcode-26.6-v1/archive-signature.log": {
+      "sha256": "4179eaa7a1e2d40661682bbe2184a460433f296f948a162a6452a21c8abd7ff1"
+    },
+    "work/tools/xcode-26.6-v1/expand.log": {
+      "sha256": "c3cc07aad0a2746c0f6c93a9a651c4dc5ea12b3243ca8932922dccd928dc1efe"
+    },
+    "work/ios-xcode-app-signature.log": {
+      "sha256": "fbb95a12c787e2f5495a7a9e3a6874499e7adf39da8ff56e70edf0169fe9c4d8"
+    },
+    "work/ios-xcode-app-signature-v2.log": {
+      "sha256": "890877106fc51e6173e93b69153e47ed1bb0e929a126b5f3a1a474751b13519f"
+    },
+    "work/ios-xcode-gatekeeper.log": {
+      "sha256": "867771a2f046a21bde0e566aa9180bb3d00d192c966db0dd840892679ae562f1"
+    },
+    "work/ios-xcode-version.log": {
+      "sha256": "18730ed2ae28a2c9cf0c2d5db549033a4f07089331391a7133b7b32187454fa9"
+    },
+    "work/ios-xcode-device_sdk.log": {
+      "sha256": "411522ec89779639df259fa9f595942811c505c31bc2eb85696023376304b203"
     }
   },
   "remaining": [
-    "User completes official Xcode26.6 arm64 XIP download",
-    "Compatible Xcode installation, license and iOS SDK",
-    "Xcode Apple account and real team, project export and unsigned build",
+    "User review/acceptance of actual Xcode EULA and any administrator authentication; verify first-launch components and SDK CLI afterward",
+    "Xcode Apple account and real signing team, project export and unsigned build",
     "Actual iPhone model/iOS, trusted connection and device testing"
   ],
   "sources": [
@@ -243,9 +263,60 @@
       "download event/click call timed out after30seconds and reset CUA session",
       "supported downloadMedia timed out after50seconds"
     ],
-    "archive_received_and_verified": false,
+    "archive_received_and_verified": true,
     "unauthenticated_head_result": "redirected to official unauthorized HTML; not treated as an archive",
     "user_download_requested": true,
-    "no_browser_cookie_or_credential_access": true
+    "no_browser_cookie_or_credential_access": true,
+    "user_download_confirmed": true,
+    "archive": {
+      "file": "/Users/ji/Downloads/Xcode_26.6_Apple_silicon.xip",
+      "bytes": 2318258791,
+      "sha256": "06384762f286fb4d20440f7a67ba40cdf79bedb1cbee9e5111e3030a53a6cb81",
+      "signature_exit": 0,
+      "signed_apple_software": true
+    }
+  },
+  "environment_scope": "Initial environment before separate Xcode installation; retained as historical observation.",
+  "xcode_installation": {
+    "app": "/Applications/Xcode-26.6.app",
+    "version": "26.6",
+    "build": "17F113",
+    "minimum_macos": "26.2",
+    "archive_signature_exit": 0,
+    "xip_expand_exit": 0,
+    "xip_certificate_validation_attempted": false,
+    "initial_strict_signature_exit": 1,
+    "initial_failure": "Disallowed copied root com.apple.FinderInfo display metadata",
+    "metadata_correction": {
+      "preserved_original": true,
+      "removed_only": "com.apple.FinderInfo on new app root",
+      "all_other_root_attributes_identical": true,
+      "security_attributes_or_code_signature_changed": false
+    },
+    "final_deep_strict_signature_exit": 0,
+    "gatekeeper_exit": 0,
+    "gatekeeper_source": "Apple System",
+    "global_developer_selection_unchanged": true,
+    "per_command_developer_dir": "/Applications/Xcode-26.6.app/Contents/Developer",
+    "device_sdk_files_present": "iPhoneOS26.5.sdk",
+    "simulator_sdk_files_present": "iPhoneSimulator26.5.sdk",
+    "simulator_runtime_verified": false,
+    "cli_preflight": {
+      "version": {
+        "exit": 0,
+        "output": "Xcode 26.6\nBuild version 17F113\n"
+      },
+      "first_launch_status": {
+        "exit": 69,
+        "output": ""
+      },
+      "device_sdk": {
+        "exit": 69,
+        "output": "You have not agreed to the Xcode license agreements. Please run 'sudo xcodebuild -license' from within a Terminal window to review and agree to the Xcode and Apple SDKs license.\n"
+      }
+    },
+    "actual_gui": "Xcode and Apple SDKs Agreement",
+    "license_accepted": false,
+    "action_time_user_acceptance_requested": true
   }
 }
