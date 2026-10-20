@@ -1,6 +1,6 @@
 # 라멘 아틀리에 — 도트 라멘가게 프로토타입
 
-> **로컬 개발: 노트 개선 v10** — 등록 메뉴 종류와 실험 이력을 분리하고 삭제 후에도 최고 시식 성적을 보존합니다. 단골 이야기v9를 포함하며 실제 그래픽 확인·공개 전입니다. 아래 버전별 수치는 당시 검증 이력입니다. 현재 플레이 앱은v8입니다.
+> **현재: 노트 개선 v10·단골 이야기·투자 안내** — 2026-10-20 실제 Mac OpenGL 검사17,612개/실패0/종료0/엔진 오류0, 가로·세로206장과 새40장 직접 검토를 완료했습니다. [현재 화면](docs/investment-screenshots), [실행 증거](../evidence/investment-native-v2-20261020.json). 아래 버전별 수치는 당시 검증 이력이며, iPhone·사용자 플레이 감·최종 아트 승인은 별도입니다.
 
 ## 고용 전 투자 비교 (로컬 개발)
 
@@ -8,7 +8,7 @@
 
 판매 증가가 없는 경우도 그대로 알립니다. 홀 보조의 서빙 왕복 단축으로 대기가 얼마나 개선되는지는 판매 예측 금액만으로 알 수 없으며 실제 영업 결과에서 확인해야 합니다. 같은 메뉴·가격·날짜의 조건부 비교이고, 미래 이익이나 투자 회수 기간을 보장하지 않습니다. 직원 공간·자금이 부족해도 조건을 충족했을 때의 비교를 읽을 수 있지만 고용 버튼의 기존 제한은 유지합니다. 판매할 시식 기록이 없으면 기록 선택 안내를 표시합니다.
 
-조리대·직원 공간·증축 카드에는 새 토핑/메뉴 개발, 별도 고용, 두 메뉴 판매 목록 등 열린 용량을 활용할 행동을 안내합니다. 수요는 방문 의향의 예상값이고 결과 화면의 `매장 앞에서 돌아간 손님`과 구분합니다. 조회는 고용/지출/경험/영업 진행/저장 내용을 바꾸지 않습니다. 기존 비용·효과·저장 스키마10은 유지합니다. [계약과 검증](../tasks/investment-guide-v1.md). 이 기능도 실제 화면·공개 수락 전 로컬 구현입니다.
+조리대·직원 공간·증축 카드에는 새 토핑/메뉴 개발, 별도 고용, 두 메뉴 판매 목록 등 열린 용량을 활용할 행동을 안내합니다. 수요는 방문 의향의 예상값이고 결과 화면의 `매장 앞에서 돌아간 손님`과 구분합니다. 조회는 고용/지출/경험/영업 진행/저장 내용을 바꾸지 않습니다. 기존 비용·효과·저장 스키마10은 유지합니다. [계약과 검증](../tasks/investment-guide-v1.md), [현재 실제 화면](docs/investment-screenshots).
 
 ## 메뉴 등록과 실험 이력
 
@@ -20,11 +20,11 @@
 - schema10은 이전1~9의 모든 기존 값을 보존하고 남아 있는 시식 기록에서만 최고 성적 증빙을 도출합니다. 과거에 이미 지운 기록의 성적은 추측해 복구하지 않습니다. 첫 새 저장 전에 이전 버전의 원본 파일을 영구 백업합니다. 이전1~9의30개 기록 제한은 해당 버전 검사에서 계속 적용됩니다.
 - 호환을 위해 과거 영업 스냅샷의 `record_capacity` 키와6/12/30 값은 유지합니다. 현재 코드에서 이 값은 등록 메뉴 종류 용량이고, 실제 이력 한도는 `record_history_capacity()`입니다.
 
-[구현·검증 계약](../tasks/recipe-notebook-v1.md). 실제 화면 검증 전이므로 이 문서가 새로운 플레이 앱 배포를 뜻하지 않습니다.
+[구현·검증 계약](../tasks/recipe-notebook-v1.md). 노트의 가로·세로 실제 화면과 페이지/개정/삭제 흐름은 [현재 검증](../evidence/investment-native-v2-20261020.json)에 포함합니다.
 
 Godot 4.7(타입 지정 GDScript) 프로젝트입니다. 기본 화면은 작은 도트 라멘가게이고, 메뉴 개발은 아래 버튼으로 여는 보조 서랍입니다. 레시피를 만들고 단골 세 분의 시식 반응을 읽은 뒤, 영업을 시작하면 손님이 줄을 서고 자리에 앉아 주문하면 요리사가 만들고 서버가 나르며 손님이 먹고 평가하고 떠납니다. 먹기를 마친 주문만 매출로 정산됩니다. Mac 데스크톱(1280x800)과 세로(390x844) 레이아웃을 지원합니다. iOS 내보내기와 실제 기기 검증은 아직 하지 않았습니다.
 
-> **작업 중: 단골 이야기 v9** — 세 단골의 두 가지 요리 방향과 각 두 장의 사연을 구현했습니다. 기능119개/57,027확인·순수189개·집중 배치462개·전체 두 크기 배치14,990개가 실패0/종료0으로 통과했으며 실제 그래픽 검증과 게시 전입니다. 현재 배포된 플레이 앱/main의 마지막 검증 버전은 제조 공법v8입니다. [이야기 규칙](#단골-이야기), [실행·제한 기록](../evidence/regular-stories-runs.json).
+> **단골 이야기 v9 포함** — 세 단골의 두 가지 요리 방향과 각 두 장의 사연을 구현했습니다. 당시 기능119개/57,027확인·순수189개·집중 배치462개·전체 두 크기 배치14,990개가 통과했고, 현재 v10/투자 안내와 함께 새 실제 렌더링 검증도 마쳤습니다. [이야기 규칙](#단골-이야기), [기능·저장 이력](../evidence/regular-stories-runs.json), [현재 실제 화면](docs/investment-screenshots).
 
 ## 단골 이야기
 
@@ -296,10 +296,10 @@ Claude가 새 채점 카탈로그·독립 채점 시험을 작성(11턴)하고 �
 ## 실행과 검증
 Godot 4.7.2에서 `game/project.godot`를 가져오고 프로젝트 실행(F5)을 사용합니다. 다른 컴퓨터에서는 Godot을 별도로 설치해야 합니다. 엔진 바이너리는 Git에 포함하지 않습니다.
 
-현재 Mac에서는 검증된 PCK를 담은 로컬 `outputs/ramen-play-process-v2/Ramen Atelier.app`을 사용합니다. 기존 게임 창을 닫고 실행하면 이전 `work/player-save`를 읽으며 첫 v8 저장 전 원본 버전 백업을 남깁니다. 원래 체크아웃의 출처 불명 복사본은 보존했으므로 그 소스 폴더를 실행하지 않고 깨끗한 작업 폴더에서 만든 PCK를 사용합니다. iTerm에서도 아래 한 명령으로 같은 PCK를 실행할 수 있습니다.
+현재 Mac에서는 검증된 동일 PCK를 담은 새 로컬 `outputs/ramen-play-investment-v2/Ramen Atelier.app`을 사용합니다. 기존 게임 창을 닫고 실행하면 이전 `work/player-save`를 읽으며 첫 v10 저장 전 원본 버전 백업을 남깁니다. 이전 앱과 출처 불명 복사본은 보존합니다. 새 앱의 엔진은 엄격 서명을 유지한 별도 `~/Library/Application Support/RamenAtelier/local-player-20261020-v1/runtime/Godot.app`으로, 임시 QA 폴더에 의존하지 않습니다. 엔진 보관 폴더는 함께 유지하세요. iTerm에서도 아래 한 명령으로 같은 PCK를 실행할 수 있습니다.
 
 ```sh
-/Users/ji/Documents/Codex/2026-10-13/referenced-chatgpt-conversation-this-is-an/work/tools/godot-4.7.2/Godot.app/Contents/MacOS/Godot --main-pack '/Users/ji/Documents/Codex/2026-10-13/referenced-chatgpt-conversation-this-is-an/outputs/ramen-play-process-v2/Ramen Atelier.app/Contents/Resources/ramen-play.pck' -- --dev-data-dir=/Users/ji/Documents/Codex/2026-10-13/referenced-chatgpt-conversation-this-is-an/work/player-save
+'/Users/ji/Library/Application Support/RamenAtelier/local-player-20261020-v1/runtime/Godot.app/Contents/MacOS/Godot' --main-pack '/Users/ji/Documents/Codex/2026-10-13/referenced-chatgpt-conversation-this-is-an/outputs/ramen-play-investment-v2/Ramen Atelier.app/Contents/Resources/ramen-play.pck' -- --dev-data-dir=/Users/ji/Documents/Codex/2026-10-13/referenced-chatgpt-conversation-this-is-an/work/player-save
 ```
 
 검증용 예시는 저장소 루트에서 실행하며, 먼저 아래 변수를 설정합니다. 다른 컴퓨터에서는 자신의 실행 파일 경로로 바꿉니다.
@@ -331,7 +331,7 @@ RAMEN_GODOT=/Users/ji/Documents/Codex/2026-10-13/referenced-chatgpt-conversation
 
 ## 로컬 macOS 런처 앱 (개발 편의용)
 
-현재 제조 공법 런처: `outputs/ramen-play-process-v2/Ramen Atelier.app`(저장소 밖 로컬 작업 공간). 기존 게임 창을 닫은 뒤 실행합니다. 실제 렌더링 검증을 통과한 동일 PCK를 사용하고 `work/player-save`를 유지하므로 이전 진행을 읽습니다. 저장 v8 첫 기록 전에 이전 버전의 영구 백업을 보존합니다. 정상 저장 경로에서는 QA나 자동 플레이를 실행하지 않았습니다. 이 새 PCK의 메인 씬 60프레임 시작 검사는 별도 저장 경로에서 종료 0·엔진 오류 없이 통과했습니다. 로컬 설치된 Godot를 참조하는 개발용 앱으로 iOS 배포물이 아닙니다.
+현재 런처: `outputs/ramen-play-investment-v2/Ramen Atelier.app`(저장소 밖 로컬 작업 공간). 기존 게임 창을 닫은 뒤 실행합니다. 실제 렌더링을 통과한 동일 PCK SHA256 `30e48ae438d2624a65c3032b57edbcce0c837f8de7ffb00fb4ab4f1649c0b730`를 사용하고 `work/player-save`를 유지합니다. v10 첫 기록 전에 이전 버전의 영구 백업을 보존합니다. 사용자 저장은 읽거나 자동 시험하지 않았고, 새 플레이 앱 GUI도 자동 실행하지 않았습니다. 같은 새 PCK의 메인 씬60프레임은 별도 시험 저장소에서 종료0·엔진 오류0으로 통과했습니다. Documents 아래 엔진 복사 시도의 FinderInfo 서명 실패는 보존했고, 앱 전용 보관 폴더의 새 복사본은 엄격 서명이 실행 전후 통과했습니다. iOS 배포물이 아닌 Mac 개발용 앱입니다.
 `tools/build_local_apps.py`(표준 라이브러리만 사용)가 `Ramen Atelier.app`(게임)과 `Ramen QA.app`(`tests/qa_capture.gd`)을 `--output-dir`에 만듭니다. 각 앱은 `Info.plist`와 셸 런처만 가진 얇은 번들로, 지정한 Godot 실행 파일을 프로젝트 경로·`--log-file`(output-dir 안)·`--dev-data-dir`와 함께 `exec` 합니다. QA 앱은 `--qa-out`에 스크린샷을 저장하고 저장 폴더는 `<data-dir>/qa`를 씁니다. 스크립트는 파일만 쓰며 Godot를 실행하지 않고, 이미 있는 `.app`이 있으면 덮어쓰거나 지우지 않고 중단합니다.
 
 ```sh
