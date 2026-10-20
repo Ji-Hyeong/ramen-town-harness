@@ -7,7 +7,7 @@
   "schema": 11,
   "claude_invoked": false,
   "implementation_and_verification": "Codex",
-  "status": "local implementation and headless checks complete; exact new QA app confirmation pending; native/player/publication not accepted",
+  "status": "Mac native accepted; same-PCK local player prepared. No iPhone or human-fun acceptance.",
   "feature": {
     "region": "existing market, separate repeat sampling after both original suppliers",
     "new_material_ids": [
@@ -191,7 +191,7 @@
     "trimmed twelve-receipt history and cumulative conservation"
   ],
   "native_preparation": {
-    "status": "prepared_not_launched",
+    "status": "prepared successfully, subsequently approved and launched; see native result",
     "app": "/private/tmp/ramen-market-foraging-qa-20261020-v1/Ramen QA.app",
     "pack_sha256": "d7a4086e12736cb5a02cfd8cfdcd053f98f470f2191de44d009e94481b61ad40",
     "source_count": 95,
@@ -583,9 +583,14 @@
     "expected_native_png_count": 228
   },
   "native": {
-    "status": "not launched; action-time confirmation requested",
-    "capture_count": 0,
-    "actual_rendering_verified": false
+    "checks": 18214,
+    "failures": 0,
+    "exit": 0,
+    "mode": "capture",
+    "engine_errors": 0,
+    "started": "started_utc=2026-10-20T06:54:02Z\nlaunch_cwd=/\n",
+    "finished": "exit_status=0\nfinished_utc=2026-10-20T07:02:55Z\n",
+    "actual_rendering_verified": true
   },
   "logs": [
     {
@@ -693,10 +698,90 @@
     }
   ],
   "limitations": [
-    "Exact native Mac capture and new player pending action-time confirmation",
-    "No actual iPhone, touch or lifecycle testing",
-    "First two-material loop only; no full farming content or6-10hour completion claim",
-    "No play-fun/final-art acceptance",
-    "Old player and live user save not opened or modified"
-  ]
+    "Mac actual renderer only; no actual iPhone, touch or lifecycle testing",
+    "First two-material loop only, not full farming content or6-10hour completion",
+    "No human fun/novice pacing/final-art acceptance",
+    "Player GUI and live user save not opened; isolated60frame headless smoke only",
+    "Old failed attempts preserved; no claim every historical run was error-free"
+  ],
+  "gameplay_commit": "8259726f603a20a01527829f09e98215ae4434f2",
+  "exact_qa_app_user_confirmation_received": true,
+  "native_png_count": 228,
+  "actual_rendering_verified": true,
+  "manually_reviewed": {
+    "date": "2026-10-20",
+    "reviewer": "Codex",
+    "count": 22,
+    "blocking_visual_defects": 0,
+    "reviewed_files": [
+      "desktop_103_foraging_unlocked.png",
+      "desktop_104_foraging_choice.png",
+      "desktop_105_foraging_result.png",
+      "desktop_106_foraging_save_failed.png",
+      "desktop_107_foraging_preparation.png",
+      "desktop_108_foraging_sesame_feedback.png",
+      "desktop_109_foraging_stock_empty.png",
+      "desktop_110_foraging_sale.png",
+      "desktop_111_foraging_revisit.png",
+      "desktop_112_foraging_citrus_feedback.png",
+      "desktop_113_foraging_reloaded.png",
+      "portrait_103_foraging_unlocked.png",
+      "portrait_104_foraging_choice.png",
+      "portrait_105_foraging_result.png",
+      "portrait_106_foraging_save_failed.png",
+      "portrait_107_foraging_preparation.png",
+      "portrait_108_foraging_sesame_feedback.png",
+      "portrait_109_foraging_stock_empty.png",
+      "portrait_110_foraging_sale.png",
+      "portrait_111_foraging_revisit.png",
+      "portrait_112_foraging_citrus_feedback.png",
+      "portrait_113_foraging_reloaded.png"
+    ],
+    "method": "Read all11 desktop originals via unscaled partial review sheets and all11 portrait originals via unscaled final sheets; additionally read individual portrait112 and desktop33. Frozen original PNGs unchanged.",
+    "findings": [
+      "Unlocked research card, fee/stock/trial-only consumption and registered-sales policy readable.",
+      "Market choice/result illustration and material quantity visible; lower choices/result buttons remain reachable by scrolling.",
+      "Save failure warning persists after duplicate reward attempt; manual recovery and reload covered.",
+      "Preparation/cancel, stock shortage and actual completed sale at zero samples visible.",
+      "Sesame/citrus recipes show different costs/prep/feedback; new stock and first discovery survive reload.",
+      "Portrait long prose wraps within scroll cards; fixed close/service actions remain visible."
+    ],
+    "not_claimed": [
+      "iPhone or touch testing",
+      "human fun/novice pacing",
+      "final user art approval"
+    ]
+  },
+  "gallery": "game/docs/foraging-screenshots",
+  "all_png_manifest_sha256": "47581684837c5cef64ec0c34564d2ea0e622d4e65d160acd522c9c6c0accd098",
+  "persistent_native_run": "work/market-foraging-native-run-20261020-v1",
+  "preserved_native_files": 248,
+  "strict_vendor_signature_after_exit": 0,
+  "native_logs_sha256": {
+    "console.log": "435c5dad53d9aa80e4e8d0cf9461fa365474acb9bfa013647f5240f54b74b8a3",
+    "godot.log": "435c5dad53d9aa80e4e8d0cf9461fa365474acb9bfa013647f5240f54b74b8a3",
+    "started.txt": "c9f7e6d4bce26e456c456dc192f4cf1673cd226b8160bbf81aef902497f57c72",
+    "exit-status.txt": "a93eac3d3cc936dc70638d8b21cc7a743400d6b4779a18bb5ef1324c71320c30"
+  },
+  "cua_launch": {
+    "exact_app": "/private/tmp/ramen-market-foraging-qa-20261020-v1/Ramen QA.app",
+    "launcher_observation": "35second timeout, independently verified fresh native run; selected exact copied engine and Raised through CUA",
+    "run": "20261020T065402Z-13457"
+  },
+  "player": {
+    "app": "/Users/ji/Documents/Codex/2026-10-13/referenced-chatgpt-conversation-this-is-an/outputs/ramen-play-market-foraging-v1/Ramen Atelier.app",
+    "engine": "/Users/ji/Library/Application Support/RamenAtelier/local-player-market-foraging-20261020-v1/runtime/Godot.app/Contents/MacOS/Godot",
+    "engine_sha256": "c7cccbf8fb143e34e02fd6521e09be2c2b974f0d5db080b19071c9c570718ccf",
+    "pack_sha256": "d7a4086e12736cb5a02cfd8cfdcd053f98f470f2191de44d009e94481b61ad40",
+    "strict_vendor_signature_before_exit": 0,
+    "strict_vendor_signature_after_exit": 0,
+    "smoke_exit": 0,
+    "smoke_frames": 60,
+    "smoke_engine_errors": 0,
+    "smoke_data": "/Users/ji/Documents/Codex/2026-10-13/referenced-chatgpt-conversation-this-is-an/outputs/ramen-play-market-foraging-v1/isolated-smoke/save",
+    "user_save_opened_or_tested": false,
+    "player_gui_launched": false,
+    "launcher_sha256": "74e231371bfc371501f209eacd703eaf7eda16386fefdf45f394d0ca24baa532",
+    "previous_player_preserved": true
+  }
 }
