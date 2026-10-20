@@ -262,14 +262,14 @@ static func discovered_ids(state: Dictionary) -> Array[String]:
 ## 구성이 아직 발견하지 못한 재료를 쓰면 그 첫 id, 아니면 "". 구성 모양은 호출자가 먼저 검증해야 한다(Check.config_error).
 static func locked_in(config: Dictionary, discovered: Array) -> String:
 	for id in Catalog.item_ids(config):
-		if Catalog.is_discovery(id) and not discovered.has(id):
+		if (Catalog.is_discovery(id) or Catalog.is_farmed(id)) and not discovered.has(id):
 			return id
 	return ""
 
 
 ## 재료 하나가 지금 쓸 수 있는지: 예전 재료는 언제나, 발견 재료는 발견한 뒤에만.
 static func unlocked(id: String, discovered: Array) -> bool:
-	return not Catalog.is_discovery(id) or discovered.has(id)
+	return (not Catalog.is_discovery(id) and not Catalog.is_farmed(id)) or discovered.has(id)
 
 
 ## 잠긴 재료를 어떻게 얻는지 안내(지역/등급/출발 비용). 예전 재료는 {"locked": false}.
@@ -279,6 +279,9 @@ static func lock_info(id: String, discovered: Array) -> Dictionary:
 		return {}
 	if unlocked(id, discovered):
 		return {"locked": false, "id": id}
+	if Catalog.is_farmed(id):
+		return {"locked": true, "id": id, "region": "market", "region_name": "새벽 장터 연구 재료 채집", "min_rank": 1, "fee": 1000,
+			"hint": "새벽 장터의 기존 공급처 두 곳을 찾은 뒤 [탐색]의 연구 재료 채집에서 구하세요. 시제품마다 한 개를 쓰고 판매는 영업 원가로 공급돼요."}
 	var reg: Dictionary = find_region(region_of(id))
 	return {
 		"locked": true,

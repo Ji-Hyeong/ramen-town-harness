@@ -18,6 +18,7 @@ const Growth = preload("res://scripts/domain/shop_growth.gd")
 const Staffing = preload("res://scripts/domain/shop_staffing.gd")
 const Training = preload("res://scripts/domain/staff_training.gd")
 const Exploration = preload("res://scripts/domain/ingredient_exploration.gd")
+const Foraging = preload("res://scripts/domain/market_foraging.gd")
 const Contest = preload("res://scripts/domain/ramen_contest.gd")
 const ContestProgress = preload("res://scripts/domain/contest_progress.gd")
 const MenuSales = preload("res://scripts/domain/menu_sales.gd")
@@ -44,7 +45,8 @@ const Stories = preload("res://scripts/domain/regular_stories.gd")
 ## v8은 비기본 제조 공법만 config.process로 보존한다. 이전1~7의 기본 구성과 값은 변경하지 않는다.
 ## v9는 선택형 단골 사연/완료 영업 메뉴의 답례 영수증을 추가한다. 과거 진행을 소급 지급하지 않는다.
 ## v10 separates menu families from revision history and retains best-taste witnesses.
-const SCHEMA_VERSION: int = 10
+## v11 adds isolated market samples; v1..10 receive no samples or retroactive rewards.
+const SCHEMA_VERSION: int = 11
 const EXPANSION_PRICE: int = 60000
 const MIN_SCHEMA_VERSION: int = 1
 const LEGACY_MAX_RECORDS: int = 30
@@ -67,7 +69,8 @@ const TOP_KEYS_V5: Array = TOP_KEYS_V4 + ["contests"]
 const TOP_KEYS_V6: Array = TOP_KEYS_V5 + ["training"]
 const TOP_KEYS_V7: Array = TOP_KEYS_V6 + ["shop"]
 const TOP_KEYS_V9: Array = TOP_KEYS_V7 + ["stories"]
-const TOP_KEYS: Array = TOP_KEYS_V9 + ["taste_achievements"]
+const TOP_KEYS_V10: Array = TOP_KEYS_V9 + ["taste_achievements"]
+const TOP_KEYS: Array = TOP_KEYS_V10 + ["foraging"]
 const RECORD_KEYS: Array = ["record_id", "lineage_id", "name", "version", "tasted_day", "config", "scores", "comparison"]
 const COMPARISON_KEYS: Array = ["prev_record_id", "prev_version", "prev_scores", "prev_config"]
 const DRAFT_KEYS: Array = ["config", "name", "lineage_id"]
@@ -100,6 +103,7 @@ var _menu_ids: Array = []
 ## 재료 탐험 상태(저장). 발견한 재료(영구), 마지막 출발일(하루 1번 규칙), 누적 완료/포기 횟수, 진행 중 탐험, 최근 영수증. 구조는 ingredient_exploration.gd 참고.
 ## 이 값은 항상 Exploration 의 전이 함수가 돌려준 "새 딕셔너리"로 통째로 교체한다(부분 수정 없음). 외부에는 deep copy만 내보낸다.
 var _exploration: Dictionary = Exploration.empty_state()
+var _foraging: Dictionary = Foraging.empty_state()
 var _contests: Dictionary = ContestProgress.empty_state()
 var _stories: Array = []
 ## 진행 중인 영업 런타임. 저장하지 않는다(재시작하면 영업 전 상태로 돌아온다). 있는 동안은 레시피/초안/일차를 잠근다.
@@ -378,6 +382,9 @@ func taste() -> Dictionary:
 		return _fail("시제품 재료비(%d원)가 보유 자금보다 많아요." % cost)
 
 	var evaluation: Dictionary = Evaluator.evaluate(draft_config)
+	var samples: Dictionary = Foraging.use_samples(_foraging, draft_config)
+	if str(samples["error"]) != "":
+		return _fail(str(samples["error"]))
 	var scores: Dictionary = {}
 	for c in evaluation["customers"]:
 		var cd: Dictionary = c
@@ -411,6 +418,7 @@ func taste() -> Dictionary:
 	_records.append(record)
 	_taste_achievements = _updated_taste_achievements(_taste_achievements, [record])
 	wallet -= cost
+	_foraging = samples["state"]
 	draft_name = clean_name
 	draft_lineage_id = lineage
 	selected_record_id = int(record["record_id"])
@@ -1144,11 +1152,14 @@ func train_staff(id: String, style: String) -> Dictionary:
 ##  - 자금/등급/연구 보상과 소모품 재고는 없다. 재료 발견은 "레시피 개발에 쓸 수 있는 선택지의 영구 해금"일 뿐이다.
 
 func exploration_active() -> bool:
-	return not (_exploration["active"] as Dictionary).is_empty()
+	return not (_exploration["active"] as Dictionary).is_empty() or not (_foraging["active"] as Dictionary).is_empty()
 
 
 func _discovered_list() -> Array:
-	return Exploration.discovered_ids(_exploration)
+	var ids: Array = Exploration.discovered_ids(_exploration)
+	for row in Foraging.discoveries(_foraging):
+		ids.append(row["id"])
+	return ids
 
 
 ## 발견한 재료 id(발견 순서). 항상 사본.
@@ -1161,7 +1172,7 @@ func discovered_ingredients() -> Array:
 
 ## 발견 기록 [{id, region, day}] (발견 순서). 항상 deep copy.
 func discovery_records() -> Array:
-	return (_exploration["discovered"] as Array).duplicate(true)
+	return (_exploration["discovered"] as Array).duplicate(true) + Foraging.discoveries(_foraging)
 
 
 func is_discovered(id: String) -> bool:
@@ -1193,7 +1204,7 @@ func available_items(slot: String) -> Array:
 func locked_items(slot: String) -> Array:
 	var out: Array = []
 	var got: Array = _discovered_list()
-	for item in Catalog.discovery_items(slot):
+	for item in Catalog.discovery_items(slot) + Catalog.farmed_items(slot):
 		var d: Dictionary = item
 		if not got.has(str(d["id"])):
 			var c: Dictionary = d.duplicate(true)
@@ -1216,11 +1227,18 @@ func exploration_regions() -> Array:
 
 
 func exploration_region(region_id: String) -> Dictionary:
-	return Exploration.region_review(_exploration, region_id, _rank, day, wallet)
+	var view: Dictionary = Exploration.region_review(_exploration, region_id, _rank, day, wallet)
+	if not view.is_empty() and (not _foraging["active"].is_empty() or (int(_foraging["last_departure_day"]) == day and view["can_start"])):
+		view["can_start"] = false
+		view["status"] = "active_other" if not _foraging["active"].is_empty() else "used_today"
+		view["reason"] = "장터 채집을 마치세요." if not _foraging["active"].is_empty() else "오늘 채집으로 출발 기회를 썼어요. 영업을 마친 뒤 다시 오세요."
+	return view
 
 
 ## 진행 중 탐험의 보기(단계, 지금 만남과 선택지, 또는 결과). 없으면 {}. 읽기 전용 사본.
 func expedition() -> Dictionary:
+	if not _foraging["active"].is_empty():
+		return Foraging.active_view(_foraging, wallet)
 	return Exploration.active_view(_exploration, wallet)
 
 
@@ -1231,7 +1249,43 @@ func exploration_history() -> Array:
 
 ## 오늘(현재 일차) 이미 출발했는지. 출발 후 포기/완료해도 영업을 마쳐 일차가 오를 때까지 참이다.
 func departed_today() -> bool:
-	return int(_exploration["last_departure_day"]) == day
+	return int(_exploration["last_departure_day"]) == day or int(_foraging["last_departure_day"]) == day
+
+
+func foraging_state() -> Dictionary:
+	return _foraging.duplicate(true)
+
+
+## The old supplier discovery stays intact. Repeat sampling opens only after
+## BOTH original market suppliers are found, with one shared trip per game day.
+func foraging_review() -> Dictionary:
+	var unlocked: bool = true
+	for id in Exploration.find_region("market")["ingredients"]:
+		unlocked = unlocked and Exploration.discovered_ids(_exploration).has(id)
+	var reason: String = ""
+	if not unlocked:
+		reason = "새벽 장터의 기존 공급처 두 곳을 먼저 발견하세요."
+	elif _busy():
+		reason = "진행 중인 영업이나 탐색을 먼저 마치세요."
+	elif departed_today():
+		reason = "오늘은 이미 출발했어요. 영업을 마친 뒤 다시 오세요."
+	elif wallet < Foraging.FEE:
+		reason = "출발 비용 1,000원이 부족해요."
+	elif int(_foraging["stock"][Foraging.IDS[0]]) > Foraging.CAPACITY - 2 and int(_foraging["stock"][Foraging.IDS[1]]) > Foraging.CAPACITY - 2:
+		reason = "연구 재료 보관함이 가득 찼어요. 먼저 시제품에 사용하세요."
+	return {"can_start": reason == "", "reason": reason, "unlocked": unlocked, "fee": Foraging.FEE, "state": _foraging.duplicate(true)}
+
+
+func start_foraging() -> Dictionary:
+	var view: Dictionary = foraging_review()
+	if not bool(view["can_start"]):
+		return _fail(str(view["reason"]))
+	var result: Dictionary = Foraging.begin(_foraging, day, wallet)
+	if str(result["error"]) != "":
+		return _fail(str(result["error"]))
+	wallet -= Foraging.FEE
+	_foraging = result["state"]
+	return _ok("연구 재료를 찾으러 장터에 출발했어요. 1,000원을 냈고 오늘 출발 기회를 사용했어요.")
 
 
 func exploration_stats() -> Dictionary:
@@ -1259,6 +1313,8 @@ static func _service_blocks_trip() -> Dictionary:
 func start_expedition(region_id: String) -> Dictionary:
 	if service_active():
 		return _service_blocks_trip()
+	if not _foraging["active"].is_empty() or int(_foraging["last_departure_day"]) == day:
+		return _fail("오늘의 장터 채집을 진행했어요. 영업을 마친 뒤 다시 출발하세요.")
 	var r: Dictionary = Exploration.begin(_exploration, region_id, _rank, day, wallet)
 	if str(r["error"]) != "":
 		return _fail(str(r["error"]))
@@ -1276,6 +1332,13 @@ func start_expedition(region_id: String) -> Dictionary:
 func advance_expedition(choice_id: String) -> Dictionary:
 	if service_active():
 		return _service_blocks_trip()
+	if not _foraging["active"].is_empty():
+		var result: Dictionary = Foraging.choose(_foraging, choice_id, wallet)
+		if str(result["error"]) != "":
+			return _fail(str(result["error"]))
+		wallet -= int(result["extra"])
+		_foraging = result["state"]
+		return _ok("채집 선택을 마쳤어요. 결과를 받아야 연구 재료가 들어와요." if _foraging["active"]["stage"] == "result" else "장터에 도착했어요. 연구용 분량을 고르세요.")
 	var r: Dictionary = Exploration.choose(_exploration, choice_id, wallet)
 	if str(r["error"]) != "":
 		return _fail(str(r["error"]))
@@ -1300,6 +1363,8 @@ func advance_expedition(choice_id: String) -> Dictionary:
 func finish_expedition() -> Dictionary:
 	if service_active():
 		return _service_blocks_trip()
+	if not _foraging["active"].is_empty():
+		return _finish_foraging(false)
 	var r: Dictionary = Exploration.collect(_exploration)
 	if str(r["error"]) != "":
 		return _fail(str(r["error"]))
@@ -1323,6 +1388,8 @@ func finish_expedition() -> Dictionary:
 func retire_expedition() -> Dictionary:
 	if service_active():
 		return _service_blocks_trip()
+	if not _foraging["active"].is_empty():
+		return _finish_foraging(true)
 	var r: Dictionary = Exploration.retire(_exploration)
 	if str(r["error"]) != "":
 		return _fail(str(r["error"]))
@@ -1330,6 +1397,19 @@ func retire_expedition() -> Dictionary:
 	var res: Dictionary = _ok("탐험을 포기했어요. 낸 비용은 돌아오지 않고 오늘은 다시 출발할 수 없어요.")
 	res["receipt"] = (r["receipt"] as Dictionary).duplicate(true)
 	return res
+
+
+func _finish_foraging(retire: bool) -> Dictionary:
+	var result: Dictionary = Foraging.finish(_foraging, retire)
+	if str(result["error"]) != "":
+		return _fail(str(result["error"]))
+	_foraging = result["state"]
+	if retire:
+		return _ok("채집을 포기했어요. 비용과 오늘 출발 기회는 돌아오지 않아요.")
+	var receipt: Dictionary = result["receipt"]
+	var response: Dictionary = _ok("%s 연구 재료 %d개를 받았어요. 시제품 완성마다 1개를 쓰며 등록 메뉴 판매는 영업 원가로 공급돼요." % [Catalog.find(receipt["ingredient"])["name"], receipt["amount"]])
+	response["receipt"] = receipt.duplicate(true)
+	return response
 
 
 # ---------- 저장 직렬화 ----------
@@ -1425,6 +1505,7 @@ func to_dict() -> Dictionary:
 		"shop": {"expanded": _expanded, "menu_ids": _menu_ids.duplicate()},
 		"stories": {"arcs":_stories.duplicate(true)},
 		"taste_achievements": _taste_achievements.duplicate(true),
+		"foraging": _foraging.duplicate(true),
 	}
 
 
@@ -1456,13 +1537,17 @@ func load_from_dict(raw: Variant) -> String:
 		expected_keys = TOP_KEYS_V7
 	elif version == 9:
 		expected_keys = TOP_KEYS_V9
-	elif version >= 10:
+	elif version == 10:
+		expected_keys = TOP_KEYS_V10
+	elif version >= 11:
 		expected_keys = TOP_KEYS
 	var key_err: String = Check.keys_error(d, expected_keys, "저장")
 	if key_err != "":
 		return key_err
 	if version < 8 and _has_process(d):
 		return "이전 저장 버전에는 제조 공법을 기록할 수 없어요."
+	if version < 11 and _has_farmed_config(d):
+		return "이전 저장 버전에는 장터 연구 재료를 기록할 수 없어요."
 	# v1/v2 저장의 레시피 구성은 "topping" 문자열 하나다(정규 모양으로 읽어 들인다). v3는 "toppings" 배열만 허용한다.
 	var legacy_cfg: bool = version < 3
 	if not Check.in_range(d["day"], 1, MAX_DAY):
@@ -1598,6 +1683,17 @@ func load_from_dict(raw: Variant) -> String:
 	# 어떤 구성(기록/비교의 이전 구성/초안)도 발견하지 못한 재료를 쓸 수 없다. 예전 저장(v1~v3)은 발견이 비어 있으므로
 	# 발견 재료 id 가 들어 있으면 거부된다. 이 검사가 선택/시식으로 막은 경로의 마지막 방어선이다(불러오기로 잠긴 재료가 들어오지 않는다).
 	var discovered_now: Array = Exploration.discovered_ids(exploration_parsed)
+	var foraging_parsed: Dictionary = Foraging.empty_state()
+	if version >= 11:
+		var harvested: Dictionary = Foraging.parse(d["foraging"], int(d["day"]), n_record)
+		if str(harvested["error"]) != "":
+			return str(harvested["error"])
+		foraging_parsed = harvested["state"]
+		var cross_error: String = _foraging_cross_error(foraging_parsed, exploration_parsed, parsed)
+		if cross_error != "":
+			return cross_error
+	for row in Foraging.discoveries(foraging_parsed):
+		discovered_now.append(row["id"])
 	for pe0 in parsed:
 		var pcfg: Dictionary = (pe0 as Dictionary)["config"]
 		var process_error: String = _process_error(pcfg, growth_rank)
@@ -1635,7 +1731,7 @@ func load_from_dict(raw: Variant) -> String:
 		for pe in parsed:
 			contest_records[int(pe["record_id"])] = pe
 		var contest_result: Dictionary = ContestProgress.parse(d["contests"], int(d["day"]), growth_rank,
-			n_record, contest_records, exploration_parsed["discovered"], slot_limit)
+			n_record, contest_records, exploration_parsed["discovered"] + Foraging.discoveries(foraging_parsed), slot_limit)
 		if str(contest_result["error"]) != "":
 			return str(contest_result["error"])
 		contests_parsed = contest_result["state"]
@@ -1684,6 +1780,9 @@ func load_from_dict(raw: Variant) -> String:
 		if str(achieved["error"]) != "":
 			return str(achieved["error"])
 		achievements = achieved["records"]
+	var sample_witness_error: String = _sample_witness_error(d, foraging_parsed)
+	if sample_witness_error != "":
+		return sample_witness_error
 	# 모든 검증 통과 후 반영
 	_taste_achievements = achievements
 	_stories = stories_parsed
@@ -1694,6 +1793,7 @@ func load_from_dict(raw: Variant) -> String:
 	_hired = growth_staff
 	_training = training_parsed
 	_exploration = exploration_parsed
+	_foraging = foraging_parsed
 	_contests = contests_parsed
 	_research_done = research_parsed
 	day = int(d["day"])
@@ -1707,6 +1807,118 @@ func load_from_dict(raw: Variant) -> String:
 	draft_name = dname
 	draft_lineage_id = dlin
 	last_report = rep_result["report"]
+	return ""
+
+
+## Old versions must not gain new ingredient access through a forged config.
+static func _has_farmed_config(raw: Variant) -> bool:
+	if typeof(raw) == TYPE_DICTIONARY:
+		for key in raw:
+			if Catalog.SLOTS.has(key) and typeof(raw[key]) == TYPE_STRING and Catalog.is_farmed(raw[key]):
+				return true
+			if key == "toppings" and typeof(raw[key]) == TYPE_ARRAY:
+				for id in raw[key]:
+					if typeof(id) == TYPE_STRING and Catalog.is_farmed(id):
+						return true
+			if _has_farmed_config(raw[key]):
+				return true
+	elif typeof(raw) == TYPE_ARRAY:
+		for value in raw:
+			if _has_farmed_config(value):
+				return true
+	return false
+
+
+static func _sample_witness_error(raw: Dictionary, farm: Dictionary) -> String:
+	var used_by_record: Dictionary = {}
+	var error: String = _gather_sample_witnesses(raw, farm, used_by_record)
+	if error != "":
+		return error
+	var counts: Dictionary = {Foraging.IDS[0]: 0, Foraging.IDS[1]: 0}
+	for ids in used_by_record.values():
+		for id in ids:
+			counts[id] += 1
+	for id in Foraging.IDS:
+		if counts[id] > int(farm["used"][id]):
+			return "남아 있는 메뉴/과거 증빙보다 연구 재료 소비가 적어요."
+	return ""
+
+
+## A deleted notebook row can survive as a best-taste, comparison or story
+## witness. Count each immutable record ID once, not once per reference.
+static func _gather_sample_witnesses(raw: Variant, farm: Dictionary, by_record: Dictionary) -> String:
+	if typeof(raw) == TYPE_DICTIONARY:
+		var pairs: Array = [["record_id", "config"], ["prev_record_id", "prev_config"]]
+		for pair in pairs:
+			if not raw.has(pair[0]) or not raw.has(pair[1]) or typeof(raw[pair[1]]) != TYPE_DICTIONARY:
+				continue
+			var ids: Array = []
+			for id in Catalog.item_ids(raw[pair[1]]):
+				if Foraging.IDS.has(id):
+					ids.append(id)
+					if raw.has("tasted_day") and int(raw["tasted_day"]) < int(farm["first_day"][id]):
+						return "연구 재료를 처음 얻기 전의 시식 증빙이에요."
+			if not ids.is_empty():
+				var key: int = int(raw[pair[0]])
+				if not by_record.has(key):
+					by_record[key] = []
+				for id in ids:
+					if not by_record[key].has(id):
+						by_record[key].append(id)
+		for value in raw.values():
+			var error: String = _gather_sample_witnesses(value, farm, by_record)
+			if error != "":
+				return error
+	elif typeof(raw) == TYPE_ARRAY:
+		for value in raw:
+			var error: String = _gather_sample_witnesses(value, farm, by_record)
+			if error != "":
+				return error
+	return ""
+
+
+## Cross-module calendar and retained trial witnesses prevent granting samples
+## or spending the shared trip twice through otherwise valid isolated states.
+static func _foraging_cross_error(farm: Dictionary, exploration: Dictionary, records: Array) -> String:
+	var error: String = "장터 채집과 공급처 탐색/시식 기록의 날짜·소비가 맞지 않아요."
+	var trips: int = int(farm["completed"]) + int(farm["retired"]) + (0 if farm["active"].is_empty() else 1)
+	if trips > 0:
+		var prerequisite_day: int = 0
+		var suppliers: Array = []
+		for row in exploration["discovered"]:
+			if Exploration.find_region("market")["ingredients"].has(row["id"]):
+				suppliers.append(row["id"])
+				prerequisite_day = maxi(prerequisite_day, int(row["day"]))
+		if suppliers.size() != 2 or int(farm["last_departure_day"]) <= prerequisite_day:
+			return error
+		for id in Foraging.IDS:
+			if int(farm["first_day"][id]) > 0 and int(farm["first_day"][id]) <= prerequisite_day:
+				return error
+		for row in farm["history"]:
+			if int(row["day"]) <= prerequisite_day:
+				return error
+	if not farm["active"].is_empty() and not exploration["active"].is_empty():
+		return error
+	if farm["last_departure_day"] > 0 and farm["last_departure_day"] == exploration["last_departure_day"]:
+		return error
+	var old_trips: int = int(exploration["completed"]) + int(exploration["retired"]) + (0 if exploration["active"].is_empty() else 1)
+	if old_trips + trips > maxi(int(exploration["last_departure_day"]), int(farm["last_departure_day"])):
+		return error
+	for old in exploration["history"]:
+		for fresh in farm["history"]:
+			if old["day"] == fresh["day"]:
+				return error
+	var retained: Dictionary = {Foraging.IDS[0]: 0, Foraging.IDS[1]: 0}
+	for record in records:
+		for id in Catalog.item_ids(record["config"]):
+			if not Foraging.IDS.has(id):
+				continue
+			if int(farm["first_day"][id]) == 0 or int(record["tasted_day"]) < int(farm["first_day"][id]):
+				return error
+			retained[id] += 1
+	for id in Foraging.IDS:
+		if retained[id] > int(farm["used"][id]):
+			return error
 	return ""
 
 

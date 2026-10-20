@@ -162,9 +162,32 @@ static func discovery_items(slot: String) -> Array:
 
 
 ## 전체 재료(예전 재료 먼저, 발견 재료 뒤). 순서는 토핑 정규 순서의 기준이다.
+## Research-only samples are separate from the six permanent exploration
+## unlocks. Old catalog enumeration and exploration receipts keep their meaning.
+const FARMED_ITEMS: Dictionary = {
+	"oil": [{"id": "oil_roasted_sesame", "name": "볶은 참깨유", "cost": 240, "seconds": 12,
+		"desc": "장터에서 구한 고소한 연구 재료. 진함과 향이 강하고 손질 시간이 길어요.", "axes": {"rich": 2, "aroma": 4}}],
+	"topping": [{"id": "topping_citrus_peel", "name": "유자 껍질", "cost": 220, "seconds": 4,
+		"desc": "장터의 산뜻한 노란 고명. 국물을 가볍게 하고 향을 더해요.", "axes": {"rich": -2, "aroma": 2}}],
+}
+
+
+static func farmed_items(slot: String) -> Array:
+	return FARMED_ITEMS.get(slot, [])
+
+
+static func is_farmed(id: String) -> bool:
+	for slot in FARMED_ITEMS:
+		for item in FARMED_ITEMS[slot]:
+			if item["id"] == id:
+				return true
+	return false
+
+
 static func all_items(slot: String) -> Array:
 	var out: Array = items(slot).duplicate()
 	out.append_array(discovery_items(slot))
+	out.append_array(farmed_items(slot))
 	return out
 
 

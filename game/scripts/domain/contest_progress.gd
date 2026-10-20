@@ -118,7 +118,7 @@ static func _parse_receipt(raw: Variant, day: int, rank: int, next_id: int, reco
 	if Catalog.toppings_of(config).size() > slots:
 		return _error("출품 토핑 수가 열린 슬롯을 넘어요.")
 	for ingredient in Catalog.item_ids(config):
-		if not Catalog.discovery_ids().has(ingredient):
+		if not Catalog.is_discovery(ingredient) and not Catalog.is_farmed(ingredient):
 			continue
 		var found: bool = false
 		for discovery in discoveries:

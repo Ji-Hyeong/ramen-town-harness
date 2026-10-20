@@ -623,6 +623,10 @@ static func _draw_topping_single(img: Image, id: String) -> void:
 		"topping_mushroom":
 			rect(img, 2, 1, 3, 1, Color(0.52, 0.33, 0.20))
 			px(img, 3, 2, Color(0.88, 0.78, 0.57))
+		"topping_citrus_peel":
+			px(img, 2, 1, Color(1.0, 0.83, 0.12))
+			px(img, 3, 2, Color(1.0, 0.83, 0.12))
+			px(img, 4, 1, Color(0.94, 0.68, 0.08))
 
 
 ## 토핑이 둘 이상일 때의 2칸 폭 작은 모양. ax 는 왼쪽 끝 x(2/5/8). 모두 국물 면 두 줄(y 1~2)과 테두리(y 0) 안에 있다.
@@ -649,6 +653,9 @@ static func _draw_topping_compact(img: Image, id: String, ax: int) -> void:
 		"topping_mushroom":
 			rect(img, ax, 1, 2, 1, Color(0.52, 0.33, 0.20))
 			px(img, ax + 1, 2, Color(0.88, 0.78, 0.57))
+		"topping_citrus_peel":
+			px(img, ax, 1, Color(1.0, 0.83, 0.12))
+			px(img, ax + 1, 2, Color(0.94, 0.68, 0.08))
 
 
 ## 12x7 라멘 그릇(위에서 비스듬히). 재료가 바뀌면 국물색/면/토핑/향미유 점이 바뀐다. 장면의 그릇과 미리보기가 같은 함수를 쓴다.
@@ -699,6 +706,8 @@ static func bowl_image(config: Dictionary) -> Image:
 			oil = Color(0.95, 0.43, 0.20)
 		"oil_pepper":
 			oil = Color(0.17, 0.35, 0.23)
+		"oil_roasted_sesame":
+			oil = Color(0.77, 0.52, 0.19)
 	if oil.a > 0.0:
 		px(img, 6, 1, oil)
 		px(img, 5, 2, oil)
@@ -747,6 +756,8 @@ static func icon_image(id: String) -> Image:
 			oc = Color(0.95, 0.43, 0.20)
 		elif id == "oil_pepper":
 			oc = Color(0.17, 0.35, 0.23)
+		elif id == "oil_roasted_sesame":
+			oc = Color(0.77, 0.52, 0.19)
 		rect(img, 5, 0, 2, 2, steel_d)
 		rect(img, 4, 2, 4, 2, oc)
 		rect(img, 3, 4, 6, 4, oc)
@@ -790,6 +801,10 @@ static func icon_image(id: String) -> Image:
 				rect(img, 1, 2, 10, 4, Color(0.52, 0.33, 0.20))
 				px(img, 4, 3, WHITE)
 				px(img, 8, 4, WHITE)
+			"topping_citrus_peel":
+				for x in [2, 5, 8]:
+					rect(img, x, 3, 1, 5, Color(1.0, 0.83, 0.12))
+					px(img, x + 1, 7, Color(0.94, 0.68, 0.08))
 	elif id.begins_with("cook_"):
 		var lines: int = 1
 		if id == "cook_normal":

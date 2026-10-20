@@ -1,0 +1,702 @@
+{
+  "format": 1,
+  "date": "2026-10-20",
+  "branch": "feature/ramen-market-foraging-v1",
+  "base_public_commit": "d068d8eba09eedd1fb1d3f9bd85b52683416d68b",
+  "scope_docs_commit": "6d0f868704bd76dc28d5bfbe052ecccd46a1b3c7",
+  "schema": 11,
+  "claude_invoked": false,
+  "implementation_and_verification": "Codex",
+  "status": "local implementation and headless checks complete; exact new QA app confirmation pending; native/player/publication not accepted",
+  "feature": {
+    "region": "existing market, separate repeat sampling after both original suppliers",
+    "new_material_ids": [
+      "oil_roasted_sesame",
+      "topping_citrus_peel"
+    ],
+    "departure_fee": 1000,
+    "extra_three_sample_fee": 300,
+    "quantity_choices": [
+      2,
+      3
+    ],
+    "capacity_per_material": 20,
+    "history_limit": 12,
+    "shared_trip_per_day": true,
+    "sample_consumption": "one per included material on completed valid trial only",
+    "registered_sales": "ordinary ingredient cost, no sample consumption",
+    "old_supply": "all old basic/discovered ingredients remain permanent"
+  },
+  "domain": {
+    "tests": 125,
+    "checks": 58220,
+    "failures": 0,
+    "exit_code": 0
+  },
+  "focused_domain": {
+    "checks": 163,
+    "failures": 0,
+    "exit_code": 0
+  },
+  "focused_layout": {
+    "checks": 492,
+    "failures": 0,
+    "exit_code": 0,
+    "actual_rendering_verified": false
+  },
+  "full_layout": {
+    "checks": 17758,
+    "failures": 0,
+    "exit_code": 0,
+    "actual_rendering_verified": false,
+    "profiles": [
+      "1280x800",
+      "390x844"
+    ]
+  },
+  "packed_checks": {
+    "focused_domain": 163,
+    "focused_layout": 492,
+    "failures": 0,
+    "exit_codes": [
+      0,
+      0
+    ],
+    "actual_rendering_verified": false
+  },
+  "old_v10_fixture_generation": {
+    "fixtures": 17,
+    "checks": 180,
+    "failures": 0,
+    "exit_code": 0,
+    "actual_old_source_files": 87,
+    "synthetic_saves_not_user_data": true,
+    "not_play_pacing_evidence": true
+  },
+  "migration": {
+    "fixtures": 17,
+    "checks": 138,
+    "failures": 0,
+    "exit_code": 0,
+    "independent": {
+      "all_existing_values_equal": true,
+      "cases": [
+        {
+          "file": "choice1.json",
+          "new_sha256": "260d98a8360317e3d184ba32a2021bb8bf12094bbd001721b83f31a7006b658a",
+          "old_sha256": "85a80d892a79519bafdfa66d2f48deaad4f45ff1f313aa9523e320c0d8028e8a"
+        },
+        {
+          "file": "choice2.json",
+          "new_sha256": "9af77ed0baeb099fd298081947db41dbc13f69be3dd34e12e0e560d022c5116f",
+          "old_sha256": "40b97352f04b64eb487ccfb313106fba1e9305542d32d70387712f88c3c2efc4"
+        },
+        {
+          "file": "contest.json",
+          "new_sha256": "440c27169f5324eefcf860ef07c36d21abdc5ccb887b96a5af6f5b731c882dca",
+          "old_sha256": "716a6ccc2319560761ea8cc236ec07d554d22def7b5443bc20a5bce75eef1abe"
+        },
+        {
+          "file": "deleted_report.json",
+          "new_sha256": "f900a8f732a4df09f8a1fd75d9ff59b8c49edfc5b108cd6d9ccc19fcd5f4bae3",
+          "old_sha256": "43e714918864d7d2c076f80eabda9e9464339f59bd67d40fb685ae364baf24b1"
+        },
+        {
+          "file": "discovered.json",
+          "new_sha256": "317e09c64c866a23506cc4192b27fbd72c7c8a32ee2d2bd31d47659f3d04f9d7",
+          "old_sha256": "3e625c40cafcf05863bc416ee65593dbce8a5757236778ade65eb5de467cab97"
+        },
+        {
+          "file": "expanded.json",
+          "new_sha256": "070128536d6fa0a11671892c219e04380eb924596ca516d636f1fc2f45e71daa",
+          "old_sha256": "ec5f5b9735f8455df0618c9495f751798cede1a07fc526bd75011cdb04e5e694"
+        },
+        {
+          "file": "experts.json",
+          "new_sha256": "4a9ad1c8a35e884f3ffa4b270f23b0f190ad31fa371687131a6931915e50cd6b",
+          "old_sha256": "4d844a781ec5229d7350d6f46e919165cc163a6b1b46cf01490a7fb7f663f26a"
+        },
+        {
+          "file": "fresh.json",
+          "new_sha256": "a414511935831a2bca4b47b007f688239a799898f7cdcc7007783813596936e3",
+          "old_sha256": "f35b2705e810775049cb95a51ac7073e89d3f9f474f49fcb09f63ff4cb58afaa"
+        },
+        {
+          "file": "grown.json",
+          "new_sha256": "9eb260092069a1fc3b109e8100098ffe54422bb18a05cbcc35db1e9885379653",
+          "old_sha256": "4a544e63a7e969e1fa0463cdd3cf1ea48a4a947b41c208368568435fb8ad94ee"
+        },
+        {
+          "file": "magazine.json",
+          "new_sha256": "e8968c08149e6db5b18cbe2ce9525b49c052224f2b898cb96240321b24738849",
+          "old_sha256": "9ba8ad7b969d6cde93cb1c630e499708630639b5420ad32e77b652bfa826ff9d"
+        },
+        {
+          "file": "process.json",
+          "new_sha256": "cde0feea0a0a3a51aeb11f5ce9dcd8692035bf563245e1c846bff11bd0355647",
+          "old_sha256": "633b999a10df8b1bae5ff00c1e2013f76146f94d0d989a9cbd8bcdf903393e32"
+        },
+        {
+          "file": "result.json",
+          "new_sha256": "f2db5f4d63f1905efe7d2d161eed6ef04f29c3965eb65a4c2e639e2c8098cc8a",
+          "old_sha256": "8aacb8ca857dca52a42db97a70305d128180f267ad1ab83118324095a98e5df3"
+        },
+        {
+          "file": "story_active.json",
+          "new_sha256": "caec5fe581b49d464a1d1ef1d8d7b7264f3b669367868fec104a7b43ea978c0e",
+          "old_sha256": "347006b9f4f25b0999ebabc0777f13978e88cf767c476aa061684708ea88d3a0"
+        },
+        {
+          "file": "story_chapter1.json",
+          "new_sha256": "c1150cf58033ae6070db76ef3f8f791499cb32ee13fe80dd4956c56fcf335c39",
+          "old_sha256": "879ea0b7c4c2b5a4285ff48350de61c1f7047420f06a78e2da05aaf1c4338c53"
+        },
+        {
+          "file": "story_chapter2.json",
+          "new_sha256": "070ff3de238bb42bead4b0bfe4ae9677adba14a0169e40c5f7d2e0e4c6b34bf7",
+          "old_sha256": "9a765f70233c60ec881a125086587fc87d5ffd93d9187f341b96b30da9708ad1"
+        },
+        {
+          "file": "story_deleted.json",
+          "new_sha256": "7d816db4c0902cf6ce3bade93b2a0f16e15bfa5a6b10661afad9b283b456a475",
+          "old_sha256": "a7d28e91e44154c3bb2f60faa9e9cd827c8540565823924935d134e41d15cbfb"
+        },
+        {
+          "file": "trained.json",
+          "new_sha256": "485eaa80bffa103d3600c02db3f10690969443ee05c3af82b57a7459895fd89c",
+          "old_sha256": "adffb45843e3edfaeff0dd91787fd78aeb0e03ef2ba30d41cbf38a4238e85982"
+        }
+      ],
+      "fixtures": 17,
+      "new_sample_rewards": 0,
+      "permanent_backups_byte_identical": true
+    }
+  },
+  "legacy_regression": {
+    "service_cases": 64,
+    "cpu_rasters": 4,
+    "full_values_identical": true
+  },
+  "covered_transactions": [
+    "public original supplier discovery and actual daily service",
+    "shared departure and busy rejections",
+    "all three active sampling phases disk save/reload",
+    "reward exactly once and save failure/recovery warning",
+    "cancel/duplicate/shortage/capacity/invalid trial atomicity",
+    "sample-zero registered menu actual sales",
+    "different material revisit",
+    "real research submission, rank promotion, expansion, mixed two-menu service, contest and full save reload",
+    "sixteen malformed saves reject atomically",
+    "deleted notebook surviving best-taste consumption witness",
+    "trimmed twelve-receipt history and cumulative conservation"
+  ],
+  "native_preparation": {
+    "status": "prepared_not_launched",
+    "app": "/private/tmp/ramen-market-foraging-qa-20261020-v1/Ramen QA.app",
+    "pack_sha256": "d7a4086e12736cb5a02cfd8cfdcd053f98f470f2191de44d009e94481b61ad40",
+    "source_count": 95,
+    "source_matches": [
+      {
+        "path": "project.godot",
+        "sha256": "dc51a895d342d40ae50c597fa243266e6f5044507b3ef85e27b228c7c4f60d72"
+      },
+      {
+        "path": "scenes/main.tscn",
+        "sha256": "024518581dfb9fc07e1bb5ba66316964b321c6eecd784758b5ea566ebe292af4"
+      },
+      {
+        "path": "scripts/domain/contest_progress.gd",
+        "sha256": "0f5d1ef9ddf29c074bce7491dd88040e895e4b4dae181ffe7cfdc502cf2535ec"
+      },
+      {
+        "path": "scripts/domain/contest_progress.gd.uid",
+        "sha256": "d9d9dff87927cac42dbac088144b59395d3e92f8dcbf8f210fb0cd45b1e7b11b"
+      },
+      {
+        "path": "scripts/domain/customer_catalog.gd",
+        "sha256": "7774ff905e1fd4110b28f5ce067d6ef020f77147331a32cdd712286c3df853e4"
+      },
+      {
+        "path": "scripts/domain/customer_catalog.gd.uid",
+        "sha256": "f0f1ec5aa64ac8d303e9206bd338e44d2d66768580db0da2343cfd4836eddd9a"
+      },
+      {
+        "path": "scripts/domain/data_check.gd",
+        "sha256": "1101fcec77f5e0bed464469428192a7696e2b420b55065c47ad27762bbfbb784"
+      },
+      {
+        "path": "scripts/domain/data_check.gd.uid",
+        "sha256": "f7cba21ed3f3a5774c28c3cd4d0a784b44acabeead34c3a32dddb0e6facab491"
+      },
+      {
+        "path": "scripts/domain/game_state.gd",
+        "sha256": "c2b9971d869d0924fd3cdc5e00aec2d4a64573522c2d9d32a96e802733d5f9c1"
+      },
+      {
+        "path": "scripts/domain/game_state.gd.uid",
+        "sha256": "d24724aed0274f6104fdcadf6049584bea78705c9696f446175307791dc5b710"
+      },
+      {
+        "path": "scripts/domain/ingredient_catalog.gd",
+        "sha256": "3c0951bac9ba00eaa961414e7df7c2779fecb5abfed5cb9fea057dbebb99e305"
+      },
+      {
+        "path": "scripts/domain/ingredient_catalog.gd.uid",
+        "sha256": "388d11c65c86874d287b262618ff50fe2aca77e3e4c248fd2cd3d4342206256c"
+      },
+      {
+        "path": "scripts/domain/ingredient_exploration.gd",
+        "sha256": "cd1d39beb1209f18a4a680ea13feb78e96b8611533b7625a893dd8614128ddbd"
+      },
+      {
+        "path": "scripts/domain/ingredient_exploration.gd.uid",
+        "sha256": "1f0a69bfe20bbec6ee384c98ae24e7366d4c56a0b9724cb48e59005bb28dc70e"
+      },
+      {
+        "path": "scripts/domain/market_foraging.gd",
+        "sha256": "f4d2817bfd182de0f8a32ba6fdd0aaa3b5d54ee5732cddd65bc6c28208469618"
+      },
+      {
+        "path": "scripts/domain/market_foraging.gd.uid",
+        "sha256": "9f3d5fda0487de28c2048d6620b3f555c95159e1478928985a259c2c5b7a5004"
+      },
+      {
+        "path": "scripts/domain/menu_report.gd",
+        "sha256": "f953ad8b46703361143a100360cf1670f73f9060fe08afc715c1ce0dc6a9e210"
+      },
+      {
+        "path": "scripts/domain/menu_report.gd.uid",
+        "sha256": "31f17ebae3215dec90a196fa466afcb1627c99cd31644dccf2121534f660e249"
+      },
+      {
+        "path": "scripts/domain/menu_sales.gd",
+        "sha256": "267572c3afe628a878c4c1b4e87277a56f46aa54bcd0b5db9f35b0e1e7320911"
+      },
+      {
+        "path": "scripts/domain/menu_sales.gd.uid",
+        "sha256": "27fff1048359801a90045f6b023dbb76225fadba9af932e31ac102e783e33fb5"
+      },
+      {
+        "path": "scripts/domain/ramen_contest.gd",
+        "sha256": "f9084a6844eb3dc7e5a0bd589d541c9713f1f6eea9ddb8c4d6311f61d8571965"
+      },
+      {
+        "path": "scripts/domain/ramen_contest.gd.uid",
+        "sha256": "e851e9e4282bc401e92eebbebdf2085e8a579a6a8901ae51148426972c58b255"
+      },
+      {
+        "path": "scripts/domain/ramen_research.gd",
+        "sha256": "ef09a17a2a603e509050c94ca6bbffd33dd0a174e84c877e41142f4d2e905eb0"
+      },
+      {
+        "path": "scripts/domain/ramen_research.gd.uid",
+        "sha256": "a77c27491e6ed0b14acf4ba2b17e07acb29416a14ff21ed5e566306b13a6c887"
+      },
+      {
+        "path": "scripts/domain/recipe_evaluator.gd",
+        "sha256": "cef5a7ea816907dc9c1c0289e63bb69ad4e4f19f472a20c0f9faf80bff87c302"
+      },
+      {
+        "path": "scripts/domain/recipe_evaluator.gd.uid",
+        "sha256": "94a37fbffc55e2e1aad342d19ea4f4f203c7128acd6d1e89a669060c1f2fcab1"
+      },
+      {
+        "path": "scripts/domain/recipe_process.gd",
+        "sha256": "1be7f24720fa402c92e70d0533f48bf37c381693282a2776d9cd901876d5d5a7"
+      },
+      {
+        "path": "scripts/domain/recipe_process.gd.uid",
+        "sha256": "1fced988385208b512db50a0000168ae7980967119a46b91bbd283480f087481"
+      },
+      {
+        "path": "scripts/domain/regular_stories.gd",
+        "sha256": "cecbab691db41e3ada73f6642e5c878999a3f686072db63b5d19fef2d51c9a61"
+      },
+      {
+        "path": "scripts/domain/regular_stories.gd.uid",
+        "sha256": "58f2dc92555c1874787f0e3c96cf947c8254d3894299e569497baf2478630a39"
+      },
+      {
+        "path": "scripts/domain/regular_story_catalog.gd",
+        "sha256": "59d36c878835f31b064ec1f5c04f76832e477a22b4d98dea61e939b70275fcef"
+      },
+      {
+        "path": "scripts/domain/regular_story_catalog.gd.uid",
+        "sha256": "33f7142109e51a1542b32ac8c2dfc7f05f3e958146c7b4a8890a28f3fce27e6b"
+      },
+      {
+        "path": "scripts/domain/sales_simulator.gd",
+        "sha256": "63d19509fc931ea9c9c5eda4ab3b6b4081717b4ee9756210e995eb6dec9cf0ff"
+      },
+      {
+        "path": "scripts/domain/sales_simulator.gd.uid",
+        "sha256": "d017a82c4607830cf428a7f1c8448a413844b4e2f4a04a62498df8185d368caa"
+      },
+      {
+        "path": "scripts/domain/service_session.gd",
+        "sha256": "afb471b695177e5038daa4ac4f0f0100de16188308a2f26bc3be03c02c61ff84"
+      },
+      {
+        "path": "scripts/domain/service_session.gd.uid",
+        "sha256": "22ef060f79b93995e77c997aadf8712001bbae08f9b99dcb768a2fc444d0442c"
+      },
+      {
+        "path": "scripts/domain/shop_growth.gd",
+        "sha256": "70555ad42a3a8b52fe7cc27eb047f3e87d34acac4b6632e291d067216013ea83"
+      },
+      {
+        "path": "scripts/domain/shop_growth.gd.uid",
+        "sha256": "4edc075c1675f517238ccd691f7198d31b757339ff485f4a04038aae39e4fc1d"
+      },
+      {
+        "path": "scripts/domain/shop_staffing.gd",
+        "sha256": "5d464774d3a2b969d55eaa2dd1b75b0923f3baa7e898411874fa6db432228b35"
+      },
+      {
+        "path": "scripts/domain/shop_staffing.gd.uid",
+        "sha256": "e1d53b09eaaea52551acd332943ad3748d74a16930a67bd75acd7fd969235605"
+      },
+      {
+        "path": "scripts/domain/staff_training.gd",
+        "sha256": "10dc1f3e9050396d1ddec06420074c0c62b0fa23712b01177e4df8acaba8aced"
+      },
+      {
+        "path": "scripts/domain/staff_training.gd.uid",
+        "sha256": "71c535ec37937ace9fa53aad425857d1667c885bc8f6bfed4888746e7c6f4bc1"
+      },
+      {
+        "path": "scripts/services/data_location.gd",
+        "sha256": "6caf1b6faa4119c93252942716ce86ab96ffe89f5fb8fbed5ba83fb1f29a0382"
+      },
+      {
+        "path": "scripts/services/data_location.gd.uid",
+        "sha256": "48b2b18791e7201f7ba3219092d40a94cb0dbc19ece53d8dad3758db283b98f0"
+      },
+      {
+        "path": "scripts/services/save_service.gd",
+        "sha256": "dbd3ab88f674f611c2d69eb67119a99bd2ad608b50c6c600aaf39cdc988b9d57"
+      },
+      {
+        "path": "scripts/services/save_service.gd.uid",
+        "sha256": "83f51962de4e6472f59854dc837c5b84ab8c41a63b2056cc5bd2182789a64e63"
+      },
+      {
+        "path": "scripts/ui/bowl_view.gd",
+        "sha256": "7341d07f4ac709ede7f2c76bfeea909d74203e4f5042d4bfcb802ce4bac9c5cd"
+      },
+      {
+        "path": "scripts/ui/bowl_view.gd.uid",
+        "sha256": "c392422404452afaf0042a9fe4850f3c7ac29028cc94c3075deaa3f462ffe58d"
+      },
+      {
+        "path": "scripts/ui/expedition_travel.gd",
+        "sha256": "06daa75107e2f7c3d53a4720b2dd7fd28c568a06b576279172d7b547ffb1c50e"
+      },
+      {
+        "path": "scripts/ui/expedition_travel.gd.uid",
+        "sha256": "95f2de2e64084192bcc4007385e26e836d3ba5d33372a3e70f6809588e641fa9"
+      },
+      {
+        "path": "scripts/ui/main.gd",
+        "sha256": "1e08d1235677eb158b5af069ec6a50c297b28dd2086df6a5139e23fba48a38c6"
+      },
+      {
+        "path": "scripts/ui/main.gd.uid",
+        "sha256": "4c843d7e87a7f840dd7fb476f9b92ae9f85ebe1aceff93785e0a7501ac8f623a"
+      },
+      {
+        "path": "scripts/ui/pixel_art.gd",
+        "sha256": "e744adf7e5827262f7c5d7aa9053af4bc321ea03fe8a8187908d5fcb2c7c6a9a"
+      },
+      {
+        "path": "scripts/ui/pixel_art.gd.uid",
+        "sha256": "820a64bf221536fd19128d73082ae7efc9fa594177f11ed3dd3b940d45faca26"
+      },
+      {
+        "path": "scripts/ui/shop_layout.gd",
+        "sha256": "2494c07572efe0fd33fc8d3e7ac33a9ffc11ec22e47ef8f0c4d4caaa5a447ffb"
+      },
+      {
+        "path": "scripts/ui/shop_layout.gd.uid",
+        "sha256": "b161ec1a303b2552643e55dc41a738f381296679dd6ad494c028e2f2c43c7091"
+      },
+      {
+        "path": "scripts/ui/shop_painter.gd",
+        "sha256": "4e4c0745454d3326df812894305a28c4d2d23cd24c0e070edbcc7b6e1bb88c35"
+      },
+      {
+        "path": "scripts/ui/shop_painter.gd.uid",
+        "sha256": "315d0c51661b3b0ae371b66b41209a6d5343eda93ac9a4b44abb4adcffa99881"
+      },
+      {
+        "path": "scripts/ui/shop_scene.gd",
+        "sha256": "010b8938043f3e566dc8bbeff9c532190379abe5cbf63f307036c7eafc385649"
+      },
+      {
+        "path": "scripts/ui/shop_scene.gd.uid",
+        "sha256": "c3fca130d4e078daa7083a5efa1f3fa8c392ab8ada24d50725db1baa9a741880"
+      },
+      {
+        "path": "scripts/ui/shop_view.gd",
+        "sha256": "542d152b9ac4011825b36e48d89b0e8051ea6d2ec9fd002b95419d23bcaa6c75"
+      },
+      {
+        "path": "scripts/ui/shop_view.gd.uid",
+        "sha256": "f1194eab001c594a4f1d88da37ab8cc88e70163f4a709e72629b29fc49643113"
+      },
+      {
+        "path": "scripts/ui/star_meter.gd",
+        "sha256": "caa1933f319a15dd76497c125dfec8a9d64011f8e8162cf17d8fa45473139070"
+      },
+      {
+        "path": "scripts/ui/star_meter.gd.uid",
+        "sha256": "4dc6ce5b399e895a58e69e9c1f2a76d6be3365a57cd7d358b05be7179261779f"
+      },
+      {
+        "path": "scripts/ui/tasting_work.gd",
+        "sha256": "89a6913f9ecad8892f6a44cee706bdec26b5b0aa94c91fdb2c0e751266eedec4"
+      },
+      {
+        "path": "scripts/ui/tasting_work.gd.uid",
+        "sha256": "115a9a0049c8b0734d3a2d91aaad8314f91413828d7539899755081fe1203b3a"
+      },
+      {
+        "path": "scripts/ui/tasting_work_view.gd",
+        "sha256": "6bca774413853b0c7514ea1b6cf37a24b84a88952ea8e85ea7b4a96d617d95a1"
+      },
+      {
+        "path": "scripts/ui/tasting_work_view.gd.uid",
+        "sha256": "66ce0e9c185b26a16a5475885508d5b00a476dcc392198a1054a32d0634aee23"
+      },
+      {
+        "path": "assets/fonts/GowunDodum-Regular.ttf",
+        "sha256": "a6e457933227483a11758fd0947bc74422a106d46f0bf057fdaa5af94a30067d"
+      },
+      {
+        "path": "assets/fonts/GowunDodum-Regular.ttf.import",
+        "sha256": "da88a173d8646ce80879a30dc02756abbe3b5e61076ba1652084a68900e11104"
+      },
+      {
+        "path": "assets/fonts/OFL.txt",
+        "sha256": "a7c73f9521cd646bbdfb6684c99a62311bbd7bce11898dc11ef0b3c69eda1aca"
+      },
+      {
+        "path": "tests/contest_scoring_tests.gd",
+        "sha256": "95c24a17e69cf1498f8435cf90c5b35f61058ae435a42b136de2ff92f20ba557"
+      },
+      {
+        "path": "tests/contest_scoring_tests.gd.uid",
+        "sha256": "61cc517e37d461c1bd6f920f80dbfec72222fd6b51dd1c20442ea90838a97486"
+      },
+      {
+        "path": "tests/investment_preview_ui_tests.gd",
+        "sha256": "d351bce1f509adbaf77a16e3f791e1bde17d9bab954ca986f3de1f3099276115"
+      },
+      {
+        "path": "tests/investment_preview_ui_tests.gd.uid",
+        "sha256": "a32636dea5a9c84b7fef167200558202854b1d2fdf17faeb8cfc1ac19771aa1a"
+      },
+      {
+        "path": "tests/market_foraging_runner.gd",
+        "sha256": "6e703817522c57ecd9bf7cf840113a0694c3f3f71ed8b437bbe7330873386f69"
+      },
+      {
+        "path": "tests/market_foraging_tests.gd",
+        "sha256": "413285749891c5ededf8f51d51e35843bf4135ed1585ddb74d9081bc0db131c4"
+      },
+      {
+        "path": "tests/market_foraging_ui_tests.gd",
+        "sha256": "9ef84b8c6b9380e58a74b6bc7fba3ebd3bbe4145fa6d4d54f8f74a527bb8ed3c"
+      },
+      {
+        "path": "tests/menu_sales_core_tests.gd",
+        "sha256": "dd1d6a061652ace04e34500a4d6d170be41bebea7be5b92d372e4ec76b33a6ed"
+      },
+      {
+        "path": "tests/menu_sales_core_tests.gd.uid",
+        "sha256": "90bbf52854e5b394945b17408dbf2c197e71b1aaa730bc26d892a6f266454983"
+      },
+      {
+        "path": "tests/qa_capture.gd",
+        "sha256": "8b7f002769aa3b100952f2596a155f48a776e24e78a855342196df51ee42f375"
+      },
+      {
+        "path": "tests/qa_capture.gd.uid",
+        "sha256": "46b5a6fa9d45e3adc90a609f3183b24097f44cc0929b6e32e55945720ac06618"
+      },
+      {
+        "path": "tests/recipe_process_core_tests.gd",
+        "sha256": "b8f92c1b8840b6dbac0a819c7c9ca7a9d10887d2c5dec042cab0dfb9a87d272d"
+      },
+      {
+        "path": "tests/recipe_process_core_tests.gd.uid",
+        "sha256": "86e72332aaf5df57bbb56119cab074ee0ec273e13e4f27f1ff2fc4bc5a65d885"
+      },
+      {
+        "path": "tests/regular_story_core_tests.gd",
+        "sha256": "6d292cb7ac02dbae05fce5cdd4ffb8ec969e1f3720d9417c9a1af05b83ffc5d7"
+      },
+      {
+        "path": "tests/regular_story_core_tests.gd.uid",
+        "sha256": "a88c04156013cdbe81b5938de68c0068616113757e0fea34e3db68347b92f8c2"
+      },
+      {
+        "path": "tests/regular_story_fixtures.gd",
+        "sha256": "39285aded025da4da9c16686d0b0b8003d80cf4351939fe459b6675b3a53f2be"
+      },
+      {
+        "path": "tests/regular_story_fixtures.gd.uid",
+        "sha256": "97a352c03eeb0b99965fc847e31fef258e2d7f8c69d1ab9238e0bee0d0e9c6f2"
+      },
+      {
+        "path": "tests/run_tests.gd",
+        "sha256": "534992fd83d8d104b39725d2c1c1c45555b1432009fa33cd61dceedf8d274b75"
+      },
+      {
+        "path": "tests/run_tests.gd.uid",
+        "sha256": "fccfb5f77972907a479b7fe7de13df1942b01afd5f00c0c4b84d361b5707cc89"
+      },
+      {
+        "path": "tests/staff_training_core_tests.gd",
+        "sha256": "7b756cb79654c25dbd28a90ce4e4ba925aa36b8702d1e40d3b409b0781706dcc"
+      },
+      {
+        "path": "tests/staff_training_core_tests.gd.uid",
+        "sha256": "e8e270a8884886c8e64d70e20ac8d121e69f1db7734a9a2273caaee7fa9aafb9"
+      },
+      {
+        "path": "tests/market_foraging_runner.gd.uid",
+        "sha256": "3a68bba9a57d1667327992e7d37549b9b8f1a718189ebad6a937f5122ac69bcf"
+      },
+      {
+        "path": "tests/market_foraging_tests.gd.uid",
+        "sha256": "6afe00eca5ef4d8b703f2ec05c027c193856c65ccdbdd5c91fe276f2bdb94e67"
+      },
+      {
+        "path": "tests/market_foraging_ui_tests.gd.uid",
+        "sha256": "78e40055cd8162188232eb08ab4017c2dfab1a5fe42fa882f959093cef07f6e7"
+      }
+    ],
+    "generated_uid_count": 3,
+    "strict_signature_exit": 0,
+    "prep_engine_errors": [],
+    "expected_native_png_count": 228
+  },
+  "native": {
+    "status": "not launched; action-time confirmation requested",
+    "capture_count": 0,
+    "actual_rendering_verified": false
+  },
+  "logs": [
+    {
+      "path": "work/market-foraging-tests-v4.log",
+      "sha256": "32832a236dd959b571e780f04c4dfab0a67918aaa1b9c9d63d4481b17c1678e9",
+      "engine_or_script_error_lines": 0,
+      "last_summary": [
+        "tests=125 checks=58220 failures=0"
+      ]
+    },
+    {
+      "path": "work/market-foraging-focused-v4.log",
+      "sha256": "8900a91e7d76cc3c57ae46a54259987a4b413a53f81c19788cee556a7cc5607f",
+      "engine_or_script_error_lines": 0,
+      "last_summary": [
+        "Foraging checks=163 failures=0"
+      ]
+    },
+    {
+      "path": "work/market-foraging-focused-layout-v1.log",
+      "sha256": "3ac600ba597751cc8edc232e12ef3c951bfbf95ce6b095abaa896a4e0f461a24",
+      "engine_or_script_error_lines": 0,
+      "last_summary": [
+        "QA mode=layout-only (no screenshots) checks=492 failures=0 out=/Users/ji/Documents/Codex/2026-10-13/referenced-chatgpt-conversation-this-is-an/work/market-foraging-focused-layout-v1"
+      ]
+    },
+    {
+      "path": "work/market-foraging-full-layout-v1.log",
+      "sha256": "644b5b5795f0fa19ee18c06e1ddbb999c3282817fb4a5fe830be81d9330860da",
+      "engine_or_script_error_lines": 0,
+      "last_summary": [
+        "QA mode=layout-only (no screenshots) checks=17758 failures=0 out=/Users/ji/Documents/Codex/2026-10-13/referenced-chatgpt-conversation-this-is-an/work/market-foraging-full-layout-v1"
+      ]
+    },
+    {
+      "path": "work/market-foraging-packed-domain-v1.log",
+      "sha256": "8900a91e7d76cc3c57ae46a54259987a4b413a53f81c19788cee556a7cc5607f",
+      "engine_or_script_error_lines": 0,
+      "last_summary": [
+        "Foraging checks=163 failures=0"
+      ]
+    },
+    {
+      "path": "work/market-foraging-packed-layout-v1.log",
+      "sha256": "129c3600f8ccb7357c1fd4bb30f6f8c37c5c274c697b474b421ba3867c114e17",
+      "engine_or_script_error_lines": 0,
+      "last_summary": [
+        "QA mode=layout-only (no screenshots) checks=492 failures=0 out=/Users/ji/Documents/Codex/2026-10-13/referenced-chatgpt-conversation-this-is-an/work/market-foraging-packed-layout-v1"
+      ]
+    },
+    {
+      "path": "work/market-foraging-v10-fixture-generator-v2.log",
+      "sha256": "fd92a5aab5c1bb8a77b5a0141ec9110a01eb14424fd2ba8f270edf9f8760da45",
+      "engine_or_script_error_lines": 0,
+      "last_summary": [
+        "old v10 fixture checks=180 failures=0"
+      ]
+    },
+    {
+      "path": "work/market-foraging-v10-migration.log",
+      "sha256": "71f84ce300a94a88add3ee0b13b0abc9242c2267d4b9a3f778d63de6dbdc4b24",
+      "engine_or_script_error_lines": 0,
+      "last_summary": [
+        "Actual v10 migration fixtures=17 checks=138 failures=0"
+      ]
+    },
+    {
+      "path": "work/market-foraging-v10-golden.log",
+      "sha256": "27c42442925d51b5ff5cbcb8f6e3d534af1d01dfa9ba7d3da9ec43972b5ba8b4",
+      "engine_or_script_error_lines": 0,
+      "last_summary": [
+        "actual-v10 single-service golden cases=64 rasters=4 failures=0"
+      ]
+    },
+    {
+      "path": "work/market-foraging-v11-golden.log",
+      "sha256": "73ddd1f374e0784d9929d437eb85c6b2ef69061771dc51e9d41af7372d575f0c",
+      "engine_or_script_error_lines": 0,
+      "last_summary": [
+        "current-v11 single-service golden cases=64 rasters=4 failures=0"
+      ]
+    }
+  ],
+  "initial_failures": [
+    {
+      "log": "work/market-foraging-tests-v1.log",
+      "tests": 124,
+      "checks": 58052,
+      "failures": 42,
+      "exit_code": 1,
+      "cause": "Explicit old-version fixtures retained new key; expanded catalog expectations required updating. Production validation not weakened."
+    },
+    {
+      "log": "work/market-foraging-focused-v1.log",
+      "checks": 127,
+      "failures": 29,
+      "engine_script_errors": true,
+      "cause": "Missing phase test directories caused save failures and empty-state cascades; added explicit directory creation and stopped dependent checks after failed assertions."
+    },
+    {
+      "log": "work/market-foraging-v10-fixture-generator.log",
+      "exit_code": 0,
+      "accepted": false,
+      "cause": "Relative external --script resolved inside project and engine reported errors. No fixture accepted; reran absolute external path."
+    }
+  ],
+  "limitations": [
+    "Exact native Mac capture and new player pending action-time confirmation",
+    "No actual iPhone, touch or lifecycle testing",
+    "First two-material loop only; no full farming content or6-10hour completion claim",
+    "No play-fun/final-art acceptance",
+    "Old player and live user save not opened or modified"
+  ]
+}
