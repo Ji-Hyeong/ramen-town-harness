@@ -6,7 +6,7 @@
 
 현재 Mac에 호환 Xcode26.6/17F113을 별도 설치했고 Apple 패키지 서명/앱 엄격 서명/Gatekeeper와 사용자 약관 동의 후 첫 실행/SDK26.5 조회가 통과했습니다. 사용자가 Xcode에도 로그인했고 실제 Personal Team을 로컬 환경에만 전달해 게임 iOS 프로젝트 내보내기를 완료했습니다. 템플릿 기본 경로·편집기의 runtime override 무시·모바일 텍스처 임포트·미지정 아이콘으로 실패한 네 시도는 보존했습니다. 최종 도구는 복사본 project.godot만 병합하고 원본95개/나머지 복사본94개/변경한 복사본 설정의 별도 해시를 확인합니다. 최종29도구 시험과 실제 내보낸 PCK13설정/제외 검사가 실패0/종료0이며 스킴 조회도 종료0입니다.
 
-첫 서명 없는 기기 빌드는 iOS 플랫폼 미설치로 종료70이어서 Xcode 공식 iOS26.5.1 + iOS26.5 Simulator8.52GB 다운로드를 시작했습니다. 컴파일 성공·서명·설치·실기기 검증은 아직 미완료입니다. devicectl은 종료0/기기0대였고 사용자 연결/신뢰를 요청했습니다. 후보 iPhone15Pro의 정확한 모델/iOS도 아직 확인하지 않았습니다. Mac PCK·게임95개 소스·기존 앱을 보존하고 실제 사용자 저장은 읽지 않았습니다. [준비 상태/재현](docs/IOS_DEVICE_PREPARATION.md), [선별 증거](../evidence/ios-device-preparation-v1.json).
+첫 서명 없는 기기 빌드 종료70은 공식 iOS26.5.1/시뮬레이터 묶음 설치 후 해결됐습니다. 두 번째 generic iOS 빌드 종료0/BUILD SUCCEEDED이며 실제 arm64 실행 파일·최소iOS17·iPhone 전용/세로·내장 PCK 일치를 확인했습니다. 실제 미서명 상태이며 앱12파일은 outputs/ramen-ios-device-build-v1에 바이트 일치로 보존했습니다. 생성 템플릿 pragma once/미사용 빈 개인정보 권한 설명/AppIntents 미사용 경고는 기록했고 배포 전 정리 대상입니다. 서명·설치·실기기 검증은 아직 미완료입니다. devicectl은 종료0/기기0대였고 사용자 연결/신뢰를 요청했습니다. 후보 iPhone15Pro의 정확한 모델/iOS도 아직 확인하지 않았습니다. Mac PCK·게임95개 소스·기존 앱을 보존하고 실제 사용자 저장은 읽지 않았습니다. [준비 상태/재현](docs/IOS_DEVICE_PREPARATION.md), [선별 증거](../evidence/ios-device-preparation-v1.json).
 
 ## 장터 반복 채집 v11 (2026-10-20, 로컬)
 

@@ -2,7 +2,7 @@
   "format": 1,
   "date": "2026-10-20",
   "base_commit": "de76d580ce98338bbb920a08e1464a4484916d7f",
-  "status": "Official Xcode26.6, first launch, iOS SDK26.5 CLI and actual Personal Team verified. Real Godot iOS project export succeeds; original95 sources preserved, copied project.godot intentionally configured. Unsigned build blocked by missing iOS platform; official 8.52GB component download running. No signed/installed/device acceptance.",
+  "status": "Official Xcode26.6/first launch/iOS platform/account and actual Personal Team verified. Real iOS project export and unsigned generic iphoneos build succeeded0. Actual arm64 executable/min17/portrait/PCK identity inspected. No signed/installed/device acceptance; no connected iPhone.",
   "owner": "Codex",
   "claude_invoked": false,
   "device_candidate": "iPhone15Pro (user memory; actual model/iOS unconfirmed)",
@@ -175,8 +175,8 @@
     "all_tool_regression_exit": 0,
     "partial_failure_diagnostic_and_source_preservation": true
   },
-  "ios_xcode_project_exported": false,
-  "ios_app_built": false,
+  "ios_xcode_project_exported": true,
+  "ios_app_built": true,
   "signed": false,
   "installed": false,
   "device_tested": false,
@@ -288,12 +288,21 @@
     },
     "copied_config_preservation": {
       "sha256": "07c96978a8eb1af404f6590be431f310607a5a5dca28ef1bbc828809b44b8877"
+    },
+    "work/ios-unsigned-device-build-20261020-v5-attempt2.log": {
+      "sha256": "cfc7e4206a4884abc5c62a86ce337a6ce0c744b18b7714479290e779840326cd"
+    },
+    "work/ios-built-app-inspection-20261020-v5.json": {
+      "sha256": "24b1517b9c13e7429958cb5cdec9870b7e5c41007d0bdf865dc0c71aff18db37"
+    },
+    "work/ios-simulator-runtimes-20261020.log": {
+      "sha256": "2ef77dd1f7adfa47f4f9e8d273c5818ee63e9944e35f06cdad5a9e8ecf44ee2c"
     }
   },
   "remaining": [
-    "Finish official iOS platform download and retry unsigned generic iOS build",
-    "Connect actual iPhone, verify model/iOS and trust/developer mode, provision/sign/install",
-    "Actual touch, safe areas, keyboard, saves, backgrounding, performance and player acceptance"
+    "Connect actual iPhone and verify model/iOS/trust/developer mode; provision/sign/install with the real Personal Team",
+    "Actual touch, safe areas, Korean keyboard, saves, backgrounding, thermal/performance and player acceptance",
+    "Review generated unused privacy-description/upstream template warnings before distribution; no App Store readiness claimed"
   ],
   "sources": [
     "https://developer.apple.com/xcode/system-requirements",
@@ -302,7 +311,7 @@
     "https://github.com/godotengine/godot-builds/releases/tag/4.7.2-stable"
   ],
   "tool_sha256": "638612adb91d85192f6909b0a407aa016a1916c83253d80d5bab20578bb618ba",
-  "final_staging": "v2, final tool after preserving original errors if diagnostic write fails; same game sources/overrides",
+  "final_staging": "Historical initial v2 staging before actual team export. Current accepted export/tool is v5; copied project.godot intentionally configured.",
   "apple_login_confirmed": true,
   "xcode_download": {
     "official_url": "https://download.developer.apple.com/Developer_Tools/Xcode_26.6/Xcode_26.6_Apple_silicon.xip",
@@ -348,7 +357,7 @@
     "per_command_developer_dir": "/Applications/Xcode-26.6.app/Contents/Developer",
     "device_sdk_files_present": "iPhoneOS26.5.sdk",
     "simulator_sdk_files_present": "iPhoneSimulator26.5.sdk",
-    "simulator_runtime_verified": false,
+    "simulator_runtime_verified": true,
     "cli_preflight": {
       "version": {
         "exit": 0,
@@ -363,12 +372,11 @@
         "output": "You have not agreed to the Xcode license agreements. Please run 'sudo xcodebuild -license' from within a Terminal window to review and agree to the Xcode and Apple SDKs license.\n"
       }
     },
-    "actual_gui": "Xcode Components: downloading iOS26.5.1 + iOS26.5 Simulator, 8.52GB",
+    "actual_gui": "Xcode Components: installed iOS26.5.1 + iOS26.5 Simulator8.49GB",
     "license_accepted": true,
     "action_time_user_acceptance_requested": true,
     "user_completed_agreement": true,
     "required_system_components_installed": true,
-    "optional_runtime_and_predictive_model_downloads_selected": false,
     "ready_cli": {
       "first_launch_status": {
         "exit": 0,
@@ -384,7 +392,12 @@
       }
     },
     "xcode_account_login_confirmed": true,
-    "actual_team_configured": true
+    "actual_team_configured": true,
+    "initial_optional_downloads_selected": false,
+    "subsequent_required_ios_platform_bundle_installed": true,
+    "ios_platform_display": "iOS26.5.1 + iOS26.5 Simulator",
+    "predictive_model_or_other_platforms_downloaded": false,
+    "simulator_game_run": false
   },
   "current_export": {
     "attempt": "v5",
@@ -438,18 +451,52 @@
     }
   ],
   "unsigned_build": {
-    "attempt": "v5",
-    "exit": 70,
-    "status": "Blocked before compilation: iOS26.5 platform not installed",
+    "first_attempt_exit": 70,
+    "first_attempt_reason": "iOS platform not installed, before compilation; retained",
+    "platform_installed_before_retry": true,
+    "second_attempt_exit": 0,
+    "build_succeeded_marker": true,
     "code_signing_allowed": false,
-    "component_download_started": true,
-    "download_displayed_bytes": "8.52GB",
-    "completed": false
+    "compiled": true,
+    "app_inspection": {
+      "build_exit": 0,
+      "build_succeeded_marker": true,
+      "app": "/private/tmp/ramen-ios-export-20261020-v5/derived-data-v2/Build/Products/Debug-iphoneos/RamenAtelier.app",
+      "binary_sha256": "616679b01faae3d8e18b4beb8500e9c54be9340a59469a6ead3a2fd9208ef233",
+      "architecture": "arm64",
+      "bundle_identifier": "local.ramenatelier.dev.ios.v0",
+      "minimum_ios": "17.0",
+      "device_family": [
+        1
+      ],
+      "orientations": [
+        "UIInterfaceOrientationPortrait"
+      ],
+      "embedded_pack_sha256": "df685d9c520167188710fda830985d85acef32231ac3922aa4d13d8d7326ce45",
+      "embedded_pack_matches_export": true,
+      "sign_display_exit": 1,
+      "signed": false,
+      "signature_diagnostic": "/private/tmp/ramen-ios-export-20261020-v5/derived-data-v2/Build/Products/Debug-iphoneos/RamenAtelier.app: code object is not signed at all",
+      "installed": false,
+      "device_tested": false,
+      "original_game_sources_preserved": 95,
+      "mac_pack_unchanged": true,
+      "warnings": [
+        "Upstream dummy.h pragma once in main file",
+        "Unused empty camera/photo-library/microphone usage descriptions in generated plist",
+        "AppIntents metadata extraction skipped; no framework dependency"
+      ]
+    },
+    "durable_artifact": "outputs/ramen-ios-device-build-v1/RamenAtelier.app",
+    "durable_copy_file_count": 12,
+    "durable_copy_byte_equal": true
   },
   "device_discovery": {
     "exit": 0,
     "listed_devices": 0,
     "device_identifiers_published": false,
-    "user_connection_requested": true
+    "user_connection_requested": true,
+    "second_query_exit": 0,
+    "second_query_listed_devices": 0
   }
 }
