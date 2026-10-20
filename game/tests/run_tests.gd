@@ -32,6 +32,7 @@ const ProcessRules = preload("res://scripts/domain/recipe_process.gd")
 const StoryCatalog = preload("res://scripts/domain/regular_story_catalog.gd")
 const Stories = preload("res://scripts/domain/regular_stories.gd")
 const StoryFixtures = preload("res://tests/regular_story_fixtures.gd")
+const ForagingTests = preload("res://tests/market_foraging_tests.gd")
 
 const ARG: String = "--test-data-dir="
 
@@ -112,6 +113,7 @@ func _initialize() -> void:
 		test_story_three_customers,
 		test_taste_achievement_persistence, test_taste_achievement_rejections, test_notebook_version_limits,
 		test_hiring_preview, test_hiring_preview_context,
+		test_market_foraging,
 	]
 	var ran: int = 0
 	for t in tests:
@@ -891,6 +893,7 @@ func test_training_legacy_v5() -> void:
 	raw.erase("shop")
 	raw.erase("stories")
 	raw.erase("taste_achievements")
+	raw.erase("foraging")
 	var old: String = JSON.stringify(raw, "\t", true)
 	var dir: String = _case_dir("training_v5")
 	var saver: SaveServiceScript = SaveServiceScript.new(dir)
@@ -1154,6 +1157,7 @@ func test_contest_migration_v4() -> void:
 	v4.erase("shop")
 	v4.erase("stories")
 	v4.erase("taste_achievements")
+	v4.erase("foraging")
 	var dir: String = _case_dir("contest_v4")
 	var saver: SaveServiceScript = SaveServiceScript.new(dir)
 	saver.remove_known_files()
@@ -3358,6 +3362,7 @@ func _as_legacy(src: Dictionary, version: int) -> Dictionary:
 	d.erase("shop")
 	d.erase("stories")
 	d.erase("taste_achievements")
+	d.erase("foraging")
 	if version == 1:
 		d.erase("research")
 	for r in d["records"]:
@@ -4112,6 +4117,7 @@ func test_schema_migration_v1_v2() -> void:
 	v2_new_cfg.erase("shop")
 	v2_new_cfg.erase("stories")
 	v2_new_cfg.erase("taste_achievements")
+	v2_new_cfg.erase("foraging")
 	_check(GameStateScript.new().load_from_dict(v2_new_cfg) != "", "toppings 배열을 쓴 v2 거부")
 	var v3_old_cfg: Dictionary = _as_legacy(_populated_state().to_dict(), 3)
 	v3_old_cfg["growth"] = v3["growth"]
@@ -4373,6 +4379,7 @@ func _as_v3(src: Dictionary) -> Dictionary:
 	d.erase("shop")
 	d.erase("stories")
 	d.erase("taste_achievements")
+	d.erase("foraging")
 	return d
 
 
@@ -4465,7 +4472,7 @@ func test_discovery_catalogue_shape() -> void:
 		for item in Catalog.items(slot):
 			cost_sum += int((item as Dictionary)["cost"])
 			sec_sum += int((item as Dictionary)["seconds"])
-		_check(Catalog.all_items(slot).size() == Catalog.items(slot).size() + Catalog.discovery_items(slot).size(), "전체 = 예전 + 발견: " + slot)
+		_check(Catalog.all_items(slot).size() == Catalog.items(slot).size() + Catalog.discovery_items(slot).size() + Catalog.farmed_items(slot).size(), "전체 = 예전 + 발견 + 연구 채집: " + slot)
 	_check(combos == 972 and cost_sum == 5450 and sec_sum == 400, "예전 재료의 비용/시간 지문이 바뀌면 안 돼요 (%d, %d, %d)" % [combos, cost_sum, sec_sum])
 	_check(Check.config_error(Catalog.default_config()) == "" and Catalog.item_ids(Catalog.default_config()).size() == 6, "기본 구성은 예전 재료만")
 	for rid in Catalog.item_ids(Catalog.default_config()):
@@ -4537,7 +4544,7 @@ func test_old_evaluation_unchanged() -> void:
 	for i in Evaluator.COMPAT.size():
 		var rule: Dictionary = Evaluator.COMPAT[i]
 		_check(not Catalog.find(str(rule["a"])).is_empty() and not Catalog.find(str(rule["b"])).is_empty(), "궁합 규칙의 재료 id 가 카탈로그에 있어요: %d" % i)
-		var uses_discovery: bool = disc.has(str(rule["a"])) or disc.has(str(rule["b"]))
+		var uses_discovery: bool = disc.has(str(rule["a"])) or disc.has(str(rule["b"])) or Catalog.is_farmed(str(rule["a"])) or Catalog.is_farmed(str(rule["b"]))
 		_check(uses_discovery == (i >= Evaluator.LEGACY_COMPAT_COUNT), "규칙 %d: 발견 재료 규칙은 예전 규칙 뒤에만 있어야 해요" % i)
 	var checked: int = 0
 	for b in Catalog.items("broth"):
@@ -4978,7 +4985,7 @@ func test_discovered_ingredient_pipeline() -> void:
 	_check(s.discovered_ingredients().size() == 6 and int(s.exploration_progress()["obtained"]) == 6, "6개 모두 발견")
 	var counts: Dictionary = {"broth": 4, "tare": 4, "oil": 5, "noodle": 3, "topping": 6, "cook": 3}
 	for slot in counts:
-		_check(s.available_items(slot).size() == int(counts[slot]) and s.locked_items(slot).is_empty(), "선택 가능 개수: " + slot)
+		_check(s.available_items(slot).size() == int(counts[slot]) and s.locked_items(slot).size() == Catalog.farmed_items(slot).size(), "기존 공급처 모두 해금, 채집 재료만 별도 잠금: " + slot)
 	for region in Exploration.region_ids():
 		var rv: Dictionary = s.exploration_region(region)
 		_check(bool(rv["complete"]) and int(rv["obtained"]) == 2 and str(rv["status"]) == "complete" and not bool(rv["can_start"]), "발견을 마친 지역: " + region)
@@ -5816,6 +5823,7 @@ func test_notebook_version_limits() -> void:
 	for version in range(3, 10):
 		var d: Dictionary = s.to_dict()
 		d.erase("taste_achievements")
+		d.erase("foraging")
 		d["schema_version"] = version
 		for pair in [["stories",9],["shop",7],["training",6],["contests",5],["exploration",4]]:
 			if version < pair[1]: d.erase(pair[0])
@@ -5901,4 +5909,9 @@ func test_hiring_preview_context() -> void:
 	_check(bool(hired.hire_staff("prep_assistant")["ok"]), "중복 고용 비교용 직원")
 	before = _json(hired)
 	_check(str(hired.hiring_preview("prep_assistant")["error"]).contains("이미") and _json(hired) == before, "이미 고용된 직원은 중복 이익을 제안하지 않음")
+	_end()
+
+
+func test_market_foraging() -> void:
+	ForagingTests.new().run(_check, _case_dir("market_foraging"))
 	_end()

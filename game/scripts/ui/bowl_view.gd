@@ -137,6 +137,8 @@ func _draw_oil(c: Vector2) -> void:
 			oil_color = Color(0.82, 0.18, 0.10, 0.85)
 		"oil_scallion":
 			oil_color = Color(0.36, 0.60, 0.28, 0.85)
+		"oil_roasted_sesame":
+			oil_color = Color(0.77, 0.52, 0.19, 0.85)
 	if oil_color.a == 0.0:
 		return
 	for i in 9:
@@ -157,6 +159,10 @@ func _draw_topping(c: Vector2) -> void:
 
 func _draw_one_topping(topping_id: String, c: Vector2) -> void:
 	match topping_id:
+		"topping_citrus_peel":
+			for i in 3:
+				var p: Vector2 = c + Vector2(-26.0 + i * 12.0, -6.0)
+				draw_line(p, p + Vector2(5.0, 12.0), Color(1.0, 0.83, 0.12), 3.0, true)
 		"topping_chashu":
 			for i in 2:
 				var p: Vector2 = c + Vector2(-34.0 + float(i) * 26.0, -4.0 + float(i) * 4.0)

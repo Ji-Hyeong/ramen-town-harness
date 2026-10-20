@@ -28,6 +28,7 @@ const ArtScript = preload("res://scripts/ui/pixel_art.gd")
 const WorkScript = preload("res://scripts/ui/tasting_work.gd")
 const WorkViewScript = preload("res://scripts/ui/tasting_work_view.gd")
 const Exploration = preload("res://scripts/domain/ingredient_exploration.gd")
+const Foraging = preload("res://scripts/domain/market_foraging.gd")
 const TravelScript = preload("res://scripts/ui/expedition_travel.gd")
 const Contest = preload("res://scripts/domain/ramen_contest.gd")
 
@@ -1953,7 +1954,7 @@ func _refresh_exploration() -> void:
 				var text: String = str(ch["desc"])
 				if ch.has("ingredient_name"):
 					text += "\n" + str(ch["ingredient_name"]) + (" · 이미 발견한 재료" if bool(ch["known"]) else " · 새 재료")
-				if not bool(ch["affordable"]):
+				if not bool(ch["affordable"]) and not bool(ch.get("capacity_blocked", false)):
 					text += " · 자금이 모자라요."
 				var detail: Label = _label(text, 14, MUTED)
 				detail.name = "ExpeditionChoiceNote_" + str(ch["id"])
@@ -1971,6 +1972,7 @@ func _refresh_exploration() -> void:
 		var last: Label = _label(message, 16, TEAL)
 		last.name = "ExplorationLastReceipt"
 		_exploration_box.add_child(last)
+	_refresh_foraging_card()
 	for rv in state.exploration_regions():
 		var region: Dictionary = rv
 		var id: String = str(region["id"])
@@ -1998,6 +2000,46 @@ func _refresh_exploration() -> void:
 		box.add_child(depart)
 		_exploration_box.add_child(card)
 	_sync_exploration_lock()
+
+
+## No new management tab: the market sample loop lives next to supplier trips.
+## Display the trial-only consumption contract before the player pays a fee.
+func _refresh_foraging_card() -> void:
+	var review: Dictionary = state.foraging_review()
+	var samples: Dictionary = review["state"]
+	var card: PanelContainer = _card("ForagingCard")
+	var box: VBoxContainer = _vbox(6)
+	card.add_child(box)
+	box.add_child(_label("새벽 장터 · 연구 재료 채집", 18, VERMILION))
+	var rules: Label = _label("출발 1,000원 · 기존 탐색과 합쳐 하루 한 번\n시제품 완성마다 해당 재료 1개를 써요. 취소하면 쓰지 않아요. 등록한 메뉴의 판매는 영업 원가로 공급돼요.", 14, MUTED)
+	rules.name = "ForagingRules"
+	box.add_child(rules)
+	var stock_lines: Array[String] = []
+	for id in Foraging.IDS:
+		stock_lines.append("%s · 연구 재료 %d/20개" % [Catalog.find(id)["name"], samples["stock"][id]])
+	var stock: Label = _label("\n".join(stock_lines), 15, TEAL)
+	stock.name = "ForagingStock"
+	box.add_child(stock)
+	if not samples["history"].is_empty():
+		var receipt: Dictionary = samples["history"].back()
+		var text: String = "%d일차 채집 · 포기 (환불 없음)" % receipt["day"]
+		if receipt["outcome"] == "finished":
+			text = "%d일차 · %s %d개 수령" % [receipt["day"], Catalog.find(receipt["ingredient"])["name"], receipt["amount"]]
+		box.add_child(_label(text, 14, TEAL))
+	var reason: Label = _label(str(review["reason"]), 14, MUTED)
+	reason.name = "ForagingReason"
+	reason.visible = reason.text != ""
+	box.add_child(reason)
+	var depart: Button = _exploration_button("연구 재료 채집 · 1,000원", "ForagingDepart", not bool(review["can_start"]))
+	depart.pressed.connect(_on_foraging_depart)
+	box.add_child(depart)
+	_exploration_box.add_child(card)
+
+
+func _on_foraging_depart() -> void:
+	if _exploration_guard():
+		return
+	_finish_exploration_action(state.start_foraging(), true)
 
 
 func _sync_exploration_lock() -> void:
@@ -2055,7 +2097,7 @@ func _on_exploration_retire() -> void:
 func _finish_exploration_action(result: Dictionary, travel: bool = false) -> void:
 	var message: String = str(result["message"])
 	if not bool(result["ok"]):
-		_exploration_message.text = message
+		_exploration_message.text = _unsaved_notice(message)
 		_exploration_message.visible = true
 		_exploration_message.add_theme_color_override("font_color", VERMILION)
 		return
@@ -2456,6 +2498,8 @@ func _refresh_lab() -> void:
 		for cid in chosen_ids:
 			var sel: Dictionary = Catalog.find(cid)
 			desc_lines.append("%s — %s\n비용 %s · 준비 %d초 · %s" % [str(sel["name"]), str(sel["desc"]), _won(int(sel["cost"])), int(sel["seconds"]), Catalog.axes_text(sel)])
+			if Catalog.is_farmed(cid):
+				desc_lines.append("연구 재료 %d개 보관 · 시제품 완성에 1개 필요\n판매는 추가 샘플 없이 영업 원가로 공급돼요." % state.foraging_state()["stock"][cid])
 		var desc: Label = _desc_labels[slot]
 		desc.text = "\n".join(desc_lines)
 	var slots: int = state.topping_slots()
@@ -2835,7 +2879,7 @@ func _on_research_mode(stories: bool) -> void:
 	_story_mode = stories
 	_story_armed = ""
 	_story_armed_until = 0
-	_research_message.text = _story_save_notice("") if stories else ""
+	_research_message.text = _unsaved_notice("") if stories else ""
 	_refresh_research()
 	(tabs.get_child(TAB_RESEARCH) as ScrollContainer).scroll_vertical = 0
 
@@ -2847,7 +2891,7 @@ func _on_story_choice(customer: String, route: String) -> void:
 	if _story_armed != key or Time.get_ticks_msec() > _story_armed_until:
 		_story_armed = key
 		_story_armed_until = Time.get_ticks_msec() + 6000
-		_research_message.text = _story_save_notice("이번 사연의 방향은 선택 후 바꿀 수 없어요. 같은 버튼을6초 안에 다시 누르면 확정해요. 비용은 없어요.")
+		_research_message.text = _unsaved_notice("이번 사연의 방향은 선택 후 바꿀 수 없어요. 같은 버튼을6초 안에 다시 누르면 확정해요. 비용은 없어요.")
 		_refresh_research()
 		return
 	_story_armed = ""
@@ -2869,14 +2913,14 @@ func _story_result(result: Dictionary) -> void:
 		saved = _persist()
 		text += " 저장했어요." if saved else " 저장하지 못했어요: " + _last_save_message + " 수동 저장 후 닫아 주세요."
 	else:
-		text = _story_save_notice(text)
+		text = _unsaved_notice(text)
 	_refresh_all()
 	_research_message.text = text
 	_research_message.add_theme_color_override("font_color", TEAL if saved else VERMILION)
 
 
 ## 거부/화면 전환 같은 부수 조작이 미저장 거래의 경고를 가리지 않게 한다.
-func _story_save_notice(text: String) -> String:
+func _unsaved_notice(text: String) -> String:
 	return text + ("\n아직 저장하지 못했어요: " + _last_save_message + " 수동 저장 후 닫아 주세요." if _save_error_shown else "")
 
 

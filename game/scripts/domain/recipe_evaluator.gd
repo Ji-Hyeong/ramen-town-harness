@@ -90,6 +90,11 @@ const COMPAT: Array = [
 	{"a": "topping_mushroom", "b": "tare_miso", "score": 3, "note": "표고 조림이 된장 타레의 구수함과 이어져요"},
 	{"a": "topping_mushroom", "b": "broth_clam", "score": 3, "note": "표고의 감칠맛이 조개 국물과 겹쳐 깊어져요"},
 	{"a": "topping_mushroom", "b": "topping_sprouts", "score": -2, "note": "표고 조림과 숙주는 식감이 따로 놀아요"},
+	# Only new farmed ingredients trigger these rules; every old recipe is stable.
+	{"a": "oil_roasted_sesame", "b": "broth_tonkotsu", "score": 3, "note": "볶은 참깨유의 고소함이 돼지뼈 국물과 이어져요"},
+	{"a": "oil_roasted_sesame", "b": "broth_dashi", "score": -4, "note": "참깨유의 강한 향이 섬세한 해물 다시를 덮어요"},
+	{"a": "topping_citrus_peel", "b": "broth_chicken", "score": 3, "note": "유자 껍질이 맑은 닭 육수에 산뜻한 향을 더해요"},
+	{"a": "topping_citrus_peel", "b": "tare_miso", "score": -3, "note": "유자의 산뜻한 향이 된장 타레와 따로 놀아요"},
 ]
 
 
