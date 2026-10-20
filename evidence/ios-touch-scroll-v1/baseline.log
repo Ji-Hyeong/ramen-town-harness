@@ -1,0 +1,37 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+LAYOUT ONLY: no screenshots or visual rendering verified
+QA mode=layout-only (no screenshots) checks=66 failures=32 out=/private/tmp/ramen-touch-baseline-expanded-20261021-v1
+LAYOUT ONLY: no screenshots or visual rendering verified
+FAIL: desktop: swipe starting on enabled button scrolls
+FAIL: desktop: disabled button also permits content swipe
+FAIL: desktop: swipe on ingredient option scrolls
+FAIL: desktop: swipe starting on bowl picture scrolls
+FAIL: desktop: vertical swipe starting on name field scrolls
+FAIL: desktop: tap tolerance tab 1
+FAIL: desktop: tap tolerance tab 2
+FAIL: desktop: tap tolerance tab 3
+FAIL: desktop: tap tolerance tab 4
+FAIL: desktop: tap tolerance tab 5
+FAIL: desktop: tap tolerance tab 6
+FAIL: desktop: tap tolerance tab 7
+FAIL: desktop: swipe on card/text scrolls
+FAIL: desktop: reverse drag from content edge scrolls
+FAIL: desktop: real touch stream scrolls from button
+FAIL: desktop: real touch stream scrolls from name field
+FAIL: portrait: swipe starting on enabled button scrolls
+FAIL: portrait: disabled button also permits content swipe
+FAIL: portrait: swipe on ingredient option scrolls
+FAIL: portrait: swipe starting on bowl picture scrolls
+FAIL: portrait: vertical swipe starting on name field scrolls
+FAIL: portrait: tap tolerance tab 1
+FAIL: portrait: tap tolerance tab 2
+FAIL: portrait: tap tolerance tab 3
+FAIL: portrait: tap tolerance tab 4
+FAIL: portrait: tap tolerance tab 5
+FAIL: portrait: tap tolerance tab 6
+FAIL: portrait: tap tolerance tab 7
+FAIL: portrait: swipe on card/text scrolls
+FAIL: portrait: reverse drag from content edge scrolls
+FAIL: portrait: real touch stream scrolls from button
+FAIL: portrait: real touch stream scrolls from name field
