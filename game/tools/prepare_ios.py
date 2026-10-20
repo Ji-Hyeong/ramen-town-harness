@@ -9,6 +9,7 @@ import argparse
 import json
 import os
 from pathlib import Path
+import plistlib
 import re
 import shutil
 import stat
@@ -76,9 +77,23 @@ application/export_project_only=true
 application/delete_old_export_files_unconditionally=false
 modules/camera=false
 entitlements/game_center=false
-entitlements/push_notifications=""
+entitlements/push_notifications="Disabled"
 icons/icon_1024x1024="res://ios-development-icon.svg"
 '''
+
+
+def verify_exported_entitlements(xcode):
+    # Godot's disabled enum is the literal "Disabled", not an empty string.
+    # Inspect the actual export too: even an empty aps-environment key asks
+    # Apple provisioning for Push Notifications, unsupported by Personal Team.
+    path = xcode / "RamenAtelier" / "RamenAtelier.entitlements"
+    require(path.is_file(), "Exported entitlements file missing.")
+    entitlements = plistlib.loads(path.read_bytes())
+    require(isinstance(entitlements, dict), "Exported entitlements must be a dictionary.")
+    forbidden = {"aps-environment", "com.apple.developer.game-center",
+                 "com.apple.developer.kernel.increased-memory-limit"}
+    require(not forbidden.intersection(entitlements),
+            "Unexpected capability in exported development entitlements.")
 
 
 def development_icon_svg():
@@ -195,6 +210,7 @@ def prepare(godot, project, template, output, export=False, team=""):
             checked_run([str(engine), "--headless", "--path", str(snapshot), "--export-debug", PRESET, str(xcode / "RamenAtelier.ipa")],
                         prep / "export.log", env, prep)
             require((xcode / "RamenAtelier.xcodeproj/project.pbxproj").is_file(), "Exported Xcode project missing.")
+            verify_exported_entitlements(xcode)
         require(all(shared.sha256_of(project / name) == digest and
                     shared.sha256_of(snapshot / name) == staged[name] for name, digest in original.items()),
                 "Original or staged game source changed during import/export.")
@@ -211,7 +227,7 @@ def prepare(godot, project, template, output, export=False, team=""):
                   "mac_source_preserved": True, "live_save_accessed": False}
         (output / "preparation.json").write_text(json.dumps(report, indent=2) + "\n")
         return report
-    except (shared.BuildError, OSError, zipfile.BadZipFile) as error:
+    except (shared.BuildError, OSError, zipfile.BadZipFile, plistlib.InvalidFileException) as error:
         try:
             (prep / "FAILED.txt").write_text(str(error) + "\n")
         except OSError as diagnostic_error:
@@ -229,7 +245,7 @@ def main():
         paths = [shared.absolute_path(name, value) for name, value in
                  [("godot", args.godot), ("project", args.project), ("ios-template", args.ios_template), ("output-dir", args.output_dir)]]
         report = prepare(*paths, export=args.export_project, team=os.environ.get("RAMEN_IOS_TEAM_ID", ""))
-    except (shared.BuildError, OSError, zipfile.BadZipFile) as error:
+    except (shared.BuildError, OSError, zipfile.BadZipFile, plistlib.InvalidFileException) as error:
         print("iOS preparation failed: " + str(error), file=sys.stderr)
         return 2
     print(json.dumps({key: report[key] for key in ("status", "source_count", "team_configured", "ios_app_built", "device_tested")}))

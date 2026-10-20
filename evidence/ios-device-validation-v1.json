@@ -1,0 +1,121 @@
+{
+  "format": 1,
+  "date": "2026-10-20",
+  "base_commit": "7051f6507fea96a564291450f9f1dab92d740ff7",
+  "status": "Real iPhone paired/developer mode enabled; corrected entitlement export, signed build and installation pass. First launch rejected by device security; user developer-app trust requested, not yet resolved.",
+  "device": {
+    "model": "iPhone15Pro",
+    "product_type": "iPhone16,1",
+    "ios": "26.6.2",
+    "developer_mode": "enabled",
+    "paired": true,
+    "wired": true
+  },
+  "private_device_account_identifiers_published": false,
+  "claude_invoked": false,
+  "tool_fix": {
+    "push_setting": "Disabled literal enum instead of empty string",
+    "actual_export_capability_keys": [],
+    "tool_tests": 31,
+    "new_regressions": 2,
+    "test_failures": 0,
+    "test_exit": 0,
+    "tool_sha256": "a57c5dce27d6208fd9368778e412c0ee0f095031a842ec06f2c97ce78529627c",
+    "actual_prior_export_refused": true,
+    "actual_corrected_export_accepted": true
+  },
+  "signed_build": {
+    "first_exit": 65,
+    "first_reason": "Empty push option generated APNS entitlement unsupported by Personal Team",
+    "corrected_export_exit": 0,
+    "second_build_exit": 0,
+    "second_build_succeeded": true,
+    "inspection": {
+      "signature_exit": 0,
+      "signed": true,
+      "profile_matches_device": true,
+      "profile_team_and_application_match": true,
+      "debugger_entitlement": true,
+      "push_entitlement_present": false,
+      "profile_expiration_utc": "2026-10-27T14:45:57Z",
+      "pack_matches_export": true,
+      "pack_sha256": "f66a98d6dd30f028013c96f5972271b3690b0a6195bd1e0673a67b05890ec351",
+      "old_verified_ios_pack_equal": false,
+      "binary_sha256": "48249ee9e992d93bf09ec647b4fc39ee9b51331a745312abf27aa6864b96ee46",
+      "no_private_identifiers_in_this_report": true
+    }
+  },
+  "installation": {
+    "exit": 0,
+    "json_outcome": "success",
+    "bundle_identifier": "local.ramenatelier.dev.ios.v0",
+    "uninstall_or_device_erase": false
+  },
+  "launch": {
+    "first_exit": 1,
+    "first_json_outcome": "failed",
+    "reason": "Device security generic rejection: invalid signature/inadequate entitlements/profile not explicitly trusted; local signature/profile checks pass; user trust requested",
+    "user_trust_completed": false,
+    "success": false
+  },
+  "pack_comparison": {
+    "old_and_new_pck_byte_equal": false,
+    "file_count_each": 75,
+    "equal_file_hash_count": 74,
+    "different_entry": "res://.godot/exported/133200997/export-3ad5c15c4f3250da0cc7c1af1770d85f-main.scn",
+    "different_scene_decoded_node_properties_and_connections_equal": true,
+    "full_project_settings_equal": true,
+    "all_other_scripts_resources_equal": true
+  },
+  "original_source_count_preserved": 95,
+  "existing_mac_player_pack_preserved": true,
+  "live_mac_save_accessed": false,
+  "visual_device_check": false,
+  "touch_save_lifecycle_check": false,
+  "logs": {
+    "ios-device-tool-tests-v1.log": {
+      "sha256": "d2a14b59ade89e5adef7cb787f714c0a2b371f147379ecd219204713609bdcac"
+    },
+    "ios-signed-device-build-20261020-v1.log": {
+      "sha256": "36f4f93ba2ddc377a17f68cd5f5ef6fabb0a4213e5dc9b6ad8e902220213a8e9"
+    },
+    "ios-signed-device-build-20261020-v2.log": {
+      "sha256": "9adf6912eeee7551fbffb4f702e3a820be19eafb35b6d52ef410794267701aca"
+    },
+    "ios-device-signed-app-verification-v1.log": {
+      "sha256": "6eb1f6088898780834214e551b564af41bb77d24efca58bf2753380cecf5022e"
+    },
+    "ios-device-install-20261020-v1.log": {
+      "sha256": "ecaacdbff8b0d3abcbacaa86d20e23059ca51473c9db4ddce7bd12852025688e"
+    },
+    "ios-device-launch-20261020-v1.log": {
+      "sha256": "e86e7a5514632ccd021f9b5d9a5baba275dcf75206321664a5edfdd2dc23f31e"
+    },
+    "ios-unsigned-pack-inventory-v1.log": {
+      "sha256": "ded46bf2679c08e67733d72fe56757853bccef8a341d3dacffbfdc44c60a2ad7"
+    },
+    "ios-signed-pack-inventory-v1.log": {
+      "sha256": "ded46bf2679c08e67733d72fe56757853bccef8a341d3dacffbfdc44c60a2ad7"
+    },
+    "ios-unsigned-scene-semantics-v1.log": {
+      "sha256": "21540845c74a1fc9623fb038b07e15010c31ad0e2a4802dcf80dfe284918cae1"
+    },
+    "ios-signed-scene-semantics-v1.log": {
+      "sha256": "21540845c74a1fc9623fb038b07e15010c31ad0e2a4802dcf80dfe284918cae1"
+    },
+    "ios-device-pack-settings-v1.log": {
+      "sha256": "9ab8c40f6e507b12aea90cea5b9aeb6d0ae22891ee42f8aed19ec13f4fc781cb"
+    },
+    "ios-device-config-preservation-v1.log": {
+      "sha256": "07c96978a8eb1af404f6590be431f310607a5a5dca28ef1bbc828809b44b8877"
+    }
+  },
+  "exported_pack_settings_checks": 13,
+  "exported_pack_settings_failures": 0,
+  "copied_config_preservation_checks": 30,
+  "copied_config_preservation_failures": 0,
+  "durable_private_xcode_file_count": 47,
+  "durable_private_signed_app_file_count": 14,
+  "durable_copy_byte_equal": true,
+  "durable_signed_copy_strict_signature_exit": 0
+}

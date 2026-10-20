@@ -4,6 +4,7 @@ Fake Mach-O fixtures are only used before execution; these tests never launch
 an engine, sign an app, touch accounts or inspect the user's save directory.
 """
 from pathlib import Path
+import plistlib
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -87,6 +88,21 @@ class IOSPreparationTests(unittest.TestCase):
                 self.prepare()
         self.assertEqual((self.output / "prep/FAILED.txt").read_text(), "copy failed\n")
         self.assertEqual(before, tree_digest(self.project))
+
+    def test_empty_push_entitlement_still_requests_capability_and_is_refused(self):
+        # Reproduce the actual Personal Team provisioning failure, including
+        # its deceptively empty value rather than testing only a truthy value.
+        path = self.root / "RamenAtelier/RamenAtelier.entitlements"
+        path.parent.mkdir()
+        path.write_bytes(plistlib.dumps({"aps-environment": ""}))
+        with self.assertRaisesRegex(shared.BuildError, "Unexpected capability"):
+            ios.verify_exported_entitlements(self.root)
+
+    def test_capability_free_export_is_accepted(self):
+        path = self.root / "RamenAtelier/RamenAtelier.entitlements"
+        path.parent.mkdir()
+        path.write_bytes(plistlib.dumps({}))
+        ios.verify_exported_entitlements(self.root)
 
 
 if __name__ == "__main__":
