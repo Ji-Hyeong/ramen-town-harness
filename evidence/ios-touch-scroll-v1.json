@@ -2,7 +2,7 @@
   "date": "2026-10-21",
   "task": "ios-touch-scroll-v1",
   "base_commit": "f11e5d2be5871ecd80d23a19ad658ae5eaa720e6",
-  "status": "corrected_build_installed_physical_touch_acceptance_pending",
+  "status": "corrected_build_installed_swipe_and_tap_accepted_by_user",
   "device": {
     "model": "iPhone15Pro",
     "product_type": "iPhone16,1",
@@ -221,12 +221,18 @@
   "mac_player_pack_preserved": true,
   "mac_live_save_untouched": true,
   "remaining": [
-    "Physical swipe/tap feel requires user feedback.",
     "Actual iOS virtual keyboard/Korean composition and lifecycle acceptance."
   ],
   "limitations": [
     "Name-field vertical drag has no custom fling; other content uses native ScrollContainer inertia.",
     "Automated gesture tests and screenshots do not establish player comfort.",
     "Existing generated-template warnings remain; this is a development app, not a store release."
-  ]
+  ],
+  "physical_touch_acceptance": {
+    "date": "2026-10-21",
+    "source": "direct user feedback on installed corrected iPhone build",
+    "swipe_anywhere_scrolls": true,
+    "tap_normal": true,
+    "user_reply": "화면 어디서 밀어도 스크롤되고 탭도 정상"
+  }
 }

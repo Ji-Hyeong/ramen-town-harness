@@ -54,8 +54,9 @@ both exit0/JSONsuccess; this app's save and backup were backed up immediately
 before replacement and remain byte-identical after installation. No uninstall.
 Actual1179x2556 game-launch screenshot reviewed. Durable signed app stays private.
 
-Physical swipe/tap comfort is AWAITING USER FEEDBACK, not accepted by automated
-tests. Actual virtual keyboard/Korean composition and lifecycle checks remain
-pending too. A name-field drag has no custom fling; ordinary content retains
+The user directly confirmed on the installed corrected iPhone build that swipes
+anywhere scroll and taps work normally. Physical swipe/tap acceptance therefore
+passes based on actual user feedback, not on automated checks. Actual virtual
+keyboard/Korean composition and lifecycle checks remain pending. A name-field drag has no custom fling; ordinary content retains
 native ScrollContainer inertia. Publish only this explicitly verified fix scope
 under standing ready-PR/merge authorization; do not claim complete mobile QA.
