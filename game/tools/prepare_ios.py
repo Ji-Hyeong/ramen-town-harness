@@ -77,6 +77,19 @@ application/delete_old_export_files_unconditionally=false
 modules/camera=false
 entitlements/game_center=false
 entitlements/push_notifications=""
+icons/icon_1024x1024="res://ios-development-icon.svg"
+'''
+
+
+def development_icon_svg():
+    # A provisional opaque development icon; no release branding is implied.
+    return '''<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+<rect width="1024" height="1024" fill="#f6e7c7"/>
+<path d="M240 460H784C760 670 654 756 512 756S264 670 240 460Z" fill="#b54135"/>
+<ellipse cx="512" cy="460" rx="272" ry="84" fill="#462d25"/>
+<ellipse cx="512" cy="460" rx="226" ry="54" fill="#d9a95b"/>
+<path d="M390 420C358 374 448 342 414 284M518 420C486 374 576 342 542 284M646 420C614 374 704 342 670 284" fill="none" stroke="#8a643f" stroke-width="20" stroke-linecap="round"/>
+</svg>
 '''
 
 
@@ -93,6 +106,10 @@ window/handheld/orientation=1
 
 [input_devices]
 pointing/emulate_mouse_from_touch=true
+
+[rendering]
+; iOS export requires mobile texture imports even on a desktop host.
+textures/vram_compression/import_etc2_astc=true
 '''
 
 
@@ -101,6 +118,29 @@ def checked_run(args, log, env, cwd, timeout=900):
     require(code == 0, "Command failed; see " + str(log))
     require(not re.search(r"(?im)SCRIPT ERROR|ERROR:|Parse Error", log.read_text()),
             "Engine errors despite exit0; see " + str(log))
+
+
+def settings_merge_script():
+    # Editors ignore runtime override.cfg. Use Godot's own config parser to
+    # merge only these settings into the private snapshot, retaining every
+    # other setting. The accepted source project.godot is never written.
+    return '''extends SceneTree
+func _initialize():
+ var target = ConfigFile.new()
+ var overlay = ConfigFile.new()
+ if target.load("res://project.godot") != OK or overlay.load("res://override.cfg") != OK:
+  push_error("Cannot load staged iOS settings")
+  quit(1)
+  return
+ for section in overlay.get_sections():
+  for key in overlay.get_section_keys(section):
+   target.set_value(section, key, overlay.get_value(section, key))
+ if target.save("res://project.godot") != OK:
+  push_error("Cannot save staged iOS settings")
+  quit(1)
+  return
+ quit(0)
+'''
 
 
 def prepare(godot, project, template, output, export=False, team=""):
@@ -128,13 +168,25 @@ def prepare(godot, project, template, output, export=False, team=""):
         snapshot = prep / "project"
         scope = shared.build_snapshot(project, snapshot)
         original = {name: shared.sha256_of(project / name) for name in scope["included"]}
-        templates = prep / "templates"
-        templates.mkdir()
+        # Godot4.7 checks the standard template path before custom presets and
+        # retains its missing-template diagnostic. Install only in this copied
+        # engine's self-contained data directory, never the user's global one.
+        templates = runtime.parent / "editor_data" / "export_templates" / VERSION
+        templates.mkdir(parents=True)
         staged_template = templates / "ios.zip"
         shutil.copy2(template, staged_template)
         require(shared.sha256_of(staged_template) == IOS_SHA256, "Copied template changed.")
         (snapshot / "override.cfg").write_text(override_text())
+        (snapshot / "ios-development-icon.svg").write_text(development_icon_svg())
         (snapshot / "export_presets.cfg").write_text(preset_text(staged_template, team))
+        merger = prep / "merge_ios_settings.gd"
+        merger.write_text(settings_merge_script())
+        checked_run([str(engine), "--headless", "--path", str(snapshot), "--script", str(merger)],
+                    prep / "settings-merge.log", env, prep, 60)
+        # Only the copied project configuration intentionally differs. Freeze
+        # its new digest too, so later import/export mutations remain failures.
+        staged = dict(original)
+        staged["project.godot"] = shared.sha256_of(snapshot / "project.godot")
         checked_run([str(engine), "--headless", "--path", str(snapshot), "--editor", "--import", "--quit"],
                     prep / "import.log", env, prep)
         xcode = output / "xcode"
@@ -144,12 +196,13 @@ def prepare(godot, project, template, output, export=False, team=""):
                         prep / "export.log", env, prep)
             require((xcode / "RamenAtelier.xcodeproj/project.pbxproj").is_file(), "Exported Xcode project missing.")
         require(all(shared.sha256_of(project / name) == digest and
-                    shared.sha256_of(snapshot / name) == digest for name, digest in original.items()),
+                    shared.sha256_of(snapshot / name) == staged[name] for name, digest in original.items()),
                 "Original or staged game source changed during import/export.")
         checked_run(["/usr/bin/codesign", "--verify", "--deep", "--strict", str(runtime)],
                     prep / "signature-after.log", env, prep, 60)
         report = {"status": "xcode_project_exported_not_built" if export else "staged_not_exported",
                   "version": VERSION, "template_sha256": IOS_SHA256, "source_sha256": original,
+                  "staged_sha256": staged, "staging_config_changed": ["project.godot"],
                   "source_count": len(original), "excluded": scope["excluded"],
                   "team_configured": bool(team), "preset": PRESET,
                   "xcode_project": str(xcode / "RamenAtelier.xcodeproj") if export else None,

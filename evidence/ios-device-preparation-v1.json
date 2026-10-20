@@ -2,7 +2,7 @@
   "format": 1,
   "date": "2026-10-20",
   "base_commit": "de76d580ce98338bbb920a08e1464a4484916d7f",
-  "status": "Verified iOS staging/tooling and official compatible Xcode26.6 installation/trust. Actual SDK CLI and first launch blocked by license; user review/acceptance requested. No iOS project/app/device acceptance.",
+  "status": "Official Xcode26.6, first launch, iOS SDK26.5 CLI and actual Personal Team verified. Real Godot iOS project export succeeds; original95 sources preserved, copied project.godot intentionally configured. Unsigned build blocked by missing iOS platform; official 8.52GB component download running. No signed/installed/device acceptance.",
   "owner": "Codex",
   "claude_invoked": false,
   "device_candidate": "iPhone15Pro (user memory; actual model/iOS unconfirmed)",
@@ -240,12 +240,60 @@
     },
     "work/ios-xcode-device_sdk.log": {
       "sha256": "411522ec89779639df259fa9f595942811c505c31bc2eb85696023376304b203"
+    },
+    "work/ios-xcode-after-user-agreement-20261020.json": {
+      "sha256": "c4f21a928edb913a17a16c5d00c251bf775399a106bc0ceff050cf7a87486055"
+    },
+    "work/ios-xcode-ready-first_launch_status.log": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "work/ios-xcode-ready-device_sdk.log": {
+      "sha256": "25205f2e2f02dc71036ee827e19c49b893b231a3d1af240e35a3ac55aa8cdcb6"
+    },
+    "work/ios-xcode-ready-sdks.log": {
+      "sha256": "5c577db8d316a5d6dcb343f01a4357bdfbc45fe7a3f8a2b3487b4765d79ce00a"
+    },
+    "final_tool_tests": {
+      "sha256": "983a42222b927893d80b6bae0759e20e40deea4fdbe5f1d8e0608d466b651a94"
+    },
+    "exported_pack_settings": {
+      "sha256": "9ab8c40f6e507b12aea90cea5b9aeb6d0ae22891ee42f8aed19ec13f4fc781cb"
+    },
+    "xcode_project_list": {
+      "sha256": "1fbd7c8ac0f73df135bfc9e9a8f0b17ee5a2cd2ff5780450bc81328a0fe7853c"
+    },
+    "unsigned_build_first": {
+      "sha256": "f69dcbc6c2d59e823349714256976da7f632173b1bd7e04cb35f6be6fc2e5352"
+    },
+    "final_export": {
+      "sha256": "560118f1fa5a68c4c87238f988cc1141cb2e6c9abd945a2c6d536f44f1c275b9"
+    },
+    "final_merge": {
+      "sha256": "980d5e13ea0b1a1b118a0a0ea0caeead51a613bfdc3c912e14d678cb24d6420f"
+    },
+    "final_import": {
+      "sha256": "607a03bcc9fa10019191b145c922f7444e2753f3dd3f934db6855346a6480bbd"
+    },
+    "final_vendor_signature_before": {
+      "sha256": "bfb0b336b3d6f094c0819c0c353cd0c39a80623cf0914b4ae1d3c2e2e1c77b78"
+    },
+    "final_vendor_signature_after": {
+      "sha256": "bfb0b336b3d6f094c0819c0c353cd0c39a80623cf0914b4ae1d3c2e2e1c77b78"
+    },
+    "runtime_diagnosis": {
+      "sha256": "fbc9ab9a0c3272ae8e4c6d7a6b5c013ee915c2deda55aa98eba7565466c8f82e"
+    },
+    "editor_diagnosis_not_acceptance": {
+      "sha256": "ca671934cd917f32e5fc7b5860dcf975c75fd37545c8ac81222572447517179a"
+    },
+    "copied_config_preservation": {
+      "sha256": "07c96978a8eb1af404f6590be431f310607a5a5dca28ef1bbc828809b44b8877"
     }
   },
   "remaining": [
-    "User review/acceptance of actual Xcode EULA and any administrator authentication; verify first-launch components and SDK CLI afterward",
-    "Xcode Apple account and real signing team, project export and unsigned build",
-    "Actual iPhone model/iOS, trusted connection and device testing"
+    "Finish official iOS platform download and retry unsigned generic iOS build",
+    "Connect actual iPhone, verify model/iOS and trust/developer mode, provision/sign/install",
+    "Actual touch, safe areas, keyboard, saves, backgrounding, performance and player acceptance"
   ],
   "sources": [
     "https://developer.apple.com/xcode/system-requirements",
@@ -253,7 +301,7 @@
     "https://docs.godotengine.org/en/4.7/tutorials/export/exporting_for_ios.html",
     "https://github.com/godotengine/godot-builds/releases/tag/4.7.2-stable"
   ],
-  "tool_sha256": "da0e01a60bbe65e55a4743478a4f19db89e289e98afb0491fc50407159f6a7a2",
+  "tool_sha256": "638612adb91d85192f6909b0a407aa016a1916c83253d80d5bab20578bb618ba",
   "final_staging": "v2, final tool after preserving original errors if diagnostic write fails; same game sources/overrides",
   "apple_login_confirmed": true,
   "xcode_download": {
@@ -315,8 +363,93 @@
         "output": "You have not agreed to the Xcode license agreements. Please run 'sudo xcodebuild -license' from within a Terminal window to review and agree to the Xcode and Apple SDKs license.\n"
       }
     },
-    "actual_gui": "Xcode and Apple SDKs Agreement",
-    "license_accepted": false,
-    "action_time_user_acceptance_requested": true
+    "actual_gui": "Xcode Components: downloading iOS26.5.1 + iOS26.5 Simulator, 8.52GB",
+    "license_accepted": true,
+    "action_time_user_acceptance_requested": true,
+    "user_completed_agreement": true,
+    "required_system_components_installed": true,
+    "optional_runtime_and_predictive_model_downloads_selected": false,
+    "ready_cli": {
+      "first_launch_status": {
+        "exit": 0,
+        "output": ""
+      },
+      "device_sdk": {
+        "exit": 0,
+        "output": "26.5\n"
+      },
+      "sdks": {
+        "exit": 0,
+        "output": "DriverKit SDKs:\n\tDriverKit 25.5                \t-sdk driverkit25.5\n\niOS SDKs:\n\tiOS 26.5                      \t-sdk iphoneos26.5\n\niOS Simulator SDKs:\n\tSimulator - iOS 26.5          \t-sdk iphonesimulator26.5\n\nmacOS SDKs:\n\tmacOS 26.5                    \t-sdk macosx26.5\n\tmacOS 26.5                    \t-sdk macosx26.5\n\ntvOS SDKs:\n\ttvOS 26.5                     \t-sdk appletvos26.5\n\ntvOS Simulator SDKs:\n\tSimulator - tvOS 26.5         \t-sdk appletvsimulator26.5\n\nvisionOS SDKs:\n\tvisionOS 26.5                 \t-sdk xros26.5\n\nvisionOS Simulator SDKs:\n\tSimulator - visionOS 26.5     \t-sdk xrsimulator26.5\n\nwatchOS SDKs:\n\twatchOS 26.5                  \t-sdk watchos26.5\n\nwatchOS Simulator SDKs:\n\tSimulator - watchOS 26.5      \t-sdk watchsimulator26.5\n\n"
+      }
+    },
+    "xcode_account_login_confirmed": true,
+    "actual_team_configured": true
+  },
+  "current_export": {
+    "attempt": "v5",
+    "tool_exit": 0,
+    "engine_exit": 0,
+    "engine_errors": 0,
+    "status": "xcode_project_exported_not_built",
+    "source_count": 95,
+    "original_source_bytes_preserved": 95,
+    "snapshot_byte_identical_except": [
+      "project.godot"
+    ],
+    "copied_project_config_frozen_sha256": "af2b78ce5e108fc8749048005bb421fc7eaa1771a12cfe248759f5dbb432dd37",
+    "team_configured": true,
+    "team_value_published": false,
+    "icon": "Generated opaque provisional SVG; rendered exported1024PNG inspected; not final release art",
+    "pack_sha256": "df685d9c520167188710fda830985d85acef32231ac3922aa4d13d8d7326ce45",
+    "exported_pack_settings_checks": 13,
+    "exported_pack_settings_failures": 0,
+    "pack_probe_exit": 0,
+    "project_list_exit": 0,
+    "scheme": "RamenAtelier",
+    "strict_vendor_signature_before_after": [
+      0,
+      0
+    ],
+    "copied_config_preservation_checks": 30,
+    "copied_config_preservation_failures": 0,
+    "copied_config_probe_exit": 0
+  },
+  "failed_exports": [
+    {
+      "attempt": "v1",
+      "tool_exit": 2,
+      "reason": "Default portable ios.zip missing despite custom paths"
+    },
+    {
+      "attempt": "v2",
+      "tool_exit": 2,
+      "reason": "Mobile texture import required; runtime-only settings ignored by editor"
+    },
+    {
+      "attempt": "v3",
+      "tool_exit": 2,
+      "reason": "Confirmed editor ignores runtime override.cfg; copied project config merge required"
+    },
+    {
+      "attempt": "v4",
+      "tool_exit": 2,
+      "reason": "Missing source app icon; fixed by provisional generated staging SVG"
+    }
+  ],
+  "unsigned_build": {
+    "attempt": "v5",
+    "exit": 70,
+    "status": "Blocked before compilation: iOS26.5 platform not installed",
+    "code_signing_allowed": false,
+    "component_download_started": true,
+    "download_displayed_bytes": "8.52GB",
+    "completed": false
+  },
+  "device_discovery": {
+    "exit": 0,
+    "listed_devices": 0,
+    "device_identifiers_published": false,
+    "user_connection_requested": true
   }
 }
