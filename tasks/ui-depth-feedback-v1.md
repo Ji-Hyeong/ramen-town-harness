@@ -90,5 +90,8 @@ scene3150, original touch70 and full two-size layout18638 all pass/exit0/engine0
 Initial normal unnamed-node duplicate fixture and missing-meta engine errors were
 rejected and corrected; count-label wrapping fixed with a one-line regression.
 All46 domain/services files remain byte-equal; no save/economy changes. Frozen
-117sources match prepared fresh QA and PCK67123e93. Exact new-app launch approval
-pending; actual renderer/images/main merge are not claimed. Phone remains deferred.
+117sources match prepared fresh QA and PCK67123e93. User granted exact-app launch
+approval. Supported CUA getApp then refused: "Computer Use was not approved to use
+Ramen QA"; no new run was created and no further reason was supplied. No alternate
+launch path was used. Actual renderer/images/main merge remain incomplete; user
+approval itself is not missing. Phone remains deferred.

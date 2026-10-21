@@ -1,7 +1,7 @@
 {
   "date": "2026-10-21",
   "task": "ui-depth-feedback-v1",
-  "status": "implemented_verified_waiting_exact_native_launch_approval",
+  "status": "implemented_headless_verified_user_approved_native_launch_tool_refused",
   "extends_ready_pr": 16,
   "schema_version": 12,
   "iphone_installation": "explicitly_deferred_by_user",
@@ -102,8 +102,16 @@
     "qa_script": "res://tests/ui_depth_feedback_tests.gd",
     "prepared": true,
     "executed": false,
-    "launch_approval": "pending",
-    "accepted": false
+    "launch_approval": "received_for_exact_current_app",
+    "accepted": false,
+    "launch_attempt": {
+      "api": "cua.getApp",
+      "outcome": "tool_refused",
+      "message": "Computer Use was not approved to use Ramen QA",
+      "additional_reason": null,
+      "fresh_run_created": false,
+      "alternate_launch_attempted": false
+    }
   },
   "domain_and_services_files_byte_identical_to_previous": 46,
   "semantic_effects_retained": true,
