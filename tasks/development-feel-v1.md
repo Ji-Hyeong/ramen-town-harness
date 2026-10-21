@@ -43,3 +43,22 @@ Frozen previous source/save fixtures, domain and focused portion tests, two-size
 routed/native touch tests and layout. Fresh native render samples/effects frames,
 actual iPhone build/profile/PCK/source checks, same-bundle install + save backup
 and byte preservation, actual screen observation. No offset-only touch claims.
+
+## CURRENT OUTCOME
+Implemented agreed2/3/4 positions, repeated portions, schema12 and cosmetic
+feedback.126domain/58,238, full two-size layout18,256, final focus1496 and routed
+touch70 checks pass/exit0. Old8save cases preserve every stored value and original
+backup bytes; old974menu evaluations/pixels match. Actual phone-save local copy
+also migrates intact; phone files have not been written.
+
+Intermediate native v2 rendered654checks/14nonblack PNGs, four images reviewed.
+Observed obsolete cooking cues were cleaned up and covered by lifecycle tests.
+Final fresh preparation now fails strict vendor signature in restricted runtime,
+even on previously verified v2 with identical80bundle files. Current headless
+runs also emit a platform CA lookup error, kept distinct from game assertions.
+
+Code is preserved in ready/non-draft PR16. Final native build/renderer and iPhone
+update, then main merge, are blocked pending execution-permission restoration.
+The new feature is NOT installed on the phone. No old signed app, real Mac save
+or security protections changed. Resume from work/development-feel-checkpoint-20261021.json
+in the containing workspace; use fresh v4 output paths after the failed v3.
