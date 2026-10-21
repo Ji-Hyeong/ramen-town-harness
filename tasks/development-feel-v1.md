@@ -45,6 +45,11 @@ actual iPhone build/profile/PCK/source checks, same-bundle install + save backup
 and byte preservation, actual screen observation. No offset-only touch claims.
 
 ## CURRENT OUTCOME
+User later requested deeper development and explicitly deferred iPhone install.
+Continue this unmerged feature under tasks/recipe-discovery-v1.md and its latest
+evidence. The v4 QA/iOS artifacts below are preserved history before that extension;
+do not install or accept their renderer evidence as the current research-map build.
+
 Implemented agreed2/3/4 positions, repeated portions, schema12 and cosmetic
 feedback.126domain/58,238, full two-size layout18,256, final focus1496 and routed
 touch70 checks pass/exit0. Old8save cases preserve every stored value and original

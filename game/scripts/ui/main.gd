@@ -22,6 +22,8 @@ const Training = preload("res://scripts/domain/staff_training.gd")
 const ProcessRules = preload("res://scripts/domain/recipe_process.gd")
 const SaveServiceScript = preload("res://scripts/services/save_service.gd")
 const FeedbackScript = preload("res://scripts/ui/action_feedback.gd")
+const Discovery = preload("res://scripts/domain/recipe_discovery.gd")
+const JournalScript = preload("res://scripts/ui/recipe_journal.gd")
 const ScrollableNameEdit = preload("res://scripts/ui/scrollable_name_edit.gd")
 const LocationScript = preload("res://scripts/services/data_location.gd")
 const StarMeterScript = preload("res://scripts/ui/star_meter.gd")
@@ -169,6 +171,19 @@ var _selected_topping_position: int = -1
 var _flavor_bars: Dictionary = {}
 var _flavor_labels: Dictionary = {}
 var _experiment_note: Label
+var _draft_change_note: Label
+var _bowl_traits: Label
+var _journal_target: JournalScript
+var _journal_map: JournalScript
+var _journal_toggle: Button
+var _journal_target_id: String = "topping_stack"
+var _journal_map_open: bool = false
+var _journal_records_key: String = ""
+var _journal_tested: Dictionary = {}
+var _journal_new_titles: Array[String] = []
+var _journal_new_record_id: int = 0
+var _quick_taste_button: Button
+var _quick_taste_notice: Label
 var _work_fx_phase: int = -1
 var _topping_count: Label
 var _topping_hint: Label
@@ -734,7 +749,26 @@ func _build_overlay() -> void:
 	_primary(_open_button)
 	_open_button.pressed.connect(_on_overlay_open_pressed)
 	_open_button.custom_minimum_size = Vector2(0.0, MIN_TOUCH)
-	col.add_child(_open_button)
+	_quick_taste_notice = _label("", 14, VERMILION)
+	_quick_taste_notice.name = "QuickTasteNotice"
+	_quick_taste_notice.visible = false
+	col.add_child(_quick_taste_notice)
+	# Keep the actual tasting action reachable while browsing deep ingredient
+	# lists. Both entry points use the same transactional start_tasting guard.
+	var actions := HBoxContainer.new()
+	actions.name = "WorkbenchActions"
+	actions.add_theme_constant_override("separation", 8)
+	_open_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_open_button.add_theme_font_size_override("font_size", 16)
+	actions.add_child(_open_button)
+	_quick_taste_button = _button("시식 시작", "QuickTasteButton")
+	_primary(_quick_taste_button)
+	_quick_taste_button.custom_minimum_size = Vector2(0, MIN_TOUCH)
+	_quick_taste_button.add_theme_font_size_override("font_size", 16)
+	_quick_taste_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_quick_taste_button.pressed.connect(_on_quick_taste)
+	actions.add_child(_quick_taste_button)
+	col.add_child(actions)
 	add_child(_overlay)
 
 
@@ -794,9 +828,11 @@ func _build_work_card(col: VBoxContainer) -> void:
 
 func _build_lab(box: VBoxContainer) -> void:
 	var bowl_card: PanelContainer = _card("BowlCard")
+	var hero := _vbox(6)
+	bowl_card.add_child(hero)
 	var bh: HBoxContainer = HBoxContainer.new()
 	bh.add_theme_constant_override("separation", 12)
-	bowl_card.add_child(bh)
+	hero.add_child(bh)
 	_bowl_rect = TextureRect.new()
 	_bowl_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_bowl_rect.name = "BowlPreview"
@@ -807,7 +843,15 @@ func _build_lab(box: VBoxContainer) -> void:
 	_bowl_caption = _label("", 15, INK)
 	_bowl_caption.name = "BowlCaption"
 	bh.add_child(_bowl_caption)
+	_bowl_traits = _label("", 14, TEAL)
+	_bowl_traits.name = "BowlTraits"
+	hero.add_child(_bowl_traits)
 	box.add_child(bowl_card)
+	_journal_target = JournalScript.new()
+	_journal_target.name = "ResearchTargetBoard"
+	_journal_target.book_requested.connect(_open_recipe_map)
+	_journal_target.exploration_requested.connect(_find_recipe_materials)
+	box.add_child(_journal_target)
 	_build_experiment_card(box)
 
 	var name_card: PanelContainer = _card("NameCard")
@@ -970,6 +1014,9 @@ func _build_experiment_card(box: VBoxContainer) -> void:
 	_experiment_note = _label("", 14, TEAL)
 	_experiment_note.name = "ExperimentNote"
 	col.add_child(_experiment_note)
+	_draft_change_note = _label("", 14, INK)
+	_draft_change_note.name = "DraftComparison"
+	col.add_child(_draft_change_note)
 	box.add_child(card)
 
 
@@ -978,6 +1025,15 @@ func _build_feedback(box: VBoxContainer) -> void:
 
 
 func _build_notebook(box: VBoxContainer) -> void:
+	_journal_toggle = _button("연구 지도 펼치기", "RecipeMapToggle")
+	_journal_toggle.pressed.connect(_toggle_recipe_map)
+	box.add_child(_journal_toggle)
+	_journal_map = JournalScript.new()
+	_journal_map.mode = "map"
+	_journal_map.name = "RecipeResearchMap"
+	_journal_map.target_selected.connect(_select_recipe_target)
+	_journal_map.visible = false
+	box.add_child(_journal_map)
 	_notebook_count = _label("", 18, INK)
 	_notebook_count.name = "NotebookCount"
 	box.add_child(_notebook_count)
@@ -1268,6 +1324,9 @@ func _on_reset_save() -> void:
 ## 안내 문구는 개발·노트 탭에서만 보인다(시식 카드가 쓸 세로 공간을 확보).
 func _sync_guide_visibility() -> void:
 	_guide_label.visible = tabs.current_tab == TAB_LAB or tabs.current_tab == TAB_NOTEBOOK
+	if is_instance_valid(_quick_taste_button):
+		_quick_taste_button.visible = tabs.current_tab == TAB_LAB
+		_quick_taste_notice.visible = tabs.current_tab == TAB_LAB and _quick_taste_notice.text != ""
 
 
 func _on_tab_changed(_index: int) -> void:
@@ -1619,6 +1678,14 @@ func _on_taste() -> void:
 	start_tasting()
 
 
+func _on_quick_taste() -> void:
+	var result: Dictionary = start_tasting()
+	# The original refusal label may be far down the ingredient list. Keep the
+	# actual full refusal next to the fixed action, not only in a clipped burst.
+	_quick_taste_notice.text = "" if result["ok"] else str(result["message"])
+	_quick_taste_notice.visible = not bool(result["ok"])
+
+
 ## 시식 시작: 곧바로 기록하지 않고 약 4초짜리 준비 작업(국물→면→시식)을 시작한다.
 ## 이 시점에는 자금/기록/보상이 전혀 바뀌지 않는다(도메인 taste()는 완료 때 정확히 한 번만 부른다).
 ## 거부 사유: 이미 준비 중(중복 시작), 영업 중, 또는 시식해도 도메인이 거부할 초안(이름/중복 구성/자금 등 — 복제본으로 미리 확인한다).
@@ -1691,9 +1758,20 @@ func _complete_work() -> void:
 		_taste_message.add_theme_color_override("font_color", VERMILION)
 		_refresh_all()
 		return
+	# Compare actual retained witnesses before and after the successful payment.
+	# Merely choosing a goal or composing an untasted draft earns no discovery.
+	var previously_tested: Dictionary = {}
+	for page in _recipe_pages():
+		if page["tested"]:
+			previously_tested[page["id"]] = true
 	var res: Dictionary = state.taste()
 	if bool(res["ok"]):
 		_notebook_page = 0
+		_journal_new_record_id = int(res["record_id"])
+		_journal_new_titles.clear()
+		for page in _recipe_pages():
+			if page["tested"] and not previously_tested.has(page["id"]):
+				_journal_new_titles.append(str(page["title"]))
 	_taste_message.text = str(res["message"])
 	if not bool(res["ok"]):
 		_taste_message.add_theme_color_override("font_color", VERMILION)
@@ -1754,7 +1832,8 @@ func _play_reveal() -> void:
 		bowl.scale = Vector2.ONE * 0.65
 		var tween := bowl.create_tween()
 		tween.tween_property(bowl, "scale", Vector2.ONE, 0.45).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-		_juice.burst(bowl.get_global_rect().get_center(), TEAL, "시제품 완성!", null, true)
+		var is_new: bool = _journal_new_record_id == state.last_feedback_record_id and not _journal_new_titles.is_empty()
+		_juice.burst(bowl.get_global_rect().get_center(), TEAL, "새 연구 수록!" if is_new else "시제품 완성!", null, true)
 	var index: int = 0
 	for child in _feedback_box.get_children():
 		if child is Control and str(child.name).begins_with("Card_"):
@@ -2481,10 +2560,14 @@ func _show_work_phase_feedback(phase: int) -> void:
 	_juice.burst(_work_view.get_global_rect().get_center(), TEAL, WorkScript.phase_name(phase), null, true)
 
 
+func _development_busy() -> bool:
+	return _work.is_running() or state.exploration_active() or state.service_active() or _contest_left > 0.0 or _training_left > 0.0
+
+
 func _apply_work_lock() -> void:
 	if _work_card == null:
 		return
-	var busy: bool = _work.is_running() or state.exploration_active() or state.service_active() or _contest_left > 0.0 or _training_left > 0.0
+	var busy: bool = _development_busy()
 	for id in _buttons.keys():
 		(_buttons[id] as Button).disabled = busy or not state.ingredient_unlocked(str(id))
 	for b in _price_buttons:
@@ -2497,6 +2580,11 @@ func _apply_work_lock() -> void:
 		if is_instance_valid(b):
 			b.disabled = busy
 	_new_button.disabled = busy
+	_quick_taste_button.disabled = busy
+	_quick_taste_button.text = "준비 중…" if _work.is_running() else "시식 · " + _won(state.trial_cost())
+	_journal_target.set_busy(busy)
+	_journal_map.set_busy(busy)
+	_journal_toggle.disabled = busy
 	_taste_button.disabled = busy
 	_taste_button.text = "시식 준비 중…" if _work.is_running() else ("탐색을 먼저 마치세요" if state.exploration_active() else "시식하기")
 	_close_button.disabled = _work.is_running()
@@ -2620,7 +2708,91 @@ func _next_version(lineage: int) -> int:
 	return best + 1
 
 
+## Discovery status is a projection of retained immutable notebook entries.
+## Re-evaluating300 recipes on every ingredient tap measured57ms on this Mac;
+## cache only the record-derived flags, not draft facts or material availability.
+func _recipe_pages() -> Array:
+	var records: Array = state.records()
+	var key: String = JSON.stringify(records)
+	var available: Array[String] = []
+	for slot in Catalog.SLOTS:
+		for item in Catalog.all_items(slot):
+			if state.ingredient_unlocked(str(item["id"])):
+				available.append(str(item["id"]))
+	if key != _journal_records_key:
+		_journal_tested.clear()
+		for page in Discovery.pages(records, state.draft_config, available):
+			_journal_tested[page["id"]] = bool(page["tested"])
+		_journal_records_key = key
+	var pages: Array = Discovery.pages([], state.draft_config, available)
+	for page in pages:
+		page["tested"] = bool(_journal_tested.get(page["id"], false))
+	return pages
+
+
+func _refresh_recipe_target() -> void:
+	var sample_check: Dictionary = Foraging.use_samples(state.foraging_state(), state.draft_config)
+	_journal_target.present(_recipe_pages(), _journal_target_id, _development_busy(), str(sample_check["error"]))
+	var identity: Dictionary = Discovery.describe(state.draft_config)
+	_bowl_traits.text = " · ".join((identity["tags"] as Array).slice(0, 3))
+	_bowl_caption.text = str(identity["title"]) + "\n원가 %s · 준비 %d초" % [_won(state.trial_cost()), Evaluator.prep_seconds(state.draft_config)]
+	var previous: Dictionary = state.get_record(state.selected_record_id)
+	if previous.is_empty():
+		_draft_change_note.text = "첫 시제품을 시식하면 다음 실험부터 바뀐 맛·원가·준비 시간을 비교할 수 있어요."
+		return
+	var before: Dictionary = previous["config"]
+	var profile: Dictionary = Evaluator.build_profile(state.draft_config)
+	var old_profile: Dictionary = Evaluator.build_profile(before)
+	var changes: Array[String] = []
+	for axis in Catalog.AXES:
+		var delta: int = int(profile[axis]) - int(old_profile[axis])
+		if delta != 0:
+			changes.append("%s %+d" % [Catalog.AXIS_NAMES[axis], delta])
+	_draft_change_note.text = "기준 · %s v%d\n%s\n원가 %+d원 · 준비 %+d초 · 판매가 %+d원" % [str(previous["name"]), int(previous["version"]), "맛 축 변화 없음" if changes.is_empty() else " · ".join(changes), Evaluator.unit_cost(state.draft_config) - Evaluator.unit_cost(before), Evaluator.prep_seconds(state.draft_config) - Evaluator.prep_seconds(before), int(state.draft_config["price"]) - int(before["price"])]
+
+
+func _open_recipe_map() -> void:
+	if _work_blocked("연구 목표를 고를"):
+		return
+	_journal_map_open = true
+	tabs.current_tab = TAB_NOTEBOOK
+	_refresh_notebook()
+	(tabs.get_child(TAB_NOTEBOOK) as ScrollContainer).scroll_vertical = 0
+
+
+func _toggle_recipe_map() -> void:
+	if _work_blocked("연구 지도를 펼칠"):
+		return
+	_journal_map_open = not _journal_map_open
+	_refresh_notebook()
+
+
+func _select_recipe_target(id: String) -> void:
+	if _work_blocked("연구 목표를 바꿀"):
+		return
+	for page in _recipe_pages():
+		if str(page["id"]) == id:
+			_journal_target_id = id
+			tabs.current_tab = TAB_LAB
+			_refresh_lab()
+			(tabs.get_child(TAB_LAB) as ScrollContainer).scroll_vertical = 0
+			return
+	_flash("연구 지도에서 알려진 목표를 골라 주세요.")
+
+
+func _find_recipe_materials() -> void:
+	if _work_blocked("재료를 찾으러 갈"):
+		return
+	# Navigate only: existing rank, daily departure, money and stock rules apply
+	# when the player explicitly starts the trip on the exploration screen.
+	tabs.current_tab = TAB_EXPLORATION
+	_refresh_exploration()
+	(tabs.get_child(TAB_EXPLORATION) as ScrollContainer).scroll_vertical = 0
+
+
 func _refresh_lab() -> void:
+	_quick_taste_notice.text = ""
+	_quick_taste_notice.visible = false
 	for slot in Catalog.SLOTS:
 		# 선택된 재료 id 목록: 토핑은 여러 개일 수 있다(Catalog.toppings_of 하나의 읽기 경로), 나머지는 하나.
 		var chosen_ids: Array[String] = []
@@ -2719,6 +2891,7 @@ func _refresh_lab() -> void:
 
 	_bowl_rect.texture = ArtScript.scaled_tex(ArtScript.bowl_image(state.draft_config), 8)
 	_bowl_caption.text = "%s\n원가 %s · 준비 %d초 · 판매가 %s" % [state.draft_name, _won(cost), prep, _won(price)]
+	_refresh_recipe_target()
 
 
 func _refresh_feedback() -> void:
@@ -2762,6 +2935,15 @@ func _refresh_feedback() -> void:
 		var method_label: Label = _label("제조: " + ProcessRules.summary(config["process"]), 15, TEAL)
 		method_label.name = "FeedbackProcess"
 		tcb.add_child(method_label)
+	var identity: Dictionary = Discovery.describe(config)
+	var identity_label := _label(str(identity["title"]), 16, INK)
+	identity_label.name = "FeedbackIdentity"
+	tcb.add_child(identity_label)
+	if _journal_new_record_id == int(rec["record_id"]) and not _journal_new_titles.is_empty():
+		var discovery_label := _label("", 16, TEAL)
+		discovery_label.name = "NewRecipeThemes"
+		discovery_label.text = "새 연구 수록 · " + " / ".join(_journal_new_titles)
+		tcb.add_child(discovery_label)
 	_feedback_box.add_child(title_card)
 
 	for c in evaluation["customers"]:
@@ -2880,6 +3062,10 @@ func _comparison_card(rec: Dictionary, evaluation: Dictionary) -> PanelContainer
 
 
 func _refresh_notebook() -> void:
+	_journal_map.visible = _journal_map_open
+	_journal_toggle.text = "연구 지도 접기" if _journal_map_open else "연구 지도 펼치기"
+	if _journal_map_open:
+		_journal_map.present(_recipe_pages(), _journal_target_id, _development_busy())
 	_clear(_notebook_box)
 	var all_records: Array = state.records()
 	var cap: int = state.menu_capacity()

@@ -1,7 +1,7 @@
 {
   "date": "2026-10-21",
   "task": "development-feel-v1",
-  "status": "final_build_verified_native_launch_approval_and_phone_connection_pending",
+  "status": "preserved_prior_milestone_extended_by_recipe_discovery_v1",
   "base_commit": "0f87d7cde293dbff18253ca89d1ee892ffb6f7e7",
   "implementation_agent": "Codex",
   "claude_calls": 0,
@@ -277,7 +277,7 @@
     },
     {
       "version": "v4",
-      "status": "prepared_waiting_exact_app_launch_approval",
+      "status": "prepared_not_executed_superseded_by_research_map_extension",
       "vendor_signature_verified": true,
       "matches_final_source_count": 103,
       "accepted": false
@@ -297,9 +297,8 @@
   "physical_feature_acceptance": "not requested before final installed build",
   "mac_live_save_untouched": true,
   "remaining": [
-    "Exact v4 QA app launch approval and fresh final native rendering/visual review.",
-    "Reconnect registered phone; fresh own-app save backup and same-bundle update/launch.",
-    "Physical feature feedback; main merge after renderer/device checks."
+    "Latest research-map feature and native acceptance tracked in recipe-discovery-v1.json.",
+    "iPhone installation explicitly deferred by user; old signed v4 is not the current research-map build."
   ],
   "publication": {
     "url": "https://github.com/Ji-Hyeong/ramen-town-harness/pull/16",
@@ -329,5 +328,6 @@
       "signed_app_files": 14,
       "signature_exit": 0
     }
-  }
+  },
+  "superseded_by": "recipe-discovery-v1.json"
 }
