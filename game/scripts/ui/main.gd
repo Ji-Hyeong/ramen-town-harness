@@ -23,6 +23,7 @@ const ProcessRules = preload("res://scripts/domain/recipe_process.gd")
 const SaveServiceScript = preload("res://scripts/services/save_service.gd")
 const FeedbackScript = preload("res://scripts/ui/action_feedback.gd")
 const Discovery = preload("res://scripts/domain/recipe_discovery.gd")
+const Experiments = preload("res://scripts/domain/recipe_experiments.gd")
 const JournalScript = preload("res://scripts/ui/recipe_journal.gd")
 const DetailsScript = preload("res://scripts/ui/disclosure_card.gd")
 const ScrollableNameEdit = preload("res://scripts/ui/scrollable_name_edit.gd")
@@ -187,6 +188,8 @@ var _quick_taste_button: Button
 var _quick_taste_notice: Label
 var _ingredient_sections: Dictionary = {}
 var _flavor_details: DetailsScript
+var _experiment_cards: Array[DetailsScript] = []
+var _experiment_buttons: Array[Button] = []
 var _work_fx_phase: int = -1
 var _topping_count: Label
 var _topping_hint: Label
@@ -841,7 +844,7 @@ func _build_lab(box: VBoxContainer) -> void:
 	_bowl_rect.name = "BowlPreview"
 	_bowl_rect.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
 	_bowl_rect.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	_bowl_rect.custom_minimum_size = Vector2(104.0, 64.0)
+	_bowl_rect.custom_minimum_size = Vector2(120.0, 80.0)
 	bh.add_child(_bowl_rect)
 	_bowl_caption = _label("", 15, INK)
 	_bowl_caption.name = "BowlCaption"
@@ -2592,6 +2595,10 @@ func _apply_work_lock() -> void:
 	_journal_target.set_busy(busy)
 	_journal_map.set_busy(busy)
 	_journal_toggle.disabled = busy
+	for card in _experiment_cards:
+		card.header_button.disabled = busy
+	for button in _experiment_buttons:
+		button.disabled = busy
 	_taste_button.disabled = busy
 	_taste_button.text = "시식 준비 중…" if _work.is_running() else ("탐색을 먼저 마치세요" if state.exploration_active() else "시식하기")
 	_close_button.disabled = _work.is_running()
@@ -2901,12 +2908,14 @@ func _refresh_lab() -> void:
 	# 시식 버튼 글/이름 입력/재료 버튼의 켜짐은 시식 준비 상태에 따라 한곳에서 정한다.
 	_apply_work_lock()
 
-	_bowl_rect.texture = ArtScript.scaled_tex(ArtScript.bowl_image(state.draft_config), 8)
+	_bowl_rect.texture = ArtScript.scaled_tex(ArtScript.recipe_bowl_image(state.draft_config), 2)
 	_bowl_caption.text = "%s\n원가 %s · 준비 %d초 · 판매가 %s" % [state.draft_name, _won(cost), prep, _won(price)]
 	_refresh_recipe_target()
 
 
 func _refresh_feedback() -> void:
+	_experiment_cards.clear()
+	_experiment_buttons.clear()
 	_clear(_feedback_box)
 	var rec: Dictionary = state.get_record(state.last_feedback_record_id)
 	if rec.is_empty():
@@ -2923,8 +2932,8 @@ func _refresh_feedback() -> void:
 	var bowl := TextureRect.new()
 	bowl.name = "FeedbackBowl"
 	bowl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	bowl.texture = ArtScript.scaled_tex(ArtScript.bowl_image(rec["config"]), 10)
-	bowl.custom_minimum_size = Vector2(120, 80)
+	bowl.texture = ArtScript.scaled_tex(ArtScript.recipe_bowl_image(rec["config"]), 3)
+	bowl.custom_minimum_size = Vector2(144, 96)
 	bowl.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	bowl.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	tcb.add_child(bowl)
@@ -2961,7 +2970,83 @@ func _refresh_feedback() -> void:
 	for c in evaluation["customers"]:
 		var cd: Dictionary = c
 		_feedback_box.add_child(_customer_card(cd))
+	_build_experiment_clues(rec)
 	_feedback_box.add_child(_comparison_card(rec, evaluation))
+
+
+## These read-only alternatives are based on the actual tasted record, not the
+## possibly edited draft. Rebuilding feedback never performs a recipe edit or
+## tasting transaction. The ordinary evaluator owns every displayed delta.
+func _build_experiment_clues(rec: Dictionary) -> void:
+	var available: Array[String] = []
+	for slot in Catalog.SLOTS:
+		for item in Catalog.all_items(slot):
+			if state.ingredient_unlocked(str(item["id"])):
+				available.append(str(item["id"]))
+	var result: Dictionary = Experiments.clues(rec["config"], available, state.rank())
+	if str(result["error"]) != "":
+		_feedback_box.add_child(_label(str(result["error"]), 15, VERMILION))
+		return
+	var intro: Label = _label("다음 실험의 단서\n%s v%d에서 한 가지만 바꿔보기 · 좋은 맛의 정답은 손님마다 달라요." % [rec["name"], rec["version"]], 16, TEAL)
+	intro.name = "ExperimentCluesIntro"
+	_feedback_box.add_child(intro)
+	if (result["clues"] as Array).is_empty():
+		_feedback_box.add_child(_label("지금 재료로 향·식감을 더 높이거나 준비를 줄일 단서는 없어요. 연구 지도에서 다른 방향을 찾아보세요.", 15, MUTED))
+	for data in result["clues"]:
+		var clue: Dictionary = data
+		var direction: String = str(clue["direction"])
+		var card := DetailsScript.new()
+		card.name = "ExperimentClue_" + direction
+		_feedback_box.add_child(card)
+		_experiment_cards.append(card)
+		card.configure(str(clue["title"]), str(clue["change"]), ArtScript.scaled_tex(ArtScript.recipe_bowl_image(clue["config"]), 1))
+		var pair := HBoxContainer.new()
+		pair.name = "ExperimentPair_" + direction
+		pair.mouse_filter = Control.MOUSE_FILTER_PASS
+		card.body.add_child(pair)
+		for variant in 2:
+			var column := _vbox(3)
+			column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			pair.add_child(column)
+			column.add_child(_label("이번 시제품" if variant == 0 else "한 가지 바꾸면", 14, MUTED))
+			var dish := TextureRect.new()
+			dish.name = ("ExperimentBefore_" if variant == 0 else "ExperimentAfter_") + direction
+			dish.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			dish.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			dish.custom_minimum_size = Vector2(90, 64)
+			dish.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			dish.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+			dish.texture = ArtScript.scaled_tex(ArtScript.recipe_bowl_image(rec["config"] if variant == 0 else clue["config"]), 2)
+			column.add_child(dish)
+		var change: Label = _label("", 15, INK)
+		change.name = "ExperimentDelta_" + direction
+		change.text = "예상 변화 · %s\n원가 %+d원 · 준비 %+d초\n판매가와 토핑 칸 수는 그대로예요." % [clue["flavor_text"], clue["cost_delta"], clue["seconds_delta"]]
+		card.body.add_child(change)
+		var sample: Dictionary = Foraging.use_samples(state.foraging_state(), clue["config"])
+		var notice: Label = _label("직접 재료를 골라 시식해야 결과가 기록돼요. 손님 점수 상승을 보장하지 않아요." if str(sample["error"]) == "" else "다음 시제품의 샘플 부족 · " + str(sample["error"]), 14, MUTED if str(sample["error"]) == "" else VERMILION)
+		notice.name = "ExperimentStock_" + direction
+		card.body.add_child(notice)
+		var go: Button = _button("선택 화면에서 살펴보기", "ExperimentGo_" + direction)
+		go.disabled = _development_busy()
+		go.pressed.connect(_open_experiment_choices.bind(str(clue["slot"])))
+		card.body.add_child(go)
+		_experiment_buttons.append(go)
+
+
+func _open_experiment_choices(slot: String) -> void:
+	if _work_blocked("실험 재료를 살펴볼"):
+		return
+	# Merely reveal the relevant existing controls. Do not replace unsaved draft
+	# edits, select a record, spend samples or persist any presentation state.
+	tabs.current_tab = TAB_LAB
+	var card := find_child("Section_" + slot, true, false) as DetailsScript
+	if card == null:
+		_flash("이 실험에 해당하는 재료 선택 화면을 찾지 못했어요.")
+		return
+	card.set_expanded(true)
+	_taste_message.text = "시식한 메뉴에서 얻은 단서예요. 현재 초안은 유지했어요. 재료·공법을 직접 골라 실험해 보세요."
+	await get_tree().process_frame
+	(tabs.get_child(TAB_LAB) as ScrollContainer).ensure_control_visible(card.header_button)
 
 
 func _customer_card(cd: Dictionary) -> PanelContainer:

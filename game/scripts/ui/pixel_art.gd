@@ -718,6 +718,106 @@ static func bowl_image(config: Dictionary) -> Image:
 	return img
 
 
+## A larger dish for deliberate recipe inspection. Keep bowl_image() untouched:
+## the tiny service sprite and its legacy pixels have a separate scale/purpose.
+## No randomness, names or price enter the image; canonical portions preserve
+## repeated ingredients while making selection order visually irrelevant.
+static func recipe_bowl_image(config: Dictionary) -> Image:
+	var img: Image = new_image(48, 32)
+	_dish_oval(img, 24, 29, 19, 2, Color(0.18, 0.12, 0.08, 0.22))
+	for y in range(16, 28):
+		var half: int = 21 - (y - 16)
+		rect(img, 24 - half, y, half * 2, 1, RED_D if y > 23 else RED)
+	rect(img, 16, 27, 16, 2, RED_D)
+	rect(img, 18, 29, 12, 1, INK)
+	rect(img, 9, 20, 30, 1, Color(0.96, 0.81, 0.58))
+	_dish_oval(img, 24, 14, 23, 8, RED_D)
+	_dish_oval(img, 24, 13, 21, 6, Color(0.99, 0.95, 0.83))
+	var soup: Color = broth_color(config)
+	match str(config.get("tare", "")):
+		"tare_shoyu": soup = soup.lerp(Color(0.48, 0.25, 0.09), 0.24)
+		"tare_miso": soup = soup.lerp(Color(0.67, 0.36, 0.10), 0.42)
+		"tare_plum": soup = soup.lerp(Color(0.72, 0.40, 0.31), 0.25)
+	_dish_oval(img, 24, 13, 20, 5, soup)
+	# Visible droplets/foam distinguish clear gentle extraction from rolling
+	# extraction, without inventing a new flavor or financial modifier.
+	var process: Dictionary = config.get("process", {})
+	if process.get("broth", "standard") == "rolling":
+		for x in range(10, 39, 4):
+			px(img, x, 11 + x % 3, soup.lightened(0.25))
+	elif process.get("broth", "standard") == "gentle":
+		rect(img, 11, 11, 9, 1, soup.lightened(0.30))
+	var n: String = str(config.get("noodle", "noodle_thin"))
+	var cook: String = str(config.get("cook", "cook_normal"))
+	var noodle: Color = Color(0.98, 0.84, 0.46)
+	if process.get("noodle", "standard") == "rested": noodle = noodle.darkened(0.15)
+	if process.get("noodle", "standard") == "moist" or cook == "cook_soft": noodle = noodle.lightened(0.18)
+	for row in 4:
+		for x in range(11, 39):
+			var wave: int = 0 if n == "noodle_thin" else roundi(sin(float(x) * (0.7 if n == "noodle_thick" else 1.1) + row))
+			px(img, x, 10 + row * 2 + wave, noodle)
+			if n == "noodle_thick": px(img, x, 11 + row * 2 + wave, noodle.darkened(0.09))
+	if cook == "cook_firm":
+		for x in range(14, 37, 5): px(img, x, 14, noodle.darkened(0.23))
+	var oil: Color = Color(0.58, 0.35, 0.13)
+	match str(config.get("oil", "")):
+		"oil_chili": oil = Color(0.90, 0.20, 0.06)
+		"oil_scallion": oil = Color(0.26, 0.55, 0.20)
+		"oil_shrimp": oil = Color(0.97, 0.43, 0.17)
+		"oil_pepper": oil = Color(0.13, 0.31, 0.20)
+		"oil_roasted_sesame": oil = Color(0.76, 0.49, 0.14)
+	for i in 9:
+		var x: int = 7 + i * 4
+		var y: int = 12 + (i % 3) * 2
+		px(img, x, y, oil)
+		px(img, x + 1, y, oil)
+	var tops: Array = Catalog.canonical_toppings(Catalog.toppings_of(config))
+	var positions: Array = [17] if tops.size() == 1 else ([14, 34] if tops.size() == 2 else ([11, 24, 37] if tops.size() == 3 else [9, 19, 29, 39]))
+	for i in mini(tops.size(), positions.size()):
+		_dish_topping(img, str(tops[i]), int(positions[i]), 12 + i % 2)
+	# Steam is a stable silhouette for still previews; completion animation is
+	# still owned by main.gd's visible result bowl, not by image generation.
+	for i in 3:
+		for y in range(2, 7):
+			px(img, 15 + i * 9 + (y + i) % 2, y, Color(0.96, 0.91, 0.78, 0.7))
+	return img
+
+
+static func _dish_oval(img: Image, cx: int, cy: int, rx: int, ry: int, color: Color) -> void:
+	for y in range(cy - ry, cy + ry + 1):
+		for x in range(cx - rx, cx + rx + 1):
+			if pow(float(x - cx) / rx, 2.0) + pow(float(y - cy) / ry, 2.0) <= 1.0:
+				px(img, x, y, color)
+
+
+static func _dish_topping(img: Image, id: String, x: int, y: int) -> void:
+	match id:
+		"topping_chashu":
+			_dish_oval(img, x, y, 5, 3, Color(0.82, 0.53, 0.39))
+			_dish_oval(img, x, y, 3, 2, Color(0.97, 0.77, 0.61))
+			rect(img, x - 1, y, 3, 1, Color(0.57, 0.29, 0.20))
+		"topping_egg":
+			_dish_oval(img, x, y, 5, 3, Color(1.0, 0.97, 0.85))
+			_dish_oval(img, x, y, 2, 2, Color(1.0, 0.62, 0.08))
+		"topping_nori":
+			rect(img, x - 3, y - 8, 7, 11, Color(0.12, 0.23, 0.14))
+			rect(img, x - 2, y - 7, 1, 8, Color(0.24, 0.36, 0.21))
+		"topping_sprouts":
+			for i in 5:
+				rect(img, x - 4 + i * 2, y - 3 - i % 2, 1, 6, Color(0.94, 0.94, 0.70))
+				px(img, x - 4 + i * 2, y - 4 - i % 2, Color(0.56, 0.70, 0.30))
+		"topping_pickle":
+			for i in 3: rect(img, x - 4 + i * 3, y - 2 + i % 2, 2, 5, Color(0.86, 0.77, 0.19))
+		"topping_mushroom":
+			rect(img, x - 1, y, 3, 4, Color(0.91, 0.79, 0.57))
+			_dish_oval(img, x, y - 1, 5, 2, Color(0.45, 0.26, 0.13))
+			px(img, x, y - 2, Color(0.80, 0.63, 0.39))
+		"topping_citrus_peel":
+			for i in 3:
+				rect(img, x - 4 + i * 3, y - 3 + i % 2, 2, 5, Color(1.0, 0.81, 0.09))
+				px(img, x - 3 + i * 3, y - 4 + i % 2, Color(1.0, 0.95, 0.52))
+
+
 # ---------- 재료 아이콘 (12x12) ----------
 
 static func icon_image(id: String) -> Image:
