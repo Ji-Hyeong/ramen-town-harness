@@ -53,7 +53,7 @@ static func name_error(text: String, allow_empty: bool) -> String:
 	return ""
 
 
-## 메모리 상의 설정(이미 정수 가격)을 검증한다. 정규 모양("toppings" 배열 1~MAX_TOPPINGS개, 알려진 id, 중복 없음)과
+## 메모리 상의 설정(이미 정수 가격)을 검증한다. 정규 모양("toppings" 배열 1~MAX_TOPPINGS개, 알려진 id, 중복 분량 허용)과
 ## 옛 모양("topping" 하나) 둘 다 받는다. 토핑 순서는 여기서 따지지 않는다(순서만 다르면 같은 구성: 정규화/same_config 참고).
 ## 슬롯 수 한도(등급/조리대)는 상태(GameState)가 정하므로 여기서는 절대 상한만 본다.
 static func config_error(config: Dictionary) -> String:
@@ -100,13 +100,10 @@ static func _toppings_error(config: Dictionary, legacy: bool) -> String:
 		return "토핑은 최소 1개를 골라야 해요."
 	if list.size() > Catalog.MAX_TOPPINGS:
 		return "토핑은 최대 %d개까지예요." % Catalog.MAX_TOPPINGS
-	var seen: Dictionary = {}
+	# Each repeated ID is a paid portion, bounded by the total position count.
 	for v in list:
 		if typeof(v) != TYPE_STRING or not Catalog.is_valid(Catalog.TOPPING_SLOT, str(v)):
 			return "알 수 없는 재료입니다 (topping)."
-		if seen.has(str(v)):
-			return "같은 토핑을 두 번 고를 수 없어요."
-		seen[str(v)] = true
 	return ""
 
 
@@ -153,7 +150,7 @@ static func parse_config(raw: Variant, ctx: String, legacy: bool = false) -> Dic
 	return {"error": "", "config": canonical}
 
 
-## 구성이 같은지: 옛/정규 모양을 가리지 않고, 토핑은 순서와 무관하게 같은 집합이면 같은 구성이다.
+## 구성이 같은지: 옛/정규 모양을 가리지 않고, 토핑은 순서와 무관하게 같은 종류별 분량이면 같은 구성이다(중복을 제거하지 않는다).
 static func same_config(a: Dictionary, b: Dictionary) -> bool:
 	var na: Dictionary = Catalog.normalize_config(a)
 	var nb: Dictionary = Catalog.normalize_config(b)

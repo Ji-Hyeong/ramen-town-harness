@@ -173,7 +173,7 @@ static func _fail() -> Dictionary:
 
 ## Shape and conservation are checked before GameState commits any field.
 ## This is local save validation, not cryptographic authentication of history.
-static func parse(raw: Variant, day: int, next_record: int) -> Dictionary:
+static func parse(raw: Variant, day: int, next_record: int, max_uses_per_recipe: int = 1) -> Dictionary:
 	if typeof(raw) != TYPE_DICTIONARY or Check.keys_error(raw, KEYS, "장터 채집") != "":
 		return _fail()
 	var ns: Dictionary = raw.duplicate(true)
@@ -198,7 +198,7 @@ static func parse(raw: Variant, day: int, next_record: int) -> Dictionary:
 		return _fail()
 	var acquired: int = 0
 	for id in IDS:
-		if ns["stock"][id] > CAPACITY or ns["stock"][id] != ns["obtained"][id] - ns["used"][id] or ns["used"][id] > next_record - 1:
+		if ns["stock"][id] > CAPACITY or ns["stock"][id] != ns["obtained"][id] - ns["used"][id] or ns["used"][id] > (next_record - 1) * max_uses_per_recipe:
 			return _fail()
 		if (ns["obtained"][id] > 0) != (ns["first_day"][id] > 0) or ns["first_day"][id] > ns["last_departure_day"]:
 			return _fail()

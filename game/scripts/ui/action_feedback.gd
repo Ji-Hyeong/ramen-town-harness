@@ -1,0 +1,80 @@
+extends Control
+## Cosmetic, bounded effects in viewport coordinates. Never handles input or
+## changes game state: only committed button actions call burst(). A canceled
+## scroll gesture therefore cannot trigger a success animation or vibration.
+
+const MAX_EFFECTS: int = 24
+var _effects: Array[Dictionary] = []
+
+
+func _ready() -> void:
+	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	z_index = 100
+
+
+func burst(point: Vector2, tint: Color, caption: String = "", icon: Texture2D = null, big: bool = false) -> void:
+	if _effects.size() >= MAX_EFFECTS:
+		_effects.pop_front()
+	# Keep ingredient/result feedback inside the screen, including edge buttons.
+	point.x = clampf(point.x, 24.0, maxf(24.0, size.x - 24.0))
+	point.y = clampf(point.y, 70.0, maxf(70.0, size.y - 70.0))
+	_effects.append({"point": point, "tint": tint, "caption": caption,
+		"icon": icon, "big": big, "age": 0.0, "duration": 1.1 if caption != "" else 0.35})
+	if big and OS.has_feature("ios"):
+		Input.vibrate_handheld(18)
+	queue_redraw()
+
+
+func effect_count() -> int:
+	return _effects.size()
+
+
+func clear_effects() -> void:
+	# Cooking/cancellation/result transitions must not leave an obsolete cue
+	# floating over controls that now perform a different action.
+	_effects.clear()
+	queue_redraw()
+
+
+func advance_effects(seconds: float) -> void:
+	for effect in _effects:
+		effect["age"] += maxf(0.0, seconds)
+	_effects = _effects.filter(func(effect: Dictionary): return effect["age"] < effect["duration"])
+	queue_redraw()
+
+
+func _process(delta: float) -> void:
+	if not _effects.is_empty():
+		advance_effects(delta)
+
+
+func _draw() -> void:
+	var font := get_theme_font("font", "Label")
+	for effect in _effects:
+		var age: float = effect["age"]
+		var t: float = age / float(effect["duration"])
+		var point: Vector2 = effect["point"]
+		var color: Color = effect["tint"]
+		color.a = 1.0 - t
+		var big: bool = effect["big"]
+		var radius: float = (64.0 if big else 28.0) * sin(minf(t * 2.0, 1.0) * PI * 0.5)
+		# Square sparks suit the existing pixel-art language without covering
+		# the entire shop in an opaque flash or shaking the touch targets.
+		for i in (12 if big else 6):
+			var angle := TAU * float(i) / (12.0 if big else 6.0)
+			var offset := Vector2(cos(angle), sin(angle)) * radius
+			offset.y += 22.0 * t * t
+			var side: float = (5.0 if i % 2 == 0 else 3.0) * (1.0 - t)
+			draw_rect(Rect2(point + offset, Vector2.ONE * side), color)
+		var icon: Texture2D = effect["icon"]
+		if icon != null:
+			var side := 34.0 * (1.0 + 0.3 * sin(t * PI))
+			draw_texture_rect(icon, Rect2(point + Vector2(-side / 2.0, -26.0 - t * 30.0), Vector2.ONE * side), false, Color(1, 1, 1, 1.0 - t))
+		var caption: String = effect["caption"]
+		if caption != "":
+			var font_size: int = 18 if big else 15
+			var width := minf(size.x - 24.0, font.get_string_size(caption, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x + 20.0)
+			var origin := Vector2(clampf(point.x - width / 2.0, 12.0, maxf(12.0, size.x - width - 12.0)), maxf(12.0, point.y - 62.0 - 16.0 * t))
+			draw_rect(Rect2(origin, Vector2(width, 32)), Color(0.16, 0.10, 0.06, (1.0 - t) * 0.94))
+			draw_string(font, origin + Vector2(10, 23), caption, HORIZONTAL_ALIGNMENT_LEFT, width - 20.0, font_size, Color(1.0, 0.9, 0.65, 1.0 - t))

@@ -34,12 +34,12 @@ const RANKS: Array = [
 
 ## 유료 확장. 두 줄(조리대 = 레시피 작업 공간, 직원 공간)에 각 2단계. 한 번만 살 수 있고 환불은 없다.
 ## min_rank: 이 등급 이상이어야 살 수 있음, requires: 먼저 사야 하는 같은 줄의 앞 단계.
-## 조리대는 토핑 슬롯과 등록 메뉴 종류를, 직원 공간은 고용 가능한 총 직원 수를 올린다.
+## 토핑 슬롯은 등급만으로 열리고 조리대는 등록 메뉴 종류를, 직원 공간은 고용 가능한 총 직원 수를 올린다.
 const FACILITIES: Array = [
 	{"id": "bench_1", "track": "recipe", "tier": 1, "name": "조리대 확장 I", "price": 12000, "min_rank": 2, "requires": "",
-		"desc": "토핑을 2개까지 올리고 메뉴를 12종까지 등록해요. 같은 메뉴의 개정은 자리를 더 쓰지 않아요."},
+		"desc": "메뉴를 12종까지 등록해요. 토핑 칸은 등급에 따라 자동으로 열려요. 같은 메뉴의 개정은 자리를 더 쓰지 않아요."},
 	{"id": "bench_2", "track": "recipe", "tier": 2, "name": "조리대 확장 II", "price": 30000, "min_rank": 3, "requires": "bench_1",
-		"desc": "토핑을 3개까지 올리고 메뉴를 30종까지 등록해요. 실험 이력 보관함은 별도예요."},
+		"desc": "메뉴를 30종까지 등록해요. 같은 토핑도 여러 칸에 담을 수 있어요. 실험 이력 보관함은 별도예요."},
 	{"id": "staff_1", "track": "staff", "tier": 1, "name": "직원 공간 I", "price": 15000, "min_rank": 2, "requires": "",
 		"desc": "휴게 공간을 만들어 직원을 3명까지 둘 수 있어요(자동 고용 없음)."},
 	{"id": "staff_2", "track": "staff", "tier": 2, "name": "직원 공간 II", "price": 36000, "min_rank": 3, "requires": "staff_1",
@@ -91,9 +91,9 @@ static func track_tier(facilities: Array, track: String) -> int:
 
 # ---------- 파생 용량 (저장하지 않는다) ----------
 
-## 토핑 슬롯 = 등급이 허용하는 수(등급 번호)와 조리대 확장이 허용하는 수(1 + 조리대 단계) 중 작은 쪽. 절대 상한 MAX_TOPPINGS.
-static func topping_slots(rank: int, facilities: Array) -> int:
-	return mini(mini(clampi(rank, 1, RANK_MAX), 1 + track_tier(facilities, "recipe")), Catalog.MAX_TOPPINGS)
+## Rank alone unlocks paid portions: 2/3/4. Bench purchases still expand menu families.
+static func topping_slots(rank: int, _facilities: Array) -> int:
+	return mini(clampi(rank, 1, RANK_MAX) + 1, Catalog.MAX_TOPPINGS)
 
 
 static func notebook_capacity(facilities: Array) -> int:
@@ -115,15 +115,7 @@ static func topping_unlock_hint(rank: int, facilities: Array) -> String:
 	var slots: int = topping_slots(rank, facilities)
 	if slots >= Catalog.MAX_TOPPINGS:
 		return ""
-	# 다음 슬롯은 "등급 번호 >= 슬롯 수" 와 "조리대 단계 + 1 >= 슬롯 수"를 둘 다 채워야 열린다. 모자란 쪽만 안내한다.
-	var next_slots: int = slots + 1
-	var needs: Array[String] = []
-	if clampi(rank, 1, RANK_MAX) < next_slots:
-		needs.append("가게 등급 %d단계(%s)" % [next_slots, rank_title(next_slots)])
-	if 1 + track_tier(facilities, "recipe") < next_slots:
-		var next_f: Dictionary = _next_in_track(facilities, "recipe")
-		needs.append("「%s」(%s)" % [str(next_f["name"]), _won(int(next_f["price"]))])
-	return "토핑 %d개째는 %s이(가) 있어야 열려요." % [next_slots, " + ".join(needs)]
+	return "토핑 %d칸은 가게 등급 %d단계에서 자동으로 열려요." % [slots + 1, rank + 1]
 
 
 static func _next_in_track(facilities: Array, track: String) -> Dictionary:
@@ -212,9 +204,7 @@ static func facility_review(id: String, rank: int, facilities: Array, wallet: in
 		after.append(id)
 	var effect: String = ""
 	if str(f["track"]) == "recipe":
-		# 등급이 모자라 아직 못 사는 시설도 "사게 되면 얼마가 되는지"를 보이도록 필요 등급을 가정해 센다.
-		var eff_rank: int = maxi(rank, int(f["min_rank"]))
-		effect = "토핑 슬롯 %d→%d · 등록 메뉴 %d→%d종" % [topping_slots(eff_rank, facilities), topping_slots(eff_rank, after), notebook_capacity(facilities), notebook_capacity(after)]
+		effect = "등록 메뉴 %d→%d종 · 토핑 칸은 등급으로 해금" % [notebook_capacity(facilities), notebook_capacity(after)]
 	else:
 		effect = "직원 %d→%d명까지(자동 고용 없음)" % [staff_capacity(facilities), staff_capacity(after)]
 	return {
