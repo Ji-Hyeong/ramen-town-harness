@@ -93,5 +93,13 @@ All46 domain/services files remain byte-equal; no save/economy changes. Frozen
 117sources match prepared fresh QA and PCK67123e93. User granted exact-app launch
 approval. Supported CUA getApp then refused: "Computer Use was not approved to use
 Ramen QA"; no new run was created and no further reason was supplied. No alternate
-launch path was used. Actual renderer/images/main merge remain incomplete; user
-approval itself is not missing. Phone remains deferred.
+launch path was used. That attempt had no renderer/images/main merge; user
+approval itself was not missing. Recovery and actual acceptance follow below.
+
+## NATIVE ACCEPTANCE
+After the user restarted the host, the same approved app launched through supported
+CUA. Launcher observation timed out, but fresh run20261021T093944Z-14054 completed
+OpenGL3222/0/exit0/engine0,24PNGs (12per profile), all manually reviewed. Full36-file
+run preserved byte-equal;117sources/PCK unchanged and vendor strict signature0.
+Earlier refusal remains historical; no security/config/identity bypass or new
+source rebuild. Root cause of refusal unconfirmed. iPhone remains deferred.
