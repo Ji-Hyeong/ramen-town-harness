@@ -14,6 +14,7 @@ const ExplorationScript = preload("res://scripts/domain/ingredient_exploration.g
 const ContestScript = preload("res://scripts/domain/ramen_contest.gd")
 const IngredientCatalog = preload("res://scripts/domain/ingredient_catalog.gd")
 const StoryFixtures = preload("res://tests/regular_story_fixtures.gd")
+const DisclosureCardScript = preload("res://scripts/ui/disclosure_card.gd")
 
 # scale: 장면 정수 배율의 하한. 등각 장면의 의도한 캔버스에 맞춘 값이다 — 가로 320x152 → 1280x608 (배율 4),
 # 세로 176x264 → 352x528 (배율 2, 이전 128x208 프론탈 장면은 배율 3). 화면 55% 이상/뷰포트 포함/HUD 비겹침 검사는 그대로다.
@@ -119,10 +120,35 @@ func _press(app: Node, node_name: String) -> void:
 		_check(false, "버튼을 찾을 수 없어요: " + node_name)
 		return
 	var b: BaseButton = n
+	_reveal_control(b)
 	if b.disabled:
 		_check(false, "버튼이 비활성이에요: " + node_name)
 		return
 	b.pressed.emit()
+
+
+## Existing semantic fixtures now deliberately open an ancestor detail card
+## before choosing its control. Gesture tests still route actual pointer input;
+## this helper only performs the new, read-only presentation prerequisite.
+func _reveal_control(control: Control) -> void:
+	var ancestor: Node = control.get_parent()
+	while ancestor != null:
+		if ancestor is DisclosureCardScript:
+			var content: VBoxContainer = (ancestor as DisclosureCardScript).body
+			if content == control or content.is_ancestor_of(control):
+				ancestor.call("set_expanded", true)
+		ancestor = ancestor.get_parent()
+
+
+## Recipe fixtures explicitly replace a single portion using the new controls.
+## Generic _press remains literal so topping tests still exercise real adding.
+func _replace_single_topping(app: Node, id: String) -> void:
+	while IngredientCatalog.toppings_of(_state(app).get("draft_config")).size() > 1:
+		var last := IngredientCatalog.toppings_of(_state(app).get("draft_config")).size() - 1
+		_press(app, "RemoveTopping_" + str(last))
+	if not _text_of(app, "ToppingSlot_0").begins_with("교체:"):
+		_press(app, "ToppingSlot_0")
+	_press(app, "Opt_" + id)
 
 
 ## 게임 상태 객체(GameState)에서 값/메서드를 읽는다.
@@ -146,6 +172,14 @@ func _shot(holder: SubViewport, file_name: String) -> void:
 		return
 	await RenderingServer.frame_post_draw
 	var img: Image = holder.get_texture().get_image()
+	# A correctly sized all-black/unrendered viewport is not visual evidence.
+	# Sample the image itself before accepting a renderer run as successful.
+	var colors: Dictionary = {}
+	for y in 8:
+		for x in 8:
+			var color := img.get_pixel(int((x + 0.5) * img.get_width() / 8.0), int((y + 0.5) * img.get_height() / 8.0))
+			colors[color.to_html()] = true
+	_check(colors.size() >= 4, "스크린샷이 비어 있거나 그려지지 않았어요: " + file_name)
 	var path: String = _out_dir.path_join(file_name)
 	var err: int = img.save_png(path)
 	_check(err == OK, "스크린샷 저장 실패: " + path)
@@ -176,6 +210,8 @@ func _reachable(app: Node, vp: Vector2i, node_name: String) -> void:
 		_check(false, "컨트롤 없음: " + node_name)
 		return
 	var c: Control = n
+	_reveal_control(c)
+	await _frames(2)
 	_check(c.is_visible_in_tree(), "보이지 않아요: " + node_name)
 	var sc: ScrollContainer = _scroll_of(c)
 	if sc != null:
@@ -384,7 +420,10 @@ func _run_profile(tag: String, vp: Vector2i, expect_scale: int) -> void:
 
 	# 3) 재료 선택 + 이름 + 가격
 	for opt in ["Opt_broth_dashi", "Opt_tare_shio", "Opt_oil_scallion", "Opt_noodle_thin", "Opt_topping_egg", "Opt_cook_firm"]:
-		_press(app, opt)
+		if str(opt).begins_with("Opt_topping_"):
+			_replace_single_topping(app, str(opt).trim_prefix("Opt_"))
+		else:
+			_press(app, opt)
 	var edit: LineEdit = _find(app, "RecipeNameEdit") as LineEdit
 	edit.text = "QA 맑은 라멘"
 	edit.text_changed.emit(edit.text)
@@ -592,7 +631,10 @@ func _taste_via_ui(app: Node, options: Array, recipe_name: String, price_buttons
 	await _settle()
 	_press(app, "NewRecipeButton")
 	for opt in options:
-		_press(app, str(opt))
+		if str(opt).begins_with("Opt_topping_"):
+			_replace_single_topping(app, str(opt).trim_prefix("Opt_"))
+		else:
+			_press(app, str(opt))
 	if recipe_name != "":
 		var edit: LineEdit = _find(app, "RecipeNameEdit") as LineEdit
 		edit.text = recipe_name
@@ -642,7 +684,10 @@ func _run_research(holder: SubViewport, tag: String, vp: Vector2i) -> void:
 
 	# 2) 시식하지 않은 초안(도윤 입문 증인)은 어떤 진행도 만들지 않는다.
 	for opt in ["Opt_tare_shoyu", "Opt_oil_garlic", "Opt_noodle_thick", "Opt_topping_nori", "Opt_cook_normal"]:
-		_press(app, opt)
+		if str(opt).begins_with("Opt_topping_"):
+			_replace_single_topping(app, str(opt).trim_prefix("Opt_"))
+		else:
+			_press(app, opt)
 	app.call("_refresh_all")
 	await _settle()
 	_check((_find(app, "ResearchSubmit_dohyun_basic") as BaseButton).disabled, tag + ": 초안만 있으면 제출 버튼은 여전히 꺼져 있어요")
@@ -653,7 +698,10 @@ func _run_research(holder: SubViewport, tag: String, vp: Vector2i) -> void:
 	# 3) 조건을 못 채운 기록(기본 초안, 원가 2,200원)을 시식해 제출하면 거부 + 힌트가 보인다.
 	app.call("_on_new_recipe")
 	for opt in ["Opt_tare_shoyu", "Opt_oil_garlic", "Opt_noodle_thin", "Opt_topping_chashu", "Opt_cook_firm"]:
-		_press(app, opt)
+		if str(opt).begins_with("Opt_topping_"):
+			_replace_single_topping(app, str(opt).trim_prefix("Opt_"))
+		else:
+			_press(app, opt)
 	await _finish_tasting(app)
 	var wallet_a: int = int(st.get("wallet"))
 	tabs.current_tab = 4
@@ -1163,15 +1211,9 @@ func _run_exploration(holder: SubViewport, tag: String, vp: Vector2i) -> void:
 		_check(not _btn_disabled(app, option), tag + ": 발견한 선택 활성 " + option)
 		_press(app, option)
 	var wanted: Array = ["topping_pickle", "topping_mushroom", "topping_egg"]
-	var previous: Array = (st.get("draft_config") as Dictionary)["toppings"].duplicate()
-	for id in previous:
-		if not wanted.has(id):
-			if ((st.get("draft_config") as Dictionary)["toppings"] as Array).size() == 1:
-				_press(app, "Opt_topping_pickle")
-			_press(app, "Opt_" + str(id))
-	for id in wanted:
-		if not ((st.get("draft_config") as Dictionary)["toppings"] as Array).has(id):
-			_press(app, "Opt_" + str(id))
+	_replace_single_topping(app, str(wanted[0]))
+	for id in wanted.slice(1):
+		_press(app, "Opt_" + str(id))
 	await _settle()
 	for name in ["Opt_broth_clam", "Opt_oil_shrimp", "Opt_topping_pickle", "Opt_topping_mushroom", "ToppingCount", "Desc_topping"]:
 		await _reachable(app, vp, name)
@@ -2262,7 +2304,7 @@ func _run_growth(holder: SubViewport, tag: String, vp: Vector2i) -> void:
 	var snap0: String = _dict_str(app)
 	_check(_text_of(app, "GrowthSummary").find("1단계") >= 0 and _text_of(app, "GrowthSummary").find("골목 가게") >= 0, tag + ": 현재 등급 표시: " + _text_of(app, "GrowthSummary"))
 	var cap_text: String = _text_of(app, "GrowthCapacity")
-	_check(cap_text.find("토핑 슬롯 1/3") >= 0 and cap_text.find("0/6") >= 0 and cap_text.find("직원 2/2명") >= 0 and cap_text.find("빈 자리 0") >= 0 and cap_text.find("0원") >= 0, tag + ": 용량/직원/운영비 표시: " + cap_text)
+	_check(cap_text.find("토핑 슬롯 2/4") >= 0 and cap_text.find("0/6") >= 0 and cap_text.find("직원 2/2명") >= 0 and cap_text.find("빈 자리 0") >= 0 and cap_text.find("0원") >= 0, tag + ": 용량/직원/운영비 표시: " + cap_text)
 	_check(_text_of(app, "RankConditions").find("[부족]") >= 0 and _text_of(app, "RankConditions").find("동네 맛집") >= 0, tag + ": 다음 등급 조건과 측정값: " + _text_of(app, "RankConditions"))
 	_check(_btn_disabled(app, "PromoteButton") and _text_of(app, "PromoteButton").find("조건 부족") >= 0, tag + ": 조건이 모자라면 승급 버튼은 꺼짐")
 	for fid in ["bench_1", "bench_2", "staff_1", "staff_2"]:
@@ -2296,16 +2338,17 @@ func _run_growth(holder: SubViewport, tag: String, vp: Vector2i) -> void:
 	await _open_growth_tab(app)
 	await _shot(holder, tag + "_17_growth_locked.png")
 
-	# 2) 토핑 슬롯 1개: 예전처럼 "다른 토핑을 고르면 바뀌는" 단순 선택, 개수/한도/해금 안내.
+	# Starting rank exposes two portions and a visible rank2 lock.
 	tabs.current_tab = 0
 	await _settle()
-	_press(app, "Opt_topping_egg")
+	_replace_single_topping(app, "topping_egg")
 	_press(app, "Opt_topping_nori")
 	await _settle()
-	_check(not (_find(app, "Opt_topping_egg") as BaseButton).button_pressed and (_find(app, "Opt_topping_nori") as BaseButton).button_pressed, tag + ": 슬롯 1개는 선택이 바뀌어요")
-	_check(_text_of(app, "ToppingCount").find("1/1") >= 0 and _text_of(app, "ToppingHint").find("1개만") >= 0 and _text_of(app, "ToppingHint").find("열려요") >= 0, tag + ": 토핑 개수/한도/해금 안내: " + _text_of(app, "ToppingCount") + " / " + _text_of(app, "ToppingHint"))
+	_check((_find(app, "Opt_topping_egg") as BaseButton).button_pressed and (_find(app, "Opt_topping_nori") as BaseButton).button_pressed, tag + ": 시작부터 두 종류 조합")
+	_check(_text_of(app, "ToppingCount").contains("2/2") and _text_of(app, "ToppingSlot_2").contains("등급 2"), tag + ": 다음 랭크 잠금 안내")
 	await _reachable(app, vp, "ToppingCount")
 	await _reachable(app, vp, "ToppingHint")
+	_replace_single_topping(app, "topping_nori")
 
 	# 3) 자격 채우기(실제 도메인 연산): 증인 여섯 시식 → 연구 1건 제출(UI 핸들러) → 실제 UI 영업 3일.
 	var rec: Dictionary = {}
@@ -2343,7 +2386,7 @@ func _run_growth(holder: SubViewport, tag: String, vp: Vector2i) -> void:
 	var after_rank: Dictionary = _load_probe(dir)
 	_check(str(after_rank["status"]) == "ok" and (after_rank["state"] as Object).call("rank") == 2, tag + ": 승급이 실제 파일에 저장")
 	_check(_btn_disabled(app, "PromoteButton") and _text_of(app, "RankConditions").find("이름난 라멘집") >= 0, tag + ": 3단계 조건이 다음 목표로 보이고 아직 신청 불가")
-	_check(st.call("topping_slots") == 1 and st.call("record_capacity") == 6, tag + ": 승급만으로는 용량이 늘지 않아요")
+	_check(st.call("topping_slots") == 3 and st.call("record_capacity") == 6, tag + ": 승급만으로는 용량이 늘지 않아요")
 
 	# 5) 유료 확장: 자금만 격리 인스턴스에서 채운다(가격/등급/선행 규칙은 그대로 도메인이 검증).
 	st.set("wallet", 200000)
@@ -2354,9 +2397,9 @@ func _run_growth(holder: SubViewport, tag: String, vp: Vector2i) -> void:
 	var w1: int = int(st.get("wallet"))
 	_press(app, "FacilityBuy_bench_1")
 	await _settle()
-	_check(int(st.get("wallet")) == w1 - 12000 and st.call("topping_slots") == 2 and st.call("record_capacity") == 12, tag + ": 조리대 I: 12,000원 한 번, 토핑 2/노트 12")
+	_check(int(st.get("wallet")) == w1 - 12000 and st.call("topping_slots") == 3 and st.call("record_capacity") == 12, tag + ": 조리대 I: 12,000원 한 번, 토핑 2/노트 12")
 	var buy_text: String = _text_of(app, "GrowthMessage")
-	_check(buy_text.find("토핑 슬롯 1→2 · 등록 메뉴 6→12종") >= 0 and buy_text.find("2→2") < 0 and buy_text.find("저장했어요") >= 0, tag + ": 구매 메시지가 구매 전→후 변화와 저장 결과를 알려요: " + buy_text)
+	_check(buy_text.find("등록 메뉴 6→12종") >= 0 and buy_text.find("2→2") < 0 and buy_text.find("저장했어요") >= 0, tag + ": 구매 메시지가 구매 전→후 변화와 저장 결과를 알려요: " + buy_text)
 	app.call("_on_facility_buy", "bench_1")
 	_check(int(st.get("wallet")) == w1 - 12000 and _text_of(app, "GrowthMessage") == "이미 설치했어요.", tag + ": 같은 확장 재구매 거부: " + _text_of(app, "GrowthMessage"))
 	_check(_btn_disabled(app, "FacilityBuy_bench_1") and _text_of(app, "FacilityBuy_bench_1").find("설치 완료") >= 0, tag + ": 설치한 확장은 '설치 완료'")
@@ -2400,33 +2443,38 @@ func _run_growth(holder: SubViewport, tag: String, vp: Vector2i) -> void:
 	await _settle()
 	_press(app, "NewRecipeButton")
 	for opt in ["Opt_broth_dashi", "Opt_tare_shio", "Opt_oil_scallion", "Opt_noodle_thin", "Opt_cook_firm"]:
-		_press(app, opt)
+		if str(opt).begins_with("Opt_topping_"):
+			_replace_single_topping(app, str(opt).trim_prefix("Opt_"))
+		else:
+			_press(app, opt)
 	var edit: LineEdit = _find(app, "RecipeNameEdit") as LineEdit
 	edit.text = "QA 두 토핑"
 	edit.text_changed.emit(edit.text)
-	# 지금 토핑은 [김] 하나. 반숙란을 더하면 둘, 차슈를 더하려 하면 가득 차서 거부된다.
+	# Rank2 has three positions, independent of the purchased bench.
 	var bowl_one: PackedByteArray = (_find(app, "BowlPreview") as TextureRect).texture.get_image().get_data()
 	_press(app, "Opt_topping_egg")
 	await _settle()
-	_check(_draft_toppings_text(st).find("topping_egg") >= 0 and _draft_toppings_text(st).find("topping_nori") >= 0, tag + ": 도메인 초안에도 토핑 둘: " + _draft_toppings_text(st))
-	_check((_find(app, "Opt_topping_egg") as BaseButton).button_pressed and (_find(app, "Opt_topping_nori") as BaseButton).button_pressed and _text_of(app, "ToppingCount").find("2/2") >= 0, tag + ": 두 번째 토핑 추가: " + _text_of(app, "ToppingCount"))
+	_check(_draft_toppings_text(st).find("topping_egg") >= 0 and _draft_toppings_text(st).find("topping_nori") >= 0, tag + ": 혼합 토핑 두 몫")
+	_check(_text_of(app, "ToppingCount").find("2/3") >= 0, tag + ": 등급2 세 칸 중 두 칸")
 	var bowl_two: PackedByteArray = (_find(app, "BowlPreview") as TextureRect).texture.get_image().get_data()
-	_check(bowl_two != bowl_one, tag + ": 토핑을 더하면 그릇 미리보기가 달라져요")
+	_check(bowl_two != bowl_one, tag + ": 토핑 추가 그릇 변화")
 	_press(app, "Opt_topping_chashu")
 	await _settle()
-	_check(not (_find(app, "Opt_topping_chashu") as BaseButton).button_pressed and (_find(app, "Opt_topping_egg") as BaseButton).button_pressed and (_find(app, "Opt_topping_nori") as BaseButton).button_pressed, tag + ": 가득 찼을 때 다른 토핑을 몰래 바꾸지 않아요")
-	_check(_text_of(app, "TasteMessage").find("2개까지") >= 0, tag + ": 가득 참 거부 이유(한도/해금): " + _text_of(app, "TasteMessage"))
-	_check(_text_of(app, "ToppingHint").find("최소 1개") >= 0 and _text_of(app, "ToppingHint").find("최대 2개") >= 0, tag + ": 다중 선택 안내: " + _text_of(app, "ToppingHint"))
-	_press(app, "Opt_topping_nori")
-	await _settle()
-	_check(not (_find(app, "Opt_topping_nori") as BaseButton).button_pressed and _text_of(app, "ToppingCount").find("1/2") >= 0, tag + ": 눌러서 빼기")
+	_check(_text_of(app, "ToppingCount").find("3/3") >= 0, tag + ": 세 칸 채우기")
+	var full_before: String = JSON.stringify(st.call("to_dict"))
 	_press(app, "Opt_topping_egg")
 	await _settle()
-	_check((_find(app, "Opt_topping_egg") as BaseButton).button_pressed and _text_of(app, "ToppingCount").find("1/2") >= 0, tag + ": 마지막 하나는 뺄 수 없어요")
-	_check(_text_of(app, "TasteMessage").find("최소 1개") >= 0, tag + ": 마지막 하나 보호 이유: " + _text_of(app, "TasteMessage"))
+	_check(JSON.stringify(st.call("to_dict")) == full_before and _text_of(app, "TasteMessage").contains("3개까지"), tag + ": 가득 찬 칸은 몰래 교체/삭제하지 않음")
+	_press(app, "RemoveTopping_0") # chashu -> egg/nori
+	await _settle()
+	_press(app, "RemoveTopping_1") # nori -> egg
+	await _settle()
+	_check(_text_of(app, "ToppingCount").contains("1/3"), tag + ": 칸에서 한 몫씩 제거")
+	_press(app, "RemoveTopping_0")
+	await _settle()
+	_check(_text_of(app, "ToppingCount").contains("1/3") and _text_of(app, "TasteMessage").contains("최소 1개"), tag + ": 마지막 토핑 보호")
 	_press(app, "Opt_topping_chashu")
 	await _settle()
-	_check((_find(app, "Opt_topping_chashu") as BaseButton).button_pressed and (_find(app, "Opt_topping_egg") as BaseButton).button_pressed, tag + ": 차슈 + 반숙란")
 	_check(_text_of(app, "Desc_topping").find("차슈") >= 0 and _text_of(app, "Desc_topping").find("반숙란") >= 0, tag + ": 레시피 설명에 선택한 토핑이 모두 나와요")
 	_check(_text_of(app, "ProfileLabel").find("원가") >= 0, tag + ": 구성 요약")
 	for name in ["ToppingCount", "ToppingHint", "Opt_topping_chashu", "Opt_topping_egg", "Opt_topping_sprouts", "Opt_topping_nori", "TasteButton"]:
@@ -2447,8 +2495,8 @@ func _run_growth(holder: SubViewport, tag: String, vp: Vector2i) -> void:
 	# 같은 토핑을 다른 순서로 다시 맞춰도 새 메뉴가 생기지 않는다(순서만 다른 구성 = 같은 레시피).
 	tabs.current_tab = 0
 	await _settle()
-	# [차슈, 반숙란] → 차슈를 빼고 다시 넣어 [반숙란, 차슈] 순서로 같은 집합을 만든다.
-	_press(app, "Opt_topping_chashu")
+	# Remove a position, then add it back: identical multiset cannot be retasted.
+	_press(app, "RemoveTopping_0")
 	await _settle()
 	_press(app, "Opt_topping_chashu")
 	await _settle()
@@ -2456,8 +2504,8 @@ func _run_growth(holder: SubViewport, tag: String, vp: Vector2i) -> void:
 	var count_before: int = int(st.call("record_count"))
 	var dup: Dictionary = app.call("start_tasting")
 	_check(not bool(dup["ok"]) and not bool(app.call("work_active")) and int(st.call("record_count")) == count_before and str(dup["message"]).find("이미 같은 구성") >= 0, tag + ": 순서만 바꾼 같은 구성은 시식 거부: " + str(dup["message"]))
-	# 개정: 토핑을 바꿔 v2 로 시식하면 비교에 토핑 변화가 보인다.
-	_press(app, "Opt_topping_chashu")
+	# Explicitly select the chashu position before replacement.
+	_press(app, "ToppingSlot_0")
 	_press(app, "Opt_topping_nori")
 	await _settle()
 	await _finish_tasting(app)
@@ -2537,7 +2585,7 @@ func _run_growth(holder: SubViewport, tag: String, vp: Vector2i) -> void:
 	st = _state(app)
 	shop = _find(app, "ShopView")
 	_check(st.call("rank") == 2 and str(st.call("facilities_owned")) == str(["bench_1", "staff_1"]) and str(st.call("hired_staff")) == str(["prep_assistant"]), tag + ": 재시작 후 등급/확장/고용 복원")
-	_check(int(st.get("wallet")) == wallet_r and int(st.call("record_count")) == records_r and st.call("topping_slots") == 2 and st.call("record_capacity") == 12 and st.call("staff_capacity") == 3, tag + ": 재시작 후 자금/기록/용량 복원(공짜 성장 없음)")
+	_check(int(st.get("wallet")) == wallet_r and int(st.call("record_count")) == records_r and st.call("topping_slots") == 3 and st.call("record_capacity") == 12 and st.call("staff_capacity") == 3, tag + ": 재시작 후 자금/기록/용량 복원(공짜 성장 없음)")
 	_check(str(shop.call("visible_staff")) == str(["prep_assistant"]), tag + ": 재시작 후 가게에 직원이 서 있어요")
 	await _open_growth_tab(app)
 	_check(_text_of(app, "GrowthSummary").find("2단계") >= 0 and _text_of(app, "GrowthCapacity").find("직원 3/3명") >= 0 and _text_of(app, "StaffHire_prep_assistant").find("고용 완료") >= 0, tag + ": 재시작 후 성장 탭: " + _text_of(app, "GrowthCapacity"))
@@ -2573,8 +2621,8 @@ func _run_growth(holder: SubViewport, tag: String, vp: Vector2i) -> void:
 	var w4: int = int(st.get("wallet"))
 	_press(app, "FacilityBuy_bench_2")
 	await _settle()
-	_check(int(st.get("wallet")) == w4 - 30000 and st.call("topping_slots") == 3 and st.call("record_capacity") == 30, tag + ": 조리대 II: 30,000원, 토핑 3/노트 30")
-	_check(_text_of(app, "GrowthMessage").find("토핑 슬롯 2→3 · 등록 메뉴 12→30종") >= 0, tag + ": 조리대 II 메시지: " + _text_of(app, "GrowthMessage"))
+	_check(int(st.get("wallet")) == w4 - 30000 and st.call("topping_slots") == 4 and st.call("record_capacity") == 30, tag + ": 조리대 II: 30,000원, 토핑 3/노트 30")
+	_check(_text_of(app, "GrowthMessage").find("등록 메뉴 12→30종") >= 0, tag + ": 조리대 II 메시지: " + _text_of(app, "GrowthMessage"))
 	_press(app, "FacilityBuy_staff_2")
 	await _settle()
 	_check(st.call("staff_capacity") == 4 and (st.call("hired_staff") as Array).size() == 1, tag + ": 직원 공간 II: 4명까지, 자동 고용 없음")
@@ -2600,13 +2648,17 @@ func _run_growth(holder: SubViewport, tag: String, vp: Vector2i) -> void:
 	_press(app, "Opt_topping_egg")
 	_press(app, "Opt_topping_nori")
 	await _settle()
-	_check(_text_of(app, "ToppingCount").find("3/3") >= 0, tag + ": 토핑 3/3: " + _text_of(app, "ToppingCount"))
+	_check(_text_of(app, "ToppingCount").find("3/4") >= 0, tag + ": 토핑 3/4: " + _text_of(app, "ToppingCount"))
+	_press(app, "Opt_topping_egg")
+	await _settle()
+	_check(_text_of(app, "ToppingCount").contains("4/4") and (IngredientCatalog.toppings_of(st.get("draft_config"))).count("topping_egg") == 2, tag + ": 같은 반숙란을 네번째 칸에 추가")
 	_press(app, "Opt_topping_sprouts")
 	await _settle()
-	_check(not (_find(app, "Opt_topping_sprouts") as BaseButton).button_pressed and _text_of(app, "TasteMessage").find("3개까지") >= 0, tag + ": 네 번째 토핑 거부: " + _text_of(app, "TasteMessage"))
+	_check(not (_find(app, "Opt_topping_sprouts") as BaseButton).button_pressed and _text_of(app, "TasteMessage").contains("4개까지"), tag + ": 다섯번째 토핑 거부")
+
 	await _finish_tasting(app)
-	_check(_text_of(app, "FeedbackToppings").find("차슈") >= 0 and _text_of(app, "FeedbackToppings").find("반숙란") >= 0 and _text_of(app, "FeedbackToppings").find("김") >= 0 and _text_of(app, "FeedbackToppings").find("3개") >= 0, tag + ": 피드백에 토핑 3개: " + _text_of(app, "FeedbackToppings"))
-	_check(_record_toppings_count(st.call("get_record", int(st.get("selected_record_id")))) == 3, tag + ": 기록에 토핑 3개")
+	_check(_text_of(app, "FeedbackToppings").find("차슈") >= 0 and _text_of(app, "FeedbackToppings").find("반숙란") >= 0 and _text_of(app, "FeedbackToppings").find("김") >= 0 and _text_of(app, "FeedbackToppings").find("4개") >= 0, tag + ": 피드백에 토핑 4개: " + _text_of(app, "FeedbackToppings"))
+	_check(_record_toppings_count(st.call("get_record", int(st.get("selected_record_id")))) == 4, tag + ": 기록에 토핑 4개")
 	# 보조 둘 + 토핑 3개 영업.
 	_press(app, "CloseButton")
 	await _settle()
@@ -3131,7 +3183,7 @@ func _run_market_foraging(holder: SubViewport, tag: String, vp: Vector2i) -> voi
 	app.call("_open_overlay", 0)
 	await _settle()
 	_press(app, "Opt_oil_scallion")
-	_press(app, "Opt_topping_citrus_peel")
+	_replace_single_topping(app, "topping_citrus_peel")
 	await _finish_tasting(app)
 	await _settle()
 	_check(st.call("foraging_state")["stock"]["topping_citrus_peel"] == 1, tag + ": citrus prototype consumes its own sample")

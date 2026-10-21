@@ -18,10 +18,10 @@ const AXIS_NAMES: Dictionary = {
 
 const SLOTS: Array[String] = ["broth", "tare", "oil", "noodle", "topping", "cook"]
 
-## 토핑만 여러 개를 고를 수 있다(상한은 등급 + 조리대 확장으로 정해지는 슬롯 수, 절대 상한 MAX_TOPPINGS).
+## 토핑만 여러 개를 고를 수 있다(상한은 가게 등급으로 열리는 슬롯 수, 절대 상한 MAX_TOPPINGS).
 ## 나머지 슬롯(육수/타레/향미유/면/익힘)은 언제나 하나만 고른다.
 const TOPPING_SLOT: String = "topping"
-const MAX_TOPPINGS: int = 3
+const MAX_TOPPINGS: int = 4
 
 const SLOT_NAMES: Dictionary = {
 	"broth": "육수",
@@ -239,7 +239,7 @@ static func default_config() -> Dictionary:
 # ---------- 토핑 추출/정규화 (모든 계산이 쓰는 단 하나의 경로) ----------
 ##
 ## 구성 딕셔너리는 두 모양을 받는다.
-##  - 정규: {"toppings": [id, ...]} (1~3개, 카탈로그 순서, 중복 없음). 메모리/기록/저장 v3의 유일한 표준 모양.
+##  - 정규: {"toppings": [id, ...]} (1~4개, 카탈로그 순서, 중복 분량 허용). 메모리/기록/저장 v12의 표준 모양.
 ##  - 옛 모양: {"topping": id} 하나. v1/v2 저장과 예전 시험/증인 조합이 쓴다. 읽을 때만 정규로 바꾼다.
 ## 평가/원가/시간/궁합/장면 그림은 반드시 toppings_of()/item_ids()로만 토핑을 읽는다(구성["topping"]을 직접 읽지 않는다).
 ## 그래서 토핑이 하나인 옛 구성은 정규 구성과 점수·원가·시간이 정확히 같고, 여러 개여도 토핑마다 정확히 한 번씩 반영된다.
@@ -267,7 +267,7 @@ static func toppings_of(config: Dictionary) -> Array[String]:
 	return out
 
 
-## 토핑 id를 카탈로그 순서로 정렬한 새 배열(중복은 그대로 남겨 검증이 잡게 한다). 순서만 다른 구성은 같은 구성이다.
+## 토핑 id를 카탈로그 순서로 정렬한 새 배열(중복은 분량이므로 그대로 남긴다). 순서만 다른 구성은 같은 구성이다.
 static func canonical_toppings(ids: Array) -> Array:
 	var out: Array = []
 	for v in ids:
@@ -317,9 +317,17 @@ static func item_ids(config: Dictionary) -> Array[String]:
 ## 화면용: 선택한 토핑 이름들을 " + "로 이은 글.
 static func topping_names(config: Dictionary) -> String:
 	var names: Array[String] = []
-	for t in canonical_toppings(toppings_of(config)):
-		var item: Dictionary = find(str(t))
-		names.append(str(item["name"]) if not item.is_empty() else str(t))
+	var ids := canonical_toppings(toppings_of(config))
+	var seen: Array[String] = []
+	for value in ids:
+		var id := str(value)
+		if seen.has(id):
+			continue
+		seen.append(id)
+		var item := find(id)
+		var title := str(item["name"]) if not item.is_empty() else id
+		var count := ids.count(id)
+		names.append(title + (" ×%d" % count if count > 1 else ""))
 	return " + ".join(names)
 
 

@@ -691,7 +691,7 @@ static func bowl_image(config: Dictionary) -> Image:
 	else:
 		# 둘 이상: 12x7 그릇 안의 국물 면(왼쪽 x2, 가운데 x5, 오른쪽 x8)에 토핑마다 2칸 폭의 작은 모양으로 나눠 얹는다.
 		# 둘이면 왼쪽/오른쪽, 셋이면 왼쪽/가운데/오른쪽. 토핑마다 색과 모양이 달라 서로 구별된다.
-		var anchors: Array = [2, 8] if tops.size() == 2 else [2, 5, 8]
+		var anchors: Array = [2, 8] if tops.size() == 2 else ([2, 5, 8] if tops.size() == 3 else [1, 4, 7, 9])
 		for i in mini(tops.size(), anchors.size()):
 			_draw_topping_compact(img, str(tops[i]), int(anchors[i]))
 	var oil: Color = Color(0, 0, 0, 0)

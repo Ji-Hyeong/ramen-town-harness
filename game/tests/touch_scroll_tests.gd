@@ -65,24 +65,31 @@ func _run_profile(tag: String, vp: Vector2i, _scale: int) -> void:
 	var button := _find(app, "NewRecipeButton") as Button
 	var clicks: Array[int] = [0]
 	button.pressed.connect(func(): clicks[0] += 1)
+	scroll.ensure_control_visible(button)
+	await _settle()
+	var button_start := scroll.scroll_vertical
+	app.get("_juice").advance_effects(5.0)
 	var before := JSON.stringify(_state(app).call("to_dict"))
 	await _drag(holder, _visible_center(button, scroll), -72)
-	_check(scroll.scroll_vertical > 20, tag + ": swipe starting on enabled button scrolls")
+	_check(scroll.scroll_vertical > button_start + 20, tag + ": swipe starting on enabled button scrolls")
+	_check(app.get("_juice").effect_count() == 0, tag + ": canceled swipe produces no click effects")
 	_check(clicks[0] == 0, tag + ": swipe does not activate button")
 	_check(JSON.stringify(_state(app).call("to_dict")) == before, tag + ": swipe never changes game state")
 	await _stop(holder, scroll)
-	scroll.scroll_vertical = 0
+	scroll.ensure_control_visible(button)
 	await _settle()
+	var tap_start := scroll.scroll_vertical
 	var point := _visible_center(button, scroll)
 	_pointer(holder, point, true)
 	_motion(holder, point + Vector2(0, -2), Vector2(0, -2))
 	_pointer(holder, point + Vector2(0, -2), false)
 	await _frames(2)
 	_check(clicks[0] == 1, tag + ": small finger jitter is exactly one tap")
-	_check(scroll.scroll_vertical == 0, tag + ": small finger jitter does not scroll")
+	_check(scroll.scroll_vertical == tap_start, tag + ": small finger jitter does not scroll")
 	button.disabled = true
+	var disabled_start := scroll.scroll_vertical
 	await _drag(holder, _visible_center(button, scroll), -72)
-	_check(scroll.scroll_vertical > 20, tag + ": disabled button also permits content swipe")
+	_check(scroll.scroll_vertical > disabled_start + 20, tag + ": disabled button also permits content swipe")
 	_check(clicks[0] == 1, tag + ": disabled button never activates")
 	await _stop(holder, scroll)
 	button.disabled = false
@@ -94,6 +101,8 @@ func _run_profile(tag: String, vp: Vector2i, _scale: int) -> void:
 			break
 	_check(option != null, tag + ": ingredient fixture exists")
 	if option != null:
+		_reveal_control(option)
+		await _settle()
 		scroll.ensure_control_visible(option)
 		await _settle()
 		var initial_scroll := scroll.scroll_vertical
@@ -113,9 +122,12 @@ func _run_profile(tag: String, vp: Vector2i, _scale: int) -> void:
 	scroll.scroll_vertical = 0
 	await _settle()
 	var edit := _find(app, "RecipeNameEdit") as LineEdit
+	scroll.ensure_control_visible(edit)
+	await _settle()
+	var name_start := scroll.scroll_vertical
 	before = JSON.stringify(_state(app).call("to_dict"))
 	await _drag(holder, _visible_center(edit, scroll), -72)
-	_check(scroll.scroll_vertical > 20, tag + ": vertical swipe starting on name field scrolls")
+	_check(scroll.scroll_vertical > name_start + 20, tag + ": vertical swipe starting on name field scrolls")
 	_check(JSON.stringify(_state(app).call("to_dict")) == before, tag + ": name-field swipe changes no recipe data")
 	await _stop(holder, scroll)
 	# All tabs share the production factory, including dynamically built cards.
@@ -193,14 +205,19 @@ func _native_stream(tag: String, vp: Vector2i) -> void:
 	var button := _find(app, "NewRecipeButton") as Button
 	var clicks: Array[int] = [0]
 	button.pressed.connect(func(): clicks[0] += 1)
+	scroll.ensure_control_visible(button)
+	await _settle()
+	var initial_scroll := scroll.scroll_vertical
+	app.get("_juice").advance_effects(5.0)
 	await _finger_drag(_visible_center(button, scroll))
-	_check(scroll.scroll_vertical > 20, tag + ": real touch stream scrolls from button")
+	_check(scroll.scroll_vertical > initial_scroll + 20, tag + ": real touch stream scrolls from button")
+	_check(app.get("_juice").effect_count() == 0, tag + ": native canceled swipe produces no effects")
 	_check(clicks[0] == 0, tag + ": real touch drag never activates button")
 	# Stop native inertia through the same original touch stream.
 	var edge := scroll.get_global_rect().position + Vector2(1, 10)
 	_finger(edge, true)
 	_finger(edge, false)
-	scroll.scroll_vertical = 0
+	scroll.ensure_control_visible(button)
 	await _settle()
 	var point := _visible_center(button, scroll)
 	_finger(point, true)
@@ -208,9 +225,12 @@ func _native_stream(tag: String, vp: Vector2i) -> void:
 	await _frames(2)
 	_check(clicks[0] == 1, tag + ": real touch tap activates exactly once")
 	var edit := _find(app, "RecipeNameEdit") as LineEdit
+	scroll.ensure_control_visible(edit)
+	await _settle()
+	initial_scroll = scroll.scroll_vertical
 	await _finger_drag(_visible_center(edit, scroll))
-	_check(scroll.scroll_vertical > 20, tag + ": real touch stream scrolls from name field")
-	scroll.scroll_vertical = 0
+	_check(scroll.scroll_vertical > initial_scroll + 20, tag + ": real touch stream scrolls from name field")
+	scroll.ensure_control_visible(edit)
 	await _settle()
 	point = _visible_center(edit, scroll)
 	_finger(point, true)

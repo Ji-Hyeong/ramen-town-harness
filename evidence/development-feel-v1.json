@@ -1,0 +1,333 @@
+{
+  "date": "2026-10-21",
+  "task": "development-feel-v1",
+  "status": "preserved_prior_milestone_extended_by_recipe_discovery_v1",
+  "base_commit": "0f87d7cde293dbff18253ca89d1ee892ffb6f7e7",
+  "implementation_agent": "Codex",
+  "claude_calls": 0,
+  "user_confirmed_rank_positions": [
+    2,
+    3,
+    4
+  ],
+  "schema_version": 12,
+  "source_count": 103,
+  "source_sha256": {
+    "project.godot": "dc51a895d342d40ae50c597fa243266e6f5044507b3ef85e27b228c7c4f60d72",
+    "scenes/main.tscn": "024518581dfb9fc07e1bb5ba66316964b321c6eecd784758b5ea566ebe292af4",
+    "scripts/domain/contest_progress.gd": "0f5d1ef9ddf29c074bce7491dd88040e895e4b4dae181ffe7cfdc502cf2535ec",
+    "scripts/domain/contest_progress.gd.uid": "d9d9dff87927cac42dbac088144b59395d3e92f8dcbf8f210fb0cd45b1e7b11b",
+    "scripts/domain/customer_catalog.gd": "7774ff905e1fd4110b28f5ce067d6ef020f77147331a32cdd712286c3df853e4",
+    "scripts/domain/customer_catalog.gd.uid": "f0f1ec5aa64ac8d303e9206bd338e44d2d66768580db0da2343cfd4836eddd9a",
+    "scripts/domain/data_check.gd": "664031f7d779858309a732dc4d743421da3e1ce78736ae72d92464582ba6a2cb",
+    "scripts/domain/data_check.gd.uid": "f7cba21ed3f3a5774c28c3cd4d0a784b44acabeead34c3a32dddb0e6facab491",
+    "scripts/domain/game_state.gd": "26fc870db26afd74c9e8c999ce82d47bc133d23c765bfae963d09521a36d07e3",
+    "scripts/domain/game_state.gd.uid": "d24724aed0274f6104fdcadf6049584bea78705c9696f446175307791dc5b710",
+    "scripts/domain/ingredient_catalog.gd": "0d13ec3acc39e26cd1b23c2872d596a123fd9a1db61fce6d0cd8d8e8da2dc94f",
+    "scripts/domain/ingredient_catalog.gd.uid": "388d11c65c86874d287b262618ff50fe2aca77e3e4c248fd2cd3d4342206256c",
+    "scripts/domain/ingredient_exploration.gd": "cd1d39beb1209f18a4a680ea13feb78e96b8611533b7625a893dd8614128ddbd",
+    "scripts/domain/ingredient_exploration.gd.uid": "1f0a69bfe20bbec6ee384c98ae24e7366d4c56a0b9724cb48e59005bb28dc70e",
+    "scripts/domain/market_foraging.gd": "d196b8f085aa33e473a09c14f5f87a00b96bb70b703450b4fa7eff4043d851b3",
+    "scripts/domain/market_foraging.gd.uid": "9f3d5fda0487de28c2048d6620b3f555c95159e1478928985a259c2c5b7a5004",
+    "scripts/domain/menu_report.gd": "f953ad8b46703361143a100360cf1670f73f9060fe08afc715c1ce0dc6a9e210",
+    "scripts/domain/menu_report.gd.uid": "31f17ebae3215dec90a196fa466afcb1627c99cd31644dccf2121534f660e249",
+    "scripts/domain/menu_sales.gd": "267572c3afe628a878c4c1b4e87277a56f46aa54bcd0b5db9f35b0e1e7320911",
+    "scripts/domain/menu_sales.gd.uid": "27fff1048359801a90045f6b023dbb76225fadba9af932e31ac102e783e33fb5",
+    "scripts/domain/ramen_contest.gd": "f9084a6844eb3dc7e5a0bd589d541c9713f1f6eea9ddb8c4d6311f61d8571965",
+    "scripts/domain/ramen_contest.gd.uid": "e851e9e4282bc401e92eebbebdf2085e8a579a6a8901ae51148426972c58b255",
+    "scripts/domain/ramen_research.gd": "ef09a17a2a603e509050c94ca6bbffd33dd0a174e84c877e41142f4d2e905eb0",
+    "scripts/domain/ramen_research.gd.uid": "a77c27491e6ed0b14acf4ba2b17e07acb29416a14ff21ed5e566306b13a6c887",
+    "scripts/domain/recipe_evaluator.gd": "cef5a7ea816907dc9c1c0289e63bb69ad4e4f19f472a20c0f9faf80bff87c302",
+    "scripts/domain/recipe_evaluator.gd.uid": "94a37fbffc55e2e1aad342d19ea4f4f203c7128acd6d1e89a669060c1f2fcab1",
+    "scripts/domain/recipe_process.gd": "1be7f24720fa402c92e70d0533f48bf37c381693282a2776d9cd901876d5d5a7",
+    "scripts/domain/recipe_process.gd.uid": "1fced988385208b512db50a0000168ae7980967119a46b91bbd283480f087481",
+    "scripts/domain/regular_stories.gd": "cecbab691db41e3ada73f6642e5c878999a3f686072db63b5d19fef2d51c9a61",
+    "scripts/domain/regular_stories.gd.uid": "58f2dc92555c1874787f0e3c96cf947c8254d3894299e569497baf2478630a39",
+    "scripts/domain/regular_story_catalog.gd": "59d36c878835f31b064ec1f5c04f76832e477a22b4d98dea61e939b70275fcef",
+    "scripts/domain/regular_story_catalog.gd.uid": "33f7142109e51a1542b32ac8c2dfc7f05f3e958146c7b4a8890a28f3fce27e6b",
+    "scripts/domain/sales_simulator.gd": "63d19509fc931ea9c9c5eda4ab3b6b4081717b4ee9756210e995eb6dec9cf0ff",
+    "scripts/domain/sales_simulator.gd.uid": "d017a82c4607830cf428a7f1c8448a413844b4e2f4a04a62498df8185d368caa",
+    "scripts/domain/service_session.gd": "afb471b695177e5038daa4ac4f0f0100de16188308a2f26bc3be03c02c61ff84",
+    "scripts/domain/service_session.gd.uid": "22ef060f79b93995e77c997aadf8712001bbae08f9b99dcb768a2fc444d0442c",
+    "scripts/domain/shop_growth.gd": "a2981aaa94f4ef3bfa17dbd42073743be94223397c63ec32afe0e3db3224db29",
+    "scripts/domain/shop_growth.gd.uid": "4edc075c1675f517238ccd691f7198d31b757339ff485f4a04038aae39e4fc1d",
+    "scripts/domain/shop_staffing.gd": "5d464774d3a2b969d55eaa2dd1b75b0923f3baa7e898411874fa6db432228b35",
+    "scripts/domain/shop_staffing.gd.uid": "e1d53b09eaaea52551acd332943ad3748d74a16930a67bd75acd7fd969235605",
+    "scripts/domain/staff_training.gd": "10dc1f3e9050396d1ddec06420074c0c62b0fa23712b01177e4df8acaba8aced",
+    "scripts/domain/staff_training.gd.uid": "71c535ec37937ace9fa53aad425857d1667c885bc8f6bfed4888746e7c6f4bc1",
+    "scripts/services/data_location.gd": "6caf1b6faa4119c93252942716ce86ab96ffe89f5fb8fbed5ba83fb1f29a0382",
+    "scripts/services/data_location.gd.uid": "48b2b18791e7201f7ba3219092d40a94cb0dbc19ece53d8dad3758db283b98f0",
+    "scripts/services/save_service.gd": "dbd3ab88f674f611c2d69eb67119a99bd2ad608b50c6c600aaf39cdc988b9d57",
+    "scripts/services/save_service.gd.uid": "83f51962de4e6472f59854dc837c5b84ab8c41a63b2056cc5bd2182789a64e63",
+    "scripts/ui/action_feedback.gd": "6240545f2a21bf861f234d64d7463db13d9320c7e2b1264d567b283fa0769e0a",
+    "scripts/ui/action_feedback.gd.uid": "d888180a2b41029af41957f4c3b3dc5f69fe8614fb2bfc508ef782336d7d165d",
+    "scripts/ui/bowl_view.gd": "7341d07f4ac709ede7f2c76bfeea909d74203e4f5042d4bfcb802ce4bac9c5cd",
+    "scripts/ui/bowl_view.gd.uid": "c392422404452afaf0042a9fe4850f3c7ac29028cc94c3075deaa3f462ffe58d",
+    "scripts/ui/expedition_travel.gd": "06daa75107e2f7c3d53a4720b2dd7fd28c568a06b576279172d7b547ffb1c50e",
+    "scripts/ui/expedition_travel.gd.uid": "95f2de2e64084192bcc4007385e26e836d3ba5d33372a3e70f6809588e641fa9",
+    "scripts/ui/main.gd": "23e8fa055793b93d7e8d8aa3bfd732deb6eba63c23849d34fb48c126a48e5416",
+    "scripts/ui/main.gd.uid": "4c843d7e87a7f840dd7fb476f9b92ae9f85ebe1aceff93785e0a7501ac8f623a",
+    "scripts/ui/pixel_art.gd": "df491f5bcad0083f9f4c974a933c0cc0679b9be0402f8569f24e5b976293093a",
+    "scripts/ui/pixel_art.gd.uid": "820a64bf221536fd19128d73082ae7efc9fa594177f11ed3dd3b940d45faca26",
+    "scripts/ui/scrollable_name_edit.gd": "2709ed53ad9e861ce035f8e212f7c9b73fc4a5f7fe0bf8806c8229ffb67c5905",
+    "scripts/ui/scrollable_name_edit.gd.uid": "562f4635ee56b6e1c4d693799f92c655fddb361b6782746d81fd6284a693d590",
+    "scripts/ui/shop_layout.gd": "2494c07572efe0fd33fc8d3e7ac33a9ffc11ec22e47ef8f0c4d4caaa5a447ffb",
+    "scripts/ui/shop_layout.gd.uid": "b161ec1a303b2552643e55dc41a738f381296679dd6ad494c028e2f2c43c7091",
+    "scripts/ui/shop_painter.gd": "4e4c0745454d3326df812894305a28c4d2d23cd24c0e070edbcc7b6e1bb88c35",
+    "scripts/ui/shop_painter.gd.uid": "315d0c51661b3b0ae371b66b41209a6d5343eda93ac9a4b44abb4adcffa99881",
+    "scripts/ui/shop_scene.gd": "010b8938043f3e566dc8bbeff9c532190379abe5cbf63f307036c7eafc385649",
+    "scripts/ui/shop_scene.gd.uid": "c3fca130d4e078daa7083a5efa1f3fa8c392ab8ada24d50725db1baa9a741880",
+    "scripts/ui/shop_view.gd": "542d152b9ac4011825b36e48d89b0e8051ea6d2ec9fd002b95419d23bcaa6c75",
+    "scripts/ui/shop_view.gd.uid": "f1194eab001c594a4f1d88da37ab8cc88e70163f4a709e72629b29fc49643113",
+    "scripts/ui/star_meter.gd": "caa1933f319a15dd76497c125dfec8a9d64011f8e8162cf17d8fa45473139070",
+    "scripts/ui/star_meter.gd.uid": "4dc6ce5b399e895a58e69e9c1f2a76d6be3365a57cd7d358b05be7179261779f",
+    "scripts/ui/tasting_work.gd": "89a6913f9ecad8892f6a44cee706bdec26b5b0aa94c91fdb2c0e751266eedec4",
+    "scripts/ui/tasting_work.gd.uid": "115a9a0049c8b0734d3a2d91aaad8314f91413828d7539899755081fe1203b3a",
+    "scripts/ui/tasting_work_view.gd": "6bca774413853b0c7514ea1b6cf37a24b84a88952ea8e85ea7b4a96d617d95a1",
+    "scripts/ui/tasting_work_view.gd.uid": "66ce0e9c185b26a16a5475885508d5b00a476dcc392198a1054a32d0634aee23",
+    "assets/fonts/GowunDodum-Regular.ttf": "a6e457933227483a11758fd0947bc74422a106d46f0bf057fdaa5af94a30067d",
+    "assets/fonts/GowunDodum-Regular.ttf.import": "da88a173d8646ce80879a30dc02756abbe3b5e61076ba1652084a68900e11104",
+    "assets/fonts/OFL.txt": "a7c73f9521cd646bbdfb6684c99a62311bbd7bce11898dc11ef0b3c69eda1aca",
+    "tests/contest_scoring_tests.gd": "95c24a17e69cf1498f8435cf90c5b35f61058ae435a42b136de2ff92f20ba557",
+    "tests/contest_scoring_tests.gd.uid": "61cc517e37d461c1bd6f920f80dbfec72222fd6b51dd1c20442ea90838a97486",
+    "tests/development_feel_tests.gd": "68b3f45592750fab26217c9b150957af192110630ba89f404d5b131f24486f6d",
+    "tests/development_feel_tests.gd.uid": "08c1fbe062161aa736edae5b29226fe1f83f7a1dd59f78695d46b3a56dbb4592",
+    "tests/investment_preview_ui_tests.gd": "d351bce1f509adbaf77a16e3f791e1bde17d9bab954ca986f3de1f3099276115",
+    "tests/investment_preview_ui_tests.gd.uid": "a32636dea5a9c84b7fef167200558202854b1d2fdf17faeb8cfc1ac19771aa1a",
+    "tests/market_foraging_runner.gd": "6e703817522c57ecd9bf7cf840113a0694c3f3f71ed8b437bbe7330873386f69",
+    "tests/market_foraging_runner.gd.uid": "3a68bba9a57d1667327992e7d37549b9b8f1a718189ebad6a937f5122ac69bcf",
+    "tests/market_foraging_tests.gd": "413285749891c5ededf8f51d51e35843bf4135ed1585ddb74d9081bc0db131c4",
+    "tests/market_foraging_tests.gd.uid": "6afe00eca5ef4d8b703f2ec05c027c193856c65ccdbdd5c91fe276f2bdb94e67",
+    "tests/market_foraging_ui_tests.gd": "9ef84b8c6b9380e58a74b6bc7fba3ebd3bbe4145fa6d4d54f8f74a527bb8ed3c",
+    "tests/market_foraging_ui_tests.gd.uid": "78e40055cd8162188232eb08ab4017c2dfab1a5fe42fa882f959093cef07f6e7",
+    "tests/menu_sales_core_tests.gd": "dd1d6a061652ace04e34500a4d6d170be41bebea7be5b92d372e4ec76b33a6ed",
+    "tests/menu_sales_core_tests.gd.uid": "90bbf52854e5b394945b17408dbf2c197e71b1aaa730bc26d892a6f266454983",
+    "tests/qa_capture.gd": "d96f4017f0bcd7081af9693552e23b2036e32233e63d7bd7a7e70f0f084b555d",
+    "tests/qa_capture.gd.uid": "46b5a6fa9d45e3adc90a609f3183b24097f44cc0929b6e32e55945720ac06618",
+    "tests/recipe_process_core_tests.gd": "b8f92c1b8840b6dbac0a819c7c9ca7a9d10887d2c5dec042cab0dfb9a87d272d",
+    "tests/recipe_process_core_tests.gd.uid": "86e72332aaf5df57bbb56119cab074ee0ec273e13e4f27f1ff2fc4bc5a65d885",
+    "tests/regular_story_core_tests.gd": "6d292cb7ac02dbae05fce5cdd4ffb8ec969e1f3720d9417c9a1af05b83ffc5d7",
+    "tests/regular_story_core_tests.gd.uid": "a88c04156013cdbe81b5938de68c0068616113757e0fea34e3db68347b92f8c2",
+    "tests/regular_story_fixtures.gd": "39285aded025da4da9c16686d0b0b8003d80cf4351939fe459b6675b3a53f2be",
+    "tests/regular_story_fixtures.gd.uid": "97a352c03eeb0b99965fc847e31fef258e2d7f8c69d1ab9238e0bee0d0e9c6f2",
+    "tests/run_tests.gd": "315697ed95f4f1e88beaff2cf081f6f96b5eff49cd83078ecee90ba53a0cd0ed",
+    "tests/run_tests.gd.uid": "fccfb5f77972907a479b7fe7de13df1942b01afd5f00c0c4b84d361b5707cc89",
+    "tests/staff_training_core_tests.gd": "7b756cb79654c25dbd28a90ce4e4ba925aa36b8702d1e40d3b409b0781706dcc",
+    "tests/staff_training_core_tests.gd.uid": "e8e270a8884886c8e64d70e20ac8d121e69f1db7734a9a2273caaee7fa9aafb9",
+    "tests/touch_scroll_tests.gd": "b2fe96b15a74fae984f9ca7b2c814d9081d95b2f3cae5c555feed96fa3ca53e1",
+    "tests/touch_scroll_tests.gd.uid": "d5207edb64ea668a2303c871f1271fad95c7ee38a5828cf243ba55a2efedb4d0"
+  },
+  "domain": {
+    "tests": 126,
+    "checks": 58238,
+    "failures": 0,
+    "exit_code": 0,
+    "engine_errors": 0
+  },
+  "full_layout": {
+    "checks": 18256,
+    "failures": 0,
+    "exit_code": 0,
+    "engine_errors": 0,
+    "scope": "before final cosmetic cue cleanup; unchanged geometry"
+  },
+  "final_focused_scene": {
+    "checks": 1496,
+    "failures": 0,
+    "exit_code": 0,
+    "script_errors": 0,
+    "environment_ca_errors": 0,
+    "covers_existing_cooking_cancel_restart_and_save_failure": true,
+    "engine_errors": 0
+  },
+  "final_touch_routing": {
+    "checks": 70,
+    "failures": 0,
+    "exit_code": 0,
+    "script_errors": 0,
+    "environment_ca_errors": 0,
+    "canceled_swipes_create_effects": false,
+    "engine_errors": 0
+  },
+  "legacy": {
+    "generator_cases": 8,
+    "generator_checks": 304,
+    "generator_failures": 0,
+    "migration_checks": 24,
+    "migration_failures": 0,
+    "full_value_comparisons": 8,
+    "byte_identical_original_backups": 8,
+    "old_evaluations_and_bowl_pixels_equal_cases": 974,
+    "actual_phone_save_copy_migrates_and_preserves_values": true,
+    "actual_phone_files_written": false
+  },
+  "native_attempts": [
+    {
+      "version": "v1",
+      "checks": 636,
+      "exit_code": 0,
+      "png_count": 14,
+      "accepted": false,
+      "reason": "All-black snapshots independently rejected; focused viewport lacked UPDATE_ALWAYS."
+    },
+    {
+      "version": "v2",
+      "checks": 654,
+      "failures": 0,
+      "exit_code": 0,
+      "engine_errors": 0,
+      "png_count": 14,
+      "sampled_nonempty_image_checks": true,
+      "manual_visual_reviews": 4,
+      "scope": "Intermediate before cooking cue cleanup; not final renderer acceptance.",
+      "captures": [
+        {
+          "name": "desktop_feel_01_workbench.png",
+          "sha256": "cd1e784bd4a9baaa313aa798924ccc29f31101416ddb45de7b9466984713e09b",
+          "width": 1280,
+          "height": 800
+        },
+        {
+          "name": "desktop_feel_02_ingredient_burst.png",
+          "sha256": "2672223fccf234cc0a431667109021d1ea9ba9f0d6109cb77dd4bb85eb580c8e",
+          "width": 1280,
+          "height": 800
+        },
+        {
+          "name": "desktop_feel_03_recipe_profile.png",
+          "sha256": "5bd92975bde643ec7bebe15e61b88fa701a467e8b5102ed087a993de0fa4a32b",
+          "width": 1280,
+          "height": 800
+        },
+        {
+          "name": "desktop_feel_04_broth.png",
+          "sha256": "c63c51012acd165a1cdfa864e39eccc7fc55b00113bfea9385d3a6b1afd14447",
+          "width": 1280,
+          "height": 800
+        },
+        {
+          "name": "desktop_feel_05_noodles.png",
+          "sha256": "c91d15ae763f811557407166cabc715f265da9264dcb29d430a8933eeb9c1c9c",
+          "width": 1280,
+          "height": 800
+        },
+        {
+          "name": "desktop_feel_06_result_reveal.png",
+          "sha256": "44545367706af0ecd0c1ade4b7ce857f0d50998e4f2b0e3947f65fc26ac42599",
+          "width": 1280,
+          "height": 800
+        },
+        {
+          "name": "desktop_feel_07_result_settled.png",
+          "sha256": "a9aa7052e7a283c9a5bd6ff5072dc4b235f876432561e950544e4d1e47fb13e4",
+          "width": 1280,
+          "height": 800
+        },
+        {
+          "name": "portrait_feel_01_workbench.png",
+          "sha256": "ed007e913447a3513787024af2b81b35e40b8047b228ae0e259393086df316e0",
+          "width": 390,
+          "height": 844
+        },
+        {
+          "name": "portrait_feel_02_ingredient_burst.png",
+          "sha256": "c06b3949f83f1d25c6adb173358bddbb09d46a43e2f43651072cf93ae7a59bd7",
+          "width": 390,
+          "height": 844
+        },
+        {
+          "name": "portrait_feel_03_recipe_profile.png",
+          "sha256": "4136bce0ea2541fd9ca2bfaa17f5b75e8f6abef47d896ccc62b7c5de8d5a3da4",
+          "width": 390,
+          "height": 844
+        },
+        {
+          "name": "portrait_feel_04_broth.png",
+          "sha256": "6d6ab41b980759795ce9ecaa9ab061efd3b0a7f53bc41fb5d0d9686f86e7de9c",
+          "width": 390,
+          "height": 844
+        },
+        {
+          "name": "portrait_feel_05_noodles.png",
+          "sha256": "25e1fa236de7078bd3a18442a0c7527ce8b65006b1e40b04acb585952d9c2c36",
+          "width": 390,
+          "height": 844
+        },
+        {
+          "name": "portrait_feel_06_result_reveal.png",
+          "sha256": "8e294d0b3e3b5d5488eb3a5a909ce2e9c4ebafce4c79ca3a5fa9e026ffea84aa",
+          "width": 390,
+          "height": 844
+        },
+        {
+          "name": "portrait_feel_07_result_settled.png",
+          "sha256": "c309240558ac93f341132c235546a39865f78eab800d43fb0aa55c10a54ec283",
+          "width": 390,
+          "height": 844
+        }
+      ]
+    },
+    {
+      "version": "v3",
+      "accepted": false,
+      "status": "preparation_stopped_at_strict_vendor_signature",
+      "same80_vendor_bundle_files_as_previously_verified_v2": true,
+      "verification_under_current_restricted_environment_exit": 1,
+      "controls_weakened": false
+    },
+    {
+      "version": "v4",
+      "status": "prepared_not_executed_superseded_by_research_map_extension",
+      "vendor_signature_verified": true,
+      "matches_final_source_count": 103,
+      "accepted": false
+    }
+  ],
+  "ios_intermediate_v2": {
+    "signature_exit": 0,
+    "same_bundle": true,
+    "profile_matches_device_team_app": true,
+    "push_entitlement_present": false,
+    "profile_expiration_utc": "2026-10-27T14:45:57Z",
+    "embedded_pack_matches_export": true,
+    "pack_sha256": "a3aadac119b1f0e685117fd7be0ecabcd8e01b61e6744b043b29e3e2d8092648",
+    "phone_only": true
+  },
+  "installed_feature_build": false,
+  "physical_feature_acceptance": "not requested before final installed build",
+  "mac_live_save_untouched": true,
+  "remaining": [
+    "Latest research-map feature and native acceptance tracked in recipe-discovery-v1.json.",
+    "iPhone installation explicitly deferred by user; old signed v4 is not the current research-map build."
+  ],
+  "publication": {
+    "url": "https://github.com/Ji-Hyeong/ramen-town-harness/pull/16",
+    "draft": false,
+    "merged": false
+  },
+  "execution_recovery": {
+    "official_engine_strict_signature_exit": 0,
+    "protections_changed": false,
+    "headless_raw_source_attempt_rejected": "Missing imported font resource; not counted as acceptance.",
+    "imported_snapshot_rerun_engine_errors": 0
+  },
+  "ios_final_v4": {
+    "signature_exit": 0,
+    "same_bundle": true,
+    "profile_matches_device_team_app": true,
+    "push_entitlement_present": false,
+    "profile_expiration_utc": "2026-10-27T14:45:57+00:00",
+    "embedded_pack_matches_export": true,
+    "pack_sha256": "ffcf2113c3d5553335ac7e251e35e3e38c3e29a0a506af06330750155a8d5275",
+    "phone_only": true,
+    "signed_build_exit": 0,
+    "warnings": 6,
+    "installed": false,
+    "private_durable_byte_identical_copies": {
+      "xcode_files": 47,
+      "signed_app_files": 14,
+      "signature_exit": 0
+    }
+  },
+  "superseded_by": "recipe-discovery-v1.json"
+}

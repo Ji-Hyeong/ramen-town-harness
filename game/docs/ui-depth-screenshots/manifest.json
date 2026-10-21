@@ -1,0 +1,206 @@
+{
+  "run_id": "20261021T093944Z-14054",
+  "renderer": "OpenGL API 4.1 Metal - 90.5 - Compatibility - Apple M3 Pro",
+  "checks": 3222,
+  "failures": 0,
+  "exit_code": 0,
+  "engine_errors": 0,
+  "source_count": 117,
+  "pack_sha256": "67123e93a5bc3aa0ddfbf9f858439f9225f7749942da6eb44902203468dd41ea",
+  "images": [
+    {
+      "file": "desktop_14_tasting_work.png",
+      "width": 1280,
+      "height": 800,
+      "sha256": "45d845b10bea1203c810e8f3cedb5fb273391b824c127278568f0fa946b0fac1",
+      "distinct_rgb_colors": 2392,
+      "manually_reviewed": true
+    },
+    {
+      "file": "desktop_14b_feedback_portraits.png",
+      "width": 1280,
+      "height": 800,
+      "sha256": "6a2ce9ff842e4fce27847bade9541912320e40d856a925009e6efb5956dfe258",
+      "distinct_rgb_colors": 1967,
+      "manually_reviewed": true
+    },
+    {
+      "file": "desktop_depth_01_summary.png",
+      "width": 1280,
+      "height": 800,
+      "sha256": "faf80574c436bbfb2dbab982c35c281f44c21f0e151ac628c2da53cf95f2f419",
+      "distinct_rgb_colors": 2443,
+      "manually_reviewed": true
+    },
+    {
+      "file": "desktop_depth_02_pressed.png",
+      "width": 1280,
+      "height": 800,
+      "sha256": "f8ad892c897d7d09277bd2983e2c3e00d14a17383830abf451925861f0be5fea",
+      "distinct_rgb_colors": 2547,
+      "manually_reviewed": true
+    },
+    {
+      "file": "desktop_depth_03_ingredient.png",
+      "width": 1280,
+      "height": 800,
+      "sha256": "d7adc291a4c024fd27704579aee91d38a3b3da5831b20005e32ddf02695f1ac1",
+      "distinct_rgb_colors": 2876,
+      "manually_reviewed": true
+    },
+    {
+      "file": "desktop_depth_04_flavor.png",
+      "width": 1280,
+      "height": 800,
+      "sha256": "9a04fe1fc914945f9458d62e76fb2a884f4f7f7a6bd38119002f39dddebfce92",
+      "distinct_rgb_colors": 2789,
+      "manually_reviewed": true
+    },
+    {
+      "file": "desktop_depth_05_map_detail.png",
+      "width": 1280,
+      "height": 800,
+      "sha256": "89788765cab08735ab5feeb196a4f58a736d216f55254b99c72770387b5942ca",
+      "distinct_rgb_colors": 2631,
+      "manually_reviewed": true
+    },
+    {
+      "file": "desktop_discovery_01_workbench.png",
+      "width": 1280,
+      "height": 800,
+      "sha256": "faf80574c436bbfb2dbab982c35c281f44c21f0e151ac628c2da53cf95f2f419",
+      "distinct_rgb_colors": 2443,
+      "manually_reviewed": true
+    },
+    {
+      "file": "desktop_discovery_02_map.png",
+      "width": 1280,
+      "height": 800,
+      "sha256": "9fb36b6142ec4400021cf63db9dff984216abf0991a46f0764d0210ea62cf217",
+      "distinct_rgb_colors": 2419,
+      "manually_reviewed": true
+    },
+    {
+      "file": "desktop_discovery_03_material_goal.png",
+      "width": 1280,
+      "height": 800,
+      "sha256": "d07addcad72d54e23dfe806cba4ae9642cfbc99fe8bc214d810dd742cea00674",
+      "distinct_rgb_colors": 2495,
+      "manually_reviewed": true
+    },
+    {
+      "file": "desktop_discovery_04_new_result.png",
+      "width": 1280,
+      "height": 800,
+      "sha256": "fe83958044117d0f11d338b54718a3b7ef4378d17d7440f1fe56b46348fa4707",
+      "distinct_rgb_colors": 1944,
+      "manually_reviewed": true
+    },
+    {
+      "file": "desktop_discovery_05_comparison.png",
+      "width": 1280,
+      "height": 800,
+      "sha256": "868c24a8473d88612a280d2ce912642024081f57c3c128b98fa2b5f1535fd163",
+      "distinct_rgb_colors": 2516,
+      "manually_reviewed": true
+    },
+    {
+      "file": "portrait_14_tasting_work.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "0a0cdddb4388d0f1dfbdab82a0a95da44f1c527117484cc2a34b6a76aca9935f",
+      "distinct_rgb_colors": 2168,
+      "manually_reviewed": true
+    },
+    {
+      "file": "portrait_14b_feedback_portraits.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "579508d88998b8cf55087b312ab8d8fae9adab07c107f36a9f80646435dcb214",
+      "distinct_rgb_colors": 1615,
+      "manually_reviewed": true
+    },
+    {
+      "file": "portrait_depth_01_summary.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "62b30c3b5b12bdce93e63548e1fd9321060d8e1c44b17c2be9ce5bc903fcad7b",
+      "distinct_rgb_colors": 2050,
+      "manually_reviewed": true
+    },
+    {
+      "file": "portrait_depth_02_pressed.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "b2a602b14a738e90f513960d97b2cdad245aa953686c3f4dc0482a2763aa4c66",
+      "distinct_rgb_colors": 2193,
+      "manually_reviewed": true
+    },
+    {
+      "file": "portrait_depth_03_ingredient.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "6a29dc8e577c4191ec4694c6ca8168a5596ffc8c9cd38c6a6e809abdcd4266c5",
+      "distinct_rgb_colors": 2314,
+      "manually_reviewed": true
+    },
+    {
+      "file": "portrait_depth_04_flavor.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "0e52446523ae872a17db14d91cc9585939ffa1b5aa84257583225189ee35637d",
+      "distinct_rgb_colors": 2354,
+      "manually_reviewed": true
+    },
+    {
+      "file": "portrait_depth_05_map_detail.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "86d60e5d52840de0256477afce559ffe0c27b0a02ff2387b18897c0f3a74edb2",
+      "distinct_rgb_colors": 2270,
+      "manually_reviewed": true
+    },
+    {
+      "file": "portrait_discovery_01_workbench.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "62b30c3b5b12bdce93e63548e1fd9321060d8e1c44b17c2be9ce5bc903fcad7b",
+      "distinct_rgb_colors": 2050,
+      "manually_reviewed": true
+    },
+    {
+      "file": "portrait_discovery_02_map.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "477ae43c1848a66f9a2d7e11a66307b19fda2706a367af333a67c3d0039466f2",
+      "distinct_rgb_colors": 2055,
+      "manually_reviewed": true
+    },
+    {
+      "file": "portrait_discovery_03_material_goal.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "548ce9bfb4a3c4ee88c38e2cb132de46472cbbb08269efdee687ba27ce76e399",
+      "distinct_rgb_colors": 2042,
+      "manually_reviewed": true
+    },
+    {
+      "file": "portrait_discovery_04_new_result.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "952c68957e508da3c8d091c2cc6f9430b8838c67db605c3c36b2344c1aab85db",
+      "distinct_rgb_colors": 1750,
+      "manually_reviewed": true
+    },
+    {
+      "file": "portrait_discovery_05_comparison.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "027b6ae1a758feb9817949a592fe135e569c3aabbbc9449d2aa534c7b5e75902",
+      "distinct_rgb_colors": 2130,
+      "manually_reviewed": true
+    }
+  ],
+  "manually_reviewed_count": 24,
+  "physical_iphone_acceptance": false
+}

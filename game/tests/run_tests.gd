@@ -81,7 +81,7 @@ func _initialize() -> void:
 		# --- 가게 성장(등급/확장/다중 토핑/직원/노트 용량/스키마 v3) 도메인 시험 ---
 		# 화면(UI)/장면 그림/QA 캡처 쪽 성장 시험은 다음 단계(main.gd, 픽셀 아트, qa_capture.gd)에서 추가한다: 아직 없으므로 "보류"이며 삭제/생략이 아니다.
 		test_topping_canonical_and_legacy, test_topping_validation, test_topping_slots_and_draft_limits,
-		test_topping_tradeoff, test_rank_promotion, test_facility_purchase, test_staff_hiring,
+		test_repeated_portions, test_topping_tradeoff, test_rank_promotion, test_facility_purchase, test_staff_hiring,
 		test_staff_support_effects, test_staff_settlement_and_snapshot, test_record_capacity_and_grandfather,
 		test_schema_migration_v1_v2, test_growth_load_rejections, test_no_phantom_rewards_and_bounds,
 		# --- 성장 UI 단계: 다중 토핑 그릇 그림, 보조 직원 초상/스프라이트, 직원 자리/장면. 화면(main.gd) 핸들러 흐름은 qa_capture.gd(--layout-only 포함)가 밟는다. ---
@@ -3455,9 +3455,9 @@ func test_topping_validation() -> void:
 	bad["비어 있음"] = c1
 	var c2: Dictionary = base.duplicate(true)
 	c2["toppings"] = ["topping_egg", "topping_egg"]
-	bad["중복"] = c2
+	_check(Check.config_error(c2) == "", "같은 토핑 두 몫은 유효")
 	var c3: Dictionary = base.duplicate(true)
-	c3["toppings"] = ["topping_chashu", "topping_egg", "topping_sprouts", "topping_nori"]
+	c3["toppings"] = ["topping_chashu", "topping_egg", "topping_sprouts", "topping_nori", "topping_nori"]
 	bad["절대 상한 초과"] = c3
 	var c4: Dictionary = base.duplicate(true)
 	c4["toppings"] = ["topping_unknown"]
@@ -3505,7 +3505,7 @@ func test_topping_validation() -> void:
 	# 저장 구성 파서: v3 는 정렬된 정규 배열만, v1/v2 는 옛 모양만.
 	_check(str(Check.parse_config(a, "t")["error"]) == "", "정렬된 정규 구성 허용")
 	_check(str(Check.parse_config(b, "t")["error"]) != "", "섞인 토핑 순서는 저장 구성에서 거부")
-	_check(str(Check.parse_config(c2, "t")["error"]) != "" and str(Check.parse_config(c3, "t")["error"]) != "" and str(Check.parse_config(c4, "t")["error"]) != "", "중복/초과/미지 거부")
+	_check(str(Check.parse_config(c2, "t")["error"]) == "" and str(Check.parse_config(c3, "t")["error"]) != "" and str(Check.parse_config(c4, "t")["error"]) != "", "중복/초과/미지 거부")
 	var parsed_legacy: Dictionary = Check.parse_config(_rich_cfg(), "t", true)
 	_check(str(parsed_legacy["error"]) == "" and str((parsed_legacy["config"] as Dictionary)["toppings"]) == str(["topping_chashu"]), "옛 구성은 정규 하나짜리 배열로 읽혀요")
 	_check(str(Check.parse_config(base, "t", true)["error"]) != "" and str(Check.parse_config(_rich_cfg(), "t", false)["error"]) != "", "모양과 스키마 버전이 어긋나면 거부")
@@ -3513,80 +3513,88 @@ func test_topping_validation() -> void:
 
 
 func test_topping_slots_and_draft_limits() -> void:
-	# 슬롯 = min(등급, 1 + 조리대 단계): 둘 다 있어야 열린다.
-	_check(Growth.topping_slots(1, []) == 1 and Growth.topping_slots(3, []) == 1, "조리대 없이는 등급이 높아도 1개")
-	_check(Growth.topping_slots(1, ["bench_1"]) == 1, "등급 1은 조리대가 있어도 1개(등급이 한도)")
-	_check(Growth.topping_slots(2, ["bench_1"]) == 2 and Growth.topping_slots(3, ["bench_1"]) == 2, "조리대 I = 2개")
-	_check(Growth.topping_slots(3, ["bench_1", "bench_2"]) == 3 and Growth.topping_slots(2, ["bench_1", "bench_2"]) == 2, "조리대 II + 등급 3 = 3개")
-	var s: GameStateScript = _state_with_wallet(100000)
-	_check(s.topping_slots() == 1, "처음에는 토핑 1개")
-	var before: String = _json(s)
-	_check(not bool(s.set_draft_toppings(["topping_egg", "topping_nori"])["ok"]) and _json(s) == before, "슬롯을 넘는 지정은 거부, 초안 불변")
-	var over: Dictionary = s.set_draft_toppings(["topping_egg", "topping_nori"])
-	_check(str(over["message"]).find("열려요") >= 0, "해금 방법을 알려요: " + str(over["message"]))
-	_check(not bool(s.toggle_draft_topping("topping_egg")["ok"]) and _json(s) == before, "슬롯이 꽉 차면 추가 거부")
-	_check(not bool(s.toggle_draft_topping(str(Catalog.toppings_of(s.draft_config)[0]))["ok"]) and _json(s) == before, "마지막 토핑은 뺄 수 없어요")
-	var bad_lists: Array = [[], ["topping_nope"], ["topping_egg", "topping_egg"], ["broth_dashi"]]
-	for bl in bad_lists:
-		_check(not bool(s.set_draft_toppings(bl)["ok"]) and _json(s) == before, "잘못된 토핑 지정 거부: " + str(bl))
-	_check(not bool(s.toggle_draft_topping("topping_nope")["ok"]) and _json(s) == before, "알 수 없는 토글 거부")
-	# 옛 호출 모양(토핑 하나 고르기)은 그 하나로 바꾼다.
-	_check(bool(s.set_draft_choice("topping", "topping_nori")["ok"]) and str(s.draft_config["toppings"]) == str(["topping_nori"]), "예전 단일 선택 호환")
-	_check(bool(s.set_draft_toppings(["topping_egg"])["ok"]) and str(s.draft_config["toppings"]) == str(["topping_egg"]), "하나 지정")
-	# 슬롯을 우회해 초안을 망가뜨려도(변조) 시식은 거부한다.
-	var tampered: GameStateScript = _state_with_wallet(100000)
-	tampered.draft_config["toppings"] = ["topping_chashu", "topping_egg"]
-	var t_before: String = _json(tampered)
-	_check(not bool(tampered.taste()["ok"]) and _json(tampered) == t_before and tampered.record_count() == 0, "열린 슬롯보다 많은 토핑은 시식 거부, 자금 불변")
+	_check(Growth.topping_slots(1, []) == 2 and Growth.topping_slots(2, []) == 3 and Growth.topping_slots(3, []) == 4, "등급만으로 토핑 2/3/4칸")
+	_check(Growth.topping_slots(2, ["bench_1"]) == 3 and Growth.topping_slots(3, ["bench_1", "bench_2"]) == 4, "조리대 구매와 토핑 칸은 독립")
+	var s := _state_with_wallet(100000)
+	var before := _json(s)
+	for ids in [[], ["topping_unknown"], ["broth_dashi"], ["topping_egg", "topping_nori", "topping_sprouts"]]:
+		_check(not s.set_draft_toppings(ids)["ok"] and _json(s) == before, "잘못된 재료/등급 초과는 원자적 거부")
+	_check(str(s.set_draft_toppings(["topping_egg", "topping_nori", "topping_sprouts"])["message"]).contains("열려요"), "다음 등급 해금 안내")
+	_check(not s.toggle_draft_topping("topping_chashu")["ok"] and _json(s) == before, "마지막 한 개 제거 거부")
+	_check(s.set_draft_choice("topping", "topping_nori")["ok"], "옛 단일 선택 API 유지")
+	_check(s.set_draft_toppings(["topping_egg", "topping_egg"])["ok"], "시작부터 같은 토핑 2몫")
+	before = _json(s)
+	_check(not s.toggle_draft_topping("topping_sprouts")["ok"] and _json(s) == before, "가득 찬 칸에 추가 거부")
+	_check(s.toggle_draft_topping("topping_egg")["ok"] and Catalog.toppings_of(s.draft_config).size() == 1, "토글 호환 API는 한 몫만 제거")
+	var tampered := _state_with_wallet(100000)
+	tampered.draft_config["toppings"] = ["topping_chashu", "topping_egg", "topping_nori"]
+	before = _json(tampered)
+	_check(not tampered.taste()["ok"] and _json(tampered) == before, "시식도 등급 한도 우회 거부")
+	var grown := _ranked_state(3)
+	_check(grown.topping_slots() == 4 and grown.facilities_owned().is_empty(), "조리대 없이 등급3은4칸")
+	# Rank fixtures already fill all six families: revise without buying a bench.
+	grown.select_record(grown.selected_record_id)
+	_check(grown.set_draft_toppings(["topping_nori", "topping_chashu", "topping_egg", "topping_egg"])["ok"], "혼합/중복4몫")
+	var cost := Evaluator.unit_cost(grown.draft_config)
+	var wallet_before := grown.wallet
+	var result := grown.taste()
+	_check(result["ok"] and grown.wallet == wallet_before - cost, "4몫 원가 한 번 차감")
+	var record := grown.get_record(result.get("record_id", 0))
+	_check(Catalog.toppings_of(record.get("config", {})).size() == 4, "4몫 그대로 기록")
+	var back := GameStateScript.new()
+	_check(back.load_from_dict(JSON.parse_string(JSON.stringify(grown.to_dict()))) == "" and _json(back) == _json(grown), "4몫 실제 JSON 왕복")
+	_check(grown.begin_service()["ok"], "영업 시작")
+	before = _json(grown)
+	_check(not grown.set_draft_toppings(["topping_nori"])["ok"] and _json(grown) == before, "영업 중 편집 원자적 거부")
+	grown.cancel_service()
+	_end()
 
-	# 완전 성장 상태: 3개까지, 순서/중복/기록/불러오기.
-	var g: GameStateScript = _grown_state(3)
-	_check(g.topping_slots() == 3, "등급 3 + 조리대 II = 3개")
-	g.start_new_recipe()
-	g.set_draft_name("세 토핑 시험")
-	_check(bool(g.set_draft_toppings(["topping_nori", "topping_chashu", "topping_egg"])["ok"]), "토핑 3개 지정")
-	_check(str(g.draft_config["toppings"]) == str(["topping_chashu", "topping_egg", "topping_nori"]), "초안 토핑은 카탈로그 순서로 정규화")
-	var g_before: String = _json(g)
-	_check(not bool(g.set_draft_toppings(["topping_chashu", "topping_egg", "topping_sprouts", "topping_nori"])["ok"]) and _json(g) == g_before, "4개는 거부")
-	_check(not bool(g.toggle_draft_topping("topping_sprouts")["ok"]) and _json(g) == g_before, "꽉 찬 슬롯에 추가 거부")
-	_check(bool(g.toggle_draft_topping("topping_egg")["ok"]) and Catalog.toppings_of(g.draft_config).size() == 2, "토글로 빼기")
-	_check(bool(g.toggle_draft_topping("topping_sprouts")["ok"]) and Catalog.toppings_of(g.draft_config).size() == 3, "토글로 다른 토핑 넣기")
-	var cost: int = Evaluator.unit_cost(g.draft_config)
-	var wallet0: int = g.wallet
-	var r: Dictionary = g.taste()
-	_check(bool(r["ok"]), "세 토핑 시식: " + str(r["message"]))
-	var rec: Dictionary = g.get_record(int(r["record_id"]))
-	_check(Catalog.toppings_of(rec["config"]).size() == 3 and g.wallet == wallet0 - cost, "기록에 토핑 3개, 재료비는 세 토핑 모두 반영")
-	_check(str(rec["scores"]) == str(_scores_of(rec["config"])), "기록 점수는 세 토핑 평가 결과")
-	# 같은 토핑을 다른 순서로 넣어도 새 기록이 생기지 않는다(새 레시피 이름이라 "중복 구성" 규칙이 직접 걸린다).
-	g.start_new_recipe()
-	var count: int = g.record_count()
-	var w1: int = g.wallet
-	var reordered: Array = []
-	for t in Catalog.toppings_of(g.draft_config):
-		reordered.append(t)
-	reordered.reverse()
-	g.draft_config["toppings"] = reordered
-	var dup: Dictionary = g.taste()
-	_check(not bool(dup["ok"]) and g.record_count() == count and g.wallet == w1, "토핑 순서만 바꿔서는 새 기록을 만들 수 없어요: " + str(dup["message"]))
-	g.select_record(int(r["record_id"]))
-	_check(str(g.draft_config["toppings"]) == str((rec["config"] as Dictionary)["toppings"]), "불러온 레시피의 토핑이 기록과 같아요")
-	# 개정 비교에도 토핑이 모두 들어간다.
-	_check(bool(g.set_draft_toppings(["topping_chashu", "topping_egg"])["ok"]), "개정: 토핑 2개로")
-	var rev: Dictionary = g.taste()
-	_check(bool(rev["ok"]), "개정 시식: " + str(rev["message"]))
-	var cmp: Dictionary = g.get_record(int(rev["record_id"]))["comparison"]
-	_check(Catalog.toppings_of(cmp["prev_config"]).size() == 3, "개정 비교의 이전 구성에 토핑 3개")
-	# 저장 왕복: 세 토핑이 그대로.
-	var round_dict: Dictionary = JSON.parse_string(JSON.stringify(g.to_dict()))
-	var loaded: GameStateScript = GameStateScript.new()
-	_check(loaded.load_from_dict(round_dict) == "" and _json(loaded) == _json(g), "다중 토핑 저장/불러오기 왕복")
-	# 영업 중에는 토핑 편집도 잠긴다.
-	g.select_record(int(rev["record_id"]))
-	_check(bool(g.begin_service()["ok"]), "영업 시작")
-	var lock_before: String = _json(g)
-	_check(not bool(g.set_draft_toppings(["topping_egg"])["ok"]) and not bool(g.toggle_draft_topping("topping_egg")["ok"]) and _json(g) == lock_before, "영업 중 토핑 편집 거부")
-	g.cancel_service()
+
+## Quantity semantics span pricing, profiles, immutable references and stock.
+func test_repeated_portions() -> void:
+	var one := Catalog.normalize_config(_rich_cfg())
+	var two := one.duplicate(true)
+	two["toppings"] = ["topping_chashu", "topping_chashu"]
+	var item := Catalog.find("topping_chashu")
+	_check(Evaluator.unit_cost(two) == Evaluator.unit_cost(one) + item["cost"], "중복 토핑 원가 추가")
+	_check(Evaluator.prep_seconds(two) == Evaluator.prep_seconds(one) + item["seconds"], "중복 토핑 시간 추가")
+	var old_profile := Evaluator.build_profile(one)
+	var new_profile := Evaluator.build_profile(two)
+	for axis in Catalog.AXES:
+		_check(new_profile[axis] == clampi(int(old_profile[axis]) + int(item["axes"].get(axis, 0)), 0, 10), "중복 분량 맛 반영 " + axis)
+	_check(Evaluator.applied_compat(one) == Evaluator.applied_compat(two), "같은 궁합 보너스 중복 적립 없음")
+	_check(not Check.same_config(one, two), "같은 종류라도 분량 다르면 다른 레시피")
+	_check(ArtScript.bowl_image(one).get_data() != ArtScript.bowl_image(two).get_data(), "2몫 그릇 그림 구별")
+	var state := _state_with_wallet(100000)
+	state.set_draft_toppings(two["toppings"])
+	var before := _json(state)
+	var forged := state.to_dict()
+	forged["schema_version"] = 11
+	_check(GameStateScript.new().load_from_dict(forged) != "", "옛v11 중복 주입 거부")
+	var farm := ForagingTests.new()
+	farm.check = _check
+	var sampled: GameStateScript = farm.ready()
+	farm._collect(sampled, "citrus_cart")
+	sampled.start_new_recipe()
+	sampled.set_draft_name("두 유자 실험")
+	_check(sampled.set_draft_toppings(["topping_citrus_peel", "topping_citrus_peel"])["ok"], "발견한 유자2몫 선택")
+	var result := sampled.taste()
+	_check(result["ok"] and sampled.foraging_state()["stock"]["topping_citrus_peel"] == 0 and sampled.foraging_state()["used"]["topping_citrus_peel"] == 2, "시제품 한 번에 샘플2개 소비")
+	var restored := GameStateScript.new()
+	_check(restored.load_from_dict(JSON.parse_string(_json(sampled))) == "" and _json(restored) == _json(sampled), "샘플2몫 실제 저장 규칙 통과")
+	var shortage := sampled.to_dict()
+	shortage["foraging"]["used"]["topping_citrus_peel"] = 1
+	shortage["foraging"]["stock"]["topping_citrus_peel"] = 1
+	_check(GameStateScript.new().load_from_dict(shortage) != "", "남은 기록의2몫보다 소비가 적으면 거부")
+	sampled.set_draft_price(9500)
+	before = _json(sampled)
+	_check(not sampled.taste()["ok"] and _json(sampled) == before, "샘플부족 실패는 돈/기록/재고 불변")
+	var direct := ForagingTests.Farm.empty_state()
+	direct["stock"]["topping_citrus_peel"] = 1
+	var direct_before := JSON.stringify(direct)
+	var sample_config := one.duplicate(true)
+	sample_config["toppings"] = ["topping_citrus_peel", "topping_citrus_peel"]
+	_check(ForagingTests.Farm.use_samples(direct, sample_config)["error"] != "" and JSON.stringify(direct) == direct_before, "두번째샘플 부족도 첫샘플 차감 취소")
 	_end()
 
 
@@ -3739,15 +3747,15 @@ func test_facility_purchase() -> void:
 	var w: int = r2.wallet
 	var snap: String = _json(r2)
 	_check(not bool(r2.purchase_facility("bench_2")["ok"]) and not bool(r2.purchase_facility("staff_2")["ok"]) and _json(r2) == snap, "앞 단계/등급 없이 II단계 구매 불가")
-	_check(r2.record_capacity() == 6 and r2.topping_slots() == 1 and r2.staff_capacity() == 2, "승급만으로는 용량이 늘지 않아요")
+	_check(r2.record_capacity() == 6 and r2.topping_slots() == 3 and r2.staff_capacity() == 2, "승급은 토핑만 열고 메뉴/직원 용량은 시설로 열어요")
 	# 구매 전 심사표의 효과 문구와 성공 메시지가 같아야 한다(구매 뒤 용량으로 다시 계산해 "2→2"가 되면 안 된다).
 	var expect_text: String = str(r2.facility_review("bench_1")["effect_text"])
-	_check(expect_text == "토핑 슬롯 1→2 · 등록 메뉴 6→12종", "구매 전 효과 문구: " + expect_text)
+	_check(expect_text == "등록 메뉴 6→12종 · 토핑 칸은 등급으로 해금", "구매 전 효과 문구: " + expect_text)
 	var buy: Dictionary = r2.purchase_facility("bench_1")
 	_check(bool(buy["ok"]), "조리대 I 구매: " + str(buy["message"]))
 	_check(str(buy["message"]).find(expect_text) >= 0 and str(buy["message"]).find("2→2") < 0 and str(buy["message"]).find("12→12") < 0, "성공 메시지가 구매 전→후 변화를 그대로 알려요: " + str(buy["message"]))
 	_check(r2.wallet == w - 12000 and r2.facilities_owned() == ["bench_1"], "정확히 12,000원 한 번 차감")
-	_check(r2.topping_slots() == 2 and r2.record_capacity() == 12 and r2.staff_capacity() == 2, "조리대 I: 토핑 2, 노트 12, 직원 수는 그대로")
+	_check(r2.topping_slots() == 3 and r2.record_capacity() == 12 and r2.staff_capacity() == 2, "조리대 I: 토핑 2, 노트 12, 직원 수는 그대로")
 	var after_buy: String = _json(r2)
 	_check(not bool(r2.purchase_facility("bench_1")["ok"]) and _json(r2) == after_buy, "같은 확장 재구매 불가, 자금 불변")
 	_check(bool(r2.facility_review("bench_1")["owned"]) and not bool(r2.facility_review("bench_1")["can_buy"]), "보유 표시")
@@ -3776,8 +3784,8 @@ func test_facility_purchase() -> void:
 	var w3: int = r3.wallet
 	_check(bool(r3.purchase_facility("bench_1")["ok"]), "조리대 I")
 	var bench2: Dictionary = r3.purchase_facility("bench_2")
-	_check(bool(bench2["ok"]) and str(bench2["message"]).find("토핑 슬롯 2→3 · 등록 메뉴 12→30종") >= 0, "조리대 II 성공 메시지: " + str(bench2["message"]))
-	_check(r3.wallet == w3 - 12000 - 30000 and r3.topping_slots() == 3 and r3.record_capacity() == 30, "조리대 II: 토핑 3, 노트 30, 총 42,000원")
+	_check(bool(bench2["ok"]) and str(bench2["message"]).find("등록 메뉴 12→30종 · 토핑 칸은 등급으로 해금") >= 0, "조리대 II 성공 메시지: " + str(bench2["message"]))
+	_check(r3.wallet == w3 - 12000 - 30000 and r3.topping_slots() == 4 and r3.record_capacity() == 30, "조리대 II: 토핑 3, 노트 30, 총 42,000원")
 	# 자금 상한 근처에서도 정확히 차감.
 	r3.wallet = GameStateScript.MAX_WALLET
 	_check(bool(r3.purchase_facility("staff_1")["ok"]) and r3.wallet == GameStateScript.MAX_WALLET - 15000, "자금 상한에서도 정확히 차감")
@@ -3933,7 +3941,7 @@ func test_staff_settlement_and_snapshot() -> void:
 	_check(bool(g.begin_service()["ok"]), "영업 시작")
 	_check(g.wallet == w0 and g.day == day0 and _json(g) == before_start, "영업 시작은 자금/일차/저장 상태를 바꾸지 않아요(운영비 선청구 없음)")
 	var sess: SessionScript = g.active_session()
-	_check(str(sess.staffing) == str(g.current_staffing()) and int(sess.growth_snapshot["rank"]) == 3 and int(sess.growth_snapshot["topping_slots"]) == 3, "세션은 직원/성장 스냅샷을 복사해 가져요")
+	_check(str(sess.staffing) == str(g.current_staffing()) and int(sess.growth_snapshot["rank"]) == 3 and int(sess.growth_snapshot["topping_slots"]) == 4, "세션은 직원/성장 스냅샷을 복사해 가져요")
 	_check(sess.prep == Staffing.effective_prep(Evaluator.prep_seconds(rec["config"]), sess.staffing), "세션 조리 시간은 스냅샷 값")
 	_check(sess.run_to_end(), "하루 종료")
 	_check(g.wallet == w0, "끝나도 정산 전에는 자금 불변")
@@ -4177,6 +4185,7 @@ func test_growth_load_rejections() -> void:
 				cgrowth["facilities"] = []
 				cgrowth["staff"] = []
 			"슬롯 초과(조리대 I 만)":
+				copy["schema_version"] = 11  # Historical bench gating remains strict.
 				cgrowth["facilities"] = ["bench_1", "staff_1", "staff_2"]
 			"growth 누락":
 				copy.erase("growth")
@@ -5800,7 +5809,7 @@ func test_taste_achievement_rejections() -> void:
 		var witness: Dictionary = original["records"][0].duplicate(true)
 		witness["comparison"] = {}
 		if kind == "unlock": witness["config"]["oil"] = "oil_pepper"
-		if kind == "slots": witness["config"]["toppings"] = ["topping_egg", "topping_nori"]
+		if kind == "slots": witness["config"]["toppings"] = ["topping_egg", "topping_egg", "topping_nori", "topping_nori"]
 		if kind == "method":
 			locked["growth"]["rank"] = 1
 			witness["config"]["process"] = {"broth":"rolling", "noodle":"standard"}

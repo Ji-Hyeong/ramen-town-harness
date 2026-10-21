@@ -46,7 +46,8 @@ const Stories = preload("res://scripts/domain/regular_stories.gd")
 ## v9는 선택형 단골 사연/완료 영업 메뉴의 답례 영수증을 추가한다. 과거 진행을 소급 지급하지 않는다.
 ## v10 separates menu families from revision history and retains best-taste witnesses.
 ## v11 adds isolated market samples; v1..10 receive no samples or retroactive rewards.
-const SCHEMA_VERSION: int = 11
+## v12 allows repeated paid topping portions and rank-only 2/3/4 positions.
+const SCHEMA_VERSION: int = 12
 const EXPANSION_PRICE: int = 60000
 const MIN_SCHEMA_VERSION: int = 1
 const LEGACY_MAX_RECORDS: int = 30
@@ -216,20 +217,16 @@ func set_draft_choice(slot: String, id: String) -> Dictionary:
 	return _ok("")
 
 
-## 토핑 한 번에 지정(여러 개). 검증을 모두 마친 뒤에만 초안을 바꾼다: 최소 1개, 지금 열린 슬롯 수 이하, 중복/모르는 id 없음.
+## 토핑 한 번에 지정(여러 개). 검증을 모두 마친 뒤에만 초안을 바꾼다: 최소 1개, 지금 열린 슬롯 수 이하, 모르는 id 없음. 중복은 별도 분량이다.
 ## 순서는 상관없다(카탈로그 순서로 정규화되므로 순서만 다른 지정은 같은 레시피다).
 func set_draft_toppings(ids: Array) -> Dictionary:
 	if _busy():
 		return _locked_fail()
-	var seen: Dictionary = {}
 	for v in ids:
 		if typeof(v) != TYPE_STRING or not Catalog.is_valid(Catalog.TOPPING_SLOT, str(v)):
 			return _fail("알 수 없는 토핑이에요.")
 		if not Exploration.unlocked(str(v), _discovered_list()):
 			return _fail(_lock_message(str(v)))
-		if seen.has(str(v)):
-			return _fail("같은 토핑을 두 번 고를 수 없어요.")
-		seen[str(v)] = true
 	if ids.is_empty():
 		return _fail("토핑은 최소 1개를 골라야 해요.")
 	var slots: int = topping_slots()
@@ -931,7 +928,7 @@ func hired_staff() -> Array:
 	return _hired.duplicate()
 
 
-## 지금 열린 토핑 슬롯 수(등급과 조리대 확장 중 작은 쪽).
+## 지금 열린 토핑 분량: 등급1/2/3에서2/3/4칸. 조리대와는 독립이다.
 func topping_slots() -> int:
 	return Growth.topping_slots(_rank, _facilities)
 
@@ -1546,6 +1543,8 @@ func load_from_dict(raw: Variant) -> String:
 		return key_err
 	if version < 8 and _has_process(d):
 		return "이전 저장 버전에는 제조 공법을 기록할 수 없어요."
+	if version < 12 and _has_portion_config(d):
+		return "이전 저장 버전에는 중복 토핑이나 토핑 4칸을 기록할 수 없어요."
 	if version < 11 and _has_farmed_config(d):
 		return "이전 저장 버전에는 장터 연구 재료를 기록할 수 없어요."
 	# v1/v2 저장의 레시피 구성은 "topping" 문자열 하나다(정규 모양으로 읽어 들인다). v3는 "toppings" 배열만 허용한다.
@@ -1685,7 +1684,7 @@ func load_from_dict(raw: Variant) -> String:
 	var discovered_now: Array = Exploration.discovered_ids(exploration_parsed)
 	var foraging_parsed: Dictionary = Foraging.empty_state()
 	if version >= 11:
-		var harvested: Dictionary = Foraging.parse(d["foraging"], int(d["day"]), n_record)
+		var harvested: Dictionary = Foraging.parse(d["foraging"], int(d["day"]), n_record, Catalog.MAX_TOPPINGS if version >= 12 else 1)
 		if str(harvested["error"]) != "":
 			return str(harvested["error"])
 		foraging_parsed = harvested["state"]
@@ -1714,6 +1713,9 @@ func load_from_dict(raw: Variant) -> String:
 	# 어떤 구성(기록/비교의 이전 구성/초안)도 이 상태의 토핑 슬롯 수를 넘을 수 없다(슬롯은 줄지 않으므로 정상 저장은 항상 통과).
 	# Preserve legacy families above the facility limit; only a new family is gated.
 	var slot_limit: int = Growth.topping_slots(growth_rank, growth_facilities)
+	if version < 12:
+		# Validate the old rules before granting newly opened positions.
+		slot_limit = mini(growth_rank, 1 + Growth.track_tier(growth_facilities, "recipe"))
 	for pe2 in parsed:
 		var rec_cfg2: Dictionary = (pe2 as Dictionary)["config"]
 		if Catalog.toppings_of(rec_cfg2).size() > slot_limit:
@@ -1810,6 +1812,28 @@ func load_from_dict(raw: Variant) -> String:
 	return ""
 
 
+## Validate historical schemas recursively, including deleted-record witnesses.
+static func _has_portion_config(raw: Variant) -> bool:
+	if typeof(raw) == TYPE_DICTIONARY:
+		if raw.has("toppings") and typeof(raw["toppings"]) == TYPE_ARRAY:
+			var ids: Array = raw["toppings"]
+			var unique: Array = []
+			for id in ids:
+				if unique.has(id):
+					return true
+				unique.append(id)
+			if ids.size() > 3:
+				return true
+		for value in raw.values():
+			if _has_portion_config(value):
+				return true
+	elif typeof(raw) == TYPE_ARRAY:
+		for value in raw:
+			if _has_portion_config(value):
+				return true
+	return false
+
+
 ## Old versions must not gain new ingredient access through a forged config.
 static func _has_farmed_config(raw: Variant) -> bool:
 	if typeof(raw) == TYPE_DICTIONARY:
@@ -1835,9 +1859,9 @@ static func _sample_witness_error(raw: Dictionary, farm: Dictionary) -> String:
 	if error != "":
 		return error
 	var counts: Dictionary = {Foraging.IDS[0]: 0, Foraging.IDS[1]: 0}
-	for ids in used_by_record.values():
-		for id in ids:
-			counts[id] += 1
+	for quantities in used_by_record.values():
+		for id in Foraging.IDS:
+			counts[id] += int(quantities.get(id, 0))
 	for id in Foraging.IDS:
 		if counts[id] > int(farm["used"][id]):
 			return "남아 있는 메뉴/과거 증빙보다 연구 재료 소비가 적어요."
@@ -1861,10 +1885,10 @@ static func _gather_sample_witnesses(raw: Variant, farm: Dictionary, by_record: 
 			if not ids.is_empty():
 				var key: int = int(raw[pair[0]])
 				if not by_record.has(key):
-					by_record[key] = []
-				for id in ids:
-					if not by_record[key].has(id):
-						by_record[key].append(id)
+					by_record[key] = {}
+				# Keep maximum portions per immutable recipe, not reference count.
+				for id in Foraging.IDS:
+					by_record[key][id] = maxi(int(by_record[key].get(id, 0)), ids.count(id))
 		for value in raw.values():
 			var error: String = _gather_sample_witnesses(value, farm, by_record)
 			if error != "":

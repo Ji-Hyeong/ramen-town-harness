@@ -21,6 +21,10 @@ const Staffing = preload("res://scripts/domain/shop_staffing.gd")
 const Training = preload("res://scripts/domain/staff_training.gd")
 const ProcessRules = preload("res://scripts/domain/recipe_process.gd")
 const SaveServiceScript = preload("res://scripts/services/save_service.gd")
+const FeedbackScript = preload("res://scripts/ui/action_feedback.gd")
+const Discovery = preload("res://scripts/domain/recipe_discovery.gd")
+const JournalScript = preload("res://scripts/ui/recipe_journal.gd")
+const DetailsScript = preload("res://scripts/ui/disclosure_card.gd")
 const ScrollableNameEdit = preload("res://scripts/ui/scrollable_name_edit.gd")
 const LocationScript = preload("res://scripts/services/data_location.gd")
 const StarMeterScript = preload("res://scripts/ui/star_meter.gd")
@@ -162,6 +166,28 @@ var _training_armed_until: int = 0
 var _training_left: float = 0.0
 var _training_target: String = ""
 var _notebook_note: Label
+var _juice: FeedbackScript
+var _topping_positions: HFlowContainer
+var _selected_topping_position: int = -1
+var _flavor_bars: Dictionary = {}
+var _flavor_labels: Dictionary = {}
+var _experiment_note: Label
+var _draft_change_note: Label
+var _bowl_traits: Label
+var _journal_target: JournalScript
+var _journal_map: JournalScript
+var _journal_toggle: Button
+var _journal_target_id: String = "topping_stack"
+var _journal_map_open: bool = false
+var _journal_records_key: String = ""
+var _journal_tested: Dictionary = {}
+var _journal_new_titles: Array[String] = []
+var _journal_new_record_id: int = 0
+var _quick_taste_button: Button
+var _quick_taste_notice: Label
+var _ingredient_sections: Dictionary = {}
+var _flavor_details: DetailsScript
+var _work_fx_phase: int = -1
 var _topping_count: Label
 var _topping_hint: Label
 var _tab_navigation: GridContainer
@@ -216,11 +242,17 @@ func _ready() -> void:
 	state = GameStateScript.new()
 	saver = SaveServiceScript.new(str(data_location["dir"]))
 	_build_ui()
+	_juice = FeedbackScript.new()
+	_juice.name = "ActionFeedback"
+	add_child(_juice)
 	_load_save()
 	# 재개 시 이동 그림만 다시 보여 준다. 비용·경로·발견은 이미 불러온 도메인 상태를 사용한다.
 	if state.exploration_active():
 		_travel.start(str(state.expedition()["region"]))
 	_refresh_all()
+	# Observe existing and subsequently rebuilt buttons, including independent
+	# journal components; per-factory effects previously missed those controls.
+	_juice.watch(self)
 	tabs.tab_changed.connect(_on_tab_changed)
 	resized.connect(_apply_layout)
 	_apply_layout()
@@ -720,7 +752,26 @@ func _build_overlay() -> void:
 	_primary(_open_button)
 	_open_button.pressed.connect(_on_overlay_open_pressed)
 	_open_button.custom_minimum_size = Vector2(0.0, MIN_TOUCH)
-	col.add_child(_open_button)
+	_quick_taste_notice = _label("", 14, VERMILION)
+	_quick_taste_notice.name = "QuickTasteNotice"
+	_quick_taste_notice.visible = false
+	col.add_child(_quick_taste_notice)
+	# Keep the actual tasting action reachable while browsing deep ingredient
+	# lists. Both entry points use the same transactional start_tasting guard.
+	var actions := HBoxContainer.new()
+	actions.name = "WorkbenchActions"
+	actions.add_theme_constant_override("separation", 8)
+	_open_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_open_button.add_theme_font_size_override("font_size", 16)
+	actions.add_child(_open_button)
+	_quick_taste_button = _button("시식 시작", "QuickTasteButton")
+	_primary(_quick_taste_button)
+	_quick_taste_button.custom_minimum_size = Vector2(0, MIN_TOUCH)
+	_quick_taste_button.add_theme_font_size_override("font_size", 16)
+	_quick_taste_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_quick_taste_button.pressed.connect(_on_quick_taste)
+	actions.add_child(_quick_taste_button)
+	col.add_child(actions)
 	add_child(_overlay)
 
 
@@ -780,9 +831,11 @@ func _build_work_card(col: VBoxContainer) -> void:
 
 func _build_lab(box: VBoxContainer) -> void:
 	var bowl_card: PanelContainer = _card("BowlCard")
+	var hero := _vbox(6)
+	bowl_card.add_child(hero)
 	var bh: HBoxContainer = HBoxContainer.new()
 	bh.add_theme_constant_override("separation", 12)
-	bowl_card.add_child(bh)
+	hero.add_child(bh)
 	_bowl_rect = TextureRect.new()
 	_bowl_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_bowl_rect.name = "BowlPreview"
@@ -793,7 +846,16 @@ func _build_lab(box: VBoxContainer) -> void:
 	_bowl_caption = _label("", 15, INK)
 	_bowl_caption.name = "BowlCaption"
 	bh.add_child(_bowl_caption)
+	_bowl_traits = _label("", 14, TEAL)
+	_bowl_traits.name = "BowlTraits"
+	hero.add_child(_bowl_traits)
 	box.add_child(bowl_card)
+	_journal_target = JournalScript.new()
+	_journal_target.name = "ResearchTargetBoard"
+	_journal_target.book_requested.connect(_open_recipe_map)
+	_journal_target.exploration_requested.connect(_find_recipe_materials)
+	box.add_child(_journal_target)
+	_build_experiment_card(box)
 
 	var name_card: PanelContainer = _card("NameCard")
 	var nb: VBoxContainer = _vbox(6)
@@ -815,13 +877,13 @@ func _build_lab(box: VBoxContainer) -> void:
 	new_button.pressed.connect(_on_new_recipe)
 	_new_button = new_button
 	nb.add_child(new_button)
-	box.add_child(name_card)
 
 	for slot in Catalog.SLOTS:
-		var sec: PanelContainer = _card("Section_" + slot)
-		var sb: VBoxContainer = _vbox(8)
-		sec.add_child(sb)
-		sb.add_child(_label(str(Catalog.SLOT_NAMES[slot]), 20, VERMILION))
+		var sec := DetailsScript.new()
+		sec.name = "Section_" + slot
+		sec.configure(str(Catalog.SLOT_NAMES[slot]), "")
+		_ingredient_sections[slot] = sec
+		var sb: VBoxContainer = sec.body
 		var flow: HFlowContainer = HFlowContainer.new()
 		flow.name = "Flow_" + slot
 		flow.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -843,6 +905,11 @@ func _build_lab(box: VBoxContainer) -> void:
 			_topping_hint = _label("", 14, MUTED)
 			_topping_hint.name = "ToppingHint"
 			sb.add_child(_topping_hint)
+			_topping_positions = HFlowContainer.new()
+			_topping_positions.name = "ToppingPositions"
+			_topping_positions.add_theme_constant_override("h_separation", 6)
+			_topping_positions.add_theme_constant_override("v_separation", 6)
+			sb.add_child(_topping_positions)
 		sb.add_child(flow)
 		var desc: Label = _label("", 15, INK)
 		desc.name = "Desc_" + slot
@@ -854,7 +921,10 @@ func _build_lab(box: VBoxContainer) -> void:
 		sb.add_child(discovery_hint)
 		box.add_child(sec)
 		if ProcessRules.SLOTS.has(slot):
-			box.add_child(_process_card(slot))
+			sb.add_child(_process_card(slot))
+	# Name/version management remains available after the cooking choices;
+	# it no longer pushes those choices down the first screen.
+	box.add_child(name_card)
 
 	var price_card: PanelContainer = _card("PriceCard")
 	var pb: VBoxContainer = _vbox(8)
@@ -919,11 +989,58 @@ func _make_option(slot: String, item: Dictionary, group: ButtonGroup) -> Button:
 	return b
 
 
+## Live flavor bars expose the real recipe profile, not a promised score.
+func _build_experiment_card(box: VBoxContainer) -> void:
+	var card := DetailsScript.new()
+	card.name = "ExperimentCard"
+	card.configure("맛 실험대", "")
+	_flavor_details = card
+	var col: VBoxContainer = card.body
+	var flow := HFlowContainer.new()
+	flow.add_theme_constant_override("h_separation", 8)
+	flow.add_theme_constant_override("v_separation", 6)
+	for axis in Catalog.AXES:
+		var pair := _vbox(2)
+		pair.custom_minimum_size.x = 128
+		var title := _label("", 13, INK)
+		title.name = "Flavor_" + axis
+		_flavor_labels[axis] = title
+		pair.add_child(title)
+		var bar := ProgressBar.new()
+		bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		bar.name = "FlavorBar_" + axis
+		bar.max_value = 10
+		bar.show_percentage = false
+		bar.custom_minimum_size = Vector2(128, 10)
+		bar.add_theme_stylebox_override("background", _box(LINE, LINE, 0, 0, 0, 0))
+		bar.add_theme_stylebox_override("fill", _box(TEAL, TEAL, 0, 0, 0, 0))
+		_flavor_bars[axis] = bar
+		pair.add_child(bar)
+		flow.add_child(pair)
+	col.add_child(flow)
+	_experiment_note = _label("", 14, TEAL)
+	_experiment_note.name = "ExperimentNote"
+	col.add_child(_experiment_note)
+	_draft_change_note = _label("", 14, INK)
+	_draft_change_note.name = "DraftComparison"
+	col.add_child(_draft_change_note)
+	box.add_child(card)
+
+
 func _build_feedback(box: VBoxContainer) -> void:
 	_feedback_box = box
 
 
 func _build_notebook(box: VBoxContainer) -> void:
+	_journal_toggle = _button("연구 지도 펼치기", "RecipeMapToggle")
+	_journal_toggle.pressed.connect(_toggle_recipe_map)
+	box.add_child(_journal_toggle)
+	_journal_map = JournalScript.new()
+	_journal_map.mode = "map"
+	_journal_map.name = "RecipeResearchMap"
+	_journal_map.target_selected.connect(_select_recipe_target)
+	_journal_map.visible = false
+	box.add_child(_journal_map)
 	_notebook_count = _label("", 18, INK)
 	_notebook_count.name = "NotebookCount"
 	box.add_child(_notebook_count)
@@ -1214,6 +1331,9 @@ func _on_reset_save() -> void:
 ## 안내 문구는 개발·노트 탭에서만 보인다(시식 카드가 쓸 세로 공간을 확보).
 func _sync_guide_visibility() -> void:
 	_guide_label.visible = tabs.current_tab == TAB_LAB or tabs.current_tab == TAB_NOTEBOOK
+	if is_instance_valid(_quick_taste_button):
+		_quick_taste_button.visible = tabs.current_tab == TAB_LAB
+		_quick_taste_notice.visible = tabs.current_tab == TAB_LAB and _quick_taste_notice.text != ""
 
 
 func _on_tab_changed(_index: int) -> void:
@@ -1474,6 +1594,7 @@ func _on_new_recipe() -> void:
 		return
 	_pending_delete_id = 0
 	state.start_new_recipe()
+	_selected_topping_position = -1
 	_taste_message.text = "새 레시피를 시작했어요. 이름을 정하고 시식해 보세요."
 	_persist()
 	_refresh_all()
@@ -1481,23 +1602,72 @@ func _on_new_recipe() -> void:
 
 func _on_option_pressed(slot: String, id: String) -> void:
 	if _work_blocked("재료를 바꿀"):
-		_refresh_lab()  # 눌린 토글 모양을 실제 초안 값으로 되돌린다
+		_refresh_lab()
 		return
 	_pending_delete_id = 0
-	var res: Dictionary
+	var previous := state.draft_config.duplicate(true)
+	var point := (_buttons[id] as Button).get_global_rect().get_center()
+	var result: Dictionary
 	if slot == Catalog.TOPPING_SLOT:
-		# 토핑 슬롯이 하나면 예전처럼 "고르면 바뀌는" 단순 선택, 둘 이상이면 눌러서 넣고 빼는 다중 선택이다.
-		# 꽉 찼을 때 다른 토핑을 누르면 몰래 바꾸지 않고 거부 이유(해금 방법)를 보여 준다. 마지막 하나는 뺄 수 없다.
-		if state.topping_slots() <= 1:
-			res = state.set_draft_toppings([id])
+		var portions: Array = Catalog.toppings_of(state.draft_config)
+		if _selected_topping_position >= 0 and _selected_topping_position < portions.size():
+			portions[_selected_topping_position] = id
 		else:
-			res = state.toggle_draft_topping(id)
+			portions.append(id)
+		result = state.set_draft_toppings(portions)
+		if result["ok"]:
+			_selected_topping_position = -1
 	else:
-		res = state.set_draft_choice(slot, id)
-	if not bool(res["ok"]):
-		_taste_message.text = str(res["message"])
+		result = state.set_draft_choice(slot, id)
+	if not result["ok"]:
+		_taste_message.text = str(result["message"])
 		_taste_message.add_theme_color_override("font_color", VERMILION)
+		_juice.burst(point, VERMILION, str(result["message"]).left(22))
+	else:
+		_ingredient_reaction(previous, id, point)
 	_refresh_lab()
+
+
+func _select_topping_position(index: int) -> void:
+	if _work_blocked("토핑 칸을 고를"):
+		return
+	_selected_topping_position = -1 if _selected_topping_position == index else index
+	_refresh_lab()
+
+
+func _remove_topping_position(index: int) -> void:
+	if _work_blocked("토핑을 뺄"):
+		return
+	var portions: Array = Catalog.toppings_of(state.draft_config)
+	if index < 0 or index >= portions.size():
+		return
+	portions.remove_at(index)
+	var result := state.set_draft_toppings(portions)
+	if not result["ok"]:
+		_taste_message.text = result["message"]
+		_juice.burst(get_viewport_rect().size * Vector2(0.5, 0.65), VERMILION, "토핑은 최소 1개")
+	_selected_topping_position = -1
+	_refresh_lab()
+
+
+func _ingredient_reaction(previous: Dictionary, id: String, point: Vector2) -> void:
+	var old_profile := Evaluator.build_profile(previous)
+	var profile := Evaluator.build_profile(state.draft_config)
+	var change: String = "재료 교체"
+	var largest: int = 0
+	for axis in Catalog.AXES:
+		var delta: int = int(profile[axis]) - int(old_profile[axis])
+		if absi(delta) > absi(largest):
+			largest = delta
+			change = "%s %+d" % [Catalog.AXIS_NAMES[axis], delta]
+	var before: Array = Evaluator.applied_compat(previous)
+	for rule in Evaluator.applied_compat(state.draft_config):
+		if not before.has(rule):
+			change = "궁합 발견!" if int(rule["score"]) > 0 else "엇갈리는 맛!"
+			break
+	_juice.burst(point, TEAL, change, _icon(id, 2), true)
+	_taste_message.text = "%s · %s · 원가 %+d원" % [Catalog.find(id)["name"], change, Evaluator.unit_cost(state.draft_config) - Evaluator.unit_cost(previous)]
+	_taste_message.add_theme_color_override("font_color", TEAL)
 
 
 func _on_price_step(delta: int) -> void:
@@ -1513,6 +1683,14 @@ func _on_price_step(delta: int) -> void:
 
 func _on_taste() -> void:
 	start_tasting()
+
+
+func _on_quick_taste() -> void:
+	var result: Dictionary = start_tasting()
+	# The original refusal label may be far down the ingredient list. Keep the
+	# actual full refusal next to the fixed action, not only in a clipped burst.
+	_quick_taste_notice.text = "" if result["ok"] else str(result["message"])
+	_quick_taste_notice.visible = not bool(result["ok"])
 
 
 ## 시식 시작: 곧바로 기록하지 않고 약 4초짜리 준비 작업(국물→면→시식)을 시작한다.
@@ -1548,6 +1726,7 @@ func start_tasting() -> Dictionary:
 	}
 	if not _work.start(snap):
 		return _work_reject("이미 시식을 준비하고 있어요.")
+	_work_fx_phase = -1
 	_work_notice.text = WORK_NOTE
 	_taste_message.add_theme_color_override("font_color", TEAL)
 	_taste_message.text = "시식을 준비하고 있어요. 국물 → 면 → 시식 순서로 잠깐 걸려요."
@@ -1559,6 +1738,7 @@ func start_tasting() -> Dictionary:
 func _taste_refused(message: String) -> Dictionary:
 	_taste_message.text = message
 	_taste_message.add_theme_color_override("font_color", VERMILION)
+	_juice.burst(_taste_button.get_global_rect().get_center(), VERMILION, message.left(22))
 	_refresh_lab()
 	return {"ok": false, "message": message}
 
@@ -1578,15 +1758,27 @@ func advance_work(seconds: float) -> bool:
 ## 완료 처리(진행 함수가 완료 신호를 한 번 낸 직후에만 불린다). 이 시점에 작업은 이미 IDLE 이라 같은 작업의 두 번째 완료는 없다.
 ## 도메인 taste() 호출은 이 함수 안의 단 한 곳이다: 기록 1개·재료비 1회·자동 저장 1회가 여기서만 일어난다.
 func _complete_work() -> void:
+	_juice.clear_effects()
 	var snap: Dictionary = _work.take_snapshot()
 	if snap.is_empty() or not _snapshot_still_valid(snap):
 		_taste_message.text = "준비하는 동안 구성이나 자금이 달라져서 시식을 취소했어요. 재료비는 나가지 않았고 기록도 그대로예요."
 		_taste_message.add_theme_color_override("font_color", VERMILION)
 		_refresh_all()
 		return
+	# Compare actual retained witnesses before and after the successful payment.
+	# Merely choosing a goal or composing an untasted draft earns no discovery.
+	var previously_tested: Dictionary = {}
+	for page in _recipe_pages():
+		if page["tested"]:
+			previously_tested[page["id"]] = true
 	var res: Dictionary = state.taste()
 	if bool(res["ok"]):
 		_notebook_page = 0
+		_journal_new_record_id = int(res["record_id"])
+		_journal_new_titles.clear()
+		for page in _recipe_pages():
+			if page["tested"] and not previously_tested.has(page["id"]):
+				_journal_new_titles.append(str(page["title"]))
 	_taste_message.text = str(res["message"])
 	if not bool(res["ok"]):
 		_taste_message.add_theme_color_override("font_color", VERMILION)
@@ -1600,6 +1792,7 @@ func _complete_work() -> void:
 		_taste_message.add_theme_color_override("font_color", VERMILION)
 	_refresh_all()
 	tabs.current_tab = TAB_FEEDBACK
+	(tabs.get_child(TAB_FEEDBACK) as ScrollContainer).scroll_vertical = 0
 	_play_reveal()
 
 
@@ -1620,6 +1813,7 @@ func cancel_work(message: String = "") -> bool:
 	if not _work.is_running():
 		return false
 	_work.cancel()
+	_juice.clear_effects()
 	_taste_message.text = message if message != "" else "시식 준비를 취소했어요. 재료비는 나가지 않았고 기록도 그대로예요."
 	_taste_message.add_theme_color_override("font_color", MUTED)
 	_flash_text = ""
@@ -1634,19 +1828,31 @@ func work_active() -> bool:
 
 ## 시식 연출: 그릇이 한 번 튀고 손님 카드가 차례로 나타남. 전체 약 1초 이내이며 조작을 막지 않는다.
 func _play_reveal() -> void:
-	_bowl_rect.pivot_offset = _bowl_rect.size * 0.5
-	_bowl_rect.scale = Vector2(1.25, 1.25)
-	var bt: Tween = _bowl_rect.create_tween()
-	bt.tween_property(_bowl_rect, "scale", Vector2.ONE, 0.35)
-	var i: int = 0
+	# The old reveal bounced the bowl on the now-hidden lab tab. Animate the
+	# actual result bowl and cards after their real layout has settled instead.
+	await get_tree().process_frame
+	if not is_inside_tree():
+		return
+	var bowl := _feedback_box.find_child("FeedbackBowl", true, false) as Control
+	if bowl != null:
+		bowl.pivot_offset = bowl.size * 0.5
+		bowl.scale = Vector2.ONE * 0.65
+		var tween := bowl.create_tween()
+		tween.tween_property(bowl, "scale", Vector2.ONE, 0.45).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		var is_new: bool = _journal_new_record_id == state.last_feedback_record_id and not _journal_new_titles.is_empty()
+		_juice.burst(bowl.get_global_rect().get_center(), TEAL, "새 연구 수록!" if is_new else "시제품 완성!", null, true)
+	var index: int = 0
 	for child in _feedback_box.get_children():
 		if child is Control and str(child.name).begins_with("Card_"):
-			var c: Control = child
-			c.modulate.a = 0.0
-			var tw: Tween = c.create_tween()
-			tw.tween_interval(0.12 * float(i))
-			tw.tween_property(c, "modulate:a", 1.0, 0.25)
-			i += 1
+			var card: Control = child
+			card.modulate.a = 0.0
+			card.pivot_offset = card.size * 0.5
+			card.scale = Vector2.ONE * 0.94
+			var tween := card.create_tween()
+			tween.tween_interval(0.12 * float(index))
+			tween.tween_property(card, "modulate:a", 1.0, 0.25)
+			tween.parallel().tween_property(card, "scale", Vector2.ONE, 0.3).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+			index += 1
 
 
 func _on_select_record(id: int) -> void:
@@ -2345,14 +2551,30 @@ func _refresh_work_ui() -> void:
 				phase_name = str(ProcessRules.method(slot, ProcessRules.selected(process, slot))["name"])
 			lab.text = "%s %s%s" % [marks[i], phase_name, " · 끝" if done else (" · 진행 중" if i == phase else "")]
 			lab.add_theme_color_override("font_color", TEAL if done else (VERMILION if i == phase else MUTED))
+		if phase != _work_fx_phase and is_instance_valid(_juice):
+			_work_fx_phase = phase
+			_show_work_phase_feedback(phase)
 		_work_view.set_state(p, snap["config"] if snap.has("config") else {})
 	_apply_work_lock()
+
+
+func _show_work_phase_feedback(phase: int) -> void:
+	# Showing the work card schedules a container layout. Its old rectangle is
+	# not a valid effect origin yet; wait for layout and discard obsolete cues.
+	await get_tree().process_frame
+	if not work_active() or WorkScript.phase_for(_work.progress()) != phase:
+		return
+	_juice.burst(_work_view.get_global_rect().get_center(), TEAL, WorkScript.phase_name(phase), null, true)
+
+
+func _development_busy() -> bool:
+	return _work.is_running() or state.exploration_active() or state.service_active() or _contest_left > 0.0 or _training_left > 0.0
 
 
 func _apply_work_lock() -> void:
 	if _work_card == null:
 		return
-	var busy: bool = _work.is_running() or state.exploration_active() or state.service_active() or _contest_left > 0.0 or _training_left > 0.0
+	var busy: bool = _development_busy()
 	for id in _buttons.keys():
 		(_buttons[id] as Button).disabled = busy or not state.ingredient_unlocked(str(id))
 	for b in _price_buttons:
@@ -2365,6 +2587,11 @@ func _apply_work_lock() -> void:
 		if is_instance_valid(b):
 			b.disabled = busy
 	_new_button.disabled = busy
+	_quick_taste_button.disabled = busy
+	_quick_taste_button.text = "준비 중…" if _work.is_running() else "시식 · " + _won(state.trial_cost())
+	_journal_target.set_busy(busy)
+	_journal_map.set_busy(busy)
+	_journal_toggle.disabled = busy
 	_taste_button.disabled = busy
 	_taste_button.text = "시식 준비 중…" if _work.is_running() else ("탐색을 먼저 마치세요" if state.exploration_active() else "시식하기")
 	_close_button.disabled = _work.is_running()
@@ -2488,7 +2715,91 @@ func _next_version(lineage: int) -> int:
 	return best + 1
 
 
+## Discovery status is a projection of retained immutable notebook entries.
+## Re-evaluating300 recipes on every ingredient tap measured57ms on this Mac;
+## cache only the record-derived flags, not draft facts or material availability.
+func _recipe_pages() -> Array:
+	var records: Array = state.records()
+	var key: String = JSON.stringify(records)
+	var available: Array[String] = []
+	for slot in Catalog.SLOTS:
+		for item in Catalog.all_items(slot):
+			if state.ingredient_unlocked(str(item["id"])):
+				available.append(str(item["id"]))
+	if key != _journal_records_key:
+		_journal_tested.clear()
+		for page in Discovery.pages(records, state.draft_config, available):
+			_journal_tested[page["id"]] = bool(page["tested"])
+		_journal_records_key = key
+	var pages: Array = Discovery.pages([], state.draft_config, available)
+	for page in pages:
+		page["tested"] = bool(_journal_tested.get(page["id"], false))
+	return pages
+
+
+func _refresh_recipe_target() -> void:
+	var sample_check: Dictionary = Foraging.use_samples(state.foraging_state(), state.draft_config)
+	_journal_target.present(_recipe_pages(), _journal_target_id, _development_busy(), str(sample_check["error"]))
+	var identity: Dictionary = Discovery.describe(state.draft_config)
+	_bowl_traits.text = " · ".join((identity["tags"] as Array).slice(0, 3))
+	_bowl_caption.text = str(identity["title"]) + "\n원가 %s · 준비 %d초" % [_won(state.trial_cost()), Evaluator.prep_seconds(state.draft_config)]
+	var previous: Dictionary = state.get_record(state.selected_record_id)
+	if previous.is_empty():
+		_draft_change_note.text = "첫 시제품을 시식하면 다음 실험부터 바뀐 맛·원가·준비 시간을 비교할 수 있어요."
+		return
+	var before: Dictionary = previous["config"]
+	var profile: Dictionary = Evaluator.build_profile(state.draft_config)
+	var old_profile: Dictionary = Evaluator.build_profile(before)
+	var changes: Array[String] = []
+	for axis in Catalog.AXES:
+		var delta: int = int(profile[axis]) - int(old_profile[axis])
+		if delta != 0:
+			changes.append("%s %+d" % [Catalog.AXIS_NAMES[axis], delta])
+	_draft_change_note.text = "기준 · %s v%d\n%s\n원가 %+d원 · 준비 %+d초 · 판매가 %+d원" % [str(previous["name"]), int(previous["version"]), "맛 축 변화 없음" if changes.is_empty() else " · ".join(changes), Evaluator.unit_cost(state.draft_config) - Evaluator.unit_cost(before), Evaluator.prep_seconds(state.draft_config) - Evaluator.prep_seconds(before), int(state.draft_config["price"]) - int(before["price"])]
+
+
+func _open_recipe_map() -> void:
+	if _work_blocked("연구 목표를 고를"):
+		return
+	_journal_map_open = true
+	tabs.current_tab = TAB_NOTEBOOK
+	_refresh_notebook()
+	(tabs.get_child(TAB_NOTEBOOK) as ScrollContainer).scroll_vertical = 0
+
+
+func _toggle_recipe_map() -> void:
+	if _work_blocked("연구 지도를 펼칠"):
+		return
+	_journal_map_open = not _journal_map_open
+	_refresh_notebook()
+
+
+func _select_recipe_target(id: String) -> void:
+	if _work_blocked("연구 목표를 바꿀"):
+		return
+	for page in _recipe_pages():
+		if str(page["id"]) == id:
+			_journal_target_id = id
+			tabs.current_tab = TAB_LAB
+			_refresh_lab()
+			(tabs.get_child(TAB_LAB) as ScrollContainer).scroll_vertical = 0
+			return
+	_flash("연구 지도에서 알려진 목표를 골라 주세요.")
+
+
+func _find_recipe_materials() -> void:
+	if _work_blocked("재료를 찾으러 갈"):
+		return
+	# Navigate only: existing rank, daily departure, money and stock rules apply
+	# when the player explicitly starts the trip on the exploration screen.
+	tabs.current_tab = TAB_EXPLORATION
+	_refresh_exploration()
+	(tabs.get_child(TAB_EXPLORATION) as ScrollContainer).scroll_vertical = 0
+
+
 func _refresh_lab() -> void:
+	_quick_taste_notice.text = ""
+	_quick_taste_notice.visible = false
 	for slot in Catalog.SLOTS:
 		# 선택된 재료 id 목록: 토핑은 여러 개일 수 있다(Catalog.toppings_of 하나의 읽기 경로), 나머지는 하나.
 		var chosen_ids: Array[String] = []
@@ -2502,7 +2813,7 @@ func _refresh_lab() -> void:
 			var b: Button = _buttons[id]
 			b.set_pressed_no_signal(chosen_ids.has(id))
 			var locked: bool = not state.ingredient_unlocked(id)
-			b.text = "%s%s\n%s · %d초" % ["탐색 필요 · " if locked else "", str(d["name"]), _won(int(d["cost"])), int(d["seconds"])]
+			b.text = "%s%s%s\n%s · %d초" % ["탐색 필요 · " if locked else "", str(d["name"]), " ×%d" % chosen_ids.count(id) if slot == Catalog.TOPPING_SLOT and chosen_ids.has(id) else "", _won(int(d["cost"])), int(d["seconds"])]
 		var hints: Array[String] = []
 		for locked_item in state.locked_items(slot):
 			var li: Dictionary = locked_item
@@ -2511,21 +2822,46 @@ func _refresh_lab() -> void:
 		hint_label.text = "\n".join(hints)
 		hint_label.visible = not hints.is_empty()
 		var desc_lines: Array[String] = []
+		var described: Array[String] = []
 		for cid in chosen_ids:
+			if described.has(cid):
+				continue
+			described.append(cid)
 			var sel: Dictionary = Catalog.find(cid)
 			desc_lines.append("%s — %s\n비용 %s · 준비 %d초 · %s" % [str(sel["name"]), str(sel["desc"]), _won(int(sel["cost"])), int(sel["seconds"]), Catalog.axes_text(sel)])
 			if Catalog.is_farmed(cid):
-				desc_lines.append("연구 재료 %d개 보관 · 시제품 완성에 1개 필요\n판매는 추가 샘플 없이 영업 원가로 공급돼요." % state.foraging_state()["stock"][cid])
+				desc_lines.append("연구 재료 %d개 보관 · 시제품 완성에 %d개 필요\n판매는 추가 샘플 없이 영업 원가로 공급돼요." % [state.foraging_state()["stock"][cid], chosen_ids.count(cid)])
 		var desc: Label = _desc_labels[slot]
 		desc.text = "\n".join(desc_lines)
+		var summary: String = Catalog.topping_names(state.draft_config) if slot == Catalog.TOPPING_SLOT else str(Catalog.find(chosen_ids[0])["name"])
+		if slot == Catalog.TOPPING_SLOT:
+			summary += " · %d/%d칸" % [chosen_ids.size(), state.topping_slots()]
+		(_ingredient_sections[slot] as DetailsScript).configure(str(Catalog.SLOT_NAMES[slot]), summary, _icon(chosen_ids[0], 2))
 	var slots: int = state.topping_slots()
-	var picked: int = Catalog.toppings_of(state.draft_config).size()
-	_topping_count.text = "토핑 %d/%d개 선택" % [picked, slots]
-	var unlock: String = Growth.topping_unlock_hint(state.rank(), state.facilities_owned())
-	if slots <= 1:
-		_topping_hint.text = "지금은 토핑을 1개만 올릴 수 있어요. 다른 토핑을 누르면 바뀌어요. " + unlock
-	else:
-		_topping_hint.text = "누르면 넣고, 다시 누르면 빼요(최소 1개, 최대 %d개). 가득 찼을 때는 먼저 하나를 빼세요. %s" % [slots, unlock]
+	var portions := Catalog.toppings_of(state.draft_config)
+	_topping_count.text = "가게 등급 %d · 토핑 %d/%d칸" % [state.rank(), portions.size(), slots]
+	_topping_hint.text = "재료를 누르면 한 칸 추가해요. 같은 재료도 여러 칸 가능!
+교체는 칸을 먼저 고르고, 빼기는 [−]. 최소 1개, 최대 %d개. %s" % [slots, Growth.topping_unlock_hint(state.rank(), state.facilities_owned())]
+	_clear(_topping_positions)
+	for index in Catalog.MAX_TOPPINGS:
+		var occupied: bool = index < portions.size()
+		var title := str(Catalog.find(portions[index])["name"]) if occupied else "빈 칸 +"
+		if index >= slots:
+			title = "등급 %d 해금" % index
+		var row := HBoxContainer.new()
+		var position_button := _button(("교체: " if _selected_topping_position == index else "") + title, "ToppingSlot_" + str(index))
+		position_button.custom_minimum_size.x = 116
+		position_button.add_theme_font_size_override("font_size", 14)
+		position_button.disabled = index >= slots or work_active() or state.service_active() or state.exploration_active() or _training_left > 0.0 or _contest_left > 0.0
+		position_button.pressed.connect(_select_topping_position.bind(index))
+		row.add_child(position_button)
+		if occupied:
+			var remove := _button("−", "RemoveTopping_" + str(index))
+			remove.custom_minimum_size.x = MIN_TOUCH
+			remove.disabled = position_button.disabled
+			remove.pressed.connect(_remove_topping_position.bind(index))
+			row.add_child(remove)
+		_topping_positions.add_child(row)
 
 	if _name_edit.text != state.draft_name:
 		_name_edit.text = state.draft_name
@@ -2540,6 +2876,12 @@ func _refresh_lab() -> void:
 	_price_label.text = "%s (그릇당 마진 %s)" % [_won(price), _won(price - cost)]
 
 	var profile: Dictionary = Evaluator.build_profile(state.draft_config)
+	_flavor_details.configure("맛 실험대", "진함 %d · 향 %d · 매운맛 %d" % [profile["rich"], profile["aroma"], profile["spice"]], ArtScript.scaled_tex(ArtScript.bowl_image(state.draft_config), 2))
+	for axis in Catalog.AXES:
+		(_flavor_bars[axis] as ProgressBar).value = profile[axis]
+		(_flavor_labels[axis] as Label).text = "%s %d/10" % [Catalog.AXIS_NAMES[axis], profile[axis]]
+	var combinations := Evaluator.applied_compat(state.draft_config)
+	_experiment_note.text = "재료를 바꿔 맛의 균형을 찾아보세요. 많이 넣는다고 모두 좋아하진 않아요." if combinations.is_empty() else str(combinations[-1]["note"])
 	var parts: Array[String] = []
 	for axis in Catalog.AXES:
 		parts.append("%s %d" % [str(Catalog.AXIS_NAMES[axis]), int(profile[axis])])
@@ -2561,6 +2903,7 @@ func _refresh_lab() -> void:
 
 	_bowl_rect.texture = ArtScript.scaled_tex(ArtScript.bowl_image(state.draft_config), 8)
 	_bowl_caption.text = "%s\n원가 %s · 준비 %d초 · 판매가 %s" % [state.draft_name, _won(cost), prep, _won(price)]
+	_refresh_recipe_target()
 
 
 func _refresh_feedback() -> void:
@@ -2577,6 +2920,15 @@ func _refresh_feedback() -> void:
 	var title_card: PanelContainer = _card("FeedbackTitleCard")
 	var tcb: VBoxContainer = _vbox(4)
 	title_card.add_child(tcb)
+	var bowl := TextureRect.new()
+	bowl.name = "FeedbackBowl"
+	bowl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bowl.texture = ArtScript.scaled_tex(ArtScript.bowl_image(rec["config"]), 10)
+	bowl.custom_minimum_size = Vector2(120, 80)
+	bowl.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	bowl.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	tcb.add_child(bowl)
+	tcb.add_child(_label("시제품 완성!", 22, TEAL))
 	var title: Label = _label("%s v%d" % [str(rec["name"]), int(rec["version"])], 24, VERMILION)
 	title.name = "FeedbackTitle"
 	tcb.add_child(title)
@@ -2595,6 +2947,15 @@ func _refresh_feedback() -> void:
 		var method_label: Label = _label("제조: " + ProcessRules.summary(config["process"]), 15, TEAL)
 		method_label.name = "FeedbackProcess"
 		tcb.add_child(method_label)
+	var identity: Dictionary = Discovery.describe(config)
+	var identity_label := _label(str(identity["title"]), 16, INK)
+	identity_label.name = "FeedbackIdentity"
+	tcb.add_child(identity_label)
+	if _journal_new_record_id == int(rec["record_id"]) and not _journal_new_titles.is_empty():
+		var discovery_label := _label("", 16, TEAL)
+		discovery_label.name = "NewRecipeThemes"
+		discovery_label.text = "새 연구 수록 · " + " / ".join(_journal_new_titles)
+		tcb.add_child(discovery_label)
 	_feedback_box.add_child(title_card)
 
 	for c in evaluation["customers"]:
@@ -2677,7 +3038,7 @@ func _comparison_card(rec: Dictionary, evaluation: Dictionary) -> PanelContainer
 	var changes: Array[String] = []
 	for slot in Catalog.SLOTS:
 		if slot == Catalog.TOPPING_SLOT:
-			# 토핑은 여러 개일 수 있어 선택 집합을 비교한다(카탈로그 순서로 정규화돼 있어 순서만 다른 경우는 "바뀐 점"이 아니다).
+			# 토핑은 여러 개일 수 있어 종류별 분량을 비교한다(카탈로그 순서로 정규화돼 있어 순서만 다른 경우는 "바뀐 점"이 아니다).
 			if str(Catalog.toppings_of(prev_cfg)) != str(Catalog.toppings_of(cfg)):
 				changes.append("%s: %s → %s" % [str(Catalog.SLOT_NAMES[slot]), Catalog.topping_names(prev_cfg), Catalog.topping_names(cfg)])
 		elif str(prev_cfg[slot]) != str(cfg[slot]):
@@ -2713,6 +3074,10 @@ func _comparison_card(rec: Dictionary, evaluation: Dictionary) -> PanelContainer
 
 
 func _refresh_notebook() -> void:
+	_journal_map.visible = _journal_map_open
+	_journal_toggle.text = "연구 지도 접기" if _journal_map_open else "연구 지도 펼치기"
+	if _journal_map_open:
+		_journal_map.present(_recipe_pages(), _journal_target_id, _development_busy())
 	_clear(_notebook_box)
 	var all_records: Array = state.records()
 	var cap: int = state.menu_capacity()
