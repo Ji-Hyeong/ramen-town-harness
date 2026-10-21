@@ -53,12 +53,21 @@ also migrates intact; phone files have not been written.
 
 Intermediate native v2 rendered654checks/14nonblack PNGs, four images reviewed.
 Observed obsolete cooking cues were cleaned up and covered by lifecycle tests.
-Final fresh preparation now fails strict vendor signature in restricted runtime,
-even on previously verified v2 with identical80bundle files. Current headless
-runs also emit a platform CA lookup error, kept distinct from game assertions.
+Before permission recovery, final fresh preparation failed strict vendor signature
+in restricted runtime, even on previously verified v2 with identical80bundle
+files. Those headless runs also emitted a platform CA lookup error, kept distinct
+from game assertions.
 
-Code is preserved in ready/non-draft PR16. Final native build/renderer and iPhone
-update, then main merge, are blocked pending execution-permission restoration.
-The new feature is NOT installed on the phone. No old signed app, real Mac save
-or security protections changed. Resume from work/development-feel-checkpoint-20261021.json
-in the containing workspace; use fresh v4 output paths after the failed v3.
+Execution permissions restored: official vendor signature0 without modifications.
+Imported final snapshot focused1496/touch70 pass/exit0/engine-errors0. Initial raw
+snapshot rerun lacked imported font files and was rejected; keep that log too.
+Fresh final v4 QA app verifies all103 sources, awaiting exact-app launch approval.
+Final iOS v4 export/signed build0, strict signature/profile/device/team/app/noAPNS
+and embedded/exported PCK equality pass; private durable artifacts preserved.
+
+Code is preserved in ready/non-draft PR16. Final native rendering, fresh connected
+phone save backup/update/launch and then main merge remain pending. Registered
+phone is currently disconnected; user has been asked to reconnect. The new
+feature is NOT installed on the phone. No old app, real Mac save or security
+protections changed. Resume from work/development-feel-checkpoint-20261021.json
+in the containing workspace; fresh v4 output paths are now prepared.

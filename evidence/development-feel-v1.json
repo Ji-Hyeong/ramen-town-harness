@@ -1,7 +1,7 @@
 {
   "date": "2026-10-21",
   "task": "development-feel-v1",
-  "status": "ready_pr_final_native_and_device_update_pending_execution_environment",
+  "status": "final_build_verified_native_launch_approval_and_phone_connection_pending",
   "base_commit": "0f87d7cde293dbff18253ca89d1ee892ffb6f7e7",
   "implementation_agent": "Codex",
   "claude_calls": 0,
@@ -136,16 +136,18 @@
     "failures": 0,
     "exit_code": 0,
     "script_errors": 0,
-    "environment_ca_errors": 1,
-    "covers_existing_cooking_cancel_restart_and_save_failure": true
+    "environment_ca_errors": 0,
+    "covers_existing_cooking_cancel_restart_and_save_failure": true,
+    "engine_errors": 0
   },
   "final_touch_routing": {
     "checks": 70,
     "failures": 0,
     "exit_code": 0,
     "script_errors": 0,
-    "environment_ca_errors": 1,
-    "canceled_swipes_create_effects": false
+    "environment_ca_errors": 0,
+    "canceled_swipes_create_effects": false,
+    "engine_errors": 0
   },
   "legacy": {
     "generator_cases": 8,
@@ -272,6 +274,13 @@
       "same80_vendor_bundle_files_as_previously_verified_v2": true,
       "verification_under_current_restricted_environment_exit": 1,
       "controls_weakened": false
+    },
+    {
+      "version": "v4",
+      "status": "prepared_waiting_exact_app_launch_approval",
+      "vendor_signature_verified": true,
+      "matches_final_source_count": 103,
+      "accepted": false
     }
   ],
   "ios_intermediate_v2": {
@@ -288,13 +297,37 @@
   "physical_feature_acceptance": "not requested before final installed build",
   "mac_live_save_untouched": true,
   "remaining": [
-    "Fresh final native rendering after cue cleanup.",
-    "Fresh final signed iPhone build, own-app save backup/preservation, install/launch and physical feature feedback.",
-    "Main merge after final renderer/signature/device checks; ready PR16 published."
+    "Exact v4 QA app launch approval and fresh final native rendering/visual review.",
+    "Reconnect registered phone; fresh own-app save backup and same-bundle update/launch.",
+    "Physical feature feedback; main merge after renderer/device checks."
   ],
   "publication": {
     "url": "https://github.com/Ji-Hyeong/ramen-town-harness/pull/16",
     "draft": false,
     "merged": false
+  },
+  "execution_recovery": {
+    "official_engine_strict_signature_exit": 0,
+    "protections_changed": false,
+    "headless_raw_source_attempt_rejected": "Missing imported font resource; not counted as acceptance.",
+    "imported_snapshot_rerun_engine_errors": 0
+  },
+  "ios_final_v4": {
+    "signature_exit": 0,
+    "same_bundle": true,
+    "profile_matches_device_team_app": true,
+    "push_entitlement_present": false,
+    "profile_expiration_utc": "2026-10-27T14:45:57+00:00",
+    "embedded_pack_matches_export": true,
+    "pack_sha256": "ffcf2113c3d5553335ac7e251e35e3e38c3e29a0a506af06330750155a8d5275",
+    "phone_only": true,
+    "signed_build_exit": 0,
+    "warnings": 6,
+    "installed": false,
+    "private_durable_byte_identical_copies": {
+      "xcode_files": 47,
+      "signed_app_files": 14,
+      "signature_exit": 0
+    }
   }
 }
