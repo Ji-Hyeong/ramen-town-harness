@@ -24,6 +24,7 @@ const SaveServiceScript = preload("res://scripts/services/save_service.gd")
 const FeedbackScript = preload("res://scripts/ui/action_feedback.gd")
 const Discovery = preload("res://scripts/domain/recipe_discovery.gd")
 const JournalScript = preload("res://scripts/ui/recipe_journal.gd")
+const DetailsScript = preload("res://scripts/ui/disclosure_card.gd")
 const ScrollableNameEdit = preload("res://scripts/ui/scrollable_name_edit.gd")
 const LocationScript = preload("res://scripts/services/data_location.gd")
 const StarMeterScript = preload("res://scripts/ui/star_meter.gd")
@@ -184,6 +185,8 @@ var _journal_new_titles: Array[String] = []
 var _journal_new_record_id: int = 0
 var _quick_taste_button: Button
 var _quick_taste_notice: Label
+var _ingredient_sections: Dictionary = {}
+var _flavor_details: DetailsScript
 var _work_fx_phase: int = -1
 var _topping_count: Label
 var _topping_hint: Label
@@ -247,6 +250,9 @@ func _ready() -> void:
 	if state.exploration_active():
 		_travel.start(str(state.expedition()["region"]))
 	_refresh_all()
+	# Observe existing and subsequently rebuilt buttons, including independent
+	# journal components; per-factory effects previously missed those controls.
+	_juice.watch(self)
 	tabs.tab_changed.connect(_on_tab_changed)
 	resized.connect(_apply_layout)
 	_apply_layout()
@@ -402,9 +408,6 @@ func _button(text: String, node_name: String) -> Button:
 	# 손가락을 버튼 위에서 밀어도 부모 ScrollContainer가 드래그를 받는다.
 	# 실제 스크롤이 시작되면 Godot의 SCROLL_BEGIN이 누르기를 취소한다.
 	b.mouse_filter = Control.MOUSE_FILTER_PASS
-	b.pressed.connect(func():
-		if is_instance_valid(_juice):
-			_juice.burst(b.get_global_rect().get_center(), Color(1.0, 0.76, 0.25)))
 	b.name = node_name
 	b.text = text
 	b.custom_minimum_size = Vector2(0.0, MIN_TOUCH)
@@ -874,13 +877,13 @@ func _build_lab(box: VBoxContainer) -> void:
 	new_button.pressed.connect(_on_new_recipe)
 	_new_button = new_button
 	nb.add_child(new_button)
-	box.add_child(name_card)
 
 	for slot in Catalog.SLOTS:
-		var sec: PanelContainer = _card("Section_" + slot)
-		var sb: VBoxContainer = _vbox(8)
-		sec.add_child(sb)
-		sb.add_child(_label(str(Catalog.SLOT_NAMES[slot]), 20, VERMILION))
+		var sec := DetailsScript.new()
+		sec.name = "Section_" + slot
+		sec.configure(str(Catalog.SLOT_NAMES[slot]), "")
+		_ingredient_sections[slot] = sec
+		var sb: VBoxContainer = sec.body
 		var flow: HFlowContainer = HFlowContainer.new()
 		flow.name = "Flow_" + slot
 		flow.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -918,7 +921,10 @@ func _build_lab(box: VBoxContainer) -> void:
 		sb.add_child(discovery_hint)
 		box.add_child(sec)
 		if ProcessRules.SLOTS.has(slot):
-			box.add_child(_process_card(slot))
+			sb.add_child(_process_card(slot))
+	# Name/version management remains available after the cooking choices;
+	# it no longer pushes those choices down the first screen.
+	box.add_child(name_card)
 
 	var price_card: PanelContainer = _card("PriceCard")
 	var pb: VBoxContainer = _vbox(8)
@@ -985,10 +991,11 @@ func _make_option(slot: String, item: Dictionary, group: ButtonGroup) -> Button:
 
 ## Live flavor bars expose the real recipe profile, not a promised score.
 func _build_experiment_card(box: VBoxContainer) -> void:
-	var card := _card("ExperimentCard")
-	var col := _vbox(6)
-	card.add_child(col)
-	col.add_child(_label("맛 실험대", 20, VERMILION))
+	var card := DetailsScript.new()
+	card.name = "ExperimentCard"
+	card.configure("맛 실험대", "")
+	_flavor_details = card
+	var col: VBoxContainer = card.body
 	var flow := HFlowContainer.new()
 	flow.add_theme_constant_override("h_separation", 8)
 	flow.add_theme_constant_override("v_separation", 6)
@@ -2826,6 +2833,10 @@ func _refresh_lab() -> void:
 				desc_lines.append("연구 재료 %d개 보관 · 시제품 완성에 %d개 필요\n판매는 추가 샘플 없이 영업 원가로 공급돼요." % [state.foraging_state()["stock"][cid], chosen_ids.count(cid)])
 		var desc: Label = _desc_labels[slot]
 		desc.text = "\n".join(desc_lines)
+		var summary: String = Catalog.topping_names(state.draft_config) if slot == Catalog.TOPPING_SLOT else str(Catalog.find(chosen_ids[0])["name"])
+		if slot == Catalog.TOPPING_SLOT:
+			summary += " · %d/%d칸" % [chosen_ids.size(), state.topping_slots()]
+		(_ingredient_sections[slot] as DetailsScript).configure(str(Catalog.SLOT_NAMES[slot]), summary, _icon(chosen_ids[0], 2))
 	var slots: int = state.topping_slots()
 	var portions := Catalog.toppings_of(state.draft_config)
 	_topping_count.text = "가게 등급 %d · 토핑 %d/%d칸" % [state.rank(), portions.size(), slots]
@@ -2865,6 +2876,7 @@ func _refresh_lab() -> void:
 	_price_label.text = "%s (그릇당 마진 %s)" % [_won(price), _won(price - cost)]
 
 	var profile: Dictionary = Evaluator.build_profile(state.draft_config)
+	_flavor_details.configure("맛 실험대", "진함 %d · 향 %d · 매운맛 %d" % [profile["rich"], profile["aroma"], profile["spice"]], ArtScript.scaled_tex(ArtScript.bowl_image(state.draft_config), 2))
 	for axis in Catalog.AXES:
 		(_flavor_bars[axis] as ProgressBar).value = profile[axis]
 		(_flavor_labels[axis] as Label).text = "%s %d/10" % [Catalog.AXIS_NAMES[axis], profile[axis]]

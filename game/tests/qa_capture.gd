@@ -14,6 +14,7 @@ const ExplorationScript = preload("res://scripts/domain/ingredient_exploration.g
 const ContestScript = preload("res://scripts/domain/ramen_contest.gd")
 const IngredientCatalog = preload("res://scripts/domain/ingredient_catalog.gd")
 const StoryFixtures = preload("res://tests/regular_story_fixtures.gd")
+const DisclosureCardScript = preload("res://scripts/ui/disclosure_card.gd")
 
 # scale: 장면 정수 배율의 하한. 등각 장면의 의도한 캔버스에 맞춘 값이다 — 가로 320x152 → 1280x608 (배율 4),
 # 세로 176x264 → 352x528 (배율 2, 이전 128x208 프론탈 장면은 배율 3). 화면 55% 이상/뷰포트 포함/HUD 비겹침 검사는 그대로다.
@@ -119,10 +120,24 @@ func _press(app: Node, node_name: String) -> void:
 		_check(false, "버튼을 찾을 수 없어요: " + node_name)
 		return
 	var b: BaseButton = n
+	_reveal_control(b)
 	if b.disabled:
 		_check(false, "버튼이 비활성이에요: " + node_name)
 		return
 	b.pressed.emit()
+
+
+## Existing semantic fixtures now deliberately open an ancestor detail card
+## before choosing its control. Gesture tests still route actual pointer input;
+## this helper only performs the new, read-only presentation prerequisite.
+func _reveal_control(control: Control) -> void:
+	var ancestor: Node = control.get_parent()
+	while ancestor != null:
+		if ancestor is DisclosureCardScript:
+			var content: VBoxContainer = (ancestor as DisclosureCardScript).body
+			if content == control or content.is_ancestor_of(control):
+				ancestor.call("set_expanded", true)
+		ancestor = ancestor.get_parent()
 
 
 ## Recipe fixtures explicitly replace a single portion using the new controls.
@@ -195,6 +210,8 @@ func _reachable(app: Node, vp: Vector2i, node_name: String) -> void:
 		_check(false, "컨트롤 없음: " + node_name)
 		return
 	var c: Control = n
+	_reveal_control(c)
+	await _frames(2)
 	_check(c.is_visible_in_tree(), "보이지 않아요: " + node_name)
 	var sc: ScrollContainer = _scroll_of(c)
 	if sc != null:

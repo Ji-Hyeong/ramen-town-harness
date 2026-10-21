@@ -5,6 +5,89 @@ extends Control
 
 const MAX_EFFECTS: int = 24
 var _effects: Array[Dictionary] = []
+var _press_sequence: int = 0
+var _acknowledgements: int = 0
+var _last_acknowledgement: Vector2 = Vector2.ZERO
+
+
+## Observe each branch once, including controls added by journal/notebook
+## rebuilds. Keeping ownership on the nodes avoids a growing list of dead UI.
+func watch(branch: Node) -> void:
+	if branch.has_meta("ramen_feedback_watcher"):
+		var previous: Variant = branch.get_meta("ramen_feedback_watcher")
+		if previous is WeakRef and previous.get_ref() == self:
+			return
+	branch.set_meta("ramen_feedback_watcher", weakref(self))
+	branch.child_entered_tree.connect(watch)
+	if branch is BaseButton:
+		var button := branch as BaseButton
+		button.button_down.connect(_remember_press.bind(button))
+		button.button_up.connect(_release_press.bind(weakref(button)))
+		button.pressed.connect(_acknowledge_button.bind(button))
+	for child in branch.get_children():
+		watch(child)
+
+
+func is_bound(button: BaseButton) -> bool:
+	if not button.has_meta("ramen_feedback_watcher"):
+		return false
+	var observer: Variant = button.get_meta("ramen_feedback_watcher")
+	return observer is WeakRef and observer.get_ref() == self
+
+
+func acknowledgement_count() -> int:
+	return _acknowledgements
+
+
+func last_acknowledgement_position() -> Vector2:
+	return _last_acknowledgement
+
+
+func _remember_press(button: BaseButton) -> void:
+	_press_sequence += 1
+	button.set_meta("ramen_feedback_press", {"serial": _press_sequence,
+		"point": button.get_global_rect().get_center()})
+
+
+func _release_press(reference: WeakRef) -> void:
+	var button: BaseButton = reference.get_ref() as BaseButton
+	if button == null:
+		return
+	var press: Dictionary = button.get_meta("ramen_feedback_press", {})
+	# Godot can emit button_up when a business callback removes its own button,
+	# before later pressed observers execute. Clear after signal delivery, and
+	# never erase a newer press which began before this deferred cleanup runs.
+	_forget_press.call_deferred(reference, int(press.get("serial", -1)))
+
+
+func _forget_press(reference: WeakRef, serial: int) -> void:
+	var button: BaseButton = reference.get_ref() as BaseButton
+	if button != null:
+		var press: Dictionary = button.get_meta("ramen_feedback_press", {})
+		if int(press.get("serial", -1)) == serial:
+			button.set_meta("ramen_feedback_press", {})
+
+
+func _acknowledge_button(button: BaseButton) -> void:
+	var press: Dictionary = button.get_meta("ramen_feedback_press", {})
+	if press.is_empty() and (button.disabled or not button.is_inside_tree()):
+		return
+	# Real presses retain their original position even if their handler rebuilt
+	# the list, changed tabs, or disabled the control. A canceled swipe never
+	# emits pressed, so it produces no committed ring or acknowledgement.
+	var point: Vector2
+	if press.has("point"):
+		point = press["point"]
+	else:
+		point = button.get_global_rect().get_center()
+	button.set_meta("ramen_feedback_press", {})
+	_acknowledgements += 1
+	_last_acknowledgement = point
+	if _effects.size() >= MAX_EFFECTS:
+		_effects.pop_front()
+	_effects.append({"kind": "tap", "point": point, "tint": Color(1.0, 0.76, 0.25),
+		"age": 0.0, "duration": 0.30})
+	queue_redraw()
 
 
 func _ready() -> void:
@@ -57,6 +140,13 @@ func _draw() -> void:
 		var point: Vector2 = effect["point"]
 		var color: Color = effect["tint"]
 		color.a = 1.0 - t
+		if effect.get("kind", "burst") == "tap":
+			# A quiet local ring acknowledges navigation, expansion and ordinary
+			# actions. Larger semantic bursts still mean ingredient/result changes.
+			var side: float = 14.0 + 30.0 * t
+			draw_rect(Rect2(point - Vector2.ONE * side / 2.0, Vector2.ONE * side), color, false, 3.0)
+			draw_circle(point, 3.0 * (1.0 - t), color)
+			continue
 		var big: bool = effect["big"]
 		var radius: float = (64.0 if big else 28.0) * sin(minf(t * 2.0, 1.0) * PI * 0.5)
 		# Square sparks suit the existing pixel-art language without covering

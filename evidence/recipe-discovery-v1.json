@@ -1,7 +1,7 @@
 {
   "date": "2026-10-21",
   "task": "recipe-discovery-v1",
-  "status": "implemented_independently_tested_native_launch_approval_pending",
+  "status": "preserved_prior_milestone_extended_by_ui_depth_feedback_v1",
   "extends_ready_pr": 16,
   "schema_version": 12,
   "iphone_installation": "explicitly_deferred_by_user",
@@ -89,7 +89,7 @@
     "source_count": 111,
     "official_vendor_signature_verified": true,
     "pack_sha256": "102de7d23f122611fc941d38a7f3089f96b018d7c606207a30ede15d4764fcd9",
-    "launch_approval": "pending",
+    "launch_approval": "not_executed_superseded_by_depth_iteration",
     "executed": false,
     "accepted": false
   },
@@ -220,5 +220,6 @@
     "tests/staff_training_core_tests.gd.uid": "e8e270a8884886c8e64d70e20ac8d121e69f1db7734a9a2273caaee7fa9aafb9",
     "tests/touch_scroll_tests.gd": "b2fe96b15a74fae984f9ca7b2c814d9081d95b2f3cae5c555feed96fa3ca53e1",
     "tests/touch_scroll_tests.gd.uid": "d5207edb64ea668a2303c871f1271fad95c7ee38a5828cf243ba55a2efedb4d0"
-  }
+  },
+  "superseded_by": "ui-depth-feedback-v1.json"
 }

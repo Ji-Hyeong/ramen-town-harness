@@ -101,6 +101,8 @@ func _run_profile(tag: String, vp: Vector2i, _scale: int) -> void:
 			break
 	_check(option != null, tag + ": ingredient fixture exists")
 	if option != null:
+		_reveal_control(option)
+		await _settle()
 		scroll.ensure_control_visible(option)
 		await _settle()
 		var initial_scroll := scroll.scroll_vertical

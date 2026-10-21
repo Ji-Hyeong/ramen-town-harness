@@ -37,6 +37,8 @@ func _run_profile(tag: String, vp: Vector2i, _scale: int) -> void:
 	await _shot(holder, tag + "_discovery_02_map.png")
 	var scroll := _find(app, "TabNotebook") as ScrollContainer
 	var button := _find(app, "JournalSelect_bone_depth") as Button
+	_reveal_control(button)
+	await _settle()
 	scroll.ensure_control_visible(button)
 	await _settle()
 	var initial_scroll := scroll.scroll_vertical
@@ -47,6 +49,8 @@ func _run_profile(tag: String, vp: Vector2i, _scale: int) -> void:
 	_check(JSON.stringify(state.call("to_dict")) == before, tag + ": journal swipe preserves recipe and money")
 	await _stop(holder, scroll)
 	button = _find(app, "JournalSelect_citrus_light") as Button
+	_reveal_control(button)
+	await _settle()
 	scroll.ensure_control_visible(button)
 	await _settle()
 	var point := _visible_center(button, scroll)
@@ -95,6 +99,8 @@ func _run_profile(tag: String, vp: Vector2i, _scale: int) -> void:
 	_check(_text_of(app, "DraftComparison").contains("판매가 +100원") and _text_of(app, "DraftComparison").contains("맛 축 변화 없음"), tag + ": honest price-only comparison")
 	_check(app.get("_journal_new_titles").size() > 0, tag + ": viewing comparison does not invent another result")
 	var lab_scroll := _find(app, "TabLab") as ScrollContainer
+	_reveal_control(_find(app, "DraftComparison") as Control)
+	await _settle()
 	lab_scroll.ensure_control_visible(_find(app, "DraftComparison") as Control)
 	await _settle()
 	await _shot(holder, tag + "_discovery_05_comparison.png")

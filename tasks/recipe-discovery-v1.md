@@ -67,6 +67,11 @@ Compact report of changed files, APIs/criteria, unrun tests, permission denials,
 and risks. Do not paste full source or claim UI/save/renderer completion.
 
 ## CURRENT OUTCOME
+Latest user requested visually recognizable detail depth and feedback for every
+action. Continue under tasks/ui-depth-feedback-v1.md / evidence/ui-depth-feedback-v1.json.
+The111-source native QA below is preserved prior work, not the current117-source
+renderer candidate; keep iPhone deferred.
+
 Claude owns discovery module/core tests and actual target/map component (two
 restricted successful calls18/17turns, no denials); Codex owns main integration,
 comparison/fixed tasting/refusal/cache and real-scene regression tests. Existing
