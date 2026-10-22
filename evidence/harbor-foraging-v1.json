@@ -588,12 +588,20 @@
       "exit_code": 0,
       "engine_errors": 0,
       "log_sha256": "c228708ac8ddad961aeec02f47e6e8990398dcf3b576d731f6b7771a6d1c2d82"
+    },
+    {
+      "name": "full_current_layout",
+      "checks": 19066,
+      "failures": 0,
+      "exit_code": 0,
+      "engine_errors": 0,
+      "log_sha256": "854a6888924a6cca1573752144512789e48dc4e3bbd7e1d2c37c67850f9013c2"
     }
   ],
   "genuine_old_version_cases": 6,
   "all_legacy_values_equal": true,
   "exact_original_backups": true,
-  "full_current_layout": "running after visual corrections",
+  "full_current_layout": "passed",
   "native_renderer_verified": false,
   "native_screenshots": [],
   "design_audit": "blocked pending fresh native captures",
