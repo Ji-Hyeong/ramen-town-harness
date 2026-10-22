@@ -1,0 +1,88 @@
+{
+  "schema": 1,
+  "date_kst": "2026-10-23",
+  "status": "installed-and-launched",
+  "source_main": "2f43dbd874457d8ac9f9ef579183776e99b82ef5",
+  "implementation_and_installation_agent": "Codex",
+  "claude_calls": 0,
+  "device": {
+    "model": "iPhone15Pro",
+    "os": "iOS26.6.2",
+    "wired_paired": true,
+    "developer_mode_enabled": true
+  },
+  "verification": {
+    "signed_build_exit": 0,
+    "build_succeeded": true,
+    "warnings": 6,
+    "signature_exit": 0,
+    "bundle_id_unchanged": true,
+    "marketing_version": "0.13",
+    "build_version": "13.0.1",
+    "profile_matches_device_team_app": true,
+    "profile_valid_until_utc": "2026-10-27T14:45:57Z",
+    "debugger_allowed": true,
+    "unexpected_push_gamecenter_entitlements": false,
+    "phone_only": true,
+    "exported_pack_matches_embedded": true,
+    "pack_sha256": "0b267a7a0f9e1136b404bc3f4e52cf8b237dc4577673f83f1d2ffaa8e81424e1",
+    "binary_sha256": "05d83625de47bc209762e5e33487c004fdbad3257ca65da8c0e9b5bb02b8adf8",
+    "source161_matches_accepted_main": true,
+    "intentional_staging_source_difference": [
+      "project.godot"
+    ],
+    "exported_pack_checks": 25,
+    "exported_pack_failures": 0,
+    "private_v11_copy_load_save_reload": "passed; schema13 roundtrip equal and originalv11 archived byte-equal",
+    "installed": true,
+    "launched": true,
+    "launch_exit": 0,
+    "launch_outcome": "success",
+    "install_exit": 0,
+    "install_outcome": "success",
+    "installed_version_verified": "0.13(13.0.1)",
+    "same_bundle_update": true,
+    "uninstalled": false,
+    "saves_immediate_before_after_byte_equal": 2,
+    "durable_app_byte_equal_file_count": 14,
+    "durable_app_signature_exit": 0,
+    "runtime_game_changes": 0,
+    "claude_calls": 0,
+    "physical_ui_audio_human_acceptance": "not claimed in this installation task",
+    "diagnostics": [
+      "Initial local metadata validator expected literal CFBundleIdentifier; actual generated placeholder and referenced PRODUCT_BUNDLE_IDENTIFIER were verified, no source changes.",
+      "First launch CLI placed options after application positional argument; rejected locally with missing--device/exit64 and no device launch. Corrected documented option order, fresh launch JSON success/exit0."
+    ]
+  },
+  "physical_latest_screenshot_captured": false,
+  "save_backup_and_install_preservation": {
+    "private_main_and_backup_copies": true,
+    "actual_old_schema": 11,
+    "private_copy_migrated_to_schema": 13,
+    "private_copy_roundtrip_equal": true,
+    "private_copy_original_v11_archive_byte_equal": true,
+    "immediate_pre_post_install_main_and_backup_byte_equal": true,
+    "uninstalled": false,
+    "player_save_contents_published": false
+  },
+  "log_sha256": {
+    "export": "1cc73c3cfeede595d9f337972d18701942f3ee853422c3b81e538ab7f19d7f2a",
+    "signed_build": "157e1d4a27224e5824cf0394ccb3dd92a7ed56900e117a403375bb09c4191b65",
+    "exported_pack_inspection": "e7394c6bd1eeb3825654eedca9556d7892630ee1508d810d968e202c963ad037",
+    "private_copy_migration": "e737382737ca4aa4560c4b7160079c5821e446cb6961ffe28963b0db8f5730b2",
+    "install_json": "b5805881be2848b6936274f688a0cabde4be6d95517dfe3f4030c88748ca85da",
+    "installed_version_json": "a02628894332a7bd1eb5c61707780bdad4aeaafcb24aa4e311eca43a9995524e",
+    "successful_launch_json": "8c57f08ca1577aea71fc2b5aa184eff0cf04e39f1688ef5b9b7fbc6ecadf3082"
+  },
+  "existing_build_warnings": [
+    "Three unused camera/photo/microphone privacy-description empty-value warnings",
+    "Two pragma-once-in-main-file warnings",
+    "One no-AppIntents-framework metadata extraction warning"
+  ],
+  "evidence_limits": [
+    "Actual install, installed version, scoped save preservation and process launch; no new current device screenshot or physical input/audio/keyboard/lifecycle/performance/fun acceptance.",
+    "Development provisioning expires2026-10-27T14:45:57Z and requires renewal for later launches.",
+    "Account/team/device identifiers, profiles, certificates, raw logs, app bundles and player data remain private.",
+    "No runtime changes or repeated unrelated test suites for this installation-only change."
+  ]
+}
