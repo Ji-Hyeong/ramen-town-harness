@@ -1,9 +1,26 @@
 extends RefCounted
-## 코드로 찍는 도트 스프라이트(사람, 말풍선, 그릇, 재료 아이콘). 외부 이미지·참조 에셋 없이 이 파일의 픽셀 규칙만 쓴다.
+## Native pixel sprites plus the original generated scallop asset. Existing
+## procedural sprites remain unchanged; only the new ingredient uses the PNG.
 ## 모든 이미지는 RGBA8 이고 작은 논리 해상도로 만든 뒤 화면에서 최근접 필터 + 정수 배율로 확대한다.
 ## 사람은 14x18, 머리가 큰 2.5등신. 좌표 기준은 왼쪽 위이며 발바닥은 맨 아래 줄(y=17)이다.
 
 const Catalog = preload("res://scripts/domain/ingredient_catalog.gd")
+const SCALLOP: Texture2D = preload("res://assets/ingredients/grilled-scallop-v1.png")
+static var _scallop_cache: Dictionary = {}
+
+
+## Crop the actual alpha bounds once per logical size, then sample with nearest
+## filtering. Icons, detailed dishes and service bowls share the real asset.
+static func _scallop_sprite(w: int, h: int) -> Image:
+	var key := Vector2i(w, h)
+	if not _scallop_cache.has(key):
+		var source: Image = SCALLOP.get_image()
+		source.decompress()
+		var sprite: Image = source.get_region(source.get_used_rect())
+		sprite.resize(w, h, Image.INTERPOLATE_NEAREST)
+		_scallop_cache[key] = sprite
+	return _scallop_cache[key]
+
 
 const INK: Color = Color(0.149, 0.102, 0.071)
 const WHITE: Color = Color(0.97, 0.95, 0.90)
@@ -598,12 +615,16 @@ static func _base_broth_color(config: Dictionary) -> Color:
 			return Color(0.78, 0.74, 0.46)
 		"broth_clam":
 			return Color(0.70, 0.83, 0.81)
+		"broth_roasted_sardine":
+			return Color(0.76, 0.66, 0.35)
 	return Color(0.88, 0.80, 0.62)
 
 
 ## 토핑 하나일 때의 예전 그림(그릇 왼쪽/오른쪽 위 고정 위치). 단일 토핑 레시피의 모습을 바꾸지 않는다.
 static func _draw_topping_single(img: Image, id: String) -> void:
 	match id:
+		"topping_scallop":
+			img.blend_rect(_scallop_sprite(3, 2), Rect2i(0, 0, 3, 2), Vector2i(2, 1))
 		"topping_chashu":
 			rect(img, 2, 1, 3, 1, Color(0.80, 0.54, 0.44))
 			px(img, 3, 2, Color(0.80, 0.54, 0.44))
@@ -632,6 +653,8 @@ static func _draw_topping_single(img: Image, id: String) -> void:
 ## 토핑이 둘 이상일 때의 2칸 폭 작은 모양. ax 는 왼쪽 끝 x(2/5/8). 모두 국물 면 두 줄(y 1~2)과 테두리(y 0) 안에 있다.
 static func _draw_topping_compact(img: Image, id: String, ax: int) -> void:
 	match id:
+		"topping_scallop":
+			img.blend_rect(_scallop_sprite(2, 2), Rect2i(0, 0, 2, 2), Vector2i(ax, 1))
 		"topping_chashu":
 			rect(img, ax, 1, 2, 1, Color(0.80, 0.54, 0.44))
 			px(img, ax, 2, Color(0.66, 0.40, 0.32))
@@ -792,6 +815,8 @@ static func _dish_oval(img: Image, cx: int, cy: int, rx: int, ry: int, color: Co
 
 static func _dish_topping(img: Image, id: String, x: int, y: int) -> void:
 	match id:
+		"topping_scallop":
+			img.blend_rect(_scallop_sprite(11, 8), Rect2i(0, 0, 11, 8), Vector2i(x - 5, y - 4))
 		"topping_chashu":
 			_dish_oval(img, x, y, 5, 3, Color(0.82, 0.53, 0.39))
 			_dish_oval(img, x, y, 3, 2, Color(0.97, 0.77, 0.61))
@@ -821,6 +846,8 @@ static func _dish_topping(img: Image, id: String, x: int, y: int) -> void:
 # ---------- 재료 아이콘 (12x12) ----------
 
 static func icon_image(id: String) -> Image:
+	if id == "topping_scallop":
+		return _scallop_sprite(12, 12).duplicate()
 	var img: Image = new_image(12, 12)
 	var steel: Color = Color(0.72, 0.75, 0.78)
 	var steel_d: Color = Color(0.44, 0.47, 0.52)

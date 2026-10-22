@@ -1,0 +1,203 @@
+{
+  "run": "20261022T070256Z-95998",
+  "renderer": "OpenGL4.1 Metal AppleM3Pro",
+  "checks": 688,
+  "failures": 0,
+  "exit_code": 0,
+  "engine_errors": 0,
+  "visual_result": "fixes required; not final acceptance",
+  "files": [
+    {
+      "file": "desktop_harbor_01_locked.png",
+      "sha256": "16342740db2e28eb2ab838d85fadbe8b9c8d2632b41dad61c1ab3f41070fce47",
+      "width": 1280,
+      "height": 800,
+      "manually_inspected": true,
+      "evidence_role": "accepted flow evidence"
+    },
+    {
+      "file": "desktop_harbor_02_details.png",
+      "sha256": "8adc1f880397005a0afe694d273f580190df010dbda5c07df37c47a824ea8c72",
+      "width": 1280,
+      "height": 800,
+      "manually_inspected": true,
+      "evidence_role": "accepted flow evidence"
+    },
+    {
+      "file": "desktop_harbor_03_travel.png",
+      "sha256": "38dfcb7c7be19bb8945183531573cfe3a194a00a73837a4af2ddc3d5b034006a",
+      "width": 1280,
+      "height": 800,
+      "manually_inspected": true,
+      "evidence_role": "accepted flow evidence"
+    },
+    {
+      "file": "desktop_harbor_04_target.png",
+      "sha256": "3199b71ebdb29bbe6d6ed630c7f3ccc263c5478b5a78d883b85f7acfe40cf737",
+      "width": 1280,
+      "height": 800,
+      "manually_inspected": true,
+      "evidence_role": "accepted flow evidence"
+    },
+    {
+      "file": "desktop_harbor_05_quantity.png",
+      "sha256": "e67a6e9486276049252d9cdf5fafc2d1a375867737bb929c197fb77d796d541a",
+      "width": 1280,
+      "height": 800,
+      "manually_inspected": true,
+      "evidence_role": "accepted flow evidence"
+    },
+    {
+      "file": "desktop_harbor_06_waiting.png",
+      "sha256": "c29a4ecfbe75dc7ed5d693237d8f16d32b6bb65c4ebde4492fa28ee87b978540",
+      "width": 1280,
+      "height": 800,
+      "manually_inspected": true,
+      "evidence_role": "accepted flow evidence"
+    },
+    {
+      "file": "desktop_harbor_07_received.png",
+      "sha256": "1f87dbaecca4465f8e85dae9bbf965fd8c64e33d4adb55fbbc72f86bcabf03f8",
+      "width": 1280,
+      "height": 800,
+      "manually_inspected": true,
+      "evidence_role": "accepted flow evidence"
+    },
+    {
+      "file": "desktop_harbor_08_workbench.png",
+      "sha256": "4b5ed548cc64d44b9f59e2b9b82d94d7fbede6075b65197302d4073fd5d8052d",
+      "width": 1280,
+      "height": 800,
+      "manually_inspected": true,
+      "evidence_role": "accepted flow evidence"
+    },
+    {
+      "file": "desktop_harbor_09_triple_dish.png",
+      "sha256": "164ecd15df40db666443dedbe06a17e10ad48330d14caccb7d945f45c3355f0e",
+      "width": 1280,
+      "height": 800,
+      "manually_inspected": true,
+      "evidence_role": "rejected for declared state: shop shown instead of dish/result"
+    },
+    {
+      "file": "desktop_harbor_10_result.png",
+      "sha256": "f73e7851b064f0f45f7ee97717f2aabc9b4c4a8fb3c23fe0d250786a14ef1384",
+      "width": 1280,
+      "height": 800,
+      "manually_inspected": true,
+      "evidence_role": "rejected for declared state: shop shown instead of dish/result"
+    },
+    {
+      "file": "desktop_harbor_11_broth.png",
+      "sha256": "9edb1d4d3846ad968765b12990a5fcedee5dbc0b8fe42d9d07bb669d3df12c54",
+      "width": 1280,
+      "height": 800,
+      "manually_inspected": true,
+      "evidence_role": "accepted flow evidence"
+    },
+    {
+      "file": "desktop_harbor_12_broth_dish.png",
+      "sha256": "ff6c567671f11c9859f83e2875ae9e66233ff6f0146ba61ea4d690179b05be27",
+      "width": 1280,
+      "height": 800,
+      "manually_inspected": true,
+      "evidence_role": "broth choices only; not a dish capture"
+    },
+    {
+      "file": "portrait_harbor_01_locked.png",
+      "sha256": "1eb9d530099ea3afaaa636ff5df858395e55b165e9c9437fb9a463b9b18efa51",
+      "width": 390,
+      "height": 844,
+      "manually_inspected": true,
+      "evidence_role": "accepted flow evidence"
+    },
+    {
+      "file": "portrait_harbor_02_details.png",
+      "sha256": "796bfbec7673af3abae6e5ee1620a6f0fcd02c9e21cedd7445aff960ac0f9d9e",
+      "width": 390,
+      "height": 844,
+      "manually_inspected": true,
+      "evidence_role": "accepted flow evidence"
+    },
+    {
+      "file": "portrait_harbor_03_travel.png",
+      "sha256": "71eb4315b8ce78e28f8d16d5026a757b89b4ce7a092c40f5deaee7b91e9354fe",
+      "width": 390,
+      "height": 844,
+      "manually_inspected": true,
+      "evidence_role": "accepted flow evidence"
+    },
+    {
+      "file": "portrait_harbor_04_target.png",
+      "sha256": "fc588039666d4d4f72b7f90a009af87aeedcef0e6795dad2a3cb09563d53e594",
+      "width": 390,
+      "height": 844,
+      "manually_inspected": true,
+      "evidence_role": "accepted flow evidence"
+    },
+    {
+      "file": "portrait_harbor_05_quantity.png",
+      "sha256": "5073bfca121ce9193adf15a705f1a2a4b6b2bf56a851835793673a508fef71d5",
+      "width": 390,
+      "height": 844,
+      "manually_inspected": true,
+      "evidence_role": "accepted flow evidence"
+    },
+    {
+      "file": "portrait_harbor_06_waiting.png",
+      "sha256": "e520fee93c9d6857332c1f68d78c9ee9b75caed42dc00607cf14f9843dd65301",
+      "width": 390,
+      "height": 844,
+      "manually_inspected": true,
+      "evidence_role": "accepted flow evidence"
+    },
+    {
+      "file": "portrait_harbor_07_received.png",
+      "sha256": "84f12a5eb685e58cc16a241234a7f2148204166748c9d554d24276ff210ee73c",
+      "width": 390,
+      "height": 844,
+      "manually_inspected": true,
+      "evidence_role": "accepted flow evidence"
+    },
+    {
+      "file": "portrait_harbor_08_workbench.png",
+      "sha256": "d03330fb04cea87a77af4226c2e80e3861aec7547d54499854604da048a81c16",
+      "width": 390,
+      "height": 844,
+      "manually_inspected": true,
+      "evidence_role": "accepted flow evidence"
+    },
+    {
+      "file": "portrait_harbor_09_triple_dish.png",
+      "sha256": "acc70b461cbd19bcee02f0b2b5e7b4d08f3df624373a9cd132b2efd4c96545a1",
+      "width": 390,
+      "height": 844,
+      "manually_inspected": true,
+      "evidence_role": "rejected for declared state: shop shown instead of dish/result"
+    },
+    {
+      "file": "portrait_harbor_10_result.png",
+      "sha256": "2410c1c9aceaa291f987d63df52012c9260c45b46d4d84447b340598e4ef12f5",
+      "width": 390,
+      "height": 844,
+      "manually_inspected": true,
+      "evidence_role": "rejected for declared state: shop shown instead of dish/result"
+    },
+    {
+      "file": "portrait_harbor_11_broth.png",
+      "sha256": "3152c226db54d96a1964a2253913ce7e9303a4756aeb4178bde4d2e62c7a7623",
+      "width": 390,
+      "height": 844,
+      "manually_inspected": true,
+      "evidence_role": "accepted flow evidence"
+    },
+    {
+      "file": "portrait_harbor_12_broth_dish.png",
+      "sha256": "3ad968118a506f730c7ff15cbc0a0eb4ab7bc94f9309e0b6f6c872d9a9a03b9f",
+      "width": 390,
+      "height": 844,
+      "manually_inspected": true,
+      "evidence_role": "broth choices only; not a dish capture"
+    }
+  ]
+}

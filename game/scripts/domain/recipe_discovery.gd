@@ -53,7 +53,7 @@ const _THEMES: Array = [
 	{"id": "clear_light", "title": "맑고 향긋한 한 그릇", "origin": "시작 재료: 닭 육수·해물 다시",
 		"hint": "맑은 육수로 가볍게, 향은 짙게 맞춰 보세요.",
 		"criteria": [
-			{"kind": "has_any", "ids": ["broth_chicken", "broth_dashi", "broth_clam"], "min": 1, "hint": "육수: 맑은 닭, 해물 다시, 조개 중 하나"},
+			{"kind": "has_any", "ids": ["broth_chicken", "broth_dashi", "broth_clam", "broth_roasted_sardine"], "min": 1, "hint": "육수: 맑은 닭, 해물 다시, 조개, 구운 정어리 중 하나"},
 			{"kind": "axis_max", "axis": "rich", "value": 5, "hint": "진함 5 이하 (국물을 가볍게)"},
 			{"kind": "axis_min", "axis": "aroma", "value": 6, "hint": "향 6 이상 (파기름, 간장 타레, 김이 도움)"},
 		]},

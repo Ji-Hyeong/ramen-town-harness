@@ -1,0 +1,47 @@
+{
+  "files": [
+    {
+      "file": "portrait_06_waiting.png",
+      "sha256": "5a9a2887b626682ddf53f3bc520ba7a094de12b209f1e180deea508fee917ae8",
+      "manually_inspected_combined_input": true,
+      "density": "full original1x; label focus3x nearest as labeled"
+    },
+    {
+      "file": "portrait_08_workbench.png",
+      "sha256": "8c8306c8efaf574909dd58d9cf1505f46c42c0f8b8dd1011e61b066348901b49",
+      "manually_inspected_combined_input": true,
+      "density": "full original1x; label focus3x nearest as labeled"
+    },
+    {
+      "file": "portrait_09_triple_dish.png",
+      "sha256": "3ab7511684cfbd11dfcd757058a6f4ddfd69b1e8d7373e20b1acab31b1ad6e59",
+      "manually_inspected_combined_input": true,
+      "density": "full original1x; label focus3x nearest as labeled"
+    },
+    {
+      "file": "portrait_10_result.png",
+      "sha256": "55696bd86215cd80c762ec3152ab40cbf322361910d83164c7a0f7a446e3b517",
+      "manually_inspected_combined_input": true,
+      "density": "full original1x; label focus3x nearest as labeled"
+    },
+    {
+      "file": "portrait_12_label.png",
+      "sha256": "5b0cf8210169371e9233744b1d7b9367b2fba5f6f4cf96b7f08019564006a2cd",
+      "manually_inspected_combined_input": true,
+      "density": "full original1x; label focus3x nearest as labeled"
+    },
+    {
+      "file": "portrait_label_focus.png",
+      "sha256": "7a109a21db8e92ec9f3e95160b6fa6842801bd8eef31a0137dd8be12c96c0812",
+      "manually_inspected_combined_input": true,
+      "density": "full original1x; label focus3x nearest as labeled"
+    },
+    {
+      "file": "portrait_style_reference.png",
+      "sha256": "ab3da4d3d90161171d25708800a3e138b66b246a6cc411ca97c86833e68b4002",
+      "manually_inspected_combined_input": true,
+      "density": "full original1x; label focus3x nearest as labeled"
+    }
+  ],
+  "note": "Style source is historical reference only; before-after behavior evidence is from current audit runs v1/v2."
+}

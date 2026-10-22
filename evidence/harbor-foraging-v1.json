@@ -1,0 +1,752 @@
+{
+  "version": 1,
+  "date": "2026-10-22",
+  "feature": "harbor research sampling",
+  "status": "accepted-native-flow",
+  "codex_only": true,
+  "claude_calls": 0,
+  "schema_version": 13,
+  "base_main": "8d6cbac6461a6da3ea3701d1776a8d541d9deebe",
+  "sources": [
+    {
+      "path": "project.godot",
+      "sha256": "dc51a895d342d40ae50c597fa243266e6f5044507b3ef85e27b228c7c4f60d72"
+    },
+    {
+      "path": "scenes/main.tscn",
+      "sha256": "024518581dfb9fc07e1bb5ba66316964b321c6eecd784758b5ea566ebe292af4"
+    },
+    {
+      "path": "scripts/domain/contest_progress.gd",
+      "sha256": "0f5d1ef9ddf29c074bce7491dd88040e895e4b4dae181ffe7cfdc502cf2535ec"
+    },
+    {
+      "path": "scripts/domain/contest_progress.gd.uid",
+      "sha256": "d9d9dff87927cac42dbac088144b59395d3e92f8dcbf8f210fb0cd45b1e7b11b"
+    },
+    {
+      "path": "scripts/domain/customer_catalog.gd",
+      "sha256": "7774ff905e1fd4110b28f5ce067d6ef020f77147331a32cdd712286c3df853e4"
+    },
+    {
+      "path": "scripts/domain/customer_catalog.gd.uid",
+      "sha256": "f0f1ec5aa64ac8d303e9206bd338e44d2d66768580db0da2343cfd4836eddd9a"
+    },
+    {
+      "path": "scripts/domain/data_check.gd",
+      "sha256": "664031f7d779858309a732dc4d743421da3e1ce78736ae72d92464582ba6a2cb"
+    },
+    {
+      "path": "scripts/domain/data_check.gd.uid",
+      "sha256": "f7cba21ed3f3a5774c28c3cd4d0a784b44acabeead34c3a32dddb0e6facab491"
+    },
+    {
+      "path": "scripts/domain/game_state.gd",
+      "sha256": "d99d1916989bad40c5933e838af27d72555b109d00d59af98cf3280de9f6bbd3"
+    },
+    {
+      "path": "scripts/domain/game_state.gd.uid",
+      "sha256": "d24724aed0274f6104fdcadf6049584bea78705c9696f446175307791dc5b710"
+    },
+    {
+      "path": "scripts/domain/harbor_foraging.gd",
+      "sha256": "f5a83b8a99980e3ec62102b5764be2022ddef189a6acd556707b0de4fb0309af"
+    },
+    {
+      "path": "scripts/domain/harbor_foraging.gd.uid",
+      "sha256": "49ed8fe4550452dfe6ae0a68dd99a67962c61b5cf3ecf195ac68894ce79cdfa3"
+    },
+    {
+      "path": "scripts/domain/ingredient_catalog.gd",
+      "sha256": "19d4e112d886ba9cb09eba20feda21eadcea4cb6c8cf9f76fae2753025c8efd4"
+    },
+    {
+      "path": "scripts/domain/ingredient_catalog.gd.uid",
+      "sha256": "388d11c65c86874d287b262618ff50fe2aca77e3e4c248fd2cd3d4342206256c"
+    },
+    {
+      "path": "scripts/domain/ingredient_exploration.gd",
+      "sha256": "7ff2238a83ed0c59fc790d59398e94d4fd64b2c719423405c0f760cf66410977"
+    },
+    {
+      "path": "scripts/domain/ingredient_exploration.gd.uid",
+      "sha256": "1f0a69bfe20bbec6ee384c98ae24e7366d4c56a0b9724cb48e59005bb28dc70e"
+    },
+    {
+      "path": "scripts/domain/market_foraging.gd",
+      "sha256": "5210feacad96e20542b0fb22fafc8f7dae32314be87692d61a1379614c24c7fd"
+    },
+    {
+      "path": "scripts/domain/market_foraging.gd.uid",
+      "sha256": "9f3d5fda0487de28c2048d6620b3f555c95159e1478928985a259c2c5b7a5004"
+    },
+    {
+      "path": "scripts/domain/menu_report.gd",
+      "sha256": "f953ad8b46703361143a100360cf1670f73f9060fe08afc715c1ce0dc6a9e210"
+    },
+    {
+      "path": "scripts/domain/menu_report.gd.uid",
+      "sha256": "31f17ebae3215dec90a196fa466afcb1627c99cd31644dccf2121534f660e249"
+    },
+    {
+      "path": "scripts/domain/menu_sales.gd",
+      "sha256": "267572c3afe628a878c4c1b4e87277a56f46aa54bcd0b5db9f35b0e1e7320911"
+    },
+    {
+      "path": "scripts/domain/menu_sales.gd.uid",
+      "sha256": "27fff1048359801a90045f6b023dbb76225fadba9af932e31ac102e783e33fb5"
+    },
+    {
+      "path": "scripts/domain/ramen_contest.gd",
+      "sha256": "f9084a6844eb3dc7e5a0bd589d541c9713f1f6eea9ddb8c4d6311f61d8571965"
+    },
+    {
+      "path": "scripts/domain/ramen_contest.gd.uid",
+      "sha256": "e851e9e4282bc401e92eebbebdf2085e8a579a6a8901ae51148426972c58b255"
+    },
+    {
+      "path": "scripts/domain/ramen_research.gd",
+      "sha256": "ef09a17a2a603e509050c94ca6bbffd33dd0a174e84c877e41142f4d2e905eb0"
+    },
+    {
+      "path": "scripts/domain/ramen_research.gd.uid",
+      "sha256": "a77c27491e6ed0b14acf4ba2b17e07acb29416a14ff21ed5e566306b13a6c887"
+    },
+    {
+      "path": "scripts/domain/recipe_discovery.gd",
+      "sha256": "38294fec5994ee732a50f9587cfca14f09b54a925a372ffcbad291c34fb854cf"
+    },
+    {
+      "path": "scripts/domain/recipe_discovery.gd.uid",
+      "sha256": "2dbfab987691b67e14cb3da895ffff814c2e358ed918169706778752206db5ee"
+    },
+    {
+      "path": "scripts/domain/recipe_evaluator.gd",
+      "sha256": "cef5a7ea816907dc9c1c0289e63bb69ad4e4f19f472a20c0f9faf80bff87c302"
+    },
+    {
+      "path": "scripts/domain/recipe_evaluator.gd.uid",
+      "sha256": "94a37fbffc55e2e1aad342d19ea4f4f203c7128acd6d1e89a669060c1f2fcab1"
+    },
+    {
+      "path": "scripts/domain/recipe_experiments.gd",
+      "sha256": "00cf142b54d20dd7076ccf59bddd626a4b94fab9b3b9e664a3abf603685a6e32"
+    },
+    {
+      "path": "scripts/domain/recipe_experiments.gd.uid",
+      "sha256": "a163758b7b71f1c30baf732b9a0da74b31380bce997ca6e50108e3dab098bf5b"
+    },
+    {
+      "path": "scripts/domain/recipe_process.gd",
+      "sha256": "1be7f24720fa402c92e70d0533f48bf37c381693282a2776d9cd901876d5d5a7"
+    },
+    {
+      "path": "scripts/domain/recipe_process.gd.uid",
+      "sha256": "1fced988385208b512db50a0000168ae7980967119a46b91bbd283480f087481"
+    },
+    {
+      "path": "scripts/domain/regular_stories.gd",
+      "sha256": "cecbab691db41e3ada73f6642e5c878999a3f686072db63b5d19fef2d51c9a61"
+    },
+    {
+      "path": "scripts/domain/regular_stories.gd.uid",
+      "sha256": "58f2dc92555c1874787f0e3c96cf947c8254d3894299e569497baf2478630a39"
+    },
+    {
+      "path": "scripts/domain/regular_story_catalog.gd",
+      "sha256": "59d36c878835f31b064ec1f5c04f76832e477a22b4d98dea61e939b70275fcef"
+    },
+    {
+      "path": "scripts/domain/regular_story_catalog.gd.uid",
+      "sha256": "33f7142109e51a1542b32ac8c2dfc7f05f3e958146c7b4a8890a28f3fce27e6b"
+    },
+    {
+      "path": "scripts/domain/sales_simulator.gd",
+      "sha256": "63d19509fc931ea9c9c5eda4ab3b6b4081717b4ee9756210e995eb6dec9cf0ff"
+    },
+    {
+      "path": "scripts/domain/sales_simulator.gd.uid",
+      "sha256": "d017a82c4607830cf428a7f1c8448a413844b4e2f4a04a62498df8185d368caa"
+    },
+    {
+      "path": "scripts/domain/sample_foraging.gd",
+      "sha256": "026585a34c54ea5ecbb1853173eab206b4064e93fd9cc35fa3b4de70ceb1b7b4"
+    },
+    {
+      "path": "scripts/domain/sample_foraging.gd.uid",
+      "sha256": "8ed24756197e42f6a586f6436cdcb4bb5e7661677bde36bb21192448ce3ebb77"
+    },
+    {
+      "path": "scripts/domain/service_session.gd",
+      "sha256": "afb471b695177e5038daa4ac4f0f0100de16188308a2f26bc3be03c02c61ff84"
+    },
+    {
+      "path": "scripts/domain/service_session.gd.uid",
+      "sha256": "22ef060f79b93995e77c997aadf8712001bbae08f9b99dcb768a2fc444d0442c"
+    },
+    {
+      "path": "scripts/domain/shop_growth.gd",
+      "sha256": "a2981aaa94f4ef3bfa17dbd42073743be94223397c63ec32afe0e3db3224db29"
+    },
+    {
+      "path": "scripts/domain/shop_growth.gd.uid",
+      "sha256": "4edc075c1675f517238ccd691f7198d31b757339ff485f4a04038aae39e4fc1d"
+    },
+    {
+      "path": "scripts/domain/shop_staffing.gd",
+      "sha256": "5d464774d3a2b969d55eaa2dd1b75b0923f3baa7e898411874fa6db432228b35"
+    },
+    {
+      "path": "scripts/domain/shop_staffing.gd.uid",
+      "sha256": "e1d53b09eaaea52551acd332943ad3748d74a16930a67bd75acd7fd969235605"
+    },
+    {
+      "path": "scripts/domain/staff_training.gd",
+      "sha256": "10dc1f3e9050396d1ddec06420074c0c62b0fa23712b01177e4df8acaba8aced"
+    },
+    {
+      "path": "scripts/domain/staff_training.gd.uid",
+      "sha256": "71c535ec37937ace9fa53aad425857d1667c885bc8f6bfed4888746e7c6f4bc1"
+    },
+    {
+      "path": "scripts/services/data_location.gd",
+      "sha256": "6caf1b6faa4119c93252942716ce86ab96ffe89f5fb8fbed5ba83fb1f29a0382"
+    },
+    {
+      "path": "scripts/services/data_location.gd.uid",
+      "sha256": "48b2b18791e7201f7ba3219092d40a94cb0dbc19ece53d8dad3758db283b98f0"
+    },
+    {
+      "path": "scripts/services/save_service.gd",
+      "sha256": "dbd3ab88f674f611c2d69eb67119a99bd2ad608b50c6c600aaf39cdc988b9d57"
+    },
+    {
+      "path": "scripts/services/save_service.gd.uid",
+      "sha256": "83f51962de4e6472f59854dc837c5b84ab8c41a63b2056cc5bd2182789a64e63"
+    },
+    {
+      "path": "scripts/ui/action_feedback.gd",
+      "sha256": "c0e049f147bcadeb3a5d38ed524b23e07822cae20714cbbc25cca4e42f1af883"
+    },
+    {
+      "path": "scripts/ui/action_feedback.gd.uid",
+      "sha256": "d888180a2b41029af41957f4c3b3dc5f69fe8614fb2bfc508ef782336d7d165d"
+    },
+    {
+      "path": "scripts/ui/bowl_view.gd",
+      "sha256": "7341d07f4ac709ede7f2c76bfeea909d74203e4f5042d4bfcb802ce4bac9c5cd"
+    },
+    {
+      "path": "scripts/ui/bowl_view.gd.uid",
+      "sha256": "c392422404452afaf0042a9fe4850f3c7ac29028cc94c3075deaa3f462ffe58d"
+    },
+    {
+      "path": "scripts/ui/disclosure_card.gd",
+      "sha256": "113eb6ff29e4b5ed73e4e3f7a6b4f493cb6b8311a6c4ceb1645f5c820e1d7d1a"
+    },
+    {
+      "path": "scripts/ui/disclosure_card.gd.uid",
+      "sha256": "9e10304d8e75c69b969f82c9041503515534733d3c79bac04a9e51982e3163da"
+    },
+    {
+      "path": "scripts/ui/expedition_travel.gd",
+      "sha256": "06daa75107e2f7c3d53a4720b2dd7fd28c568a06b576279172d7b547ffb1c50e"
+    },
+    {
+      "path": "scripts/ui/expedition_travel.gd.uid",
+      "sha256": "95f2de2e64084192bcc4007385e26e836d3ba5d33372a3e70f6809588e641fa9"
+    },
+    {
+      "path": "scripts/ui/main.gd",
+      "sha256": "b6e14c1192ff545b5651846656d7b2fe950805fd35a005ab17a87a6aab24ff6d"
+    },
+    {
+      "path": "scripts/ui/main.gd.uid",
+      "sha256": "4c843d7e87a7f840dd7fb476f9b92ae9f85ebe1aceff93785e0a7501ac8f623a"
+    },
+    {
+      "path": "scripts/ui/pixel_art.gd",
+      "sha256": "b848e675765dd2bb7f3a4e74ae7d6ff1fc2b3124c64c01ddf5ffb06d89442b22"
+    },
+    {
+      "path": "scripts/ui/pixel_art.gd.uid",
+      "sha256": "820a64bf221536fd19128d73082ae7efc9fa594177f11ed3dd3b940d45faca26"
+    },
+    {
+      "path": "scripts/ui/recipe_journal.gd",
+      "sha256": "1f4b214f1670e4f378f8a2b0550d727e99c686b10ff46c89af45ab54f3d98fa8"
+    },
+    {
+      "path": "scripts/ui/recipe_journal.gd.uid",
+      "sha256": "f9e575866443560c8d5ed1baeee5838b0c8e777f6631e67b3637c3e77ab9ce03"
+    },
+    {
+      "path": "scripts/ui/scrollable_name_edit.gd",
+      "sha256": "2709ed53ad9e861ce035f8e212f7c9b73fc4a5f7fe0bf8806c8229ffb67c5905"
+    },
+    {
+      "path": "scripts/ui/scrollable_name_edit.gd.uid",
+      "sha256": "562f4635ee56b6e1c4d693799f92c655fddb361b6782746d81fd6284a693d590"
+    },
+    {
+      "path": "scripts/ui/shop_layout.gd",
+      "sha256": "2494c07572efe0fd33fc8d3e7ac33a9ffc11ec22e47ef8f0c4d4caaa5a447ffb"
+    },
+    {
+      "path": "scripts/ui/shop_layout.gd.uid",
+      "sha256": "b161ec1a303b2552643e55dc41a738f381296679dd6ad494c028e2f2c43c7091"
+    },
+    {
+      "path": "scripts/ui/shop_painter.gd",
+      "sha256": "4e4c0745454d3326df812894305a28c4d2d23cd24c0e070edbcc7b6e1bb88c35"
+    },
+    {
+      "path": "scripts/ui/shop_painter.gd.uid",
+      "sha256": "315d0c51661b3b0ae371b66b41209a6d5343eda93ac9a4b44abb4adcffa99881"
+    },
+    {
+      "path": "scripts/ui/shop_scene.gd",
+      "sha256": "010b8938043f3e566dc8bbeff9c532190379abe5cbf63f307036c7eafc385649"
+    },
+    {
+      "path": "scripts/ui/shop_scene.gd.uid",
+      "sha256": "c3fca130d4e078daa7083a5efa1f3fa8c392ab8ada24d50725db1baa9a741880"
+    },
+    {
+      "path": "scripts/ui/shop_view.gd",
+      "sha256": "542d152b9ac4011825b36e48d89b0e8051ea6d2ec9fd002b95419d23bcaa6c75"
+    },
+    {
+      "path": "scripts/ui/shop_view.gd.uid",
+      "sha256": "f1194eab001c594a4f1d88da37ab8cc88e70163f4a709e72629b29fc49643113"
+    },
+    {
+      "path": "scripts/ui/star_meter.gd",
+      "sha256": "caa1933f319a15dd76497c125dfec8a9d64011f8e8162cf17d8fa45473139070"
+    },
+    {
+      "path": "scripts/ui/star_meter.gd.uid",
+      "sha256": "4dc6ce5b399e895a58e69e9c1f2a76d6be3365a57cd7d358b05be7179261779f"
+    },
+    {
+      "path": "scripts/ui/tasting_work.gd",
+      "sha256": "89a6913f9ecad8892f6a44cee706bdec26b5b0aa94c91fdb2c0e751266eedec4"
+    },
+    {
+      "path": "scripts/ui/tasting_work.gd.uid",
+      "sha256": "115a9a0049c8b0734d3a2d91aaad8314f91413828d7539899755081fe1203b3a"
+    },
+    {
+      "path": "scripts/ui/tasting_work_view.gd",
+      "sha256": "6bca774413853b0c7514ea1b6cf37a24b84a88952ea8e85ea7b4a96d617d95a1"
+    },
+    {
+      "path": "scripts/ui/tasting_work_view.gd.uid",
+      "sha256": "66ce0e9c185b26a16a5475885508d5b00a476dcc392198a1054a32d0634aee23"
+    },
+    {
+      "path": "assets/fonts/GowunDodum-Regular.ttf",
+      "sha256": "a6e457933227483a11758fd0947bc74422a106d46f0bf057fdaa5af94a30067d"
+    },
+    {
+      "path": "assets/fonts/GowunDodum-Regular.ttf.import",
+      "sha256": "da88a173d8646ce80879a30dc02756abbe3b5e61076ba1652084a68900e11104"
+    },
+    {
+      "path": "assets/fonts/OFL.txt",
+      "sha256": "a7c73f9521cd646bbdfb6684c99a62311bbd7bce11898dc11ef0b3c69eda1aca"
+    },
+    {
+      "path": "assets/ingredients/grilled-scallop-v1.png",
+      "sha256": "ee440925bf2e22d12e8d82cde84e96abee49d2ad7fcf801280d6d12cccd08953"
+    },
+    {
+      "path": "assets/ingredients/grilled-scallop-v1.png.import",
+      "sha256": "f29e3978be3c5b0097e01ad21dad9ecfe31dca6ee420a6439ba92736046facf6"
+    },
+    {
+      "path": "tests/contest_scoring_tests.gd",
+      "sha256": "95c24a17e69cf1498f8435cf90c5b35f61058ae435a42b136de2ff92f20ba557"
+    },
+    {
+      "path": "tests/contest_scoring_tests.gd.uid",
+      "sha256": "61cc517e37d461c1bd6f920f80dbfec72222fd6b51dd1c20442ea90838a97486"
+    },
+    {
+      "path": "tests/development_feel_tests.gd",
+      "sha256": "68b3f45592750fab26217c9b150957af192110630ba89f404d5b131f24486f6d"
+    },
+    {
+      "path": "tests/development_feel_tests.gd.uid",
+      "sha256": "08c1fbe062161aa736edae5b29226fe1f83f7a1dd59f78695d46b3a56dbb4592"
+    },
+    {
+      "path": "tests/disclosure_card_tests.gd",
+      "sha256": "19b462167a5c2aa14b9c9ef257f142541136a7707bac2b051c1e8b72f98b9da9"
+    },
+    {
+      "path": "tests/disclosure_card_tests.gd.uid",
+      "sha256": "41392ff62f5a9799fd5159c7474f02930d0720c9ae2bdac8c41bfc049df55f9e"
+    },
+    {
+      "path": "tests/harbor_foraging_runner.gd",
+      "sha256": "1b3ad3816af763d473523661fee49002e8b316e3fff98e1adb12703da6fab562"
+    },
+    {
+      "path": "tests/harbor_foraging_runner.gd.uid",
+      "sha256": "59689723104819e25725b5cce286e2ceb5a9a345ff49875a41bc1a20f05415ca"
+    },
+    {
+      "path": "tests/harbor_foraging_tests.gd",
+      "sha256": "b3e4d7a41e636cbf7956ba46fc0815bbf63c09d34b211f04fd258a78e3c8e19f"
+    },
+    {
+      "path": "tests/harbor_foraging_tests.gd.uid",
+      "sha256": "d28800ed83919640a2517259a2d516a37832da2f246cf4c3e05c55057710823f"
+    },
+    {
+      "path": "tests/harbor_foraging_ui_tests.gd",
+      "sha256": "21425097258d3b3ceb7291cd8508511371328b82c28c38c964761d5c31f97615"
+    },
+    {
+      "path": "tests/harbor_foraging_ui_tests.gd.uid",
+      "sha256": "5f63b780bc7a18bd810ba7da576b6b91635f6786998cbe262437ea732e603e63"
+    },
+    {
+      "path": "tests/investment_preview_ui_tests.gd",
+      "sha256": "d351bce1f509adbaf77a16e3f791e1bde17d9bab954ca986f3de1f3099276115"
+    },
+    {
+      "path": "tests/investment_preview_ui_tests.gd.uid",
+      "sha256": "a32636dea5a9c84b7fef167200558202854b1d2fdf17faeb8cfc1ac19771aa1a"
+    },
+    {
+      "path": "tests/market_foraging_runner.gd",
+      "sha256": "6e703817522c57ecd9bf7cf840113a0694c3f3f71ed8b437bbe7330873386f69"
+    },
+    {
+      "path": "tests/market_foraging_runner.gd.uid",
+      "sha256": "3a68bba9a57d1667327992e7d37549b9b8f1a718189ebad6a937f5122ac69bcf"
+    },
+    {
+      "path": "tests/market_foraging_tests.gd",
+      "sha256": "29c771bfc8dbd943a21b7e64f0c3cd72e765304fce7bc2ced63fd8df994ce203"
+    },
+    {
+      "path": "tests/market_foraging_tests.gd.uid",
+      "sha256": "6afe00eca5ef4d8b703f2ec05c027c193856c65ccdbdd5c91fe276f2bdb94e67"
+    },
+    {
+      "path": "tests/market_foraging_ui_tests.gd",
+      "sha256": "9ef84b8c6b9380e58a74b6bc7fba3ebd3bbe4145fa6d4d54f8f74a527bb8ed3c"
+    },
+    {
+      "path": "tests/market_foraging_ui_tests.gd.uid",
+      "sha256": "78e40055cd8162188232eb08ab4017c2dfab1a5fe42fa882f959093cef07f6e7"
+    },
+    {
+      "path": "tests/menu_sales_core_tests.gd",
+      "sha256": "dd1d6a061652ace04e34500a4d6d170be41bebea7be5b92d372e4ec76b33a6ed"
+    },
+    {
+      "path": "tests/menu_sales_core_tests.gd.uid",
+      "sha256": "90bbf52854e5b394945b17408dbf2c197e71b1aaa730bc26d892a6f266454983"
+    },
+    {
+      "path": "tests/qa_capture.gd",
+      "sha256": "79d94bbb3ca57763a823c508e69511e05f7b0d9de36cfe35b4f765b1c5c025dd"
+    },
+    {
+      "path": "tests/qa_capture.gd.uid",
+      "sha256": "46b5a6fa9d45e3adc90a609f3183b24097f44cc0929b6e32e55945720ac06618"
+    },
+    {
+      "path": "tests/recipe_discovery_scene_tests.gd",
+      "sha256": "99036ffcd99b481d419342db25ee623c99175403f043f8e91c58d2e74ca991ad"
+    },
+    {
+      "path": "tests/recipe_discovery_scene_tests.gd.uid",
+      "sha256": "2903339b7f7a174ccff51ff67c5b9aa332e70ea154088c0b306d89d62c6d685b"
+    },
+    {
+      "path": "tests/recipe_discovery_tests.gd",
+      "sha256": "d72158bbd09399c910915ce881f424158854f6c7f09bf791530caceb7923fa7c"
+    },
+    {
+      "path": "tests/recipe_discovery_tests.gd.uid",
+      "sha256": "47beb684519fcaa1a3be7ddd9e04682f0c2b48e5aa4c869acc6f097f8279d135"
+    },
+    {
+      "path": "tests/recipe_expression_scene_tests.gd",
+      "sha256": "ea42dbe28a79af872c8b4ddc311a0e35843978eeb3b46fed157746f4e7535cd4"
+    },
+    {
+      "path": "tests/recipe_expression_scene_tests.gd.uid",
+      "sha256": "46d7ebed86f14e4b4ac5258edbf6392382c2d9579d15f620495bf7e23f86c006"
+    },
+    {
+      "path": "tests/recipe_expression_tests.gd",
+      "sha256": "152d9bf3451c2301e6e8bec3efa69019cfabdd8a4b4287dc8e6c8e1b061d3b01"
+    },
+    {
+      "path": "tests/recipe_expression_tests.gd.uid",
+      "sha256": "57bb747b77bcaddc686cc936c000e40d35d14718e60b9f8cdcdc37f8db1d23f6"
+    },
+    {
+      "path": "tests/recipe_process_core_tests.gd",
+      "sha256": "b8f92c1b8840b6dbac0a819c7c9ca7a9d10887d2c5dec042cab0dfb9a87d272d"
+    },
+    {
+      "path": "tests/recipe_process_core_tests.gd.uid",
+      "sha256": "86e72332aaf5df57bbb56119cab074ee0ec273e13e4f27f1ff2fc4bc5a65d885"
+    },
+    {
+      "path": "tests/regular_story_core_tests.gd",
+      "sha256": "6d292cb7ac02dbae05fce5cdd4ffb8ec969e1f3720d9417c9a1af05b83ffc5d7"
+    },
+    {
+      "path": "tests/regular_story_core_tests.gd.uid",
+      "sha256": "a88c04156013cdbe81b5938de68c0068616113757e0fea34e3db68347b92f8c2"
+    },
+    {
+      "path": "tests/regular_story_fixtures.gd",
+      "sha256": "39285aded025da4da9c16686d0b0b8003d80cf4351939fe459b6675b3a53f2be"
+    },
+    {
+      "path": "tests/regular_story_fixtures.gd.uid",
+      "sha256": "97a352c03eeb0b99965fc847e31fef258e2d7f8c69d1ab9238e0bee0d0e9c6f2"
+    },
+    {
+      "path": "tests/run_tests.gd",
+      "sha256": "0fe651cdb9d8c855cf90f5d82d80458dff4b490524d0a484d2c2fb0ee06d596e"
+    },
+    {
+      "path": "tests/run_tests.gd.uid",
+      "sha256": "fccfb5f77972907a479b7fe7de13df1942b01afd5f00c0c4b84d361b5707cc89"
+    },
+    {
+      "path": "tests/staff_training_core_tests.gd",
+      "sha256": "7b756cb79654c25dbd28a90ce4e4ba925aa36b8702d1e40d3b409b0781706dcc"
+    },
+    {
+      "path": "tests/staff_training_core_tests.gd.uid",
+      "sha256": "e8e270a8884886c8e64d70e20ac8d121e69f1db7734a9a2273caaee7fa9aafb9"
+    },
+    {
+      "path": "tests/touch_scroll_tests.gd",
+      "sha256": "7e9ece93518fca29a8f5ea648e4f333a18f610a7c6d97fee30c8a9f257f00941"
+    },
+    {
+      "path": "tests/touch_scroll_tests.gd.uid",
+      "sha256": "d5207edb64ea668a2303c871f1271fad95c7ee38a5828cf243ba55a2efedb4d0"
+    },
+    {
+      "path": "tests/ui_depth_feedback_tests.gd",
+      "sha256": "f9f8f7028e2595181313920f3d5705fe3f0cb8645e7d8c47cc9176cbd42a531f"
+    },
+    {
+      "path": "tests/ui_depth_feedback_tests.gd.uid",
+      "sha256": "7b8395077725442256f12186d7253e31e2ce977f4eb3770651a1df4825cd8fcc"
+    }
+  ],
+  "source_file_count": 135,
+  "pack_sha256": "2da6bdc7775b32c7d7343c9e541c663cf4facedec7b5b274e376240b4f3eabfa",
+  "official_engine_sha256": "c7cccbf8fb143e34e02fd6521e09be2c2b974f0d5db080b19071c9c570718ccf",
+  "vendor_signature_verified": true,
+  "tests": [
+    {
+      "name": "domain",
+      "checks": 58423,
+      "tests": 127,
+      "failures": 0,
+      "exit_code": 0,
+      "engine_errors": 0,
+      "log_sha256": "d6b38089cffbcfa46eb434cebe92516c56c26603d0e7f34f311e3433648d1076"
+    },
+    {
+      "name": "harbor_scene",
+      "checks": 878,
+      "tests": null,
+      "failures": 0,
+      "exit_code": 0,
+      "engine_errors": 0,
+      "log_sha256": "3321340c039ed6c73c53f8255cc9ed5ec5eff50036bfce6707578bc4d37b7e7c"
+    },
+    {
+      "name": "touch_regression",
+      "checks": 70,
+      "tests": null,
+      "failures": 0,
+      "exit_code": 0,
+      "engine_errors": 0,
+      "log_sha256": "ebda5cfffb0eaf35aab0b926197f324349e4c7e85419dbcd5e58fef0f0a76312"
+    },
+    {
+      "name": "packed_harbor_scene",
+      "checks": 878,
+      "failures": 0,
+      "exit_code": 0,
+      "engine_errors": 0,
+      "log_sha256": "c228708ac8ddad961aeec02f47e6e8990398dcf3b576d731f6b7771a6d1c2d82"
+    },
+    {
+      "name": "full_current_layout",
+      "checks": 19066,
+      "failures": 0,
+      "exit_code": 0,
+      "engine_errors": 0,
+      "log_sha256": "854a6888924a6cca1573752144512789e48dc4e3bbd7e1d2c37c67850f9013c2"
+    },
+    {
+      "name": "native_render",
+      "checks": 962,
+      "failures": 0,
+      "exit_code": 0,
+      "engine_errors": 0,
+      "log_sha256": "98e9aba6c3a4ff67a2ec712b202d41c9971e29106872f456d5f5092175682502"
+    }
+  ],
+  "genuine_old_version_cases": 6,
+  "all_legacy_values_equal": true,
+  "exact_original_backups": true,
+  "full_current_layout": "passed",
+  "native_renderer_verified": true,
+  "native_screenshots": [
+    "game/docs/harbor-screenshots/v2/desktop_harbor_01_locked.png",
+    "game/docs/harbor-screenshots/v2/desktop_harbor_02_details.png",
+    "game/docs/harbor-screenshots/v2/desktop_harbor_03_travel.png",
+    "game/docs/harbor-screenshots/v2/desktop_harbor_04_target.png",
+    "game/docs/harbor-screenshots/v2/desktop_harbor_05_quantity.png",
+    "game/docs/harbor-screenshots/v2/desktop_harbor_06_waiting.png",
+    "game/docs/harbor-screenshots/v2/desktop_harbor_07_received.png",
+    "game/docs/harbor-screenshots/v2/desktop_harbor_08_workbench.png",
+    "game/docs/harbor-screenshots/v2/desktop_harbor_09_triple_dish.png",
+    "game/docs/harbor-screenshots/v2/desktop_harbor_10_result.png",
+    "game/docs/harbor-screenshots/v2/desktop_harbor_11_broth.png",
+    "game/docs/harbor-screenshots/v2/desktop_harbor_12_broth_choices.png",
+    "game/docs/harbor-screenshots/v2/desktop_harbor_13_broth_dish.png",
+    "game/docs/harbor-screenshots/v2/desktop_harbor_14_save_warning.png",
+    "game/docs/harbor-screenshots/v2/portrait_harbor_01_locked.png",
+    "game/docs/harbor-screenshots/v2/portrait_harbor_02_details.png",
+    "game/docs/harbor-screenshots/v2/portrait_harbor_03_travel.png",
+    "game/docs/harbor-screenshots/v2/portrait_harbor_04_target.png",
+    "game/docs/harbor-screenshots/v2/portrait_harbor_05_quantity.png",
+    "game/docs/harbor-screenshots/v2/portrait_harbor_06_waiting.png",
+    "game/docs/harbor-screenshots/v2/portrait_harbor_07_received.png",
+    "game/docs/harbor-screenshots/v2/portrait_harbor_08_workbench.png",
+    "game/docs/harbor-screenshots/v2/portrait_harbor_09_triple_dish.png",
+    "game/docs/harbor-screenshots/v2/portrait_harbor_10_result.png",
+    "game/docs/harbor-screenshots/v2/portrait_harbor_11_broth.png",
+    "game/docs/harbor-screenshots/v2/portrait_harbor_12_broth_choices.png",
+    "game/docs/harbor-screenshots/v2/portrait_harbor_13_broth_dish.png",
+    "game/docs/harbor-screenshots/v2/portrait_harbor_14_save_warning.png"
+  ],
+  "design_audit": "passed for bounded harbor flow; P3 refinements and device/accessibility limits documented",
+  "iphone_install": "deferred by user",
+  "prior_diagnostics": [
+    {
+      "kind": "fixture",
+      "details": "Initial rank2 fixture omitted the second customer-score prerequisite; fixed by real additional tasting, no production relaxation."
+    },
+    {
+      "kind": "fixture",
+      "details": "Deleted-best-witness assumption did not guarantee a sample recipe was a customer best; replaced by a real retained comparison witness."
+    },
+    {
+      "kind": "fixture",
+      "details": "Genuine-v12 comparison initially compared parsed floats with normalized integers; identical JSON value normalization and independent Python checks confirmed all six cases."
+    }
+  ],
+  "pull_request": "https://github.com/Ji-Hyeong/ramen-town-harness/pull/18",
+  "exact_qa_app_launch_confirmation": "user explicitly approved exact v2 app; executed via CUA",
+  "previous_tests": [
+    {
+      "name": "domain",
+      "checks": 58423,
+      "tests": 127,
+      "failures": 0,
+      "exit_code": 0,
+      "engine_errors": 0,
+      "log_sha256": "d6b38089cffbcfa46eb434cebe92516c56c26603d0e7f34f311e3433648d1076"
+    },
+    {
+      "name": "harbor_scene",
+      "checks": 616,
+      "tests": null,
+      "failures": 0,
+      "exit_code": 0,
+      "engine_errors": 0,
+      "log_sha256": "ed36551379bbd56f5c80a9b7846dd9c9d3d9e67f4d43cf0237bb93c963d34605"
+    },
+    {
+      "name": "packed_harbor_scene",
+      "checks": 616,
+      "tests": null,
+      "failures": 0,
+      "exit_code": 0,
+      "engine_errors": 0,
+      "log_sha256": "631cdf91437f2c210b52752efc3725e98c193aebf204fc432fad68c1405fbbcd"
+    },
+    {
+      "name": "touch_regression",
+      "checks": 70,
+      "tests": null,
+      "failures": 0,
+      "exit_code": 0,
+      "engine_errors": 0,
+      "log_sha256": "1d15a72a82d346e0f25ddf49a7b27169686db7b5db9f13b63fa1f1dc7a8f2974"
+    },
+    {
+      "name": "genuine_v12_migration",
+      "checks": 36,
+      "tests": null,
+      "failures": 0,
+      "exit_code": 0,
+      "engine_errors": 0,
+      "log_sha256": "edb40b11ca755645fcd3a82151c3492c8adec0b4c1a425f2bd084215497846a6"
+    },
+    {
+      "name": "full_current_layout",
+      "checks": 19066,
+      "failures": 0,
+      "exit_code": 0,
+      "engine_errors": 0,
+      "log_sha256": "c5ff5ad4f9e27e218dbcfbe95f94daff52ba5e45b0932ccce3b43f547743218a"
+    }
+  ],
+  "first_native_run": {
+    "run": "20261022T070256Z-95998",
+    "checks": 688,
+    "failures": 0,
+    "exit_code": 0,
+    "engine_errors": 0,
+    "screenshots": 24,
+    "all_manually_inspected": true,
+    "visual_result": "rejected pending corrections",
+    "manifest": "game/docs/harbor-screenshots/v1-review.json",
+    "pack_sha256": "6db7ac1e8ae737688f63de449e9eae34728c95b08de5d08655f54c50566f5b56"
+  },
+  "visual_findings": [
+    "portrait collection action below fold",
+    "handoff does not expose actual catch",
+    "broth label orphan wraps",
+    "four dish/result captures show shop; broth12 shows only choices"
+  ],
+  "negative_control": {
+    "checks": 860,
+    "failures": 5,
+    "exit_code": 1,
+    "engine_errors": 0,
+    "source": "frozen v1",
+    "result": "expected failure; demonstrates old UI defects"
+  },
+  "vendor_signature_rechecked_after_v1": true,
+  "native_run": "20261022T072702Z-2212",
+  "native_capture_method": "actual OpenGL SubViewport captures of game scene; blank harness root-window observation rejected as image evidence",
+  "native_manifest": "game/docs/harbor-screenshots/v2-review.json",
+  "all_current_28_screenshots_manually_inspected": true,
+  "comparison_images_manually_inspected": 7,
+  "official_engine_post_run_signature_verified": true,
+  "source_and_pack_unchanged_after_run": true,
+  "comparison_manifest": "game/docs/harbor-screenshots/comparisons/manifest.json"
+}
