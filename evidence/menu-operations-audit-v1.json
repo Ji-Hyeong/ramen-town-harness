@@ -959,5 +959,13 @@
     "Fixed9500price, six chosen policies, three selected dishes/pairs, deterministic same calendar; no global optimality or universal investment claims.",
     "Wait/reaction means concern actual completed orders, not all arrivals or rejected patrons.",
     "No new renderer/iPhone/physical input/audio/performance evidence, runtime tuning or staff challenge implementation."
-  ]
+  ],
+  "frozen_exit_capture_repetition": {
+    "godot_exit_status": 0,
+    "python_exit_status": 0,
+    "engine_errors": 0,
+    "frozen_repetition_files_byte_equal_to_v3": 706,
+    "same_report_hash": true,
+    "reason": "Explicit subprocess exit-code collection for final frozen-source repetition; output data remain byte-equal."
+  }
 }
