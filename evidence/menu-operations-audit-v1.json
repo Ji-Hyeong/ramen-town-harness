@@ -1,0 +1,963 @@
+{
+  "schema": 1,
+  "status": "passed",
+  "date_kst": "2026-10-23",
+  "base_main": "5315be9dcb616deb326409eff5fdcf9e55f87aec",
+  "implementation_game_commit": "2f43dbd874457d8ac9f9ef579183776e99b82ef5",
+  "agent": "Codex",
+  "claude_calls": 0,
+  "runtime_changes": 0,
+  "iphone_unchanged": "user independently tests previously installed0.13; no device calls in this task",
+  "scope": {
+    "preparation_services": 12,
+    "cases": 30,
+    "days_per_case": 21,
+    "comparison_services": 630,
+    "total_actual_settlements": 642,
+    "prepared_day": 13,
+    "prepared_rank": 3,
+    "prepared_wallet": 906780,
+    "fixed_dish_price": 9500,
+    "known_recipe_and_research_inputs": true,
+    "same_legitimate_disk_save_forked": true,
+    "all_game_strategies_exhaustive": false
+  },
+  "godot": {
+    "checks": 10196,
+    "failures": 0,
+    "exit_status": 0,
+    "engine_errors": 0
+  },
+  "independent_python_optimized": {
+    "checks": 46510,
+    "failures": 0,
+    "exit_status": 0,
+    "imports_game_runtime": false,
+    "independent_taste_or_customer_choice_reimplementation": false
+  },
+  "negative_controls": {
+    "mutations": [
+      {
+        "fault": "wallet",
+        "exit": 1,
+        "error": "ready money/calendar"
+      },
+      {
+        "fault": "order_price",
+        "exit": 1,
+        "error": "fixed price/independent dish cost"
+      },
+      {
+        "fault": "order_wait",
+        "exit": 1,
+        "error": "observed wait/reaction aggregates"
+      },
+      {
+        "fault": "stock",
+        "exit": 1,
+        "error": "service consumes no research stocks"
+      },
+      {
+        "fault": "training",
+        "exit": 1,
+        "error": "training price"
+      },
+      {
+        "fault": "menu_report",
+        "exit": 1,
+        "error": "menu report identity/order"
+      },
+      {
+        "fault": "snapshot",
+        "exit": 1,
+        "error": "real snapshot hash"
+      }
+    ],
+    "output_guards": [
+      {
+        "case": "existing-directory",
+        "exit": 2
+      },
+      {
+        "case": "existing-file",
+        "exit": 2
+      },
+      {
+        "case": "dangling-link",
+        "exit": 2
+      },
+      {
+        "case": "missing-parent",
+        "exit": 2
+      }
+    ],
+    "original_run_files_unchanged": 706,
+    "all_original_hashes_preserved": true
+  },
+  "observer_addition_game_state_files_byte_equal": 705,
+  "raw_run_files": 706,
+  "accepted_source_hashes_still_equal": 161,
+  "official_engine_strict_signature_exit": 0,
+  "files_sha256": {
+    "raw_report": "f0817649f2ecfbc39638fe1647e55d2285cc367e2bccd72d0e0cc765267c54b8",
+    "godot_log": "6dddfe7808929ba2821326e0c054f8f49da2c6f3d86995ba8d21ec3303e1ab39",
+    "independent_result": "4f71befc1622a4a2e7453c4c0b944fdb4e6714ddfab56a525a02e5806ebb89b0",
+    "driver": "124e47d58f1d7d2bec28930a8e80c253d0123af8520de43d125fa8d1618fd8ef",
+    "verifier": "46fbcf831f9d2bf757200d2d948d6e1f177d373d5004daa593bd77c953f638ec",
+    "shared_campaign_helper": "1b1404c101291eca4c40b83e753b43009f6dac6ba26a1c5b0284f8be3092dc8b",
+    "shared_order_observer": "0f64e25aaa8e1d2ed32e143a218693ae2aba57f6ed51ab7d018252706164658d",
+    "shared_python_check_and_oracles": "3833bf290a69f15a61e055914141356c90b0fff42a68ad4b04fd0134929bfed4"
+  },
+  "cases": [
+    {
+      "id": "citrus_clear__small_none",
+      "menu_set": [
+        "citrus_clear"
+      ],
+      "policy": "small_none",
+      "units": 147,
+      "final_wallet": 2021250,
+      "investment_and_training": 0,
+      "service_net": 1114470,
+      "wait_total": 13296,
+      "stars_total": 498,
+      "turned_away": 0,
+      "menu_units": {
+        "citrus_clear": 147
+      },
+      "average_wait_game_seconds": 90.44898,
+      "average_stars": 3.387755,
+      "training_actions": []
+    },
+    {
+      "id": "citrus_clear__small_prep",
+      "menu_set": [
+        "citrus_clear"
+      ],
+      "policy": "small_prep",
+      "units": 147,
+      "final_wallet": 1979400,
+      "investment_and_training": 27000,
+      "service_net": 1099620,
+      "wait_total": 10082,
+      "stars_total": 498,
+      "turned_away": 0,
+      "menu_units": {
+        "citrus_clear": 147
+      },
+      "average_wait_game_seconds": 68.585034,
+      "average_stars": 3.387755,
+      "training_actions": [
+        {
+          "action": "train:prep_assistant:basic",
+          "day": 19,
+          "cost": 4000
+        }
+      ]
+    },
+    {
+      "id": "citrus_clear__expanded_none",
+      "menu_set": [
+        "citrus_clear"
+      ],
+      "policy": "expanded_none",
+      "units": 147,
+      "final_wallet": 1961250,
+      "investment_and_training": 60000,
+      "service_net": 1114470,
+      "wait_total": 13296,
+      "stars_total": 498,
+      "turned_away": 0,
+      "menu_units": {
+        "citrus_clear": 147
+      },
+      "average_wait_game_seconds": 90.44898,
+      "average_stars": 3.387755,
+      "training_actions": []
+    },
+    {
+      "id": "citrus_clear__expanded_prep",
+      "menu_set": [
+        "citrus_clear"
+      ],
+      "policy": "expanded_prep",
+      "units": 147,
+      "final_wallet": 1919400,
+      "investment_and_training": 87000,
+      "service_net": 1099620,
+      "wait_total": 10082,
+      "stars_total": 498,
+      "turned_away": 0,
+      "menu_units": {
+        "citrus_clear": 147
+      },
+      "average_wait_game_seconds": 68.585034,
+      "average_stars": 3.387755,
+      "training_actions": [
+        {
+          "action": "train:prep_assistant:basic",
+          "day": 19,
+          "cost": 4000
+        }
+      ]
+    },
+    {
+      "id": "citrus_clear__expanded_floor",
+      "menu_set": [
+        "citrus_clear"
+      ],
+      "policy": "expanded_floor",
+      "units": 147,
+      "final_wallet": 1922500,
+      "investment_and_training": 86000,
+      "service_net": 1101720,
+      "wait_total": 12742,
+      "stars_total": 498,
+      "turned_away": 0,
+      "menu_units": {
+        "citrus_clear": 147
+      },
+      "average_wait_game_seconds": 86.680272,
+      "average_stars": 3.387755,
+      "training_actions": [
+        {
+          "action": "train:floor_assistant:basic",
+          "day": 19,
+          "cost": 4000
+        }
+      ]
+    },
+    {
+      "id": "citrus_clear__expanded_both",
+      "menu_set": [
+        "citrus_clear"
+      ],
+      "policy": "expanded_both",
+      "units": 147,
+      "final_wallet": 1859650,
+      "investment_and_training": 134000,
+      "service_net": 1086870,
+      "wait_total": 9532,
+      "stars_total": 498,
+      "turned_away": 0,
+      "menu_units": {
+        "citrus_clear": 147
+      },
+      "average_wait_game_seconds": 64.843537,
+      "average_stars": 3.387755,
+      "training_actions": [
+        {
+          "action": "train:prep_assistant:basic",
+          "day": 19,
+          "cost": 4000
+        },
+        {
+          "action": "train:floor_assistant:basic",
+          "day": 19,
+          "cost": 4000
+        }
+      ]
+    },
+    {
+      "id": "sesame_depth__small_none",
+      "menu_set": [
+        "sesame_depth"
+      ],
+      "policy": "small_none",
+      "units": 165,
+      "final_wallet": 1992180,
+      "investment_and_training": 0,
+      "service_net": 1085400,
+      "wait_total": 36120,
+      "stars_total": 510,
+      "turned_away": 0,
+      "menu_units": {
+        "sesame_depth": 165
+      },
+      "average_wait_game_seconds": 218.909091,
+      "average_stars": 3.090909,
+      "training_actions": []
+    },
+    {
+      "id": "sesame_depth__small_prep",
+      "menu_set": [
+        "sesame_depth"
+      ],
+      "policy": "small_prep",
+      "units": 180,
+      "final_wallet": 2042080,
+      "investment_and_training": 39000,
+      "service_net": 1174300,
+      "wait_total": 24580,
+      "stars_total": 665,
+      "turned_away": 0,
+      "menu_units": {
+        "sesame_depth": 180
+      },
+      "average_wait_game_seconds": 136.555556,
+      "average_stars": 3.694444,
+      "training_actions": [
+        {
+          "action": "train:prep_assistant:basic",
+          "day": 18,
+          "cost": 4000
+        },
+        {
+          "action": "train:prep_assistant:speed",
+          "day": 32,
+          "cost": 12000
+        }
+      ]
+    },
+    {
+      "id": "sesame_depth__expanded_none",
+      "menu_set": [
+        "sesame_depth"
+      ],
+      "policy": "expanded_none",
+      "units": 165,
+      "final_wallet": 1932180,
+      "investment_and_training": 60000,
+      "service_net": 1085400,
+      "wait_total": 36120,
+      "stars_total": 510,
+      "turned_away": 0,
+      "menu_units": {
+        "sesame_depth": 165
+      },
+      "average_wait_game_seconds": 218.909091,
+      "average_stars": 3.090909,
+      "training_actions": []
+    },
+    {
+      "id": "sesame_depth__expanded_prep",
+      "menu_set": [
+        "sesame_depth"
+      ],
+      "policy": "expanded_prep",
+      "units": 180,
+      "final_wallet": 1982080,
+      "investment_and_training": 99000,
+      "service_net": 1174300,
+      "wait_total": 24580,
+      "stars_total": 665,
+      "turned_away": 0,
+      "menu_units": {
+        "sesame_depth": 180
+      },
+      "average_wait_game_seconds": 136.555556,
+      "average_stars": 3.694444,
+      "training_actions": [
+        {
+          "action": "train:prep_assistant:basic",
+          "day": 18,
+          "cost": 4000
+        },
+        {
+          "action": "train:prep_assistant:speed",
+          "day": 32,
+          "cost": 12000
+        }
+      ]
+    },
+    {
+      "id": "sesame_depth__expanded_floor",
+      "menu_set": [
+        "sesame_depth"
+      ],
+      "policy": "expanded_floor",
+      "units": 165,
+      "final_wallet": 1893430,
+      "investment_and_training": 86000,
+      "service_net": 1072650,
+      "wait_total": 35479,
+      "stars_total": 522,
+      "turned_away": 0,
+      "menu_units": {
+        "sesame_depth": 165
+      },
+      "average_wait_game_seconds": 215.024242,
+      "average_stars": 3.163636,
+      "training_actions": [
+        {
+          "action": "train:floor_assistant:basic",
+          "day": 19,
+          "cost": 4000
+        }
+      ]
+    },
+    {
+      "id": "sesame_depth__expanded_both",
+      "menu_set": [
+        "sesame_depth"
+      ],
+      "policy": "expanded_both",
+      "units": 180,
+      "final_wallet": 1909680,
+      "investment_and_training": 158000,
+      "service_net": 1160900,
+      "wait_total": 23882,
+      "stars_total": 666,
+      "turned_away": 0,
+      "menu_units": {
+        "sesame_depth": 180
+      },
+      "average_wait_game_seconds": 132.677778,
+      "average_stars": 3.7,
+      "training_actions": [
+        {
+          "action": "train:prep_assistant:basic",
+          "day": 18,
+          "cost": 4000
+        },
+        {
+          "action": "train:floor_assistant:basic",
+          "day": 18,
+          "cost": 4000
+        },
+        {
+          "action": "train:prep_assistant:speed",
+          "day": 32,
+          "cost": 12000
+        },
+        {
+          "action": "train:floor_assistant:speed",
+          "day": 32,
+          "cost": 12000
+        }
+      ]
+    },
+    {
+      "id": "harbor_sea__small_none",
+      "menu_set": [
+        "harbor_sea"
+      ],
+      "policy": "small_none",
+      "units": 162,
+      "final_wallet": 2112240,
+      "investment_and_training": 0,
+      "service_net": 1205460,
+      "wait_total": 23477,
+      "stars_total": 487,
+      "turned_away": 0,
+      "menu_units": {
+        "harbor_sea": 162
+      },
+      "average_wait_game_seconds": 144.919753,
+      "average_stars": 3.006173,
+      "training_actions": []
+    },
+    {
+      "id": "harbor_sea__small_prep",
+      "menu_set": [
+        "harbor_sea"
+      ],
+      "policy": "small_prep",
+      "units": 165,
+      "final_wallet": 2093880,
+      "investment_and_training": 27000,
+      "service_net": 1214100,
+      "wait_total": 17387,
+      "stars_total": 515,
+      "turned_away": 0,
+      "menu_units": {
+        "harbor_sea": 165
+      },
+      "average_wait_game_seconds": 105.375758,
+      "average_stars": 3.121212,
+      "training_actions": [
+        {
+          "action": "train:prep_assistant:basic",
+          "day": 19,
+          "cost": 4000
+        }
+      ]
+    },
+    {
+      "id": "harbor_sea__expanded_none",
+      "menu_set": [
+        "harbor_sea"
+      ],
+      "policy": "expanded_none",
+      "units": 162,
+      "final_wallet": 2052240,
+      "investment_and_training": 60000,
+      "service_net": 1205460,
+      "wait_total": 23477,
+      "stars_total": 487,
+      "turned_away": 0,
+      "menu_units": {
+        "harbor_sea": 162
+      },
+      "average_wait_game_seconds": 144.919753,
+      "average_stars": 3.006173,
+      "training_actions": []
+    },
+    {
+      "id": "harbor_sea__expanded_prep",
+      "menu_set": [
+        "harbor_sea"
+      ],
+      "policy": "expanded_prep",
+      "units": 165,
+      "final_wallet": 2033880,
+      "investment_and_training": 87000,
+      "service_net": 1214100,
+      "wait_total": 17387,
+      "stars_total": 515,
+      "turned_away": 0,
+      "menu_units": {
+        "harbor_sea": 165
+      },
+      "average_wait_game_seconds": 105.375758,
+      "average_stars": 3.121212,
+      "training_actions": [
+        {
+          "action": "train:prep_assistant:basic",
+          "day": 19,
+          "cost": 4000
+        }
+      ]
+    },
+    {
+      "id": "harbor_sea__expanded_floor",
+      "menu_set": [
+        "harbor_sea"
+      ],
+      "policy": "expanded_floor",
+      "units": 162,
+      "final_wallet": 2013490,
+      "investment_and_training": 86000,
+      "service_net": 1192710,
+      "wait_total": 22873,
+      "stars_total": 489,
+      "turned_away": 0,
+      "menu_units": {
+        "harbor_sea": 162
+      },
+      "average_wait_game_seconds": 141.191358,
+      "average_stars": 3.018519,
+      "training_actions": [
+        {
+          "action": "train:floor_assistant:basic",
+          "day": 19,
+          "cost": 4000
+        }
+      ]
+    },
+    {
+      "id": "harbor_sea__expanded_both",
+      "menu_set": [
+        "harbor_sea"
+      ],
+      "policy": "expanded_both",
+      "units": 165,
+      "final_wallet": 1974130,
+      "investment_and_training": 134000,
+      "service_net": 1201350,
+      "wait_total": 16772,
+      "stars_total": 515,
+      "turned_away": 0,
+      "menu_units": {
+        "harbor_sea": 165
+      },
+      "average_wait_game_seconds": 101.648485,
+      "average_stars": 3.121212,
+      "training_actions": [
+        {
+          "action": "train:prep_assistant:basic",
+          "day": 19,
+          "cost": 4000
+        },
+        {
+          "action": "train:floor_assistant:basic",
+          "day": 19,
+          "cost": 4000
+        }
+      ]
+    },
+    {
+      "id": "citrus_clear+sesame_depth__expanded_none",
+      "menu_set": [
+        "citrus_clear",
+        "sesame_depth"
+      ],
+      "policy": "expanded_none",
+      "units": 186,
+      "final_wallet": 2182290,
+      "investment_and_training": 60000,
+      "service_net": 1335510,
+      "wait_total": 28004,
+      "stars_total": 591,
+      "turned_away": 0,
+      "menu_units": {
+        "sesame_depth": 87,
+        "citrus_clear": 99
+      },
+      "average_wait_game_seconds": 150.55914,
+      "average_stars": 3.177419,
+      "training_actions": []
+    },
+    {
+      "id": "citrus_clear+sesame_depth__expanded_prep",
+      "menu_set": [
+        "citrus_clear",
+        "sesame_depth"
+      ],
+      "policy": "expanded_prep",
+      "units": 195,
+      "final_wallet": 2190180,
+      "investment_and_training": 99000,
+      "service_net": 1382400,
+      "wait_total": 19388,
+      "stars_total": 696,
+      "turned_away": 0,
+      "menu_units": {
+        "citrus_clear": 99,
+        "sesame_depth": 96
+      },
+      "average_wait_game_seconds": 99.425641,
+      "average_stars": 3.569231,
+      "training_actions": [
+        {
+          "action": "train:prep_assistant:basic",
+          "day": 18,
+          "cost": 4000
+        },
+        {
+          "action": "train:prep_assistant:speed",
+          "day": 31,
+          "cost": 12000
+        }
+      ]
+    },
+    {
+      "id": "citrus_clear+sesame_depth__expanded_floor",
+      "menu_set": [
+        "citrus_clear",
+        "sesame_depth"
+      ],
+      "policy": "expanded_floor",
+      "units": 186,
+      "final_wallet": 2130890,
+      "investment_and_training": 98000,
+      "service_net": 1322110,
+      "wait_total": 27268,
+      "stars_total": 598,
+      "turned_away": 0,
+      "menu_units": {
+        "sesame_depth": 87,
+        "citrus_clear": 99
+      },
+      "average_wait_game_seconds": 146.602151,
+      "average_stars": 3.215054,
+      "training_actions": [
+        {
+          "action": "train:floor_assistant:basic",
+          "day": 18,
+          "cost": 4000
+        },
+        {
+          "action": "train:floor_assistant:speed",
+          "day": 32,
+          "cost": 12000
+        }
+      ]
+    },
+    {
+      "id": "citrus_clear+sesame_depth__expanded_both",
+      "menu_set": [
+        "citrus_clear",
+        "sesame_depth"
+      ],
+      "policy": "expanded_both",
+      "units": 195,
+      "final_wallet": 2117530,
+      "investment_and_training": 158000,
+      "service_net": 1368750,
+      "wait_total": 18606,
+      "stars_total": 696,
+      "turned_away": 0,
+      "menu_units": {
+        "citrus_clear": 99,
+        "sesame_depth": 96
+      },
+      "average_wait_game_seconds": 95.415385,
+      "average_stars": 3.569231,
+      "training_actions": [
+        {
+          "action": "train:prep_assistant:basic",
+          "day": 18,
+          "cost": 4000
+        },
+        {
+          "action": "train:floor_assistant:basic",
+          "day": 18,
+          "cost": 4000
+        },
+        {
+          "action": "train:prep_assistant:speed",
+          "day": 31,
+          "cost": 12000
+        },
+        {
+          "action": "train:floor_assistant:speed",
+          "day": 31,
+          "cost": 12000
+        }
+      ]
+    },
+    {
+      "id": "citrus_clear+harbor_sea__expanded_none",
+      "menu_set": [
+        "citrus_clear",
+        "harbor_sea"
+      ],
+      "policy": "expanded_none",
+      "units": 165,
+      "final_wallet": 2093550,
+      "investment_and_training": 60000,
+      "service_net": 1246770,
+      "wait_total": 18349,
+      "stars_total": 537,
+      "turned_away": 0,
+      "menu_units": {
+        "harbor_sea": 66,
+        "citrus_clear": 99
+      },
+      "average_wait_game_seconds": 111.206061,
+      "average_stars": 3.254545,
+      "training_actions": []
+    },
+    {
+      "id": "citrus_clear+harbor_sea__expanded_prep",
+      "menu_set": [
+        "citrus_clear",
+        "harbor_sea"
+      ],
+      "policy": "expanded_prep",
+      "units": 168,
+      "final_wallet": 2075190,
+      "investment_and_training": 87000,
+      "service_net": 1255410,
+      "wait_total": 14063,
+      "stars_total": 542,
+      "turned_away": 0,
+      "menu_units": {
+        "citrus_clear": 99,
+        "harbor_sea": 69
+      },
+      "average_wait_game_seconds": 83.708333,
+      "average_stars": 3.22619,
+      "training_actions": [
+        {
+          "action": "train:prep_assistant:basic",
+          "day": 19,
+          "cost": 4000
+        }
+      ]
+    },
+    {
+      "id": "citrus_clear+harbor_sea__expanded_floor",
+      "menu_set": [
+        "citrus_clear",
+        "harbor_sea"
+      ],
+      "policy": "expanded_floor",
+      "units": 165,
+      "final_wallet": 2054800,
+      "investment_and_training": 86000,
+      "service_net": 1234020,
+      "wait_total": 17734,
+      "stars_total": 537,
+      "turned_away": 0,
+      "menu_units": {
+        "harbor_sea": 66,
+        "citrus_clear": 99
+      },
+      "average_wait_game_seconds": 107.478788,
+      "average_stars": 3.254545,
+      "training_actions": [
+        {
+          "action": "train:floor_assistant:basic",
+          "day": 19,
+          "cost": 4000
+        }
+      ]
+    },
+    {
+      "id": "citrus_clear+harbor_sea__expanded_both",
+      "menu_set": [
+        "citrus_clear",
+        "harbor_sea"
+      ],
+      "policy": "expanded_both",
+      "units": 168,
+      "final_wallet": 2015440,
+      "investment_and_training": 134000,
+      "service_net": 1242660,
+      "wait_total": 13429,
+      "stars_total": 542,
+      "turned_away": 0,
+      "menu_units": {
+        "citrus_clear": 99,
+        "harbor_sea": 69
+      },
+      "average_wait_game_seconds": 79.934524,
+      "average_stars": 3.22619,
+      "training_actions": [
+        {
+          "action": "train:prep_assistant:basic",
+          "day": 19,
+          "cost": 4000
+        },
+        {
+          "action": "train:floor_assistant:basic",
+          "day": 19,
+          "cost": 4000
+        }
+      ]
+    },
+    {
+      "id": "sesame_depth+harbor_sea__expanded_none",
+      "menu_set": [
+        "sesame_depth",
+        "harbor_sea"
+      ],
+      "policy": "expanded_none",
+      "units": 183,
+      "final_wallet": 2120100,
+      "investment_and_training": 60000,
+      "service_net": 1273320,
+      "wait_total": 36424,
+      "stars_total": 542,
+      "turned_away": 0,
+      "menu_units": {
+        "harbor_sea": 72,
+        "sesame_depth": 111
+      },
+      "average_wait_game_seconds": 199.038251,
+      "average_stars": 2.961749,
+      "training_actions": []
+    },
+    {
+      "id": "sesame_depth+harbor_sea__expanded_prep",
+      "menu_set": [
+        "sesame_depth",
+        "harbor_sea"
+      ],
+      "policy": "expanded_prep",
+      "units": 192,
+      "final_wallet": 2127990,
+      "investment_and_training": 99000,
+      "service_net": 1320210,
+      "wait_total": 23786,
+      "stars_total": 670,
+      "turned_away": 0,
+      "menu_units": {
+        "harbor_sea": 72,
+        "sesame_depth": 120
+      },
+      "average_wait_game_seconds": 123.885417,
+      "average_stars": 3.489583,
+      "training_actions": [
+        {
+          "action": "train:prep_assistant:basic",
+          "day": 18,
+          "cost": 4000
+        },
+        {
+          "action": "train:prep_assistant:speed",
+          "day": 31,
+          "cost": 12000
+        }
+      ]
+    },
+    {
+      "id": "sesame_depth+harbor_sea__expanded_floor",
+      "menu_set": [
+        "sesame_depth",
+        "harbor_sea"
+      ],
+      "policy": "expanded_floor",
+      "units": 183,
+      "final_wallet": 2068850,
+      "investment_and_training": 98000,
+      "service_net": 1260070,
+      "wait_total": 35708,
+      "stars_total": 557,
+      "turned_away": 0,
+      "menu_units": {
+        "harbor_sea": 72,
+        "sesame_depth": 111
+      },
+      "average_wait_game_seconds": 195.125683,
+      "average_stars": 3.043716,
+      "training_actions": [
+        {
+          "action": "train:floor_assistant:basic",
+          "day": 19,
+          "cost": 4000
+        },
+        {
+          "action": "train:floor_assistant:speed",
+          "day": 32,
+          "cost": 12000
+        }
+      ]
+    },
+    {
+      "id": "sesame_depth+harbor_sea__expanded_both",
+      "menu_set": [
+        "sesame_depth",
+        "harbor_sea"
+      ],
+      "policy": "expanded_both",
+      "units": 192,
+      "final_wallet": 2055340,
+      "investment_and_training": 158000,
+      "service_net": 1306560,
+      "wait_total": 23019,
+      "stars_total": 672,
+      "turned_away": 0,
+      "menu_units": {
+        "harbor_sea": 72,
+        "sesame_depth": 120
+      },
+      "average_wait_game_seconds": 119.890625,
+      "average_stars": 3.5,
+      "training_actions": [
+        {
+          "action": "train:prep_assistant:basic",
+          "day": 18,
+          "cost": 4000
+        },
+        {
+          "action": "train:floor_assistant:basic",
+          "day": 18,
+          "cost": 4000
+        },
+        {
+          "action": "train:prep_assistant:speed",
+          "day": 31,
+          "cost": 12000
+        },
+        {
+          "action": "train:floor_assistant:speed",
+          "day": 31,
+          "cost": 12000
+        }
+      ]
+    }
+  ],
+  "diagnostics": [
+    "v1 rejected despite exit0: graphics test fixture imported unavailable texture cache. Pure explicit benchmark inputs remove graphics dependency. Prototype default9000 price corrected to declared9500.",
+    "Successfulv2 then enhanced single-menu wait/star tamper detection with existing observer totals. Finalv3 preserves all705state/snapshot files byte-equal to v2."
+  ],
+  "evidence_limits": [
+    "Scripted known-recipe preparation then controlled13-33day branches, not novice first30minutes, human fun or6-10hour completion.",
+    "Fixed9500price, six chosen policies, three selected dishes/pairs, deterministic same calendar; no global optimality or universal investment claims.",
+    "Wait/reaction means concern actual completed orders, not all arrivals or rejected patrons.",
+    "No new renderer/iPhone/physical input/audio/performance evidence, runtime tuning or staff challenge implementation."
+  ]
+}
