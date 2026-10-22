@@ -1,6 +1,25 @@
-# Discovery workbench: native Product Design acceptance
+# UI/UX reset: human rejection overrides historical acceptance
 
-final result: passed
+Current result (2026-10-23): **needs redesign; not accepted for usability.**
+The human explicitly rejects installed0.13 UI/UX. Prior technical tests and
+bounded screenshot reviews remain historical evidence; their broad P0/P1/P2-free
+conclusion does not establish a usable game and is superseded by this finding.
+Pause chef/growth additions. See [the new five-game reference study, six-state
+fresh audit and three original visual concepts](game/docs/KAIROSOFT_UIUX_RESET.md).
+
+Fresh unchanged native run20261022T173150Z-32949:1980/0/exit0/engine0,
+28captures; this audit opened six portrait states. It confirms the rendered
+hierarchy problems despite successful layout checks. Findings: core choices
+below the fold, global navigation inside the editor, nested explanatory routing,
+competing cooking/editor states and customer reactions below the first result
+screen. Native redesign awaits concrete visual selection, not another test-count
+threshold. No runtime, phone, player-save or Claude changes in this checkpoint.
+
+## Historical discovery workbench technical and visual review
+
+Historical result: passed in a bounded reviewer assessment; **not current human
+usability acceptance**. Text below is preserved as the original review record,
+including claims now superseded by the fresh audit and human feedback.
 
 ## Current scope and verification boundary
 2026-10-23. Existing native Godot target, palette, detailed dynamic dishes and

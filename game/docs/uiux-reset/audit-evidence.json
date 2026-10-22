@@ -1,0 +1,83 @@
+{
+  "date_kst": "2026-10-23",
+  "base_commit": "22c79a3f70aaf554a6a179145bcb3210ea4ec12b",
+  "native_run": "20261022T173150Z-32949",
+  "method": "Godot4.7.2 native OpenGL SubViewport capture on Mac; not physical iPhone",
+  "native_captured_images": 28,
+  "manually_reviewed_current_images": 6,
+  "native_checks": 1980,
+  "native_failures": 0,
+  "native_exit": 0,
+  "engine_errors": 0,
+  "unchanged_bundled_sources_compared_byte_equal": 161,
+  "current": [
+    {
+      "file": "current/portrait_workbench_01_food.png",
+      "manual_visual_review": true,
+      "sha256": "19a0265f635aaf6fe6714507046db40aee86d650d223095bb42c0e3dfc7321ed",
+      "format": "PNG",
+      "width": 390,
+      "height": 844,
+      "bytes": 55641
+    },
+    {
+      "file": "current/portrait_workbench_02_navigation.png",
+      "manual_visual_review": true,
+      "sha256": "cd2f1024f837bb51fd1d96c2dd409276b764c054e3a6bace4be72fa6cf486c4c",
+      "format": "PNG",
+      "width": 390,
+      "height": 844,
+      "bytes": 67362
+    },
+    {
+      "file": "current/portrait_workbench_03_directions.png",
+      "manual_visual_review": true,
+      "sha256": "f2a18121c2e6cb51412a9a4b2ae9ab8f8a0e0daed0de62501022f58703a36e12",
+      "format": "PNG",
+      "width": 390,
+      "height": 844,
+      "bytes": 74009
+    },
+    {
+      "file": "current/portrait_workbench_04_goal.png",
+      "manual_visual_review": true,
+      "sha256": "a939da73ab714809f516648479d10bae9454223cc33cd4e9384de4033b9ff17a",
+      "format": "PNG",
+      "width": 390,
+      "height": 844,
+      "bytes": 59449
+    },
+    {
+      "file": "current/portrait_workbench_06_broth.png",
+      "manual_visual_review": true,
+      "sha256": "bcdfc20fb6ae68909cc2798aa907aa61f682ac5008964a54b84072340d22508f",
+      "format": "PNG",
+      "width": 390,
+      "height": 844,
+      "bytes": 60567
+    },
+    {
+      "file": "current/portrait_workbench_09_citrus_clear_result.png",
+      "manual_visual_review": true,
+      "sha256": "e8798c12a3f4d9664419a3a5471c360dc78187c0a42b16d90fad717687b17842",
+      "format": "PNG",
+      "width": 390,
+      "height": 844,
+      "bytes": 58025
+    }
+  ],
+  "private_reference_count": 30,
+  "reference_contexts_used": 22,
+  "source_pages": [
+    "https://kairosoft.net/game/appli/noodle.html",
+    "https://kairosoft.net/game/appli/osushi.html",
+    "https://kairosoft.net/game/appli/zaibatu_v.html",
+    "https://kairosoft.net/game/appli/burger.html",
+    "https://kairosoft.net/game/appli/cafe.html"
+  ],
+  "human_ui_acceptance": "rejected; needs redesign",
+  "runtime_changes": false,
+  "phone_changes": false,
+  "claude_calls": 0,
+  "concepts_are_not_implementation": true
+}
