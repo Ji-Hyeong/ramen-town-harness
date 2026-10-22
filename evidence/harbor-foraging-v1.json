@@ -2,7 +2,7 @@
   "version": 1,
   "date": "2026-10-22",
   "feature": "harbor research sampling",
-  "status": "visual-corrections-tested-native-recapture-pending",
+  "status": "accepted-native-flow",
   "codex_only": true,
   "claude_calls": 0,
   "schema_version": 13,
@@ -596,15 +596,52 @@
       "exit_code": 0,
       "engine_errors": 0,
       "log_sha256": "854a6888924a6cca1573752144512789e48dc4e3bbd7e1d2c37c67850f9013c2"
+    },
+    {
+      "name": "native_render",
+      "checks": 962,
+      "failures": 0,
+      "exit_code": 0,
+      "engine_errors": 0,
+      "log_sha256": "98e9aba6c3a4ff67a2ec712b202d41c9971e29106872f456d5f5092175682502"
     }
   ],
   "genuine_old_version_cases": 6,
   "all_legacy_values_equal": true,
   "exact_original_backups": true,
   "full_current_layout": "passed",
-  "native_renderer_verified": false,
-  "native_screenshots": [],
-  "design_audit": "blocked pending fresh native captures",
+  "native_renderer_verified": true,
+  "native_screenshots": [
+    "game/docs/harbor-screenshots/v2/desktop_harbor_01_locked.png",
+    "game/docs/harbor-screenshots/v2/desktop_harbor_02_details.png",
+    "game/docs/harbor-screenshots/v2/desktop_harbor_03_travel.png",
+    "game/docs/harbor-screenshots/v2/desktop_harbor_04_target.png",
+    "game/docs/harbor-screenshots/v2/desktop_harbor_05_quantity.png",
+    "game/docs/harbor-screenshots/v2/desktop_harbor_06_waiting.png",
+    "game/docs/harbor-screenshots/v2/desktop_harbor_07_received.png",
+    "game/docs/harbor-screenshots/v2/desktop_harbor_08_workbench.png",
+    "game/docs/harbor-screenshots/v2/desktop_harbor_09_triple_dish.png",
+    "game/docs/harbor-screenshots/v2/desktop_harbor_10_result.png",
+    "game/docs/harbor-screenshots/v2/desktop_harbor_11_broth.png",
+    "game/docs/harbor-screenshots/v2/desktop_harbor_12_broth_choices.png",
+    "game/docs/harbor-screenshots/v2/desktop_harbor_13_broth_dish.png",
+    "game/docs/harbor-screenshots/v2/desktop_harbor_14_save_warning.png",
+    "game/docs/harbor-screenshots/v2/portrait_harbor_01_locked.png",
+    "game/docs/harbor-screenshots/v2/portrait_harbor_02_details.png",
+    "game/docs/harbor-screenshots/v2/portrait_harbor_03_travel.png",
+    "game/docs/harbor-screenshots/v2/portrait_harbor_04_target.png",
+    "game/docs/harbor-screenshots/v2/portrait_harbor_05_quantity.png",
+    "game/docs/harbor-screenshots/v2/portrait_harbor_06_waiting.png",
+    "game/docs/harbor-screenshots/v2/portrait_harbor_07_received.png",
+    "game/docs/harbor-screenshots/v2/portrait_harbor_08_workbench.png",
+    "game/docs/harbor-screenshots/v2/portrait_harbor_09_triple_dish.png",
+    "game/docs/harbor-screenshots/v2/portrait_harbor_10_result.png",
+    "game/docs/harbor-screenshots/v2/portrait_harbor_11_broth.png",
+    "game/docs/harbor-screenshots/v2/portrait_harbor_12_broth_choices.png",
+    "game/docs/harbor-screenshots/v2/portrait_harbor_13_broth_dish.png",
+    "game/docs/harbor-screenshots/v2/portrait_harbor_14_save_warning.png"
+  ],
+  "design_audit": "passed for bounded harbor flow; P3 refinements and device/accessibility limits documented",
   "iphone_install": "deferred by user",
   "prior_diagnostics": [
     {
@@ -621,7 +658,7 @@
     }
   ],
   "pull_request": "https://github.com/Ji-Hyeong/ramen-town-harness/pull/18",
-  "exact_qa_app_launch_confirmation": "v2 confirmation requested; pending user response",
+  "exact_qa_app_launch_confirmation": "user explicitly approved exact v2 app; executed via CUA",
   "previous_tests": [
     {
       "name": "domain",
@@ -686,7 +723,8 @@
     "screenshots": 24,
     "all_manually_inspected": true,
     "visual_result": "rejected pending corrections",
-    "manifest": "game/docs/harbor-screenshots/v1-review.json"
+    "manifest": "game/docs/harbor-screenshots/v1-review.json",
+    "pack_sha256": "6db7ac1e8ae737688f63de449e9eae34728c95b08de5d08655f54c50566f5b56"
   },
   "visual_findings": [
     "portrait collection action below fold",
@@ -702,5 +740,13 @@
     "source": "frozen v1",
     "result": "expected failure; demonstrates old UI defects"
   },
-  "vendor_signature_rechecked_after_v1": true
+  "vendor_signature_rechecked_after_v1": true,
+  "native_run": "20261022T072702Z-2212",
+  "native_capture_method": "actual OpenGL SubViewport captures of game scene; blank harness root-window observation rejected as image evidence",
+  "native_manifest": "game/docs/harbor-screenshots/v2-review.json",
+  "all_current_28_screenshots_manually_inspected": true,
+  "comparison_images_manually_inspected": 7,
+  "official_engine_post_run_signature_verified": true,
+  "source_and_pack_unchanged_after_run": true,
+  "comparison_manifest": "game/docs/harbor-screenshots/comparisons/manifest.json"
 }

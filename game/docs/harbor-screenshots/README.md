@@ -1,6 +1,37 @@
 # 항구 채집 화면 점검
 
-현재 결과: **수정본 재캡처 대기**. 기능 검사의 성공만으로 화면 검증 완료를 선언하지 않는다.
+현재 결과: **수정본 v2의 항구 흐름 화면 검증 통과**. 자동 검사와 별도로 새 원본28장 전체와 전후 비교7장을 직접 검토했다.
+
+## 현재 v2 흐름
+
+새 Mac OpenGL 실행20261022T072702Z-2212는962확인·실패0·종료0·엔진 오류0이다.
+가로1280×800·세로390×844 각14장/총28장 원본이며, 실제 게임 씬을 OpenGL SubViewport로 캡처했다.
+회색 시험용 루트 창은 화면 증거로 사용하지 않았다. 원본38파일은 바이트 그대로 별도 보존했다.
+
+| 단계 | 현재 세로 화면 | 상태 |
+| --- | --- | --- |
+| 1 | [잠긴 항구](v2/portrait_harbor_01_locked.png) | 정상: 사용 가능한 장터 뒤 간단한 다음 목표 |
+| 2 | [상세](v2/portrait_harbor_02_details.png) | 정상: 재료 아이콘·재고·맛·원가·시간 |
+| 3 | [이동](v2/portrait_harbor_03_travel.png) | 정상: 이미 낸 비용·진행률 |
+| 4 | [재료 선택](v2/portrait_harbor_04_target.png) | 정상: 육수/가리비의 다른 특징 |
+| 5 | [수량 선택](v2/portrait_harbor_05_quantity.png) | 정상: 수량과 추가 비용을 선택 전에 표시 |
+| 6 | [수령 대기](v2/portrait_harbor_06_waiting.png) | 수정 확인: 수령 버튼이 바로 보임 |
+| 7 | [수령](v2/portrait_harbor_07_received.png) | 정상: 가리비3개와 개발 이동 |
+| 8 | [개발 이동](v2/portrait_harbor_08_workbench.png) | 수정 확인: 실제 가리비 버튼까지 보임·초안 유지 |
+| 9 | [반복 고명 그릇](v2/portrait_harbor_09_triple_dish.png) | 수정 확인: 실제 개발 화면·가리비3분량·원가/시간 |
+| 10 | [시식 결과](v2/portrait_harbor_10_result.png) | 수정 확인: 실제 결과 그릇·손님 초상·평가 |
+| 11 | [재방문](v2/portrait_harbor_11_broth.png) | 정상: 다음 날 육수1개·가리비0개 |
+| 12 | [육수 선택](v2/portrait_harbor_12_broth_choices.png) | 수정 확인: 한 줄 버튼 이름과 전체 상세 이름 |
+| 13 | [육수 그릇](v2/portrait_harbor_13_broth_dish.png) | 정상: 실제 국물/김 그릇·다른 비용과 시간 |
+| 14 | [저장 실패](v2/portrait_harbor_14_save_warning.png) | 정상: 저장 경고가 수령 버튼 자동 이동보다 우선 |
+
+[전후 수령](comparisons/portrait_06_waiting.png) · [전후 재료 이동](comparisons/portrait_08_workbench.png) · [전후 이름](comparisons/portrait_12_label.png) · [이름 확대 비교](comparisons/portrait_label_focus.png) · [그릇 캡처 수정](comparisons/portrait_09_triple_dish.png) · [시식 캡처 수정](comparisons/portrait_10_result.png) · [기존 스타일 비교](comparisons/portrait_style_reference.png)
+
+비교 이미지는 같은 크기의 원본을 한 캔버스에 놓은 분석 자료다. 전체 화면은1배 밀도이며 이름 부분만 최근접3배로 확대했다.
+기존 공급처 화면과 새 채집 화면의 내용/스크롤 차이는 의도한 변경이며 픽셀 단위 복제라고 주장하지 않는다.
+[현재28장 해시·전체 수동 검토](v2-review.json) · [디자인 검증](../../../design-qa.md)
+
+## 이전 v1 진단 기록
 
 ## 첫 실행의 실제 흐름
 
@@ -33,7 +64,7 @@
 
 새 위치 검사는 수정 전 코드에서5건 실패하고 수정 후 통과했다.
 이는 동작·배치 증거이며 아직 수정된 실제 화면을 대신하지 않는다.
-재캡처 뒤 같은 상태/해상도의 전후 화면을 함께 비교해 이 문서를 갱신한다.
+v2에서 같은 상태/해상도의 전후 화면을 함께 비교해 위 수정 결과를 확인했다.
 
 ## 확인 범위
 

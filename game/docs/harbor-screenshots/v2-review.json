@@ -1,0 +1,239 @@
+{
+  "run": "20261022T072702Z-2212",
+  "renderer": "OpenGL4.1 Metal AppleM3Pro",
+  "capture_method": "native OpenGL SubViewport PNGs from the actual scene; root harness window is not image evidence",
+  "checks": 962,
+  "failures": 0,
+  "exit_code": 0,
+  "engine_errors": 0,
+  "source_files": 135,
+  "pack_sha256": "2da6bdc7775b32c7d7343c9e541c663cf4facedec7b5b274e376240b4f3eabfa",
+  "visual_result": "accepted for bounded harbor flow; device/human play acceptance separate",
+  "preserved_run_files": 38,
+  "files": [
+    {
+      "file": "desktop_harbor_01_locked.png",
+      "sha256": "16342740db2e28eb2ab838d85fadbe8b9c8d2632b41dad61c1ab3f41070fce47",
+      "width": 1280,
+      "height": 800,
+      "manually_inspected": true,
+      "accepted_for_declared_state": true
+    },
+    {
+      "file": "desktop_harbor_02_details.png",
+      "sha256": "8adc1f880397005a0afe694d273f580190df010dbda5c07df37c47a824ea8c72",
+      "width": 1280,
+      "height": 800,
+      "manually_inspected": true,
+      "accepted_for_declared_state": true
+    },
+    {
+      "file": "desktop_harbor_03_travel.png",
+      "sha256": "b30df89c2b6da114cff641fc457ff526fe75d0ba4da8a4afae2f96123b06b45d",
+      "width": 1280,
+      "height": 800,
+      "manually_inspected": true,
+      "accepted_for_declared_state": true
+    },
+    {
+      "file": "desktop_harbor_04_target.png",
+      "sha256": "3199b71ebdb29bbe6d6ed630c7f3ccc263c5478b5a78d883b85f7acfe40cf737",
+      "width": 1280,
+      "height": 800,
+      "manually_inspected": true,
+      "accepted_for_declared_state": true
+    },
+    {
+      "file": "desktop_harbor_05_quantity.png",
+      "sha256": "e67a6e9486276049252d9cdf5fafc2d1a375867737bb929c197fb77d796d541a",
+      "width": 1280,
+      "height": 800,
+      "manually_inspected": true,
+      "accepted_for_declared_state": true
+    },
+    {
+      "file": "desktop_harbor_06_waiting.png",
+      "sha256": "c29a4ecfbe75dc7ed5d693237d8f16d32b6bb65c4ebde4492fa28ee87b978540",
+      "width": 1280,
+      "height": 800,
+      "manually_inspected": true,
+      "accepted_for_declared_state": true
+    },
+    {
+      "file": "desktop_harbor_07_received.png",
+      "sha256": "6518ad00773a6c1980990153833e23dba8dc7ea338abf25db2d321b4d79c48e6",
+      "width": 1280,
+      "height": 800,
+      "manually_inspected": true,
+      "accepted_for_declared_state": true
+    },
+    {
+      "file": "desktop_harbor_08_workbench.png",
+      "sha256": "13a9e70553ea7221b3f805ee9004fd85e156380ffb7df3fede6218e7e18f9f41",
+      "width": 1280,
+      "height": 800,
+      "manually_inspected": true,
+      "accepted_for_declared_state": true
+    },
+    {
+      "file": "desktop_harbor_09_triple_dish.png",
+      "sha256": "eca6c5fcc3f2777bf4a52facbb2306bf7ed56f9b11babfb56a46eca78fc79254",
+      "width": 1280,
+      "height": 800,
+      "manually_inspected": true,
+      "accepted_for_declared_state": true
+    },
+    {
+      "file": "desktop_harbor_10_result.png",
+      "sha256": "932ff2d70758cb51efa4ca9f9ce734a30d12b004178abd527a0fdfab92a33fff",
+      "width": 1280,
+      "height": 800,
+      "manually_inspected": true,
+      "accepted_for_declared_state": true
+    },
+    {
+      "file": "desktop_harbor_11_broth.png",
+      "sha256": "9edb1d4d3846ad968765b12990a5fcedee5dbc0b8fe42d9d07bb669d3df12c54",
+      "width": 1280,
+      "height": 800,
+      "manually_inspected": true,
+      "accepted_for_declared_state": true
+    },
+    {
+      "file": "desktop_harbor_12_broth_choices.png",
+      "sha256": "e630f40e396bd36ef7f2cfb77e3e93ed1bd4a96e1f3f615933685e2639a87777",
+      "width": 1280,
+      "height": 800,
+      "manually_inspected": true,
+      "accepted_for_declared_state": true
+    },
+    {
+      "file": "desktop_harbor_13_broth_dish.png",
+      "sha256": "dc65dcca392a9fc66aac53445ff8f5a3543ecdf1f3e2512658c3e21183443ddc",
+      "width": 1280,
+      "height": 800,
+      "manually_inspected": true,
+      "accepted_for_declared_state": true
+    },
+    {
+      "file": "desktop_harbor_14_save_warning.png",
+      "sha256": "62a6a4b7d79e33733496f921ab496adea32d2cd7decc088e4a178b8cc66c9b45",
+      "width": 1280,
+      "height": 800,
+      "manually_inspected": true,
+      "accepted_for_declared_state": true
+    },
+    {
+      "file": "portrait_harbor_01_locked.png",
+      "sha256": "1eb9d530099ea3afaaa636ff5df858395e55b165e9c9437fb9a463b9b18efa51",
+      "width": 390,
+      "height": 844,
+      "manually_inspected": true,
+      "accepted_for_declared_state": true
+    },
+    {
+      "file": "portrait_harbor_02_details.png",
+      "sha256": "796bfbec7673af3abae6e5ee1620a6f0fcd02c9e21cedd7445aff960ac0f9d9e",
+      "width": 390,
+      "height": 844,
+      "manually_inspected": true,
+      "accepted_for_declared_state": true
+    },
+    {
+      "file": "portrait_harbor_03_travel.png",
+      "sha256": "736849b6109ebbb234290f57e5df37501b919ac19e0766311017a95ed04e0171",
+      "width": 390,
+      "height": 844,
+      "manually_inspected": true,
+      "accepted_for_declared_state": true
+    },
+    {
+      "file": "portrait_harbor_04_target.png",
+      "sha256": "fc588039666d4d4f72b7f90a009af87aeedcef0e6795dad2a3cb09563d53e594",
+      "width": 390,
+      "height": 844,
+      "manually_inspected": true,
+      "accepted_for_declared_state": true
+    },
+    {
+      "file": "portrait_harbor_05_quantity.png",
+      "sha256": "5073bfca121ce9193adf15a705f1a2a4b6b2bf56a851835793673a508fef71d5",
+      "width": 390,
+      "height": 844,
+      "manually_inspected": true,
+      "accepted_for_declared_state": true
+    },
+    {
+      "file": "portrait_harbor_06_waiting.png",
+      "sha256": "a2eebe2fbda56801b7aa48fc3c39f1730ceadad57ab2aaef28db61e91ff5b02d",
+      "width": 390,
+      "height": 844,
+      "manually_inspected": true,
+      "accepted_for_declared_state": true
+    },
+    {
+      "file": "portrait_harbor_07_received.png",
+      "sha256": "13af07a7397ada0a41d160c64d52af5424da1766a1d19f620dbdcdcd70410fee",
+      "width": 390,
+      "height": 844,
+      "manually_inspected": true,
+      "accepted_for_declared_state": true
+    },
+    {
+      "file": "portrait_harbor_08_workbench.png",
+      "sha256": "557499e2ed42582c0274f84eacf2f982d4a22bfc10cf3d78958296d76408b6e3",
+      "width": 390,
+      "height": 844,
+      "manually_inspected": true,
+      "accepted_for_declared_state": true
+    },
+    {
+      "file": "portrait_harbor_09_triple_dish.png",
+      "sha256": "6cd25788c3038298ca9b5051ed5fbfcf929bdeb1ddcdc7ef694fdb2b4dcff2a8",
+      "width": 390,
+      "height": 844,
+      "manually_inspected": true,
+      "accepted_for_declared_state": true
+    },
+    {
+      "file": "portrait_harbor_10_result.png",
+      "sha256": "595c302e35cf87b487221ca11bc3a30e64cd66282e97ae7ac649d7cfbaf4b870",
+      "width": 390,
+      "height": 844,
+      "manually_inspected": true,
+      "accepted_for_declared_state": true
+    },
+    {
+      "file": "portrait_harbor_11_broth.png",
+      "sha256": "3152c226db54d96a1964a2253913ce7e9303a4756aeb4178bde4d2e62c7a7623",
+      "width": 390,
+      "height": 844,
+      "manually_inspected": true,
+      "accepted_for_declared_state": true
+    },
+    {
+      "file": "portrait_harbor_12_broth_choices.png",
+      "sha256": "ee5813b22a7f87413f42d92dfa87e860c244f3a0db8a12e3ac7e484c8adb8c8f",
+      "width": 390,
+      "height": 844,
+      "manually_inspected": true,
+      "accepted_for_declared_state": true
+    },
+    {
+      "file": "portrait_harbor_13_broth_dish.png",
+      "sha256": "8592249f935b21d5b3fa3adcb8c2eb285975748dfff9fd48158daac13608e443",
+      "width": 390,
+      "height": 844,
+      "manually_inspected": true,
+      "accepted_for_declared_state": true
+    },
+    {
+      "file": "portrait_harbor_14_save_warning.png",
+      "sha256": "ecaa875be315914a14930bdf38f857d705711783798e2618cf3be6823be8085e",
+      "width": 390,
+      "height": 844,
+      "manually_inspected": true,
+      "accepted_for_declared_state": true
+    }
+  ]
+}
