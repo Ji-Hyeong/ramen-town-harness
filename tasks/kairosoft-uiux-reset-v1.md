@@ -46,7 +46,11 @@ work before requesting that choice.
   prioritized flow defects and correct overly broad prior usability acceptance.
 - Complete: three independent reference-attached built-in Image Gen concepts,
   preserve originals/prompts/hashes and actual visible order for human choice.
-- Decision required before implementation: choose/refine a concrete visual
-  target under Product Design ideate's explicit selection-before-build rule.
+- Original selection complete: user explicitly chose displayed option3 and
+  requested future-proof topping categorization while preserving summaries,
+  cost/time and separate details. Generated one revision from that exact image;
+  record fixed context/filter/footer and list-only scrolling in
+  game/docs/BOWL_EDITOR_CATEGORIES.md. Revised visual is not yet user-accepted
+  or implemented. Do not ask the user to choose the original three again.
 - Not started in this checkpoint: broad native UI rewrite. No runtime or phone
   change, no usability-improved claim. Growth/chef additions remain paused.

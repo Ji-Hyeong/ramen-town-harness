@@ -1,0 +1,32 @@
+{
+  "date_kst": "2026-10-23",
+  "mode": "built-in image_gen, one feedback refinement",
+  "selected_original_display_order": 3,
+  "selected_source_file": "../concepts/concept-03-map.png",
+  "selected_source_sha256": "d9bdaf06ca5afa2e6b6d564df13c19e21dde10202a073f102dcc93ba5409937c",
+  "actual_reference_input_count": 1,
+  "revision_file": "concept-03-categories-v1.png",
+  "revision_sha256": "316b88a746794e2338ca9b3340a2fc907d486f0fd3ea4948205bbd704a79d5a3",
+  "pixel_dimensions": [
+    853,
+    1844
+  ],
+  "target_logical_viewport": [
+    390,
+    844
+  ],
+  "no_resampling_or_pixel_editing": true,
+  "prompt_file": "prompt-categories-v1.txt",
+  "prompt_sha256": "c66d8f0d96100fdabffc9602a88e0c223d62fa978f88f756349b1fa9f9db2cdc",
+  "user_selection": "original option3 selected with categorization feedback",
+  "revised_visual_user_acceptance": false,
+  "native_implementation": false,
+  "categories_proposed": [
+    "전체",
+    "고기·달걀",
+    "채소·과일",
+    "해산물"
+  ],
+  "scope": "Recipe context, filters and footer fixed; ingredient list only scrolls; details/add separated; filtering never mutates draft",
+  "known_limits": "Image is not proof of44px targets, touch scrolling, data-driven image accuracy, successful category filtering or transaction behavior"
+}
