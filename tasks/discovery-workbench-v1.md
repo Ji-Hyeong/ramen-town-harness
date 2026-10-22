@@ -55,6 +55,14 @@ Implementation and independent headless/package verification are complete:
 pure55, packed1896, expression/depth3724, harbor918, touch70, domain127/58423,
 full landscape/portrait layout19496 all failure0/exit0/engine0. Original8audio
 assets reproduce byte-equal;161sources/PCK976beff7 match fresh signed QA v1.
-Current native launch/visual acceptance remains blocked on the requested
-exact-app action-time confirmation. Publication/merge follows that acceptance;
-do not mark this bounded iteration or overall game complete before it occurs.
+The human approved the exact QA v1 app. Fresh native OpenGL run
+20261022T163531Z-15310 passed1980/0/exit0/engine0; all28 original landscape/
+portrait PNGs were individually opened and reviewed. Five combined source/current,
+focused bowl and three-dish/result comparisons were also opened. No actionable
+P0/P1/P2 remains in this bounded flow; design-qa.md records P3 and acceptance limits.
+All36 run files are privately preserved byte-equal. Postrun161sources/PCK976beff7/
+engine hash match and vendor strict signature0. Public gallery, hashes and evidence
+record current acceptance. Ready PR publication and matching-head squash merge use
+standing authorization; final PR/merge identity is recorded in the chat and private
+checkpoint. This completes the bounded iteration, not the whole game;
+human enjoyment, audible-device acceptance and deferred iPhone work remain separate.

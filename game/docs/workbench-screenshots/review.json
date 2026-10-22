@@ -1,0 +1,402 @@
+{
+  "schema": 1,
+  "date_kst": "2026-10-23",
+  "native_run": "20261022T163531Z-15310",
+  "checks": 1980,
+  "failures": 0,
+  "exit_status": 0,
+  "engine_errors": 0,
+  "source_files": 161,
+  "pack_sha256": "976beff7bf7ed367ac15a92e6132db71489a192492c225f4bd8f2e8c92e5faa8",
+  "originals": [
+    {
+      "file": "desktop_workbench_01_food.png",
+      "sha256": "9a75bb4838e71f7e01d39ae080d59c837549a97c696e7334c19a283c15e862a3",
+      "dimensions": [
+        1280,
+        800
+      ],
+      "manual_review": "opened individually; matches named state; no actionable P0/P1/P2 in bounded flow"
+    },
+    {
+      "file": "desktop_workbench_02_navigation.png",
+      "sha256": "2ba13e252aa5e18999302e0f0aa953e796325291dcd1c5c85399428ee609840d",
+      "dimensions": [
+        1280,
+        800
+      ],
+      "manual_review": "opened individually; matches named state; no actionable P0/P1/P2 in bounded flow"
+    },
+    {
+      "file": "desktop_workbench_03_directions.png",
+      "sha256": "eb99c14f0e8c91f4792393b2dd652f5814b1f7c24031283805cc11663681d73f",
+      "dimensions": [
+        1280,
+        800
+      ],
+      "manual_review": "opened individually; matches named state; no actionable P0/P1/P2 in bounded flow"
+    },
+    {
+      "file": "desktop_workbench_04_goal.png",
+      "sha256": "a767a3f39526998ba98e905f0b4d53e7c03e5ab0a9c469bad5ea944c741ca485",
+      "dimensions": [
+        1280,
+        800
+      ],
+      "manual_review": "opened individually; matches named state; no actionable P0/P1/P2 in bounded flow"
+    },
+    {
+      "file": "desktop_workbench_05_citrus_clear.png",
+      "sha256": "384efe903e20484d15e0c7c54121124d59ebba048a31347243bddb6a554ac4d3",
+      "dimensions": [
+        1280,
+        800
+      ],
+      "manual_review": "opened individually; matches named state; no actionable P0/P1/P2 in bounded flow"
+    },
+    {
+      "file": "desktop_workbench_05_harbor_sea.png",
+      "sha256": "ca3aaa0b2256a0f7585ee45787d13e3d14d454ee49b36a9c9c6a1abe05b63bb4",
+      "dimensions": [
+        1280,
+        800
+      ],
+      "manual_review": "opened individually; matches named state; no actionable P0/P1/P2 in bounded flow"
+    },
+    {
+      "file": "desktop_workbench_05_sesame_depth.png",
+      "sha256": "f2166b258b02583d5ef58ea29cc4cea86be6554989ba53bf198d625c39b595f3",
+      "dimensions": [
+        1280,
+        800
+      ],
+      "manual_review": "opened individually; matches named state; no actionable P0/P1/P2 in bounded flow"
+    },
+    {
+      "file": "desktop_workbench_06_broth.png",
+      "sha256": "e1b2476a8706764cc625c5ad69c2d02a2e3914c781845c3249d645bc4ac997da",
+      "dimensions": [
+        1280,
+        800
+      ],
+      "manual_review": "opened individually; matches named state; no actionable P0/P1/P2 in bounded flow"
+    },
+    {
+      "file": "desktop_workbench_07_noodle.png",
+      "sha256": "4b1d9f824c71882fb7ef968be7144ce65e194437035721fff10e9b856577dd7f",
+      "dimensions": [
+        1280,
+        800
+      ],
+      "manual_review": "opened individually; matches named state; no actionable P0/P1/P2 in bounded flow"
+    },
+    {
+      "file": "desktop_workbench_08_plating.png",
+      "sha256": "4d64e7e7393c133a4f1984c4e755bf4224540a161016af3464ccbc72b89b7628",
+      "dimensions": [
+        1280,
+        800
+      ],
+      "manual_review": "opened individually; matches named state; no actionable P0/P1/P2 in bounded flow"
+    },
+    {
+      "file": "desktop_workbench_09_citrus_clear_result.png",
+      "sha256": "1ae9d5cc843434962374a9311259e7cce1a2517900d6bab3364fe10b1f31a207",
+      "dimensions": [
+        1280,
+        800
+      ],
+      "manual_review": "opened individually; matches named state; no actionable P0/P1/P2 in bounded flow"
+    },
+    {
+      "file": "desktop_workbench_09_harbor_sea_result.png",
+      "sha256": "87c1a32a83446f998515c10189e45b66f70c432a58478986b937e5fdb062c1a4",
+      "dimensions": [
+        1280,
+        800
+      ],
+      "manual_review": "opened individually; matches named state; no actionable P0/P1/P2 in bounded flow"
+    },
+    {
+      "file": "desktop_workbench_09_sesame_depth_result.png",
+      "sha256": "40722212e77f222e61a2265ca4d757f8e1ee4124f134b31ef53ebe7944a3377e",
+      "dimensions": [
+        1280,
+        800
+      ],
+      "manual_review": "opened individually; matches named state; no actionable P0/P1/P2 in bounded flow"
+    },
+    {
+      "file": "desktop_workbench_10_reloaded.png",
+      "sha256": "fd54b6d592e46d10ab28a5255b09dc99e654639f93170f89cdceba8ff4ae2ed5",
+      "dimensions": [
+        1280,
+        800
+      ],
+      "manual_review": "opened individually; matches named state; no actionable P0/P1/P2 in bounded flow"
+    },
+    {
+      "file": "portrait_workbench_01_food.png",
+      "sha256": "19a0265f635aaf6fe6714507046db40aee86d650d223095bb42c0e3dfc7321ed",
+      "dimensions": [
+        390,
+        844
+      ],
+      "manual_review": "opened individually; matches named state; no actionable P0/P1/P2 in bounded flow"
+    },
+    {
+      "file": "portrait_workbench_02_navigation.png",
+      "sha256": "25829794e26d26ea879c8ca0f466c06ad9b155bdd5c11c61ddedf7675ccf2606",
+      "dimensions": [
+        390,
+        844
+      ],
+      "manual_review": "opened individually; matches named state; no actionable P0/P1/P2 in bounded flow"
+    },
+    {
+      "file": "portrait_workbench_03_directions.png",
+      "sha256": "f2a18121c2e6cb51412a9a4b2ae9ab8f8a0e0daed0de62501022f58703a36e12",
+      "dimensions": [
+        390,
+        844
+      ],
+      "manual_review": "opened individually; matches named state; no actionable P0/P1/P2 in bounded flow"
+    },
+    {
+      "file": "portrait_workbench_04_goal.png",
+      "sha256": "a939da73ab714809f516648479d10bae9454223cc33cd4e9384de4033b9ff17a",
+      "dimensions": [
+        390,
+        844
+      ],
+      "manual_review": "opened individually; matches named state; no actionable P0/P1/P2 in bounded flow"
+    },
+    {
+      "file": "portrait_workbench_05_citrus_clear.png",
+      "sha256": "c121b5a322167999e399086328c50fb94422368d435e3d8050c481e53d038945",
+      "dimensions": [
+        390,
+        844
+      ],
+      "manual_review": "opened individually; matches named state; no actionable P0/P1/P2 in bounded flow"
+    },
+    {
+      "file": "portrait_workbench_05_harbor_sea.png",
+      "sha256": "d5d1155c855838737e8e2b227a93922ac9ea5875f6977213e9c6d1ee030a4a05",
+      "dimensions": [
+        390,
+        844
+      ],
+      "manual_review": "opened individually; matches named state; no actionable P0/P1/P2 in bounded flow"
+    },
+    {
+      "file": "portrait_workbench_05_sesame_depth.png",
+      "sha256": "e451532c770b515def239c2deb1c5acb3b267060f8f41cea1fe18d34ab553ed2",
+      "dimensions": [
+        390,
+        844
+      ],
+      "manual_review": "opened individually; matches named state; no actionable P0/P1/P2 in bounded flow"
+    },
+    {
+      "file": "portrait_workbench_06_broth.png",
+      "sha256": "826de7ab923b4007bc1e26c8e967488df6f835eb3680e9f772003a3e6ccc24ad",
+      "dimensions": [
+        390,
+        844
+      ],
+      "manual_review": "opened individually; matches named state; no actionable P0/P1/P2 in bounded flow"
+    },
+    {
+      "file": "portrait_workbench_07_noodle.png",
+      "sha256": "bc078626b879dc9ce2eaf863d8939d2ae6bf3f0fb465f0919c9000f1b60df58c",
+      "dimensions": [
+        390,
+        844
+      ],
+      "manual_review": "opened individually; matches named state; no actionable P0/P1/P2 in bounded flow"
+    },
+    {
+      "file": "portrait_workbench_08_plating.png",
+      "sha256": "22ab4260308f73b9b0597a19296eee4ad9cfc4d5c89f87e1ec237362021b530c",
+      "dimensions": [
+        390,
+        844
+      ],
+      "manual_review": "opened individually; matches named state; no actionable P0/P1/P2 in bounded flow"
+    },
+    {
+      "file": "portrait_workbench_09_citrus_clear_result.png",
+      "sha256": "44932c7dfce5090dceabe4b6fb8efebc0986fb910cae05c32028a0b500bcadcc",
+      "dimensions": [
+        390,
+        844
+      ],
+      "manual_review": "opened individually; matches named state; no actionable P0/P1/P2 in bounded flow"
+    },
+    {
+      "file": "portrait_workbench_09_harbor_sea_result.png",
+      "sha256": "b8613668b3925ac8bd7128a9894a0c8b0e8c07836b4eff5dd8cff7f0599a406b",
+      "dimensions": [
+        390,
+        844
+      ],
+      "manual_review": "opened individually; matches named state; no actionable P0/P1/P2 in bounded flow"
+    },
+    {
+      "file": "portrait_workbench_09_sesame_depth_result.png",
+      "sha256": "09f6d3d62885d555149adbc16b8b10e6712360ef5947819d1530650590165f52",
+      "dimensions": [
+        390,
+        844
+      ],
+      "manual_review": "opened individually; matches named state; no actionable P0/P1/P2 in bounded flow"
+    },
+    {
+      "file": "portrait_workbench_10_reloaded.png",
+      "sha256": "e9462da4859963835c79099c8c17573522549f1eef617827400b79e687241b9e",
+      "dimensions": [
+        390,
+        844
+      ],
+      "manual_review": "opened individually; matches named state; no actionable P0/P1/P2 in bounded flow"
+    }
+  ],
+  "comparisons": [
+    {
+      "file": "comparisons/portrait_before_after.png",
+      "sha256": "be8ca40a5bacc9d92dd29d301ab275d966b467681759644be691f6e34fc9d3e3",
+      "dimensions": [
+        796,
+        888
+      ],
+      "method": "Same fresh day1/30000, default dish cost2200/prep100, initial top-scroll. Both original full views remain density1; labels and16px gutter only. Intentional food hierarchy/navigation redesign, not pixel-identical clone.",
+      "sources": [
+        {
+          "file": "game/docs/expression-screenshots/portrait_expression_01_preview.png",
+          "crop": null,
+          "sha256": "97156805aaca4d89227f2910121c7ddd0c7707e6a0f518be1654c7f600ff2b5d"
+        },
+        {
+          "file": "game/docs/workbench-screenshots/portrait_workbench_01_food.png",
+          "crop": null,
+          "sha256": "19a0265f635aaf6fe6714507046db40aee86d650d223095bb42c0e3dfc7321ed"
+        }
+      ],
+      "manual_review": "opened together and inspected; intentional differences documented; no actionable P0/P1/P2 in bounded comparison"
+    },
+    {
+      "file": "comparisons/desktop_before_after.png",
+      "sha256": "a467cfb6876bf41b9259e5aaca6617725daf3f83bce6536bfed1d0167f380b49",
+      "dimensions": [
+        2576,
+        844
+      ],
+      "method": "Same fresh day1/30000, default dish cost2200/prep100, initial top-scroll. Both original full views remain density1; labels and16px gutter only. Intentional food hierarchy/navigation redesign, not pixel-identical clone.",
+      "sources": [
+        {
+          "file": "game/docs/expression-screenshots/desktop_expression_01_preview.png",
+          "crop": null,
+          "sha256": "5f8d761736dde8d21611d3f9bb25686099d0b2ffcaef6d7111a4cde8851df63e"
+        },
+        {
+          "file": "game/docs/workbench-screenshots/desktop_workbench_01_food.png",
+          "crop": null,
+          "sha256": "9a75bb4838e71f7e01d39ae080d59c837549a97c696e7334c19a283c15e862a3"
+        }
+      ],
+      "manual_review": "opened together and inspected; intentional differences documented; no actionable P0/P1/P2 in bounded comparison"
+    },
+    {
+      "file": "comparisons/portrait_bowl_focus.png",
+      "sha256": "755b2ecc8c627517c7fc5f91b570ce20754222aab8c87710c7ec5ad39277e7ea",
+      "dimensions": [
+        1360,
+        476
+      ],
+      "method": "Equal224x144 actual-region crops displayed3x nearest-neighbor. Existing48x32 bowl intentionally grows from2x to4x in native UI; no artwork edits.",
+      "sources": [
+        {
+          "file": "game/docs/expression-screenshots/portrait_expression_01_preview.png",
+          "crop": [
+            24,
+            287,
+            248,
+            431
+          ],
+          "sha256": "97156805aaca4d89227f2910121c7ddd0c7707e6a0f518be1654c7f600ff2b5d"
+        },
+        {
+          "file": "game/docs/workbench-screenshots/portrait_workbench_01_food.png",
+          "crop": [
+            80,
+            246,
+            304,
+            390
+          ],
+          "sha256": "19a0265f635aaf6fe6714507046db40aee86d650d223095bb42c0e3dfc7321ed"
+        }
+      ],
+      "manual_review": "opened together and inspected; intentional differences documented; no actionable P0/P1/P2 in bounded comparison"
+    },
+    {
+      "file": "comparisons/portrait_three_dishes.png",
+      "sha256": "daf35dff6ed1e9116c7ae0a0150d659353127c7a293dcefc6da6849203e5a9cc",
+      "dimensions": [
+        1202,
+        888
+      ],
+      "method": "Three actual distinct tested witness recipes. Original390x844 full views, density1; labels/gutters only. Different wallet/day/profile are real sequential transactions, not matched starting states.",
+      "sources": [
+        {
+          "file": "game/docs/workbench-screenshots/portrait_workbench_05_citrus_clear.png",
+          "crop": null,
+          "sha256": "c121b5a322167999e399086328c50fb94422368d435e3d8050c481e53d038945"
+        },
+        {
+          "file": "game/docs/workbench-screenshots/portrait_workbench_05_sesame_depth.png",
+          "crop": null,
+          "sha256": "e451532c770b515def239c2deb1c5acb3b267060f8f41cea1fe18d34ab553ed2"
+        },
+        {
+          "file": "game/docs/workbench-screenshots/portrait_workbench_05_harbor_sea.png",
+          "crop": null,
+          "sha256": "d5d1155c855838737e8e2b227a93922ac9ea5875f6977213e9c6d1ee030a4a05"
+        }
+      ],
+      "manual_review": "opened together and inspected; intentional differences documented; no actionable P0/P1/P2 in bounded comparison"
+    },
+    {
+      "file": "comparisons/portrait_three_results.png",
+      "sha256": "f931217ee6ea319b5a2d13c9c28bc86a18f432a507a030ed94612635198693fe",
+      "dimensions": [
+        1202,
+        888
+      ],
+      "method": "Three actual distinct tested witness recipes. Original390x844 full views, density1; labels/gutters only. Different wallet/day/profile are real sequential transactions, not matched starting states.",
+      "sources": [
+        {
+          "file": "game/docs/workbench-screenshots/portrait_workbench_09_citrus_clear_result.png",
+          "crop": null,
+          "sha256": "44932c7dfce5090dceabe4b6fb8efebc0986fb910cae05c32028a0b500bcadcc"
+        },
+        {
+          "file": "game/docs/workbench-screenshots/portrait_workbench_09_sesame_depth_result.png",
+          "crop": null,
+          "sha256": "09f6d3d62885d555149adbc16b8b10e6712360ef5947819d1530650590165f52"
+        },
+        {
+          "file": "game/docs/workbench-screenshots/portrait_workbench_09_harbor_sea_result.png",
+          "crop": null,
+          "sha256": "b8613668b3925ac8bd7128a9894a0c8b0e8c07836b4eff5dd8cff7f0599a406b"
+        }
+      ],
+      "manual_review": "opened together and inspected; intentional differences documented; no actionable P0/P1/P2 in bounded comparison"
+    }
+  ],
+  "limits": [
+    "Native rendered SubViewport screenshots, no physical device bezel or iPhone input acceptance.",
+    "Audio assets/playback tested, no human speaker quality or volume acceptance.",
+    "No human fun, full accessibility, or6-10hour completion claim."
+  ]
+}

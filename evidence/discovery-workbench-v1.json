@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "status": "headless-passed-native-approval-pending",
+  "status": "native-accepted",
   "date": "2026-10-23",
   "base_main": "7fe29646f2377800e81899d9380f91c006d0e106",
   "implementation_agent": "Codex",
@@ -706,15 +706,39 @@
     "engine_errors": 0,
     "log_sha256": "4d1d811543606e946af80eb9e97cff0177a8b449e53ed16b6be8901374bbcc23"
   },
-  "native_run": null,
+  "native_run": {
+    "id": "20261022T163531Z-15310",
+    "finished_utc": "2026-10-22T16:36:53Z",
+    "date_kst": "2026-10-23",
+    "renderer": "OpenGL4.1 Metal90.5 Compatibility AppleM3Pro",
+    "checks": 1980,
+    "failures": 0,
+    "exit_status": 0,
+    "engine_errors": 0,
+    "original_png_count": 28,
+    "originals_individually_opened_and_reviewed": 28,
+    "combined_comparisons_opened_and_reviewed": 5,
+    "full_run_files_privately_preserved_byte_equal": 36,
+    "console_log_sha256": "7fa34ac63021d867e734614ae5b34d691ecbb9016f9a6ec4868560a501fd5313",
+    "godot_log_sha256": "7fa34ac63021d867e734614ae5b34d691ecbb9016f9a6ec4868560a501fd5313",
+    "exit_status_sha256": "02ccafe6fe6205aa9946e0f4a7474ff6b970384e08e6e40e6065ec961750da48",
+    "gallery": "game/docs/workbench-screenshots",
+    "review_manifest": "game/docs/workbench-screenshots/review.json",
+    "review_manifest_sha256": "21e9123fc14275d812d01897c38ab574a03b2e17ff40375a89ac9b0208170e6c",
+    "postrun_source_files_equal": 161,
+    "postrun_pack_equal": true,
+    "postrun_engine_hash_equal": true,
+    "postrun_vendor_strict_signature_exit": 0
+  },
   "iphone": "deferred by user",
   "evidence_limits": [
-    "No current native screenshot/visual pass until exact-app approval and execution.",
+    "Bounded workbench visual/flow acceptance; not whole-game, full accessibility or production readiness.",
     "Original audio files and routed playback signals verified, not human speaker/quality acceptance.",
-    "No human fun or 6-10h completion claim."
+    "iPhone input/performance/installation deferred by user.",
+    "No human fun or6-10h completion claim."
   ],
   "preserved_existing_domain_and_services": 26,
   "save_schema": 13,
   "audio_original_byte_equal_reproduction": 8,
-  "known_metadata_diagnostic": "Initial local verifier assumed bundled_files contained objects; corrected to manifest string paths and verified161 byte-equal sources. Runtime code not changed."
+  "known_metadata_diagnostic": "Initial local verifier assumed bundled_files contained objects; corrected to manifest string paths and verified161 byte-equal sources. Runtime code not changed. A postrun signature command used a nonexistent wrapper-nested path; corrected to manifest runtime/Godot.app and verified0 without changes."
 }
