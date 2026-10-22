@@ -1,0 +1,149 @@
+{
+  "generation_mode": "built-in image_gen",
+  "independent_calls": 3,
+  "order_basis": "actual generated images displayed in main conversation",
+  "target_logical_viewport": [
+    390,
+    844
+  ],
+  "generated_originals_not_resized": true,
+  "selection": null,
+  "source_images": "Actual current capture and official capture paths attached; private source manifest outside repository",
+  "concepts": [
+    {
+      "displayed_order": 1,
+      "file": "concept-01-shop.png",
+      "prompt_file": "prompt-shop.txt",
+      "prompt_sha256": "693b5feb141bd9add07c752be23d87225e1a46554aa44ea153214557e368ff5a",
+      "manual_visual_review": true,
+      "not_a_working_prototype": true,
+      "sha256": "e48246aa80e93e182ba58358c10e7aebcb2ab972a778b211d37fdce949d88334",
+      "format": "PNG",
+      "width": 853,
+      "height": 1844,
+      "bytes": 1956961,
+      "actual_image_inputs": [
+        {
+          "image_index": 1,
+          "role": "current rejected native UI",
+          "file": "../current/portrait_workbench_01_food.png",
+          "sha256": "19a0265f635aaf6fe6714507046db40aee86d650d223095bb42c0e3dfc7321ed"
+        },
+        {
+          "image_index": 2,
+          "role": "official screenshot reference, no asset reuse",
+          "source_page": "https://kairosoft.net/game/appli/noodle.html",
+          "source_asset": "https://kairosoft.net/game/shared/image/gm115/ss_01.png",
+          "private_capture_sha256": "84d7475bf789db1ae3e8abb8e35cfee5d71db65e196b469a1c8cab06ffeb024c",
+          "private_capture_format": "JPEG"
+        },
+        {
+          "image_index": 3,
+          "role": "official screenshot reference, no asset reuse",
+          "source_page": "https://kairosoft.net/game/appli/burger.html",
+          "source_asset": "https://kairosoft.net/game/shared/image/gm123/ss_05.png",
+          "private_capture_sha256": "a61c8e88290707835570229fd231f79aebe3be0aac1a2f4e19a00911594be560",
+          "private_capture_format": "JPEG"
+        },
+        {
+          "image_index": 4,
+          "role": "official screenshot reference, no asset reuse",
+          "source_page": "https://kairosoft.net/game/appli/cafe.html",
+          "source_asset": "https://kairosoft.net/game/shared/image/gm147/img_02.png",
+          "private_capture_sha256": "d0c8b25fc6a5db20b1af4fbfc8b83b0a5c32cb885cb435de2b545f7bd330822f",
+          "private_capture_format": "JPEG"
+        }
+      ]
+    },
+    {
+      "displayed_order": 2,
+      "file": "concept-02-steps.png",
+      "prompt_file": "prompt-steps.txt",
+      "prompt_sha256": "4cfdfc5c3834c0eaef15fb32dcddcaf0ef03bf3ca9ff6bb7019eda219072b927",
+      "manual_visual_review": true,
+      "not_a_working_prototype": true,
+      "sha256": "dd6e4b835942a9465ae2cfb27e7f3d71d26b6d010d766604a99464d45d74e6c9",
+      "format": "PNG",
+      "width": 853,
+      "height": 1844,
+      "bytes": 1835806,
+      "actual_image_inputs": [
+        {
+          "image_index": 1,
+          "role": "current rejected native UI",
+          "file": "../current/portrait_workbench_01_food.png",
+          "sha256": "19a0265f635aaf6fe6714507046db40aee86d650d223095bb42c0e3dfc7321ed"
+        },
+        {
+          "image_index": 2,
+          "role": "official screenshot reference, no asset reuse",
+          "source_page": "https://kairosoft.net/game/appli/noodle.html",
+          "source_asset": "https://kairosoft.net/game/shared/image/gm115/ss_01.png",
+          "private_capture_sha256": "84d7475bf789db1ae3e8abb8e35cfee5d71db65e196b469a1c8cab06ffeb024c",
+          "private_capture_format": "JPEG"
+        },
+        {
+          "image_index": 3,
+          "role": "official screenshot reference, no asset reuse",
+          "source_page": "https://kairosoft.net/game/appli/noodle.html",
+          "source_asset": "https://kairosoft.net/game/shared/image/gm115/ss_04.png",
+          "private_capture_sha256": "0fb83fdcc2f7e2d14634cbec9fa7ecc8b539cc34a9e2b02a27a5106312c60812",
+          "private_capture_format": "JPEG"
+        },
+        {
+          "image_index": 4,
+          "role": "official screenshot reference, no asset reuse",
+          "source_page": "https://kairosoft.net/game/appli/cafe.html",
+          "source_asset": "https://kairosoft.net/game/shared/image/gm147/img_02.png",
+          "private_capture_sha256": "d0c8b25fc6a5db20b1af4fbfc8b83b0a5c32cb885cb435de2b545f7bd330822f",
+          "private_capture_format": "JPEG"
+        }
+      ]
+    },
+    {
+      "displayed_order": 3,
+      "file": "concept-03-map.png",
+      "prompt_file": "prompt-map.txt",
+      "prompt_sha256": "5c42d49969c73cf720283aacc50c249a74771bd24598328528ccdace2ef336d8",
+      "manual_visual_review": true,
+      "not_a_working_prototype": true,
+      "sha256": "d9bdaf06ca5afa2e6b6d564df13c19e21dde10202a073f102dcc93ba5409937c",
+      "format": "PNG",
+      "width": 853,
+      "height": 1844,
+      "bytes": 1652598,
+      "actual_image_inputs": [
+        {
+          "image_index": 1,
+          "role": "current rejected native UI",
+          "file": "../current/portrait_workbench_01_food.png",
+          "sha256": "19a0265f635aaf6fe6714507046db40aee86d650d223095bb42c0e3dfc7321ed"
+        },
+        {
+          "image_index": 2,
+          "role": "official screenshot reference, no asset reuse",
+          "source_page": "https://kairosoft.net/game/appli/noodle.html",
+          "source_asset": "https://kairosoft.net/game/shared/image/gm115/ss_01.png",
+          "private_capture_sha256": "84d7475bf789db1ae3e8abb8e35cfee5d71db65e196b469a1c8cab06ffeb024c",
+          "private_capture_format": "JPEG"
+        },
+        {
+          "image_index": 3,
+          "role": "official screenshot reference, no asset reuse",
+          "source_page": "https://kairosoft.net/game/appli/osushi.html",
+          "source_asset": "https://kairosoft.net/game/shared/image/gm58/img_02.png",
+          "private_capture_sha256": "6abfc548e7aa85f9abb903e75ddb16754b196631c98cd0d2487db4595818e18f",
+          "private_capture_format": "JPEG"
+        },
+        {
+          "image_index": 4,
+          "role": "official screenshot reference, no asset reuse",
+          "source_page": "https://kairosoft.net/game/appli/burger.html",
+          "source_asset": "https://kairosoft.net/game/shared/image/gm123/ss_05.png",
+          "private_capture_sha256": "a61c8e88290707835570229fd231f79aebe3be0aac1a2f4e19a00911594be560",
+          "private_capture_format": "JPEG"
+        }
+      ]
+    }
+  ]
+}
