@@ -57,6 +57,9 @@ func _run_profile(tag: String, vp: Vector2i, _scale: int) -> void:
 	app.call("advance_travel", 100.0)
 	await _settle()
 	_check(_state(app).call("sample_stock", Harbor.IDS[1]) == 0, tag + ": reward waiting has no stock")
+	var collect_button := _find(app, "ExpeditionCollect") as Control
+	var trip_scroll := _scroll_of(collect_button)
+	_check(trip_scroll.get_global_rect().grow(1).encloses(collect_button.get_global_rect()), tag + ": pending collect is visible without test-driven scrolling")
 	await _shot(holder, tag + "_harbor_06_waiting.png")
 	# Recreate the real scene from disk while a reward is pending.
 	app.queue_free()
@@ -77,12 +80,18 @@ func _run_profile(tag: String, vp: Vector2i, _scale: int) -> void:
 	await _tap_control(holder, _find(app, "HarborLatestLab"))
 	await _settle()
 	_check((app.get("tabs") as TabContainer).current_tab == 0 and _dict_str(app) == before, tag + ": handoff opens lab without changing edited draft")
+	var catch_button := _find(app, "Opt_topping_scallop") as Control
+	_check(_scroll_of(catch_button).get_global_rect().grow(1).encloses(catch_button.get_global_rect()), tag + ": handoff reveals actual catch without test-driven scrolling")
 	await _shot(holder, tag + "_harbor_08_workbench.png")
 	var state: Object = _state(app)
 	_check(state.call("set_draft_toppings", [Harbor.IDS[1], Harbor.IDS[1], Harbor.IDS[1]])["ok"], tag + ": actual repeat portions")
 	app.call("_refresh_all")
-	_press(app, "DevButton")
+	# Opening is idempotent; DevButton toggles and previously closed an already
+	# open lab, producing a shop screenshot instead of the requested dish.
+	app.call("_open_overlay", 0)
 	await _settle()
+	_check((_find(app, "Overlay") as Control).visible, tag + ": actual lab overlay visible")
+	await _reachable(app, vp, "BowlPreview")
 	await _shot(holder, tag + "_harbor_09_triple_dish.png")
 	before = _dict_str(app)
 	_press(app, "QuickTasteButton")
@@ -96,6 +105,8 @@ func _run_profile(tag: String, vp: Vector2i, _scale: int) -> void:
 	app.call("advance_work", 12.0)
 	await _settle()
 	_check(state.call("sample_stock", Harbor.IDS[1]) == 0, tag + ": completed recipe consumes3")
+	_check((_find(app, "Overlay") as Control).visible and (_find(app, "FeedbackBowl") as Control).is_visible_in_tree(), tag + ": actual result overlay and dish visible")
+	await _reachable(app, vp, "FeedbackBowl")
 	_overflow(app, vp, tag + " harbor result")
 	await _shot(holder, tag + "_harbor_10_result.png")
 	_check(state.call("serve")["ok"] and state.call("sample_stock", Harbor.IDS[1]) == 0, tag + ": actual sale at zero research stock")
@@ -115,8 +126,36 @@ func _run_profile(tag: String, vp: Vector2i, _scale: int) -> void:
 	_check(state.call("set_draft_toppings", ["topping_nori"])["ok"], tag + ": remove used scallops")
 	app.call("_refresh_all")
 	await _settle()
+	var broth_button := _find(app, "Opt_broth_roasted_sardine") as Button
+	var font: Font = broth_button.get_theme_font("font")
+	var title_width: float = font.get_string_size(broth_button.text.get_slice("\n", 0), HORIZONTAL_ALIGNMENT_LEFT, -1, broth_button.get_theme_font_size("font_size")).x
+	var occupied: float = title_width + broth_button.icon.get_width() + broth_button.get_theme_constant("h_separation") + broth_button.get_theme_stylebox("normal").get_minimum_size().x
+	_check(occupied <= broth_button.size.x, tag + ": broth title fits one line beside its icon")
 	_overflow(app, vp, tag + " harbor workbench")
-	await _shot(holder, tag + "_harbor_12_broth_dish.png")
+	await _shot(holder, tag + "_harbor_12_broth_choices.png")
+	await _reachable(app, vp, "BowlPreview")
+	await _shot(holder, tag + "_harbor_13_broth_dish.png")
+	# Automatic reward focus must never bury a failed-save notice. Use a real
+	# file-as-directory blocker inside this disposable test root, not chmod.
+	_check(state.call("serve")["ok"], tag + ": next day for save-failure focus")
+	_check(state.call("start_harbor_foraging")["ok"], tag + ": failure-case departure")
+	_check(state.call("advance_expedition", "sardine_boat")["ok"], tag + ": failure-case target")
+	app.call("_refresh_all")
+	app.call("_open_overlay", 6)
+	var blocker: String = _data_root.path_join(tag + "_harbor_save_blocker")
+	var file := FileAccess.open(blocker, FileAccess.WRITE)
+	_check(file != null, tag + ": isolated save blocker created")
+	if file != null:
+		file.store_string("Intentional QA file-as-directory blocker.")
+		file.close()
+		app.set("saver", SaveServiceScript.new(blocker))
+		app.call("_on_exploration_choice", "take_one")
+		app.call("advance_travel", 100.0)
+		await _settle()
+		_check(_text_of(app, "ExplorationMessage").contains("저장하지 못"), tag + ": failed save explicitly reported")
+		_check((_find(app, "TabExploration") as ScrollContainer).scroll_vertical == 0, tag + ": reward auto-focus preserves failed-save warning")
+		await _reachable(app, vp, "ExplorationMessage")
+		await _shot(holder, tag + "_harbor_14_save_warning.png")
 	app.queue_free()
 	await _frames(3)
 	holder.queue_free()

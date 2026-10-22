@@ -987,7 +987,9 @@ func _make_option(slot: String, item: Dictionary, group: ButtonGroup) -> Button:
 	b.expand_icon = false
 	var cost: int = int(item["cost"])
 	var secs: int = int(item["seconds"])
-	b.text = "%s\n%s · %d초" % [str(item["name"]), _won(cost), secs]
+	# Keep long ingredient names readable beside the icon; full names remain
+	# in section headers, stock and details.
+	b.text = "%s\n%s · %d초" % [str(item.get("short_name", item["name"])), _won(cost), secs]
 	b.pressed.connect(_on_option_pressed.bind(slot, id))
 	_buttons[id] = b
 	return b
@@ -2230,6 +2232,21 @@ func _refresh_exploration() -> void:
 		box.add_child(depart)
 		_exploration_box.add_child(card)
 	_sync_exploration_lock()
+	if not _travel.running() and not state.harbor_foraging_state()["active"].is_empty() and str(trip.get("stage", "")) == Exploration.STAGE_RESULT:
+		_reveal_harbor_reward.call_deferred()
+
+
+## A pending reward is the next action. Reveal its button after layout without
+## granting it, changing tabs, or scrolling away from a failed-save warning.
+func _reveal_harbor_reward() -> void:
+	await get_tree().process_frame
+	if tabs.current_tab != TAB_EXPLORATION or _travel.running() or _last_save_message != "":
+		return
+	if state.harbor_foraging_state()["active"].is_empty() or str(state.expedition().get("stage", "")) != Exploration.STAGE_RESULT:
+		return
+	var collect := find_child("ExpeditionCollect", true, false) as Button
+	if collect != null and collect.is_visible_in_tree():
+		(tabs.get_child(TAB_EXPLORATION) as ScrollContainer).ensure_control_visible(collect)
 
 
 ## No new management tab: the market sample loop lives next to supplier trips.
@@ -2344,6 +2361,11 @@ func _open_sample_lab(id: String) -> void:
 	var slot: String = "broth" if id.begins_with("broth_") else "topping"
 	await _open_experiment_choices(slot)
 	_taste_message.text = "%s %d개 보관. 초안은 유지했어요. 직접 재료를 골라 조합해 보세요." % [item["name"], state.sample_stock(id)]
+	await get_tree().process_frame
+	# A section header can sit at the bottom edge with all choices offscreen.
+	# Reveal the actual catch's existing button, still without selecting it.
+	if tabs.current_tab == TAB_LAB and _buttons.has(id):
+		(tabs.get_child(TAB_LAB) as ScrollContainer).ensure_control_visible(_buttons[id])
 
 
 func _on_foraging_depart() -> void:
@@ -2911,7 +2933,7 @@ func _refresh_lab() -> void:
 			var b: Button = _buttons[id]
 			b.set_pressed_no_signal(chosen_ids.has(id))
 			var locked: bool = not state.ingredient_unlocked(id)
-			b.text = "%s%s%s\n%s · %d초" % ["탐색 필요 · " if locked else "", str(d["name"]), " ×%d" % chosen_ids.count(id) if slot == Catalog.TOPPING_SLOT and chosen_ids.has(id) else "", _won(int(d["cost"])), int(d["seconds"])]
+			b.text = "%s%s%s\n%s · %d초" % ["탐색 필요 · " if locked else "", str(d.get("short_name", d["name"])), " ×%d" % chosen_ids.count(id) if slot == Catalog.TOPPING_SLOT and chosen_ids.has(id) else "", _won(int(d["cost"])), int(d["seconds"])]
 		var hints: Array[String] = []
 		for locked_item in state.locked_items(slot):
 			var li: Dictionary = locked_item

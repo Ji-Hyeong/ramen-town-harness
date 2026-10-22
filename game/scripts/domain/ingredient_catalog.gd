@@ -165,7 +165,7 @@ static func discovery_items(slot: String) -> Array:
 ## Research-only samples are separate from the six permanent exploration
 ## unlocks. Old catalog enumeration and exploration receipts keep their meaning.
 const FARMED_ITEMS: Dictionary = {
-	"broth": [{"id": "broth_roasted_sardine", "name": "구운 정어리 육수", "cost": 450, "seconds": 30, "region": "harbor",
+	"broth": [{"id": "broth_roasted_sardine", "name": "구운 정어리 육수", "short_name": "정어리 육수", "cost": 450, "seconds": 30, "region": "harbor",
 		"desc": "항구의 작은 생선을 구워 낸 맑은 육수. 향이 강하고 간이 있지만 진함은 낮아요. 손질에는 시간이 들어요.", "axes": {"rich": 1, "salt": 2, "aroma": 5}}],
 	"oil": [{"id": "oil_roasted_sesame", "name": "볶은 참깨유", "cost": 240, "seconds": 12,
 		"desc": "장터에서 구한 고소한 연구 재료. 진함과 향이 강하고 손질 시간이 길어요.", "axes": {"rich": 2, "aroma": 4}}],

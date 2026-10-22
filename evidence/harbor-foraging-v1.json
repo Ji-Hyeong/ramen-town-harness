@@ -2,7 +2,7 @@
   "version": 1,
   "date": "2026-10-22",
   "feature": "harbor research sampling",
-  "status": "implementation-tested-native-pending",
+  "status": "visual-corrections-tested-native-recapture-pending",
   "codex_only": true,
   "claude_calls": 0,
   "schema_version": 13,
@@ -58,7 +58,7 @@
     },
     {
       "path": "scripts/domain/ingredient_catalog.gd",
-      "sha256": "f949125f3d84fc1454f7b7b971dba91083b0942fdc0eb3c2df4ef3bf81d0aa1e"
+      "sha256": "19d4e112d886ba9cb09eba20feda21eadcea4cb6c8cf9f76fae2753025c8efd4"
     },
     {
       "path": "scripts/domain/ingredient_catalog.gd.uid",
@@ -258,7 +258,7 @@
     },
     {
       "path": "scripts/ui/main.gd",
-      "sha256": "29f7ac8dd7fe298d89de69dca00a1f8cc4405ab211202047a7226d9c55fed173"
+      "sha256": "b6e14c1192ff545b5651846656d7b2fe950805fd35a005ab17a87a6aab24ff6d"
     },
     {
       "path": "scripts/ui/main.gd.uid",
@@ -406,7 +406,7 @@
     },
     {
       "path": "tests/harbor_foraging_ui_tests.gd",
-      "sha256": "65da18b54de73e43a5c664a9c4bde77096eb0f9d5f03bf5a85cbcb3b2cf193fa"
+      "sha256": "21425097258d3b3ceb7291cd8508511371328b82c28c38c964761d5c31f97615"
     },
     {
       "path": "tests/harbor_foraging_ui_tests.gd.uid",
@@ -550,10 +550,71 @@
     }
   ],
   "source_file_count": 135,
-  "pack_sha256": "6db7ac1e8ae737688f63de449e9eae34728c95b08de5d08655f54c50566f5b56",
+  "pack_sha256": "2da6bdc7775b32c7d7343c9e541c663cf4facedec7b5b274e376240b4f3eabfa",
   "official_engine_sha256": "c7cccbf8fb143e34e02fd6521e09be2c2b974f0d5db080b19071c9c570718ccf",
   "vendor_signature_verified": true,
   "tests": [
+    {
+      "name": "domain",
+      "checks": 58423,
+      "tests": 127,
+      "failures": 0,
+      "exit_code": 0,
+      "engine_errors": 0,
+      "log_sha256": "d6b38089cffbcfa46eb434cebe92516c56c26603d0e7f34f311e3433648d1076"
+    },
+    {
+      "name": "harbor_scene",
+      "checks": 878,
+      "tests": null,
+      "failures": 0,
+      "exit_code": 0,
+      "engine_errors": 0,
+      "log_sha256": "3321340c039ed6c73c53f8255cc9ed5ec5eff50036bfce6707578bc4d37b7e7c"
+    },
+    {
+      "name": "touch_regression",
+      "checks": 70,
+      "tests": null,
+      "failures": 0,
+      "exit_code": 0,
+      "engine_errors": 0,
+      "log_sha256": "ebda5cfffb0eaf35aab0b926197f324349e4c7e85419dbcd5e58fef0f0a76312"
+    },
+    {
+      "name": "packed_harbor_scene",
+      "checks": 878,
+      "failures": 0,
+      "exit_code": 0,
+      "engine_errors": 0,
+      "log_sha256": "c228708ac8ddad961aeec02f47e6e8990398dcf3b576d731f6b7771a6d1c2d82"
+    }
+  ],
+  "genuine_old_version_cases": 6,
+  "all_legacy_values_equal": true,
+  "exact_original_backups": true,
+  "full_current_layout": "running after visual corrections",
+  "native_renderer_verified": false,
+  "native_screenshots": [],
+  "design_audit": "blocked pending fresh native captures",
+  "iphone_install": "deferred by user",
+  "prior_diagnostics": [
+    {
+      "kind": "fixture",
+      "details": "Initial rank2 fixture omitted the second customer-score prerequisite; fixed by real additional tasting, no production relaxation."
+    },
+    {
+      "kind": "fixture",
+      "details": "Deleted-best-witness assumption did not guarantee a sample recipe was a customer best; replaced by a real retained comparison witness."
+    },
+    {
+      "kind": "fixture",
+      "details": "Genuine-v12 comparison initially compared parsed floats with normalized integers; identical JSON value normalization and independent Python checks confirmed all six cases."
+    }
+  ],
+  "pull_request": "https://github.com/Ji-Hyeong/ramen-town-harness/pull/18",
+  "exact_qa_app_launch_confirmation": "v2 confirmation requested; pending user response",
+  "previous_tests": [
     {
       "name": "domain",
       "checks": 58423,
@@ -608,28 +669,30 @@
       "log_sha256": "c5ff5ad4f9e27e218dbcfbe95f94daff52ba5e45b0932ccce3b43f547743218a"
     }
   ],
-  "genuine_old_version_cases": 6,
-  "all_legacy_values_equal": true,
-  "exact_original_backups": true,
-  "full_current_layout": "passed",
-  "native_renderer_verified": false,
-  "native_screenshots": [],
-  "design_audit": "blocked pending fresh native captures",
-  "iphone_install": "deferred by user",
-  "prior_diagnostics": [
-    {
-      "kind": "fixture",
-      "details": "Initial rank2 fixture omitted the second customer-score prerequisite; fixed by real additional tasting, no production relaxation."
-    },
-    {
-      "kind": "fixture",
-      "details": "Deleted-best-witness assumption did not guarantee a sample recipe was a customer best; replaced by a real retained comparison witness."
-    },
-    {
-      "kind": "fixture",
-      "details": "Genuine-v12 comparison initially compared parsed floats with normalized integers; identical JSON value normalization and independent Python checks confirmed all six cases."
-    }
+  "first_native_run": {
+    "run": "20261022T070256Z-95998",
+    "checks": 688,
+    "failures": 0,
+    "exit_code": 0,
+    "engine_errors": 0,
+    "screenshots": 24,
+    "all_manually_inspected": true,
+    "visual_result": "rejected pending corrections",
+    "manifest": "game/docs/harbor-screenshots/v1-review.json"
+  },
+  "visual_findings": [
+    "portrait collection action below fold",
+    "handoff does not expose actual catch",
+    "broth label orphan wraps",
+    "four dish/result captures show shop; broth12 shows only choices"
   ],
-  "pull_request": "https://github.com/Ji-Hyeong/ramen-town-harness/pull/18",
-  "exact_qa_app_launch_confirmation": "requested; pending user response"
+  "negative_control": {
+    "checks": 860,
+    "failures": 5,
+    "exit_code": 1,
+    "engine_errors": 0,
+    "source": "frozen v1",
+    "result": "expected failure; demonstrates old UI defects"
+  },
+  "vendor_signature_rechecked_after_v1": true
 }
