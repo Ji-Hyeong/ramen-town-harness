@@ -7,7 +7,15 @@
     844
   ],
   "generated_originals_not_resized": true,
-  "selection": null,
+  "selection": {
+    "date_kst": "2026-10-23",
+    "displayed_order": 3,
+    "file": "concept-03-map.png",
+    "sha256": "d9bdaf06ca5afa2e6b6d564df13c19e21dde10202a073f102dcc93ba5409937c",
+    "status": "selected_with_category_feedback",
+    "refinement_manifest": "../refinements/manifest.json",
+    "feedback": "Keep visible broth/noodle summaries and topping price/prep/details; categorize for future many toppings"
+  },
   "source_images": "Actual current capture and official capture paths attached; private source manifest outside repository",
   "concepts": [
     {
