@@ -598,12 +598,20 @@
       "exit_code": 0,
       "engine_errors": 0,
       "log_sha256": "edb40b11ca755645fcd3a82151c3492c8adec0b4c1a425f2bd084215497846a6"
+    },
+    {
+      "name": "full_current_layout",
+      "checks": 19066,
+      "failures": 0,
+      "exit_code": 0,
+      "engine_errors": 0,
+      "log_sha256": "c5ff5ad4f9e27e218dbcfbe95f94daff52ba5e45b0932ccce3b43f547743218a"
     }
   ],
   "genuine_old_version_cases": 6,
   "all_legacy_values_equal": true,
   "exact_original_backups": true,
-  "full_current_layout": "running",
+  "full_current_layout": "passed",
   "native_renderer_verified": false,
   "native_screenshots": [],
   "design_audit": "blocked pending fresh native captures",
@@ -621,5 +629,7 @@
       "kind": "fixture",
       "details": "Genuine-v12 comparison initially compared parsed floats with normalized integers; identical JSON value normalization and independent Python checks confirmed all six cases."
     }
-  ]
+  ],
+  "pull_request": "https://github.com/Ji-Hyeong/ramen-town-harness/pull/18",
+  "exact_qa_app_launch_confirmation": "requested; pending user response"
 }
