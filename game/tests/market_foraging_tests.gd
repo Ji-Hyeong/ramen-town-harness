@@ -240,6 +240,7 @@ func _legacy(data_dir: String) -> void:
 	var state: State = ready()
 	var old: Dictionary = state.to_dict()
 	old.erase("foraging")
+	old.erase("harbor_foraging")
 	old["schema_version"] = 10
 	var store: Save = Save.new(data_dir.path_join("legacy10"))
 	DirAccess.make_dir_recursive_absolute(store.dir)
@@ -254,6 +255,7 @@ func _legacy(data_dir: String) -> void:
 	check.call(store.load_into(restored)["status"] == "ok" and restored.foraging_state() == Farm.empty_state(), "v10 migrates without granting any samples")
 	var migrated: Dictionary = restored.to_dict()
 	migrated.erase("foraging")
+	migrated.erase("harbor_foraging")
 	migrated["schema_version"] = 10
 	check.call(migrated == old, "all existing v10 values preserved")
 	check.call(store.save_state(restored)["ok"] and FileAccess.get_file_as_string(store.legacy_bak_path(10)) == text, "first v11 save preserves exact v10 original")

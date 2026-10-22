@@ -165,10 +165,14 @@ static func discovery_items(slot: String) -> Array:
 ## Research-only samples are separate from the six permanent exploration
 ## unlocks. Old catalog enumeration and exploration receipts keep their meaning.
 const FARMED_ITEMS: Dictionary = {
+	"broth": [{"id": "broth_roasted_sardine", "name": "구운 정어리 육수", "cost": 450, "seconds": 30, "region": "harbor",
+		"desc": "항구의 작은 생선을 구워 낸 맑은 육수. 향이 강하고 간이 있지만 진함은 낮아요. 손질에는 시간이 들어요.", "axes": {"rich": 1, "salt": 2, "aroma": 5}}],
 	"oil": [{"id": "oil_roasted_sesame", "name": "볶은 참깨유", "cost": 240, "seconds": 12,
 		"desc": "장터에서 구한 고소한 연구 재료. 진함과 향이 강하고 손질 시간이 길어요.", "axes": {"rich": 2, "aroma": 4}}],
 	"topping": [{"id": "topping_citrus_peel", "name": "유자 껍질", "cost": 220, "seconds": 4,
-		"desc": "장터의 산뜻한 노란 고명. 국물을 가볍게 하고 향을 더해요.", "axes": {"rich": -2, "aroma": 2}}],
+		"desc": "장터의 산뜻한 노란 고명. 국물을 가볍게 하고 향을 더해요.", "axes": {"rich": -2, "aroma": 2}},
+		{"id": "topping_scallop", "name": "가리비 고명", "cost": 550, "seconds": 16, "region": "harbor",
+		"desc": "노릇하게 구운 항구 가리비. 진함과 향을 보태요. 겹쳐 넣으면 원가와 준비 시간도 함께 늘어요.", "axes": {"rich": 2, "aroma": 1}}],
 }
 
 

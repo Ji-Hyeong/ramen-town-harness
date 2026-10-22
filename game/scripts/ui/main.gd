@@ -35,6 +35,7 @@ const WorkScript = preload("res://scripts/ui/tasting_work.gd")
 const WorkViewScript = preload("res://scripts/ui/tasting_work_view.gd")
 const Exploration = preload("res://scripts/domain/ingredient_exploration.gd")
 const Foraging = preload("res://scripts/domain/market_foraging.gd")
+const Harbor = preload("res://scripts/domain/harbor_foraging.gd")
 const TravelScript = preload("res://scripts/ui/expedition_travel.gd")
 const Contest = preload("res://scripts/domain/ramen_contest.gd")
 
@@ -2196,7 +2197,12 @@ func _refresh_exploration() -> void:
 		var last: Label = _label(message, 16, TEAL)
 		last.name = "ExplorationLastReceipt"
 		_exploration_box.add_child(last)
-	_refresh_foraging_card()
+	if state.harbor_foraging_review()["unlocked"]:
+		_refresh_harbor_card()
+		_refresh_foraging_card()
+	else:
+		_refresh_foraging_card()
+		_refresh_harbor_card()
 	for rv in state.exploration_regions():
 		var region: Dictionary = rv
 		var id: String = str(region["id"])
@@ -2235,7 +2241,7 @@ func _refresh_foraging_card() -> void:
 	var box: VBoxContainer = _vbox(6)
 	card.add_child(box)
 	box.add_child(_label("새벽 장터 · 연구 재료 채집", 18, VERMILION))
-	var rules: Label = _label("출발 1,000원 · 기존 탐색과 합쳐 하루 한 번\n시제품 완성마다 해당 재료 1개를 써요. 취소하면 쓰지 않아요. 등록한 메뉴의 판매는 영업 원가로 공급돼요.", 14, MUTED)
+	var rules: Label = _label("출발 1,000원 · 기존 탐색과 합쳐 하루 한 번\n시제품에 넣은 분량만큼 완성 때 써요. 취소하면 쓰지 않아요. 등록한 메뉴의 판매는 영업 원가로 공급돼요.", 14, MUTED)
 	rules.name = "ForagingRules"
 	box.add_child(rules)
 	var stock_lines: Array[String] = []
@@ -2258,6 +2264,86 @@ func _refresh_foraging_card() -> void:
 	depart.pressed.connect(_on_foraging_depart)
 	box.add_child(depart)
 	_exploration_box.add_child(card)
+
+
+## The region art and two compact disclosure rows keep the loop legible on a
+## phone. Facts and fees are visible before departure; details are opt-in.
+func _refresh_harbor_card() -> void:
+	var review: Dictionary = state.harbor_foraging_review()
+	var samples: Dictionary = review["state"]
+	var card: PanelContainer = _card("HarborForagingCard")
+	var box: VBoxContainer = _vbox(8)
+	card.add_child(box)
+	if not review["unlocked"]:
+		# Early players see a compact goal, rather than a long unavailable
+		# inventory that buries the market they can actually play now.
+		box.add_child(_label("다음 채집지 · 항구", 18, VERMILION))
+		var locked_reason: Label = _label(str(review["reason"]), 14, MUTED)
+		locked_reason.name = "HarborForagingReason"
+		box.add_child(locked_reason)
+		box.add_child(_label("구운 정어리 육수 · 가리비 고명", 14, TEAL))
+		box.add_child(_exploration_button("항구 채집 잠김 · 등급 2 / 공급처 2곳", "HarborForagingDepart", true))
+		_exploration_box.add_child(card)
+		return
+	box.add_child(_label("항구 · 오늘의 연구 어획물", 20, VERMILION))
+	box.add_child(_region_picture("harbor", "HarborForagingPicture"))
+	var rules: Label = _label("출발 1,200원 · 모든 탐색과 합쳐 하루 한 번\n재료 선택 → 손질 선택 → 수령 → 메뉴 실험", 15, INK)
+	rules.name = "HarborForagingRules"
+	box.add_child(rules)
+	var price: Label = _label("기본 1개 / 추가 0원 · 손질 3개 / 추가 600원\n시제품에 넣은 분량만큼 완성 때 소모해요. 취소는 소모 없음. 등록한 메뉴는 연구 재료가 없어도 판매할 수 있어요.", 14, MUTED)
+	price.name = "HarborForagingCosts"
+	box.add_child(price)
+	for id in Harbor.IDS:
+		var item: Dictionary = Catalog.find(id)
+		var detail := DetailsScript.new()
+		detail.name = "HarborMaterial_" + id
+		box.add_child(detail)
+		detail.configure(str(item["name"]), "연구 재료 %d/20개 · 펼쳐 보기" % samples["stock"][id], _icon(id, 2))
+		var facts: Label = _label("%s\n%s\n메뉴 한 그릇 원가 %s · 준비 %d초" % [item["desc"], Catalog.axes_text(item), _won(int(item["cost"])), item["seconds"]], 14, INK)
+		facts.name = "HarborFacts_" + id
+		detail.body.add_child(facts)
+		var go: Button = _exploration_button("개발에서 조합하기  →", "HarborLab_" + id, not state.ingredient_unlocked(id) or state.exploration_active())
+		go.pressed.connect(_open_sample_lab.bind(str(id)))
+		detail.body.add_child(go)
+	if not samples["history"].is_empty():
+		var receipt: Dictionary = samples["history"].back()
+		var text: String = "%d일차 · 채집 포기 / 환불 없음" % receipt["day"]
+		if receipt["outcome"] == "finished":
+			text = "%d일차 수령 · %s ×%d\n지금 보관 %d개 · 다시 받으면 중복 지급되지 않아요." % [receipt["day"], Catalog.find(receipt["ingredient"])["name"], receipt["amount"], state.sample_stock(str(receipt["ingredient"]))]
+			var go: Button = _exploration_button("이 재료로 실험  →", "HarborLatestLab", state.exploration_active())
+			go.pressed.connect(_open_sample_lab.bind(str(receipt["ingredient"])))
+			box.add_child(go)
+		var receipt_label: Label = _label(text, 15, TEAL)
+		receipt_label.name = "HarborLastReceipt"
+		box.add_child(receipt_label)
+	var reason: Label = _label(str(review["reason"]), 14, MUTED)
+	reason.name = "HarborForagingReason"
+	reason.visible = reason.text != ""
+	box.add_child(reason)
+	var depart: Button = _exploration_button("항구 채집 출발 · 1,200원", "HarborForagingDepart", not bool(review["can_start"]))
+	depart.pressed.connect(_on_harbor_foraging_depart)
+	box.add_child(depart)
+	_exploration_box.add_child(card)
+
+
+func _on_harbor_foraging_depart() -> void:
+	if _exploration_guard():
+		return
+	_finish_exploration_action(state.start_harbor_foraging(), true)
+
+
+## Navigation exposes existing controls and never overwrites an edited draft,
+## auto-selects the catch, spends samples or starts a tasting.
+func _open_sample_lab(id: String) -> void:
+	if _exploration_guard(true):
+		return
+	var item: Dictionary = Catalog.find(id)
+	if item.is_empty() or not state.ingredient_unlocked(id):
+		_flash("먼저 연구 재료를 수령하세요.")
+		return
+	var slot: String = "broth" if id.begins_with("broth_") else "topping"
+	await _open_experiment_choices(slot)
+	_taste_message.text = "%s %d개 보관. 초안은 유지했어요. 직접 재료를 골라 조합해 보세요." % [item["name"], state.sample_stock(id)]
 
 
 func _on_foraging_depart() -> void:
@@ -2308,7 +2394,12 @@ func _on_exploration_choice(choice: String) -> void:
 func _on_exploration_collect() -> void:
 	if _exploration_guard(true):
 		return
-	_finish_exploration_action(state.finish_expedition())
+	var result: Dictionary = state.finish_expedition()
+	_finish_exploration_action(result)
+	if result["ok"] and result.has("receipt") and Harbor.IDS.has(result["receipt"].get("ingredient", "")):
+		await get_tree().process_frame
+		var id: String = str(result["receipt"]["ingredient"])
+		_juice.burst(get_viewport_rect().size * Vector2(0.5, 0.4), TEAL, "%s +%d" % [Catalog.find(id)["name"], result["receipt"]["amount"]], _icon(id, 3), true)
 
 
 func _on_exploration_retire() -> void:
@@ -2745,7 +2836,7 @@ func _recipe_pages() -> Array:
 
 
 func _refresh_recipe_target() -> void:
-	var sample_check: Dictionary = Foraging.use_samples(state.foraging_state(), state.draft_config)
+	var sample_check: Dictionary = state.sample_check(state.draft_config)
 	_journal_target.present(_recipe_pages(), _journal_target_id, _development_busy(), str(sample_check["error"]))
 	var identity: Dictionary = Discovery.describe(state.draft_config)
 	_bowl_traits.text = " · ".join((identity["tags"] as Array).slice(0, 3))
@@ -2837,7 +2928,7 @@ func _refresh_lab() -> void:
 			var sel: Dictionary = Catalog.find(cid)
 			desc_lines.append("%s — %s\n비용 %s · 준비 %d초 · %s" % [str(sel["name"]), str(sel["desc"]), _won(int(sel["cost"])), int(sel["seconds"]), Catalog.axes_text(sel)])
 			if Catalog.is_farmed(cid):
-				desc_lines.append("연구 재료 %d개 보관 · 시제품 완성에 %d개 필요\n판매는 추가 샘플 없이 영업 원가로 공급돼요." % [state.foraging_state()["stock"][cid], chosen_ids.count(cid)])
+				desc_lines.append("연구 재료 %d개 보관 · 시제품 완성에 %d개 필요\n판매는 추가 샘플 없이 영업 원가로 공급돼요." % [state.sample_stock(cid), chosen_ids.count(cid)])
 		var desc: Label = _desc_labels[slot]
 		desc.text = "\n".join(desc_lines)
 		var summary: String = Catalog.topping_names(state.draft_config) if slot == Catalog.TOPPING_SLOT else str(Catalog.find(chosen_ids[0])["name"])
@@ -3022,7 +3113,7 @@ func _build_experiment_clues(rec: Dictionary) -> void:
 		change.name = "ExperimentDelta_" + direction
 		change.text = "예상 변화 · %s\n원가 %+d원 · 준비 %+d초\n판매가와 토핑 칸 수는 그대로예요." % [clue["flavor_text"], clue["cost_delta"], clue["seconds_delta"]]
 		card.body.add_child(change)
-		var sample: Dictionary = Foraging.use_samples(state.foraging_state(), clue["config"])
+		var sample: Dictionary = state.sample_check(clue["config"])
 		var notice: Label = _label("직접 재료를 골라 시식해야 결과가 기록돼요. 손님 점수 상승을 보장하지 않아요." if str(sample["error"]) == "" else "다음 시제품의 샘플 부족 · " + str(sample["error"]), 14, MUTED if str(sample["error"]) == "" else VERMILION)
 		notice.name = "ExperimentStock_" + direction
 		card.body.add_child(notice)

@@ -33,6 +33,7 @@ const StoryCatalog = preload("res://scripts/domain/regular_story_catalog.gd")
 const Stories = preload("res://scripts/domain/regular_stories.gd")
 const StoryFixtures = preload("res://tests/regular_story_fixtures.gd")
 const ForagingTests = preload("res://tests/market_foraging_tests.gd")
+const HarborTests = preload("res://tests/harbor_foraging_tests.gd")
 
 const ARG: String = "--test-data-dir="
 
@@ -114,6 +115,7 @@ func _initialize() -> void:
 		test_taste_achievement_persistence, test_taste_achievement_rejections, test_notebook_version_limits,
 		test_hiring_preview, test_hiring_preview_context,
 		test_market_foraging,
+		test_harbor_foraging,
 	]
 	var ran: int = 0
 	for t in tests:
@@ -894,6 +896,7 @@ func test_training_legacy_v5() -> void:
 	raw.erase("stories")
 	raw.erase("taste_achievements")
 	raw.erase("foraging")
+	raw.erase("harbor_foraging")
 	var old: String = JSON.stringify(raw, "\t", true)
 	var dir: String = _case_dir("training_v5")
 	var saver: SaveServiceScript = SaveServiceScript.new(dir)
@@ -1158,6 +1161,7 @@ func test_contest_migration_v4() -> void:
 	v4.erase("stories")
 	v4.erase("taste_achievements")
 	v4.erase("foraging")
+	v4.erase("harbor_foraging")
 	var dir: String = _case_dir("contest_v4")
 	var saver: SaveServiceScript = SaveServiceScript.new(dir)
 	saver.remove_known_files()
@@ -3363,6 +3367,7 @@ func _as_legacy(src: Dictionary, version: int) -> Dictionary:
 	d.erase("stories")
 	d.erase("taste_achievements")
 	d.erase("foraging")
+	d.erase("harbor_foraging")
 	if version == 1:
 		d.erase("research")
 	for r in d["records"]:
@@ -3570,6 +3575,7 @@ func test_repeated_portions() -> void:
 	var before := _json(state)
 	var forged := state.to_dict()
 	forged["schema_version"] = 11
+	forged.erase("harbor_foraging")
 	_check(GameStateScript.new().load_from_dict(forged) != "", "옛v11 중복 주입 거부")
 	var farm := ForagingTests.new()
 	farm.check = _check
@@ -4126,6 +4132,7 @@ func test_schema_migration_v1_v2() -> void:
 	v2_new_cfg.erase("stories")
 	v2_new_cfg.erase("taste_achievements")
 	v2_new_cfg.erase("foraging")
+	v2_new_cfg.erase("harbor_foraging")
 	_check(GameStateScript.new().load_from_dict(v2_new_cfg) != "", "toppings 배열을 쓴 v2 거부")
 	var v3_old_cfg: Dictionary = _as_legacy(_populated_state().to_dict(), 3)
 	v3_old_cfg["growth"] = v3["growth"]
@@ -4186,6 +4193,7 @@ func test_growth_load_rejections() -> void:
 				cgrowth["staff"] = []
 			"슬롯 초과(조리대 I 만)":
 				copy["schema_version"] = 11  # Historical bench gating remains strict.
+				copy.erase("harbor_foraging")
 				cgrowth["facilities"] = ["bench_1", "staff_1", "staff_2"]
 			"growth 누락":
 				copy.erase("growth")
@@ -4389,6 +4397,7 @@ func _as_v3(src: Dictionary) -> Dictionary:
 	d.erase("stories")
 	d.erase("taste_achievements")
 	d.erase("foraging")
+	d.erase("harbor_foraging")
 	return d
 
 
@@ -5833,6 +5842,7 @@ func test_notebook_version_limits() -> void:
 		var d: Dictionary = s.to_dict()
 		d.erase("taste_achievements")
 		d.erase("foraging")
+		d.erase("harbor_foraging")
 		d["schema_version"] = version
 		for pair in [["stories",9],["shop",7],["training",6],["contests",5],["exploration",4]]:
 			if version < pair[1]: d.erase(pair[0])
@@ -5923,4 +5933,9 @@ func test_hiring_preview_context() -> void:
 
 func test_market_foraging() -> void:
 	ForagingTests.new().run(_check, _case_dir("market_foraging"))
+	_end()
+
+
+func test_harbor_foraging() -> void:
+	HarborTests.new().run(_check, _case_dir("harbor_foraging"))
 	_end()
