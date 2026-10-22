@@ -1,0 +1,272 @@
+{
+  "run_id": "20261022T031738Z-48750",
+  "renderer": "OpenGL API 4.1 Metal - 90.5 - Compatibility - Apple M3 Pro",
+  "checks": 3646,
+  "failures": 0,
+  "exit_code": 0,
+  "engine_errors": 0,
+  "source_count": 123,
+  "pack_sha256": "04d5cfb78b5bc0ea1e516b41073d4a21d2b6e742448ede4029048e0e4a2d75b6",
+  "image_count": 32,
+  "manually_reviewed_count": 16,
+  "all_new_feature_images_reviewed": true,
+  "physical_iphone_acceptance": false,
+  "images": [
+    {
+      "file": "desktop_14_tasting_work.png",
+      "width": 1280,
+      "height": 800,
+      "sha256": "a4f1b5d0b487ced818d6f8a09ac311cc41e11e63af27d6ce4a8eed6d149d7fc9",
+      "distinct_rgb_colors": 2397,
+      "manually_reviewed": true
+    },
+    {
+      "file": "desktop_14b_feedback_portraits.png",
+      "width": 1280,
+      "height": 800,
+      "sha256": "262382646bf856ce6ccea31d3fa36bdd22a2ca1934ad1b368a82c12f989177e1",
+      "distinct_rgb_colors": 1972,
+      "manually_reviewed": true
+    },
+    {
+      "file": "desktop_depth_01_summary.png",
+      "width": 1280,
+      "height": 800,
+      "sha256": "5f8d761736dde8d21611d3f9bb25686099d0b2ffcaef6d7111a4cde8851df63e",
+      "distinct_rgb_colors": 2441,
+      "manually_reviewed": false
+    },
+    {
+      "file": "desktop_depth_02_pressed.png",
+      "width": 1280,
+      "height": 800,
+      "sha256": "fae35f8e4822de71d90022f557f4b0858aa95d1e8d0f202ad74efb398a7fb455",
+      "distinct_rgb_colors": 2542,
+      "manually_reviewed": false
+    },
+    {
+      "file": "desktop_depth_03_ingredient.png",
+      "width": 1280,
+      "height": 800,
+      "sha256": "3b26794191caf632fa078fbe4097619954e7235c6404a8c5aaa490b8f8d9860a",
+      "distinct_rgb_colors": 2877,
+      "manually_reviewed": false
+    },
+    {
+      "file": "desktop_depth_04_flavor.png",
+      "width": 1280,
+      "height": 800,
+      "sha256": "33d6d001aa708fb9f865925e70b51856f82f5d91aa83c5e00cc2a83cc13741a8",
+      "distinct_rgb_colors": 2789,
+      "manually_reviewed": false
+    },
+    {
+      "file": "desktop_depth_05_map_detail.png",
+      "width": 1280,
+      "height": 800,
+      "sha256": "89788765cab08735ab5feeb196a4f58a736d216f55254b99c72770387b5942ca",
+      "distinct_rgb_colors": 2631,
+      "manually_reviewed": false
+    },
+    {
+      "file": "desktop_discovery_01_workbench.png",
+      "width": 1280,
+      "height": 800,
+      "sha256": "5f8d761736dde8d21611d3f9bb25686099d0b2ffcaef6d7111a4cde8851df63e",
+      "distinct_rgb_colors": 2441,
+      "manually_reviewed": false
+    },
+    {
+      "file": "desktop_discovery_02_map.png",
+      "width": 1280,
+      "height": 800,
+      "sha256": "9fb36b6142ec4400021cf63db9dff984216abf0991a46f0764d0210ea62cf217",
+      "distinct_rgb_colors": 2419,
+      "manually_reviewed": false
+    },
+    {
+      "file": "desktop_discovery_03_material_goal.png",
+      "width": 1280,
+      "height": 800,
+      "sha256": "abcb60ae2e6db853fccaab28c62025af1365ef49c1c4aac57019dc5b6894b259",
+      "distinct_rgb_colors": 2508,
+      "manually_reviewed": false
+    },
+    {
+      "file": "desktop_discovery_04_new_result.png",
+      "width": 1280,
+      "height": 800,
+      "sha256": "967a0b6365319cd32e0c5ac5350b3289dd87243a893c449b2a51e8944b0b3f2d",
+      "distinct_rgb_colors": 2023,
+      "manually_reviewed": true
+    },
+    {
+      "file": "desktop_discovery_05_comparison.png",
+      "width": 1280,
+      "height": 800,
+      "sha256": "a931199c7ea4599e6d8b5b0643f169d2c49eaa276ae1d47a8871caa06eb9dba2",
+      "distinct_rgb_colors": 2506,
+      "manually_reviewed": true
+    },
+    {
+      "file": "desktop_expression_01_preview.png",
+      "width": 1280,
+      "height": 800,
+      "sha256": "5f8d761736dde8d21611d3f9bb25686099d0b2ffcaef6d7111a4cde8851df63e",
+      "distinct_rgb_colors": 2441,
+      "manually_reviewed": true
+    },
+    {
+      "file": "desktop_expression_02_result.png",
+      "width": 1280,
+      "height": 800,
+      "sha256": "44922d3f7f410d7d2901ae5d510f8a12f3878e476eab07777c5ba6eb6825bfb0",
+      "distinct_rgb_colors": 2153,
+      "manually_reviewed": true
+    },
+    {
+      "file": "desktop_expression_03_clue.png",
+      "width": 1280,
+      "height": 800,
+      "sha256": "4d343b914707f6e9310f20ee31a84823af96c070ab75833b4ea479a7f0b83a0e",
+      "distinct_rgb_colors": 2680,
+      "manually_reviewed": true
+    },
+    {
+      "file": "desktop_expression_04_choices.png",
+      "width": 1280,
+      "height": 800,
+      "sha256": "e4bb04a4db3acd1e28edea2b5377be98697f21c550da4817e490ffc8fcba9649",
+      "distinct_rgb_colors": 2719,
+      "manually_reviewed": true
+    },
+    {
+      "file": "portrait_14_tasting_work.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "61ff389fbcf4cad5b04896c1f145304c5a92f629da940b5e4bf4a2ee05d9fdc6",
+      "distinct_rgb_colors": 2164,
+      "manually_reviewed": true
+    },
+    {
+      "file": "portrait_14b_feedback_portraits.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "dc5954681d47d5db686c55226bc642e3fadad78e5aaa21c0912a9441d26cb174",
+      "distinct_rgb_colors": 1619,
+      "manually_reviewed": true
+    },
+    {
+      "file": "portrait_depth_01_summary.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "97156805aaca4d89227f2910121c7ddd0c7707e6a0f518be1654c7f600ff2b5d",
+      "distinct_rgb_colors": 2055,
+      "manually_reviewed": false
+    },
+    {
+      "file": "portrait_depth_02_pressed.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "ca855c6bde3bbaf4592f775f0a42c308e0f66b28f6bb449104f45a91c6d4bb4e",
+      "distinct_rgb_colors": 2193,
+      "manually_reviewed": false
+    },
+    {
+      "file": "portrait_depth_03_ingredient.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "32a7a5c58cae5b1bf690b041b63c8475c9f1f41727b413c4c17ae3662c48f65c",
+      "distinct_rgb_colors": 2315,
+      "manually_reviewed": false
+    },
+    {
+      "file": "portrait_depth_04_flavor.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "b739f7b27a50e2dedb2710501ddc9d5d0436780be71c72079d82ba785e6b6bcb",
+      "distinct_rgb_colors": 2355,
+      "manually_reviewed": false
+    },
+    {
+      "file": "portrait_depth_05_map_detail.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "86d60e5d52840de0256477afce559ffe0c27b0a02ff2387b18897c0f3a74edb2",
+      "distinct_rgb_colors": 2270,
+      "manually_reviewed": false
+    },
+    {
+      "file": "portrait_discovery_01_workbench.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "97156805aaca4d89227f2910121c7ddd0c7707e6a0f518be1654c7f600ff2b5d",
+      "distinct_rgb_colors": 2055,
+      "manually_reviewed": false
+    },
+    {
+      "file": "portrait_discovery_02_map.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "477ae43c1848a66f9a2d7e11a66307b19fda2706a367af333a67c3d0039466f2",
+      "distinct_rgb_colors": 2055,
+      "manually_reviewed": false
+    },
+    {
+      "file": "portrait_discovery_03_material_goal.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "abc5d39e3bc96f56b1041c31b6e51b3893b0d98efc352c20fabca213d8c72580",
+      "distinct_rgb_colors": 2026,
+      "manually_reviewed": false
+    },
+    {
+      "file": "portrait_discovery_04_new_result.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "8756772a450d12c3b12c1b8ef3ff1a1cfce16d8090b536c86e6cb584eeaeff45",
+      "distinct_rgb_colors": 1804,
+      "manually_reviewed": true
+    },
+    {
+      "file": "portrait_discovery_05_comparison.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "43f3542002ceeaa26343b0360798af4008a34c3055a06071b5c66822551c855c",
+      "distinct_rgb_colors": 2123,
+      "manually_reviewed": true
+    },
+    {
+      "file": "portrait_expression_01_preview.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "97156805aaca4d89227f2910121c7ddd0c7707e6a0f518be1654c7f600ff2b5d",
+      "distinct_rgb_colors": 2055,
+      "manually_reviewed": true
+    },
+    {
+      "file": "portrait_expression_02_result.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "96c53cde9d5c90f99211a78148d343e63ff937790c539711a1ea66b3befb333a",
+      "distinct_rgb_colors": 1796,
+      "manually_reviewed": true
+    },
+    {
+      "file": "portrait_expression_03_clue.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "cf16f7e2ed2bbda4f66a13b7347f7e5bfaa1a41c6d1fd03b05d47b8f155b79b7",
+      "distinct_rgb_colors": 2247,
+      "manually_reviewed": true
+    },
+    {
+      "file": "portrait_expression_04_choices.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "b90fb002c7c6ce70e386058d72b84d764b8339c388b093381c05b0e014743fe4",
+      "distinct_rgb_colors": 2358,
+      "manually_reviewed": true
+    }
+  ]
+}
