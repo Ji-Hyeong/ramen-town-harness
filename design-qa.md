@@ -1,6 +1,60 @@
-# Harbor flow design verification
+# Discovery workbench: native Product Design acceptance
 
 final result: passed
+
+## Current scope and verification boundary
+2026-10-23. Existing native Godot target, palette, detailed dynamic dishes and
+disclosures are the source, not a web clone or a new generated mockup. Larger
+food-first lab/result, expandable eight-task navigation, three open-ended farmed
+ingredient directions, deliberate receipt depth and original audio are current.
+Historical harbor/expression PNGs establish prior style or comparison inputs only;
+they are not evidence for current behavior.
+
+Current161source files equal the fresh QA snapshot byte-for-byte. PCK976beff7,
+strict vendor signature0; pure55, actual packed flow1896, expression/depth3724,
+harbor918, touch70 and domain127tests/58423 checks pass with no engine errors.
+Full two-size layout19496/0/exit0/engine0 also passes. These automated counts
+alone are not visual or human-fun acceptance.
+
+The human approved the exact current app:
+/private/tmp/ramen-discovery-workbench-qa-20261023-v1/Ramen QA.app.
+Fresh OpenGL4.1/Metal run20261022T163531Z-15310 completed1980checks/failure0/
+exit0/engine-errors0. All28 original scene captures were individually opened
+and inspected:14each at390x844 portrait and1280x800 landscape, density1.
+The full36-file run is privately preserved byte-equal. Postrun source161/PCK/
+engine hashes still match and official engine strict signature verification exits0.
+The initial CUA observation timed out, but the fresh run and actual native-rendered
+SubViewport PNGs establish completion; the gray QA root is not a game screenshot.
+An initial postrun signature command used an incorrect path nested inside the
+wrapper; corrected to the manifest's unchanged runtime/Godot.app and verified0.
+
+## Combined comparison and focused inspection
+- Source:game/docs/expression-screenshots/{portrait,desktop}_expression_01_preview.png. Current:game/docs/workbench-screenshots/{portrait,desktop}_workbench_01_food.png. Both are fresh day1/30000/default2200-cost100-prep dishes, initial top-scroll, same respective viewport/density. The food hierarchy and collapsed navigation intentionally replace the prior hierarchy; this is a native product redesign, not a pixel-identical web clone.
+- Both full-view source/current pairs were composed, opened and compared together:game/docs/workbench-screenshots/comparisons/{portrait,desktop}_before_after.png. Only labels and16px gutters were added; no crop or density change in full-view pairs.
+- Focused portrait_bowl_focus.png uses two224x144 actual crops at3x nearest-neighbor. It confirms retained48x32 dynamic art, sharper integer scaling and intentional2x-to4x in-game enlargement. Source coordinates, hashes and method are in review.json.
+- portrait_three_dishes.png and portrait_three_results.png were also opened. All three actual witness dishes differ visually and in cost/prep/profile:1490/80,2540/170,1670/129. These are examples, not fixed output guarantees. Different wallets are real sequential paid transactions.
+- Current gallery:game/docs/workbench-screenshots/README.md. All28 originals and5 comparison dimensions/hashes/manual review are recorded in review.json. No runtime changes followed the accepted captures.
+
+## Required surfaces and interactions
+- Fonts/typography:existing GowunDodum is retained. Heading, ingredient composition, cost/time and status form a readable hierarchy in both sizes. Long conditions wrap within the scroll area; no orphaned ingredient-title glyph or inaccessible primary action found. Compact condition grouping remains P3 polish.
+- Spacing/layout:initial food is centered and enlarged; eight-task navigation collapses deliberately. Whole-row icon/chevron disclosures retain accessible visual affordance. Expanded navigation may require scrolling of body content, while close/taste or service action stays fixed and reachable. Result receipt intentionally collapses behind its labeled disclosure. Actual swipe over the food and canceled press retain scrolling without click activation/audio.
+- Colors/tokens:paper/card, brown borders, vermilion action and teal status match the existing native game. Status also uses words/checks/chevrons. Some unchanged palette pairs remain marginal (about4.48:1 teal/paper and4.49:1 vermilion/paper in prior token analysis); do not claim AA compliance. Brief completion-overlay text also has modest contrast; persistent result text remains readable. Retain as P3 visual polish.
+- Image quality/assets:the actual procedural bowl reads current broth, noodles, oil, repeated topping portions and processes; original service-size dishes remain unchanged. Crisp integer pixel edges, no interpolated blur, missing texture, opaque icon background or false static finished dish observed. Native code-generated dynamic game art is the established editable source, not a substitute for a requested raster mockup.
+- Copy/content:real per-recipe fees/prep, ingredient conditions, stored-tasting counts and phase names agree with actual transactions. Choosing a direction is not awarded as a discovery. Reload retains3 witnesses without a fresh-discovery caption. Repeated completion/name copy and the first customer card being below the fold in some results remain P3 refinements, with working scrolling.
+- States:initial, expanded navigation, directions, existing goal, three real ingredient compositions, broth/noodle/plating busy progress, three paid results and reload are rendered. Headless/packed tests separately cover real transaction cancellation, refusal, non-mutating navigation, mute, busy guards, canceled swipe, record removal and restoration. A screenshot alone does not prove all these behaviors.
+
+## Current findings, acceptance and limits
+No actionable P0/P1/P2 finding remains in the bounded workbench flow after all28
+originals and5 comparisons were opened. P3 follow-ups are concrete copy grouping,
+condition wrapping and retained palette/overlay contrast, not another feature gate.
+Existing keyboard input/screen semantics are retained but VoiceOver, Dynamic Type,
+reduced-motion preference, text zoom and comprehensive accessibility are unverified.
+Native audio signal/file checks do not prove human speaker volume/quality. Physical
+iPhone input/performance, subjective enjoyment and6-10hour completion are deferred.
+No ordinary-save write, iPhone installation or Claude call occurred in this task.
+
+## Historical harbor acceptance, preserved separately from current scope
+Historical final result: passed (main7fe2964; not current workbench acceptance).
 
 ## Current-run evidence and source
 - Fresh native run:20261022T070256Z-95998, official OpenGL4.1/Metal engine,688checks/failure0/exit0/engine-errors0. All24PNG originals were opened and manually inspected; full32-file run preserved byte-equal.
