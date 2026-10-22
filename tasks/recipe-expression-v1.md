@@ -49,5 +49,9 @@ All46 existing domain/services files remain byte-identical; tiny service dish
 pixels match accepted main. CPU gallery of five dishes reviewed, not native QA.
 Fresh v2 source123/PCK04d5cfb7/vendor strict signature0 ready. First build was
 preserved after a post-prepare metadata-print KeyError; final v2 preparation and
-manifest inspection exit0. Exact current-app action-time approval pending;
-actual renderer/images/main merge not yet claimed. iPhone remains deferred.
+manifest inspection exit0. User approved the exact v2 app; supported CUA launch
+observation timed out but actual fresh run completed OpenGL3646/0/exit0/engine0.
+All32PNG dimensions/hashes/nonblack content checked; all8new feature images and
+8regression images manually reviewed. Other16images are metadata-only. Full48-file
+run preserved byte-equal;123sources/PCK unchanged and vendor strict signature0.
+Native acceptance evidence is recorded before merge; iPhone remains deferred.

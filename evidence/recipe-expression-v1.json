@@ -1,7 +1,7 @@
 {
   "date": "2026-10-22",
   "task": "recipe-expression-v1",
-  "status": "implemented_headless_verified_native_pending",
+  "status": "implemented_headless_and_native_verified",
   "owner": "Codex_only_explicit_user_quota_override",
   "claude_calls": 0,
   "base_main": "66cb80021be168c229706e62c26415806303b2f5",
@@ -57,13 +57,27 @@
   "native": {
     "version": "v2",
     "prepared": true,
-    "executed": false,
-    "accepted": false,
-    "launch_approval": "pending_exact_current_app_action_time",
+    "executed": true,
+    "accepted": true,
+    "launch_approval": "received_for_exact_v2_app",
     "source_count": 123,
     "pack_sha256": "04d5cfb78b5bc0ea1e516b41073d4a21d2b6e742448ede4029048e0e4a2d75b6",
     "vendor_signature_verified": true,
-    "qa_script": "res://tests/recipe_expression_scene_tests.gd"
+    "qa_script": "res://tests/recipe_expression_scene_tests.gd",
+    "run_id": "20261022T031738Z-48750",
+    "checks": 3646,
+    "failures": 0,
+    "exit_code": 0,
+    "engine_errors": 0,
+    "renderer": "OpenGL API 4.1 Metal - 90.5 - Compatibility - Apple M3 Pro",
+    "png_count": 32,
+    "manually_reviewed_count": 16,
+    "all_new_feature_images_reviewed": true,
+    "gallery": "game/docs/expression-screenshots",
+    "manifest": "game/docs/expression-screenshots/manifest.json",
+    "full_run_files_preserved_byte_equal": 48,
+    "launch_observation": "CUA app observation timed out; actual fresh run and exact copied engine window independently verified and raised",
+    "source123_and_pack_unchanged_after_run": true
   },
   "iphone_installation": "explicitly_deferred",
   "mac_live_save_untouched": true,
@@ -192,5 +206,10 @@
     "tests/touch_scroll_tests.gd.uid": "d5207edb64ea668a2303c871f1271fad95c7ee38a5828cf243ba55a2efedb4d0",
     "tests/ui_depth_feedback_tests.gd": "f9f8f7028e2595181313920f3d5705fe3f0cb8645e7d8c47cc9176cbd42a531f",
     "tests/ui_depth_feedback_tests.gd.uid": "7b8395077725442256f12186d7253e31e2ce977f4eb3770651a1df4825cd8fcc"
+  },
+  "publication": {
+    "url": "https://github.com/Ji-Hyeong/ramen-town-harness/pull/17",
+    "draft": false,
+    "recorded_before_merge": true
   }
 }
