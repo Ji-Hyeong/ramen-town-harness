@@ -24,6 +24,8 @@ const SaveServiceScript = preload("res://scripts/services/save_service.gd")
 const FeedbackScript = preload("res://scripts/ui/action_feedback.gd")
 const Discovery = preload("res://scripts/domain/recipe_discovery.gd")
 const Experiments = preload("res://scripts/domain/recipe_experiments.gd")
+const Directions = preload("res://scripts/domain/recipe_directions.gd")
+const AudioScript = preload("res://scripts/ui/action_audio.gd")
 const JournalScript = preload("res://scripts/ui/recipe_journal.gd")
 const DetailsScript = preload("res://scripts/ui/disclosure_card.gd")
 const ScrollableNameEdit = preload("res://scripts/ui/scrollable_name_edit.gd")
@@ -195,6 +197,19 @@ var _work_fx_phase: int = -1
 var _topping_count: Label
 var _topping_hint: Label
 var _tab_navigation: GridContainer
+var _navigation_details: DetailsScript
+var _audio: AudioScript
+var _audio_button: Button
+var _direction_board: DetailsScript
+var _direction_target: String = ""
+var _direction_badge: Label
+var _direction_actions: HBoxContainer
+var _direction_status: Dictionary = {}
+var _direction_buttons: Array[Button] = []
+var _direction_records_key: String = ""
+var _direction_tested: Array[String] = []
+var _direction_new_titles: Array[String] = []
+var _direction_new_record: int = 0
 var _tab_links: Array[Button] = []
 var _discovery_hints: Dictionary = {}
 var _exploration_summary: Label
@@ -249,6 +264,10 @@ func _ready() -> void:
 	_juice = FeedbackScript.new()
 	_juice.name = "ActionFeedback"
 	add_child(_juice)
+	_audio = AudioScript.new()
+	_audio.name = "ActionAudio"
+	add_child(_audio)
+	_juice.action_committed.connect(func(): _audio.play("tap"))
 	_load_save()
 	# 재개 시 이동 그림만 다시 보여 준다. 비용·경로·발견은 이미 불러온 도메인 상태를 사용한다.
 	if state.exploration_active():
@@ -723,7 +742,14 @@ func _build_overlay() -> void:
 	_tab_navigation.name = "TabNavigation"
 	_tab_navigation.add_theme_constant_override("h_separation", 4)
 	_tab_navigation.add_theme_constant_override("v_separation", 4)
-	col.add_child(_tab_navigation)
+	# A visible chevron and whole-row hit target keep every old tab accessible
+	# one deliberate depth below the food, instead of reserving two rows forever.
+	_navigation_details = DetailsScript.new()
+	_navigation_details.name = "NavigationMenu"
+	_navigation_details.configure("작업 바꾸기", "개발 · 시식 · 노트 · 영업")
+	_navigation_details.body.add_child(_tab_navigation)
+	_guide_label.reparent(_navigation_details.body)
+	col.add_child(_navigation_details)
 
 	tabs = TabContainer.new()
 	tabs.name = "MainTabs"
@@ -751,6 +777,10 @@ func _build_overlay() -> void:
 		_tab_links.append(link)
 		_tab_navigation.add_child(link)
 	_sync_tab_links()
+	_audio_button = _button("소리 켜짐", "AudioToggle")
+	_audio_button.tooltip_text = "효과음 켜기/끄기 · 이번 실행 동안 유지돼요."
+	_audio_button.pressed.connect(_toggle_audio)
+	_navigation_details.body.add_child(_audio_button)
 
 	_open_button = _button("영업하러 가기", "OverlayOpenButton")
 	_primary(_open_button)
@@ -837,29 +867,40 @@ func _build_lab(box: VBoxContainer) -> void:
 	var bowl_card: PanelContainer = _card("BowlCard")
 	var hero := _vbox(6)
 	bowl_card.add_child(hero)
-	var bh: HBoxContainer = HBoxContainer.new()
-	bh.add_theme_constant_override("separation", 12)
-	hero.add_child(bh)
+	var headline := _label("나만의 한 그릇", 22, VERMILION)
+	headline.name = "WorkbenchHeading"
+	hero.add_child(headline)
 	_bowl_rect = TextureRect.new()
 	_bowl_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_bowl_rect.name = "BowlPreview"
 	_bowl_rect.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
 	_bowl_rect.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	_bowl_rect.custom_minimum_size = Vector2(120.0, 80.0)
-	bh.add_child(_bowl_rect)
-	_bowl_caption = _label("", 15, INK)
+	_bowl_rect.custom_minimum_size = Vector2(192.0, 128.0)
+	hero.add_child(_bowl_rect)
+	_bowl_caption = _label("", 17, INK)
 	_bowl_caption.name = "BowlCaption"
-	bh.add_child(_bowl_caption)
+	hero.add_child(_bowl_caption)
 	_bowl_traits = _label("", 14, TEAL)
 	_bowl_traits.name = "BowlTraits"
 	hero.add_child(_bowl_traits)
+	_direction_badge = _label("재료를 골라 나만의 맛을 만들어요.", 15, TEAL)
+	_direction_badge.name = "DirectionProgress"
+	hero.add_child(_direction_badge)
+	_direction_actions = HBoxContainer.new()
+	_direction_actions.add_theme_constant_override("separation", 8)
+	for spec in [["DirectionChoices", "재료 고르기", _direction_choices], ["DirectionSources", "재료 찾기", _find_recipe_materials]]:
+		var button := _button(spec[1], spec[0])
+		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		button.pressed.connect(spec[2])
+		_direction_buttons.append(button)
+		_direction_actions.add_child(button)
+	hero.add_child(_direction_actions)
 	box.add_child(bowl_card)
+	_build_direction_board(box)
 	_journal_target = JournalScript.new()
 	_journal_target.name = "ResearchTargetBoard"
 	_journal_target.book_requested.connect(_open_recipe_map)
 	_journal_target.exploration_requested.connect(_find_recipe_materials)
-	box.add_child(_journal_target)
-	_build_experiment_card(box)
 
 	var name_card: PanelContainer = _card("NameCard")
 	var nb: VBoxContainer = _vbox(6)
@@ -926,6 +967,10 @@ func _build_lab(box: VBoxContainer) -> void:
 		box.add_child(sec)
 		if ProcessRules.SLOTS.has(slot):
 			sb.add_child(_process_card(slot))
+	# The research ledger and full analytical bars remain available after actual
+	# ingredients; they no longer displace the dish on the first mobile screen.
+	box.add_child(_journal_target)
+	_build_experiment_card(box)
 	# Name/version management remains available after the cooking choices;
 	# it no longer pushes those choices down the first screen.
 	box.add_child(name_card)
@@ -968,6 +1013,104 @@ func _build_lab(box: VBoxContainer) -> void:
 	_taste_message.name = "TasteMessage"
 	tb.add_child(_taste_message)
 	box.add_child(taste_card)
+
+
+## Reuse disclosure affordances and real ingredient icons. Reading/selecting a
+## direction is UI state only; stock is spent exclusively by existing tasting.
+func _build_direction_board(box: VBoxContainer) -> void:
+	_direction_board = DetailsScript.new()
+	_direction_board.name = "RecipeDirections"
+	box.add_child(_direction_board)
+	_direction_board.body.add_child(_label("노트에 남은 실제 시식만 세어요. 정답 조합은 하나가 아니에요.", 14, MUTED))
+	for definition in Directions.catalog():
+		var id: String = definition["id"]
+		var card := _card("DirectionCard_" + id)
+		var col := _vbox(6)
+		card.add_child(col)
+		var title := _label(str(definition["title"]), 20, VERMILION)
+		col.add_child(title)
+		col.add_child(_label(str(definition["brief"]), 15, INK))
+		var status := _label("", 14, TEAL)
+		status.name = "DirectionStatus_" + id
+		_direction_status[id] = status
+		col.add_child(status)
+		var select := _button("이 방향으로 실험", "DirectionSelect_" + id)
+		select.icon = _icon(str(definition["ingredient"]), 2)
+		select.pressed.connect(_select_direction.bind(id))
+		_direction_buttons.append(select)
+		col.add_child(select)
+		_direction_board.body.add_child(card)
+
+
+## Mute and navigation must never mutate recipe, wallet or save schema. They
+## remain usable independently of the audio output backend on this device.
+func _toggle_audio() -> void:
+	_audio.set_muted(not _audio.muted)
+	_audio_button.text = "소리 꺼짐" if _audio.muted else "소리 켜짐"
+
+
+func _select_direction(id: String) -> void:
+	if _work_blocked("실험 방향을 바꿀"):
+		return
+	if Directions.find(id).is_empty():
+		_flash("알려진 실험 방향을 골라 주세요.")
+		return
+	_direction_target = id
+	_direction_board.set_expanded(false)
+	_refresh_directions()
+	(tabs.get_child(TAB_LAB) as ScrollContainer).scroll_vertical = 0
+
+
+func _direction_choices() -> void:
+	var definition: Dictionary = Directions.find(_direction_target)
+	if definition.is_empty():
+		_flash("먼저 실험 방향을 골라 주세요.")
+		return
+	_open_experiment_choices(str(definition["slot"]))
+
+
+## A result leads back to an open-ended choice, never an automatic recipe.
+func _open_direction_board() -> void:
+	if _work_blocked("다음 실험을 고를"):
+		return
+	tabs.current_tab = TAB_LAB
+	_direction_board.set_expanded(true)
+	await get_tree().process_frame
+	(tabs.get_child(TAB_LAB) as ScrollContainer).ensure_control_visible(_direction_board.header_button)
+
+
+## Cache only retained-record facts. Draft readiness and shortages always use
+## current values, so a canceled work or a deleted witness cannot earn progress.
+func _refresh_directions() -> void:
+	var records: Array = state.records()
+	var key: String = JSON.stringify(records)
+	if key != _direction_records_key:
+		_direction_tested = Directions.tested_ids(records)
+		_direction_records_key = key
+	var selected: Dictionary = Directions.find(_direction_target)
+	_direction_board.configure("파밍으로 여는 세 가지 맛", "%d/3 시식 · %s" % [_direction_tested.size(), "방향 고르기" if selected.is_empty() else selected["title"]], _icon("topping_citrus_peel", 2))
+	_direction_actions.visible = not selected.is_empty()
+	_direction_badge.text = "재료를 골라 나만의 맛을 만들어요."
+	for definition in Directions.catalog():
+		var id: String = definition["id"]
+		var assessment: Dictionary = Directions.assess(id, state.draft_config)
+		var lines: Array[String] = []
+		for condition in assessment["checks"]:
+			lines.append(("✓ " if condition["met"] else "· ") + str(condition["text"]))
+		var missing: Array[String] = []
+		for ingredient in definition["requires"]:
+			if not state.ingredient_unlocked(ingredient) or state.sample_stock(ingredient) < 1:
+				missing.append(str(Catalog.find(ingredient)["name"]))
+		var status: Label = _direction_status[id]
+		status.text = "%s\n%s\n재료 출처 · %s%s" % ["노트에 시식 기록 있음" if _direction_tested.has(id) else "아직 시식 전", "\n".join(lines), definition["source"], "\n필요한 재료 · " + " / ".join(missing) if not missing.is_empty() else ""]
+		if id == _direction_target:
+			var matched: bool = bool(assessment["matched"])
+			_direction_badge.text = "%s · %s\n%s" % [definition["title"], "시식으로 확인해 보세요" if matched else "맛을 다듬는 중", " · ".join(lines)]
+			var stock: Dictionary = state.sample_check(state.draft_config)
+			if stock["error"] != "":
+				_direction_badge.text += "\n" + str(stock["error"])
+	for button in _direction_buttons:
+		button.disabled = _development_busy()
 
 
 func _make_option(slot: String, item: Dictionary, group: ButtonGroup) -> Button:
@@ -1344,6 +1487,7 @@ func _sync_guide_visibility() -> void:
 
 func _on_tab_changed(_index: int) -> void:
 	_sync_tab_links()
+	_navigation_details.set_expanded(false)
 	_sync_guide_visibility()
 	_pending_delete_id = 0
 	_promote_armed_until = 0
@@ -1358,11 +1502,14 @@ func _on_tab_changed(_index: int) -> void:
 
 func _on_tab_link(index: int) -> void:
 	tabs.current_tab = index
+	_navigation_details.set_expanded(false)
 
 
 func _sync_tab_links() -> void:
 	for i in _tab_links.size():
 		_tab_links[i].set_pressed_no_signal(i == tabs.current_tab)
+	if _navigation_details != null:
+		_navigation_details.configure("%s · 다른 작업" % tabs.get_tab_title(tabs.current_tab), "펼쳐서 이동", _icon("broth_chicken", 2))
 
 
 # ---------- 가게 화면 입력 ----------
@@ -1657,6 +1804,7 @@ func _remove_topping_position(index: int) -> void:
 
 
 func _ingredient_reaction(previous: Dictionary, id: String, point: Vector2) -> void:
+	_audio.play("ingredient")
 	var old_profile := Evaluator.build_profile(previous)
 	var profile := Evaluator.build_profile(state.draft_config)
 	var change: String = "재료 교체"
@@ -1742,6 +1890,7 @@ func start_tasting() -> Dictionary:
 
 
 func _taste_refused(message: String) -> Dictionary:
+	_audio.play("refuse")
 	_taste_message.text = message
 	_taste_message.add_theme_color_override("font_color", VERMILION)
 	_juice.burst(_taste_button.get_global_rect().get_center(), VERMILION, message.left(22))
@@ -1774,11 +1923,17 @@ func _complete_work() -> void:
 	# Compare actual retained witnesses before and after the successful payment.
 	# Merely choosing a goal or composing an untasted draft earns no discovery.
 	var previously_tested: Dictionary = {}
+	var prior_directions: Array[String] = Directions.tested_ids(state.records())
 	for page in _recipe_pages():
 		if page["tested"]:
 			previously_tested[page["id"]] = true
 	var res: Dictionary = state.taste()
 	if bool(res["ok"]):
+		_direction_new_record = int(res["record_id"])
+		_direction_new_titles.clear()
+		for id in Directions.tested_ids(state.records()):
+			if not prior_directions.has(id):
+				_direction_new_titles.append(str(Directions.find(id)["title"]))
 		_notebook_page = 0
 		_journal_new_record_id = int(res["record_id"])
 		_journal_new_titles.clear()
@@ -1799,6 +1954,7 @@ func _complete_work() -> void:
 	_refresh_all()
 	tabs.current_tab = TAB_FEEDBACK
 	(tabs.get_child(TAB_FEEDBACK) as ScrollContainer).scroll_vertical = 0
+	_audio.play("discover" if not _direction_new_titles.is_empty() else "complete")
 	_play_reveal()
 
 
@@ -1846,7 +2002,8 @@ func _play_reveal() -> void:
 		var tween := bowl.create_tween()
 		tween.tween_property(bowl, "scale", Vector2.ONE, 0.45).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 		var is_new: bool = _journal_new_record_id == state.last_feedback_record_id and not _journal_new_titles.is_empty()
-		_juice.burst(bowl.get_global_rect().get_center(), TEAL, "새 연구 수록!" if is_new else "시제품 완성!", null, true)
+		var new_direction: bool = _direction_new_record == state.last_feedback_record_id and not _direction_new_titles.is_empty()
+		_juice.burst(bowl.get_global_rect().get_center(), TEAL, "새로운 맛 발견!" if new_direction else ("새 연구 수록!" if is_new else "시제품 완성!"), null, true)
 	var index: int = 0
 	for child in _feedback_box.get_children():
 		if child is Control and str(child.name).begins_with("Card_"):
@@ -2680,6 +2837,7 @@ func _show_work_phase_feedback(phase: int) -> void:
 	await get_tree().process_frame
 	if not work_active() or WorkScript.phase_for(_work.progress()) != phase:
 		return
+	_audio.play(["broth", "noodle", "plate"][phase])
 	_juice.burst(_work_view.get_global_rect().get_center(), TEAL, WorkScript.phase_name(phase), null, true)
 
 
@@ -2711,6 +2869,8 @@ func _apply_work_lock() -> void:
 	for card in _experiment_cards:
 		card.header_button.disabled = busy
 	for button in _experiment_buttons:
+		button.disabled = busy
+	for button in _direction_buttons:
 		button.disabled = busy
 	_taste_button.disabled = busy
 	_taste_button.text = "시식 준비 중…" if _work.is_running() else ("탐색을 먼저 마치세요" if state.exploration_active() else "시식하기")
@@ -2933,7 +3093,7 @@ func _refresh_lab() -> void:
 			var b: Button = _buttons[id]
 			b.set_pressed_no_signal(chosen_ids.has(id))
 			var locked: bool = not state.ingredient_unlocked(id)
-			b.text = "%s%s%s\n%s · %d초" % ["탐색 필요 · " if locked else "", str(d.get("short_name", d["name"])), " ×%d" % chosen_ids.count(id) if slot == Catalog.TOPPING_SLOT and chosen_ids.has(id) else "", _won(int(d["cost"])), int(d["seconds"])]
+			b.text = "%s\n탐색으로 해금" % str(d.get("short_name", d["name"])) if locked else "%s%s\n%s · %d초" % [str(d.get("short_name", d["name"])), " ×%d" % chosen_ids.count(id) if slot == Catalog.TOPPING_SLOT and chosen_ids.has(id) else "", _won(int(d["cost"])), int(d["seconds"])]
 		var hints: Array[String] = []
 		for locked_item in state.locked_items(slot):
 			var li: Dictionary = locked_item
@@ -3021,9 +3181,10 @@ func _refresh_lab() -> void:
 	# 시식 버튼 글/이름 입력/재료 버튼의 켜짐은 시식 준비 상태에 따라 한곳에서 정한다.
 	_apply_work_lock()
 
-	_bowl_rect.texture = ArtScript.scaled_tex(ArtScript.recipe_bowl_image(state.draft_config), 2)
+	_bowl_rect.texture = ArtScript.scaled_tex(ArtScript.recipe_bowl_image(state.draft_config), 4)
 	_bowl_caption.text = "%s\n원가 %s · 준비 %d초 · 판매가 %s" % [state.draft_name, _won(cost), prep, _won(price)]
 	_refresh_recipe_target()
+	_refresh_directions()
 
 
 func _refresh_feedback() -> void:
@@ -3045,39 +3206,57 @@ func _refresh_feedback() -> void:
 	var bowl := TextureRect.new()
 	bowl.name = "FeedbackBowl"
 	bowl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	bowl.texture = ArtScript.scaled_tex(ArtScript.recipe_bowl_image(rec["config"]), 3)
-	bowl.custom_minimum_size = Vector2(144, 96)
+	bowl.texture = ArtScript.scaled_tex(ArtScript.recipe_bowl_image(rec["config"]), 4)
+	bowl.custom_minimum_size = Vector2(192, 128)
 	bowl.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	bowl.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	tcb.add_child(bowl)
 	tcb.add_child(_label("시제품 완성!", 22, TEAL))
+	var actual_directions: Array[String] = []
+	for definition in Directions.catalog():
+		if Directions.assess(definition["id"], config)["matched"]:
+			actual_directions.append(str(definition["title"]))
+	if not actual_directions.is_empty():
+		var result_direction := _label("새로운 맛 발견!\n" + " / ".join(_direction_new_titles) if _direction_new_record == int(rec["record_id"]) and not _direction_new_titles.is_empty() else "이 그릇의 방향 · " + " / ".join(actual_directions), 20, TEAL)
+		result_direction.name = "DirectionResult"
+		tcb.add_child(result_direction)
 	var title: Label = _label("%s v%d" % [str(rec["name"]), int(rec["version"])], 24, VERMILION)
 	title.name = "FeedbackTitle"
 	tcb.add_child(title)
 	tcb.add_child(_label("평균 %d점 · 판매가 %s · 원가 %s · 준비 %d초" % [int(evaluation["average_score"]), _won(int(config["price"])), _won(int(evaluation["unit_cost"])), int(evaluation["prep_seconds"])], 15, MUTED))
+	# Food/result facts lead; the complete receipt remains one recognizable
+	# disclosure deeper, instead of repeating every ingredient above reactions.
+	var recipe_receipt := DetailsScript.new()
+	recipe_receipt.name = "ResultRecipeDetails"
+	recipe_receipt.configure("재료와 공법", "토핑 %d분량 · 구성 펼쳐 보기" % Catalog.toppings_of(config).size(), _icon(str(config["broth"]), 2))
+	tcb.add_child(recipe_receipt)
 	var tops_label: Label = _label("토핑 %d개: %s" % [Catalog.toppings_of(config).size(), Catalog.topping_names(config)], 14, MUTED)
 	tops_label.name = "FeedbackToppings"
-	tcb.add_child(tops_label)
+	recipe_receipt.body.add_child(tops_label)
 	var ingredients: Array[String] = []
 	for slot in Catalog.SLOTS:
 		if slot != Catalog.TOPPING_SLOT:
 			ingredients.append(str(Catalog.find(str(config[slot]))["name"]))
 	var recipe_details: Label = _label(" · ".join(ingredients), 14, MUTED)
 	recipe_details.name = "FeedbackRecipeDetails"
-	tcb.add_child(recipe_details)
+	recipe_receipt.body.add_child(recipe_details)
 	if config.has("process"):
 		var method_label: Label = _label("제조: " + ProcessRules.summary(config["process"]), 15, TEAL)
 		method_label.name = "FeedbackProcess"
-		tcb.add_child(method_label)
+		recipe_receipt.body.add_child(method_label)
 	var identity: Dictionary = Discovery.describe(config)
 	var identity_label := _label(str(identity["title"]), 16, INK)
 	identity_label.name = "FeedbackIdentity"
-	tcb.add_child(identity_label)
+	recipe_receipt.body.add_child(identity_label)
 	if _journal_new_record_id == int(rec["record_id"]) and not _journal_new_titles.is_empty():
 		var discovery_label := _label("", 16, TEAL)
 		discovery_label.name = "NewRecipeThemes"
 		discovery_label.text = "새 연구 수록 · " + " / ".join(_journal_new_titles)
 		tcb.add_child(discovery_label)
+	var next_experiment := _button("다음 한 그릇 구상하기", "DirectionNextExperiment")
+	next_experiment.pressed.connect(_open_direction_board)
+	_experiment_buttons.append(next_experiment)
+	tcb.add_child(next_experiment)
 	_feedback_box.add_child(title_card)
 
 	for c in evaluation["customers"]:

@@ -18,7 +18,8 @@ func _run_profile(tag: String, vp: Vector2i, scale: int) -> void:
 	var before: String = JSON.stringify(state.call("to_dict"))
 	_check(_find(app, "ExperimentCluesIntro") == null, tag + ": untasted draft has no result clues")
 	var preview := _find(app, "BowlPreview") as TextureRect
-	_check(preview.texture.get_width() == 96, tag + ": actual lab uses detailed48px dish at integer scale")
+	# Food-first iteration enlarges the same dynamic48px dish, not a fake art.
+	_check(preview.texture.get_width() == 192, tag + ": actual lab uses detailed48px dish at integer scale")
 	await _shot(holder, tag + "_expression_01_preview.png")
 	_press(app, "QuickTasteButton")
 	app.set_process(false)
@@ -28,7 +29,7 @@ func _run_profile(tag: String, vp: Vector2i, scale: int) -> void:
 	var result_snapshot: String = JSON.stringify(state.call("to_dict"))
 	_check(before != result_snapshot, tag + ": tasting is a real transaction, not a preview")
 	var bowl := _find(app, "FeedbackBowl") as TextureRect
-	_check(bowl.texture.get_width() == 144, tag + ": actual result uses new dish at integer scale")
+	_check(bowl.texture.get_width() == 192, tag + ": actual result uses new dish at integer scale")
 	await _shot(holder, tag + "_expression_02_result.png")
 	var card: Node = _find(app, "ExperimentClue_aroma")
 	_check(card != null, tag + ": actual tasted dish gives an aroma alternative")

@@ -4,6 +4,7 @@ extends Control
 ## scroll gesture therefore cannot trigger a success animation or vibration.
 
 const MAX_EFFECTS: int = 24
+signal action_committed
 var _effects: Array[Dictionary] = []
 var _press_sequence: int = 0
 var _acknowledgements: int = 0
@@ -82,6 +83,7 @@ func _acknowledge_button(button: BaseButton) -> void:
 		point = button.get_global_rect().get_center()
 	button.set_meta("ramen_feedback_press", {})
 	_acknowledgements += 1
+	action_committed.emit()
 	_last_acknowledgement = point
 	if _effects.size() >= MAX_EFFECTS:
 		_effects.pop_front()

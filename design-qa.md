@@ -1,6 +1,28 @@
-# Harbor flow design verification
+# Discovery workbench: native Product Design acceptance
 
-final result: passed
+final result: blocked
+
+## Current scope and verification boundary
+2026-10-23. Existing native Godot target, palette, detailed dynamic dishes and
+disclosures are the source, not a web clone or a new generated mockup. Larger
+food-first lab/result, expandable eight-task navigation, three open-ended farmed
+ingredient directions, deliberate receipt depth and original audio are current.
+Do not use historical harbor PNGs as evidence for this changed implementation.
+
+Current161source files equal the fresh QA snapshot byte-for-byte. PCK976beff7,
+strict vendor signature0; pure55, actual packed flow1896, expression/depth3724,
+harbor918, touch70 and domain127tests/58423 checks pass with no engine errors.
+Full two-size layout19496/0/exit0/engine0 also passes. These are not visual or human-fun acceptance.
+
+Exact current app: /private/tmp/ramen-discovery-workbench-qa-20261023-v1/Ramen QA.app.
+Action-time launch confirmation requested; no current native execution/capture
+or visual pass claimed. After confirmation inspect every declared flow PNG,
+compare original-before/current-after states and resolve actionable P0/P1/P2.
+Native audio signal/file checks do not prove speaker volume/quality. iPhone,
+assistive technology, subjective enjoyment and6-10hour completion are deferred.
+
+## Historical harbor acceptance, preserved separately from current scope
+Historical final result: passed (main7fe2964; not current workbench acceptance).
 
 ## Current-run evidence and source
 - Fresh native run:20261022T070256Z-95998, official OpenGL4.1/Metal engine,688checks/failure0/exit0/engine-errors0. All24PNG originals were opened and manually inspected; full32-file run preserved byte-equal.
