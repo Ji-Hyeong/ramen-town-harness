@@ -1,0 +1,228 @@
+{
+  "generator": "built-in image_gen; original PNGs preserved",
+  "reference": "../refinements/concept-03-categories-v1.png",
+  "assets": [
+    {
+      "name": "base-bowl",
+      "file": "base-bowl.png",
+      "format": "PNG",
+      "size": [
+        1448,
+        1086
+      ],
+      "sha256": "dbab09d5c046dba79ab0f3589764189ba5d1958d30b4e81c9778caf4bb60892b",
+      "region": [
+        212,
+        171,
+        1025,
+        783
+      ],
+      "region_method": "alpha>=16 measured bounds; AtlasTexture at runtime, original unchanged"
+    },
+    {
+      "name": "base-bowl-medium",
+      "file": "base-bowl-medium.png",
+      "format": "PNG",
+      "size": [
+        1448,
+        1086
+      ],
+      "sha256": "2dce80ca81941f4573b2cbc23b96f21e53f43a437d27de934cf6c60f61c9bd87",
+      "region": [
+        210,
+        166,
+        1028,
+        788
+      ],
+      "region_method": "alpha>=16 measured bounds; AtlasTexture at runtime, original unchanged"
+    },
+    {
+      "name": "base-bowl-thick",
+      "file": "base-bowl-thick.png",
+      "format": "PNG",
+      "size": [
+        1448,
+        1086
+      ],
+      "sha256": "3faab799c6864c8ae21b8532af27b70723efd394392c41f97596d82dedf66365",
+      "region": [
+        210,
+        168,
+        1029,
+        787
+      ],
+      "region_method": "alpha>=16 measured bounds; AtlasTexture at runtime, original unchanged"
+    },
+    {
+      "name": "workbench-background",
+      "file": "workbench-background.png",
+      "format": "PNG",
+      "size": [
+        1086,
+        1448
+      ],
+      "sha256": "fbcee2d6d7d1dc9376f4cd54d5128f01f74aecc9d9100b67107ea87e1b0f4145",
+      "region": [
+        0,
+        0,
+        1086,
+        1448
+      ],
+      "region_method": "alpha>=16 measured bounds; AtlasTexture at runtime, original unchanged"
+    },
+    {
+      "name": "topping_chashu",
+      "file": "topping_chashu.png",
+      "format": "PNG",
+      "size": [
+        1254,
+        1254
+      ],
+      "sha256": "4b1665a24e9a4f57fb1ef083af6c9c3d60460ab048d94602b405b83f5d0c1157",
+      "region": [
+        53,
+        254,
+        1146,
+        799
+      ],
+      "region_method": "alpha>=16 measured bounds; AtlasTexture at runtime, original unchanged"
+    },
+    {
+      "name": "topping_egg",
+      "file": "topping_egg.png",
+      "format": "PNG",
+      "size": [
+        1254,
+        1254
+      ],
+      "sha256": "0be7d3fa22b8cf6170aaa230c3bdadb7c150b6d49bd5936e50716daaceeb22e1",
+      "region": [
+        164,
+        185,
+        970,
+        899
+      ],
+      "region_method": "alpha>=16 measured bounds; AtlasTexture at runtime, original unchanged"
+    },
+    {
+      "name": "topping_sprouts",
+      "file": "topping_sprouts.png",
+      "format": "PNG",
+      "size": [
+        1448,
+        1086
+      ],
+      "sha256": "4d5642db9636a71d66cd9610b4d5787768d7406e32fe2d254d69cc1898ad7a87",
+      "region": [
+        317,
+        291,
+        815,
+        524
+      ],
+      "region_method": "alpha>=16 measured bounds; AtlasTexture at runtime, original unchanged"
+    },
+    {
+      "name": "topping_nori",
+      "file": "topping_nori.png",
+      "format": "PNG",
+      "size": [
+        1254,
+        1254
+      ],
+      "sha256": "6e03a6b3acec66d5d63693e9c1c22871e599eb4cc22c5a6c1d8f362fd3ee41ab",
+      "region": [
+        309,
+        363,
+        653,
+        550
+      ],
+      "region_method": "alpha>=16 measured bounds; AtlasTexture at runtime, original unchanged"
+    },
+    {
+      "name": "topping_pickle",
+      "file": "topping_pickle.png",
+      "format": "PNG",
+      "size": [
+        1254,
+        1254
+      ],
+      "sha256": "e2a6acbccebc417c137f5881f9584aeb4ef45351b1b2a8c9c1048ab5127394a7",
+      "region": [
+        173,
+        374,
+        954,
+        614
+      ],
+      "region_method": "alpha>=16 measured bounds; AtlasTexture at runtime, original unchanged"
+    },
+    {
+      "name": "topping_mushroom",
+      "file": "topping_mushroom.png",
+      "format": "PNG",
+      "size": [
+        1254,
+        1254
+      ],
+      "sha256": "1288c0c694a5e5dcfbb0e0074c834925c40ecec84823e016479c8fe02a122933",
+      "region": [
+        193,
+        298,
+        868,
+        648
+      ],
+      "region_method": "alpha>=16 measured bounds; AtlasTexture at runtime, original unchanged"
+    },
+    {
+      "name": "topping_citrus_peel",
+      "file": "topping_citrus_peel.png",
+      "format": "PNG",
+      "size": [
+        1254,
+        1254
+      ],
+      "sha256": "378e2a476384451f59a8113db4549fbd3ee8e5586ddacb13580abaff624da7a2",
+      "region": [
+        319,
+        348,
+        641,
+        564
+      ],
+      "region_method": "alpha>=16 measured bounds; AtlasTexture at runtime, original unchanged"
+    },
+    {
+      "name": "topping_scallop",
+      "file": "topping_scallop.png",
+      "format": "PNG",
+      "size": [
+        1254,
+        1254
+      ],
+      "sha256": "ee440925bf2e22d12e8d82cde84e96abee49d2ad7fcf801280d6d12cccd08953",
+      "region": [
+        56,
+        146,
+        1141,
+        1028
+      ],
+      "region_method": "alpha>=16 measured bounds; AtlasTexture at runtime, original unchanged"
+    },
+    {
+      "name": "steam-wisp",
+      "file": "steam-wisp.png",
+      "format": "PNG",
+      "size": [
+        887,
+        1774
+      ],
+      "sha256": "ce21faf9d8cfa6f94a2d9d9e1019cc35395d5a8bb6e5a39a7a294c976dbaebfc",
+      "region": [
+        343,
+        379,
+        240,
+        1056
+      ],
+      "region_method": "alpha>=16 measured bounds; AtlasTexture at runtime, original unchanged"
+    }
+  ],
+  "scallop": "Existing original game asset reused; not regenerated"
+}

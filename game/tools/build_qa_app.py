@@ -8,7 +8,7 @@
 이미 있는 output-dir 은 덮어쓰거나 지우지 않고 거부한다. 준비 실패 시 output-dir/prep 의 로그와 FAILED.txt 를 남긴다.
 앱을 실행하는 일은 이 스크립트가 하지 않는다. 표준 라이브러리만 사용하고 셸을 거치지 않는다(인자 배열).
 
-생성된 앱을 실행하면 런처가 runs/<UTC시각>-<pid>/ 를 새로 만들고 실제 렌더러로 tests/qa_capture.gd 를 돌린 뒤
+생성된 앱을 실행하면 런처가 runs/<UTC시각>-<pid>/ 를 새로 만들고 실제 렌더러로 선택한 검토용 fixture 를 돌린 뒤
 captures/, qa-data/, godot.log, console.log, exit-status.txt 를 그 안에 남긴다. 준비 성공은 그래픽 성공이 아니다.
 런처는 엔진을 작업 폴더 '/' 에서 실행하고(started.txt 의 launch_cwd 에 기록) 모든 경로는 output-dir 안의 절대 경로를 쓴다.
 """
@@ -203,7 +203,8 @@ def export_presets_text() -> str:
         "dedicated_server=false\n"
         'custom_features=""\n'
         'export_filter="all_resources"\n'
-        'include_filter=""\n'
+        # Raw licenses are not importable resources; include them explicitly.
+        'include_filter="assets/fonts/*OFL.txt,assets/ui/material-rounded/LICENSE.txt"\n'
         'exclude_filter=""\n'
         'export_path=""\n'
         "script_export_mode=0\n"
@@ -235,7 +236,7 @@ def sha256_of(path: Path) -> str:
     return digest.hexdigest()
 
 
-def launcher_script(output_dir: Path, engine: Path, pack: Path) -> str:
+def launcher_script(output_dir: Path, engine: Path, pack: Path, qa_script: str = QA_SCRIPT) -> str:
     """고정 경로 세 개만 shlex.quote 로 박고, 나머지는 변수를 큰따옴표로만 쓴다(eval/보간 없음)."""
     q = shlex.quote
     return f"""#!/bin/sh
@@ -259,7 +260,7 @@ mkdir "$RUN/captures" "$RUN/qa-data" "$RUN/tmp" || fail "cannot create run subdi
 printf '%s\\n' "$RUN" > "$OUT/latest-run.txt"
 printf 'started_utc=%s\\nlaunch_cwd=%s\\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$LAUNCH_CWD" > "$RUN/started.txt"
 TMPDIR="$RUN/tmp" "$ENGINE" --main-pack "$PACK" --log-file "$RUN/godot.log" \\
-  --script {q(QA_SCRIPT)} -- "--qa-out=$RUN/captures" "--dev-data-dir=$RUN/qa-data" > "$RUN/console.log" 2>&1
+  --script {q(qa_script)} -- "--qa-out=$RUN/captures" "--dev-data-dir=$RUN/qa-data" > "$RUN/console.log" 2>&1
 STATUS=$?
 printf 'exit_status=%s\\nfinished_utc=%s\\n' "$STATUS" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$RUN/exit-status.txt"
 exit "$STATUS"
@@ -307,7 +308,7 @@ def copy_engine(output_dir: Path, engine_app: Path, engine_name: str) -> tuple:
     return dest, dest / "Contents" / "MacOS" / engine_name
 
 
-def assemble_app(output_dir: Path, dest: Path, engine: Path, pack: Path) -> Path:
+def assemble_app(output_dir: Path, dest: Path, engine: Path, pack: Path, qa_script: str = QA_SCRIPT) -> Path:
     # 공급자 앱의 CFBundleExecutable/Identifier를 바꾸면 Mach-O 서명이 깨진다.
     # 자체 제작 런처 앱만 새로 쓰고, 엔진은 서명이 유효한 별도 번들을 참조한다.
     (dest / "Contents" / "MacOS").mkdir(parents=True)
@@ -317,7 +318,7 @@ def assemble_app(output_dir: Path, dest: Path, engine: Path, pack: Path) -> Path
     shutil.copy2(pack, packed)
     launcher = dest / "Contents" / "MacOS" / LAUNCHER_NAME
     with open(launcher, "x", encoding="utf-8") as fh:
-        fh.write(launcher_script(output_dir, engine, packed))
+        fh.write(launcher_script(output_dir, engine, packed, qa_script))
     os.chmod(launcher, 0o755)
     plist_path = dest / "Contents" / "Info.plist"
     digest = hashlib.sha256(str(output_dir).encode("utf-8")).hexdigest()[:10]
@@ -335,10 +336,15 @@ def assemble_app(output_dir: Path, dest: Path, engine: Path, pack: Path) -> Path
     return dest
 
 
-def prepare(godot: Path, project: Path, output_dir: Path, runner=subprocess.run, platform: str = sys.platform) -> dict:
+def prepare(godot: Path, project: Path, output_dir: Path, runner=subprocess.run, platform: str = sys.platform, qa_script: str = QA_SCRIPT) -> dict:
     # 1) 부작용 없는 검증. 여기서 실패하면 output-dir 을 만들지 않는다.
     engine_app = verify_engine(godot, platform)
     check_project_source(project)
+    # Only two reviewed project-owned fixtures; no raw command or arbitrary path.
+    if qa_script not in (QA_SCRIPT, "res://tests/bowl_editor_qa.gd"):
+        raise BuildError("Unsupported QA fixture.")
+    if not (project / qa_script.removeprefix("res://")).is_file():
+        raise BuildError("Selected QA fixture is missing.")
     check_output_dir(output_dir, project, engine_app)
     series = project_engine_series(project)
 
@@ -383,7 +389,9 @@ def prepare(godot: Path, project: Path, output_dir: Path, runner=subprocess.run,
             raise BuildError(f"--export-pack 이 실패했습니다(로그: {export_log})")
         verify_pack(pack)
 
-        app = assemble_app(output_dir, output_dir / APP_NAME, engine, pack)
+        if qa_script.removeprefix("res://").encode("utf-8") not in pack.read_bytes():
+            raise BuildError("Selected QA fixture was not exported.")
+        app = assemble_app(output_dir, output_dir / APP_NAME, engine, pack, qa_script)
         manifest = {
             "created_utc": datetime.now(timezone.utc).isoformat(),
             "godot": str(godot), "godot_version": version_text, "godot_sha256": sha256_of(godot),
@@ -391,6 +399,7 @@ def prepare(godot: Path, project: Path, output_dir: Path, runner=subprocess.run,
             "copied_godot": str(engine), "vendor_signature_verified": signature_verified,
             "bundled_files": scope["included"], "excluded_files": scope["excluded"],
             "local_development_only": True,
+            "qa_script": qa_script,
         }
         (prep / "build-manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     except (BuildError, OSError, shutil.Error) as err:
@@ -409,6 +418,7 @@ def main(argv: list) -> int:
     ap.add_argument("--godot", required=True, help="Godot.app/Contents/MacOS/Godot 절대 경로")
     ap.add_argument("--project", required=True, help="game 프로젝트 폴더 절대 경로")
     ap.add_argument("--output-dir", required=True, help="아직 없는 새 폴더의 절대 경로")
+    ap.add_argument("--fixture", choices=("full", "bowl-editor"), default="full", help="검토한 네이티브 검사 흐름")
     args = ap.parse_args(argv)
     try:
         godot = absolute_path("--godot", args.godot)
@@ -416,7 +426,8 @@ def main(argv: list) -> int:
         output_dir = absolute_path("--output-dir", args.output_dir)
         if not project.is_dir():
             raise BuildError(f"--project: 폴더가 아닙니다: {project}")
-        result = prepare(godot, project, output_dir)
+        entry = QA_SCRIPT if args.fixture == "full" else "res://tests/bowl_editor_qa.gd"
+        result = prepare(godot, project, output_dir, qa_script=entry)
     except (BuildError, OSError) as err:
         print(f"error: {err}", file=sys.stderr)
         return 1

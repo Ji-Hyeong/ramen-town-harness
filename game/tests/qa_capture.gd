@@ -166,6 +166,18 @@ func _spawn(holder: SubViewport, data_dir: String) -> Node:
 	return app
 
 
+static func image_has_rendered_content(img: Image) -> bool:
+	# Sparse real dialogs can have text between every point of a coarse grid.
+	# Scan pixels, stopping once sufficient color diversity proves nonblank output.
+	var colors: Dictionary = {}
+	for y in img.get_height():
+		for x in img.get_width():
+			colors[img.get_pixel(x, y).to_html()] = true
+			if colors.size() >= 4:
+				return true
+	return false
+
+
 func _shot(holder: SubViewport, file_name: String) -> void:
 	await _settle()
 	if _layout_only:
@@ -173,13 +185,9 @@ func _shot(holder: SubViewport, file_name: String) -> void:
 	await RenderingServer.frame_post_draw
 	var img: Image = holder.get_texture().get_image()
 	# A correctly sized all-black/unrendered viewport is not visual evidence.
-	# Sample the image itself before accepting a renderer run as successful.
-	var colors: Dictionary = {}
-	for y in 8:
-		for x in 8:
-			var color := img.get_pixel(int((x + 0.5) * img.get_width() / 8.0), int((y + 0.5) * img.get_height() / 8.0))
-			colors[color.to_html()] = true
-	_check(colors.size() >= 4, "스크린샷이 비어 있거나 그려지지 않았어요: " + file_name)
+	# Inspect actual pixels until four colors are found. The old8x8 grid could
+	# miss all text on a sparse but correctly rendered dialog and falsely fail.
+	_check(image_has_rendered_content(img), "스크린샷이 비어 있거나 그려지지 않았어요: " + file_name)
 	var path: String = _out_dir.path_join(file_name)
 	var err: int = img.save_png(path)
 	_check(err == OK, "스크린샷 저장 실패: " + path)

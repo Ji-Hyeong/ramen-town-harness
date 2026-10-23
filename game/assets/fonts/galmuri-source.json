@@ -1,0 +1,9 @@
+{
+  "project": "https://github.com/quiple/galmuri",
+  "release": "v2.40.4",
+  "source": "https://github.com/quiple/galmuri/releases/download/v2.40.4/Galmuri-v2.40.4.zip",
+  "license": "SIL OFL1.1; full license in Galmuri-OFL.txt",
+  "archive_sha256": "c8b3d9861a62ae73c8b1178091401cd79994812437ef386413f6dd54856e60e7",
+  "font_sha256": "45d901e379138dd91873af157640f60aa4cf6beaa885c3efd2a8c279e039a237",
+  "modified": false
+}

@@ -68,10 +68,11 @@ def make_engine(root: Path, magic: bytes = bytes.fromhex("cffaedfe")) -> Path:
 class FakeGodot:
     """Godot 호출을 흉내 내는 runner. 받은 인자와 환경을 기록한다."""
 
-    def __init__(self, fail_step=None, version="4.7.2.stable.official.abc"):
+    def __init__(self, fail_step=None, version="4.7.2.stable.official.abc", fixture="tests/qa_capture.gd"):
         self.calls = []
         self.fail_step = fail_step
         self.version = version
+        self.fixture = fixture
 
     def __call__(self, args, **kwargs):
         self.calls.append((list(args), kwargs))
@@ -83,7 +84,9 @@ class FakeGodot:
         if step == "version":
             out.write(self.version + "\n")
         elif step == "export":
-            Path(args[-1]).write_bytes(b"GDPC" + b"\0" * 8 + b"tests/qa_capture.gd" + b"\0")
+            # The native fixture extends the original capture harness, so both
+            # reviewed entries are retained just as the real exporter does.
+            Path(args[-1]).write_bytes(b"GDPC" + b"\0" * 8 + b"tests/qa_capture.gd\0" + self.fixture.encode("utf-8") + b"\0")
         return subprocess.CompletedProcess(args, 0)
 
 
@@ -180,6 +183,38 @@ class PreparedBundleScope(unittest.TestCase):
         out = root / "out"
         runner = runner or FakeGodot()
         return project, engine, out, runner
+
+    def test_selected_native_fixture_reaches_launcher_and_manifest(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project, engine, out, _ = self.prepare(Path(tmp))
+            fixture = "res://tests/bowl_editor_qa.gd"
+            (project / "tests/bowl_editor_qa.gd").write_text("extends SceneTree\n")
+            runner = FakeGodot(fixture="tests/bowl_editor_qa.gd")
+            result = qa.prepare(engine, project, out, runner=runner, platform="darwin", qa_script=fixture)
+            script = (result["app"] / "Contents/MacOS" / qa.LAUNCHER_NAME).read_text()
+            self.assertIn(fixture, script)
+            self.assertNotIn("--script res://tests/qa_capture.gd", script)
+            self.assertEqual(json.loads(result["manifest"].read_text())["qa_script"], fixture)
+
+    def test_unreviewed_or_missing_fixture_creates_no_output(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project, engine, out, runner = self.prepare(Path(tmp))
+            for fixture in ("res://tests/other.gd", "res://tests/../../script.gd", "res://tests/bowl_editor_qa.gd"):
+                before = tree_digest(Path(tmp))
+                with self.assertRaises(qa.BuildError):
+                    qa.prepare(engine, project, out, runner=runner, platform="darwin", qa_script=fixture)
+                self.assertFalse(out.exists())
+                self.assertEqual(runner.calls, [])
+                self.assertEqual(tree_digest(Path(tmp)), before)
+
+    def test_missing_exported_fixture_is_rejected_with_diagnostics(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project, engine, out, runner = self.prepare(Path(tmp))
+            (project / "tests/bowl_editor_qa.gd").write_text("extends SceneTree\n")
+            with self.assertRaisesRegex(qa.BuildError, "not exported"):
+                qa.prepare(engine, project, out, runner=runner, platform="darwin", qa_script="res://tests/bowl_editor_qa.gd")
+            self.assertTrue((out / "prep/FAILED.txt").is_file())
+            self.assertFalse((out / qa.APP_NAME).exists())
 
     def test_snapshot_contains_only_runtime_files_and_source_is_unchanged(self):
         with tempfile.TemporaryDirectory() as tmp:

@@ -1,0 +1,85 @@
+{
+  "library": "Google Material Symbols Rounded",
+  "license": "Apache-2.0",
+  "files": [
+    {
+      "file": "add.svg",
+      "source": "https://raw.githubusercontent.com/google/material-design-icons/master/symbols/web/add/materialsymbolsrounded/add_24px.svg",
+      "sha256": "747fe04ec3eb546a96f514a5d2df9e81be53397818b83f05630519ab008bb6e9",
+      "white_mask_sha256": "7732c96992c267873d224c9dd01b77748fa77dd2a31f77d35b279c77726879e1"
+    },
+    {
+      "file": "remove.svg",
+      "source": "https://raw.githubusercontent.com/google/material-design-icons/master/symbols/web/remove/materialsymbolsrounded/remove_24px.svg",
+      "sha256": "b7889d24c4a0bfc7cb97019c90a10f340973c32a71e4d5f7abc01054551605a0",
+      "white_mask_sha256": "66aa5b642eff9af716c749e84357532740ef2a7584840ed325180326f019a2f2"
+    },
+    {
+      "file": "info.svg",
+      "source": "https://raw.githubusercontent.com/google/material-design-icons/master/symbols/web/info/materialsymbolsrounded/info_24px.svg",
+      "sha256": "ab779a17ff3bc8f5a30e3231509ef9ff6fee709ffcaa46fb65217ce170f03e14",
+      "white_mask_sha256": "6aefba3d88cc4db5134c7bd6113dd5483122117b289b69775992cc82dd727ef8"
+    },
+    {
+      "file": "arrow_back.svg",
+      "source": "https://raw.githubusercontent.com/google/material-design-icons/master/symbols/web/arrow_back/materialsymbolsrounded/arrow_back_24px.svg",
+      "sha256": "b9b58d54e13e0e3693a10d997c1001ec270c12eaa935f993cee1d8c916236ceb",
+      "white_mask_sha256": "195e6692fe4535d459a7b9e78ebb6f525471c3c86398b7b0d9145f7ae52d513c"
+    },
+    {
+      "file": "chevron_right.svg",
+      "source": "https://raw.githubusercontent.com/google/material-design-icons/master/symbols/web/chevron_right/materialsymbolsrounded/chevron_right_24px.svg",
+      "sha256": "8cb67ac33f0e21e96a13b2274f21d27e96312097fea0c5260bf979ffea396140",
+      "white_mask_sha256": "4166926b78cc57644869f1ff3f671a793f08463206878ec7216ac66952c983ed"
+    },
+    {
+      "file": "menu.svg",
+      "source": "https://raw.githubusercontent.com/google/material-design-icons/master/symbols/web/menu/materialsymbolsrounded/menu_24px.svg",
+      "sha256": "440bf7bd76d77ddbd704f6fb9f5b6022acb25c5fa6de1e4d8a224ea25e1b5b3c",
+      "white_mask_sha256": "51342d80f46c0b226d2bf3fc2ef74fe2bacf988034ea1c03d1d668ecf0122e25"
+    },
+    {
+      "file": "close.svg",
+      "source": "https://raw.githubusercontent.com/google/material-design-icons/master/symbols/web/close/materialsymbolsrounded/close_24px.svg",
+      "sha256": "fabc7e16160e93ed11d6d72b87f5c67092d04abfcc1fc2410fab1abe075cd8fc",
+      "white_mask_sha256": "6c6274d85f0e2481413939583975c8d371315e09e90ef34d4345c08ca7c644ec"
+    },
+    {
+      "file": "check.svg",
+      "source": "https://raw.githubusercontent.com/google/material-design-icons/master/symbols/web/check/materialsymbolsrounded/check_24px.svg",
+      "sha256": "51e706757e18de60cb7ade1cf0ae272708932d36e417365f14977ee039cd85b8",
+      "white_mask_sha256": "bfb103219a1d66ed5852dab969c454c43050b47d360a866505d91ee316f98843"
+    },
+    {
+      "file": "soup_kitchen.svg",
+      "source": "https://raw.githubusercontent.com/google/material-design-icons/master/symbols/web/soup_kitchen/materialsymbolsrounded/soup_kitchen_24px.svg",
+      "sha256": "75f8c8be9118615dcd1349a3fe8df544c407679e88cb863619f61dbe8ab64661",
+      "white_mask_sha256": "673839f56f40af0630afaf00f730328df96a4a2306e81596b035c79d4fbf322e"
+    },
+    {
+      "file": "ramen_dining.svg",
+      "source": "https://raw.githubusercontent.com/google/material-design-icons/master/symbols/web/ramen_dining/materialsymbolsrounded/ramen_dining_24px.svg",
+      "sha256": "5d0625bfb0aedc279187429700a2cc349bae8e643138955ef85698ded9f0b987",
+      "white_mask_sha256": "f0e6436b6fdf99362c4dbd15acc949e53ddf1cafea19e90992d93086fa690f22"
+    },
+    {
+      "file": "restaurant.svg",
+      "source": "https://raw.githubusercontent.com/google/material-design-icons/master/symbols/web/restaurant/materialsymbolsrounded/restaurant_24px.svg",
+      "sha256": "45cb5f6db38ce6d7e8755f211a3fa0b6f5cf6cb54f7a66c78ae42235496f9b8b",
+      "white_mask_sha256": "1eb63025d02c07a360b0ead480d8ddc8a279b564d290c79a2d478f9200974605"
+    },
+    {
+      "file": "settings.svg",
+      "source": "https://raw.githubusercontent.com/google/material-design-icons/master/symbols/web/settings/materialsymbolsrounded/settings_24px.svg",
+      "sha256": "6cd47de90647ece6b00922f497f8c4ea9c1649548cf15828d1df9d78d5bdf30d",
+      "white_mask_sha256": "e600d09236a65893f9966c06d2bdbcc8b951818878abf333126e50f8e9468a8d"
+    },
+    {
+      "file": "volume_up.svg",
+      "source": "https://raw.githubusercontent.com/google/material-design-icons/master/symbols/web/volume_up/materialsymbolsrounded/volume_up_24px.svg",
+      "sha256": "0f4b215717e8153c0bd9d84f10fa3313453fd74895da8e7c474383d841079df6",
+      "white_mask_sha256": "bcdde2ec1a51696ebd065b710e46167ea53375db2ab694e7a46c37901c6cf205"
+    }
+  ],
+  "modification": "Add white fill to original path elements for native theme tint; geometry unchanged"
+}

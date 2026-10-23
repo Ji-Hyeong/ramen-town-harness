@@ -40,6 +40,8 @@ const Foraging = preload("res://scripts/domain/market_foraging.gd")
 const Harbor = preload("res://scripts/domain/harbor_foraging.gd")
 const TravelScript = preload("res://scripts/ui/expedition_travel.gd")
 const Contest = preload("res://scripts/domain/ramen_contest.gd")
+const BowlWorkbenchScript = preload("res://scripts/ui/bowl_workbench.gd")
+var _bowl_editor: BowlWorkbenchScript
 
 const INK: Color = Color(0.17, 0.12, 0.08)
 const PAPER: Color = Color(0.96, 0.92, 0.82)
@@ -269,6 +271,10 @@ func _ready() -> void:
 	add_child(_audio)
 	_juice.action_committed.connect(func(): _audio.play("tap"))
 	_load_save()
+	_bowl_editor = BowlWorkbenchScript.new()
+	_bowl_editor.visible = false
+	_bowl_editor.action_requested.connect(_on_bowl_editor_action)
+	add_child(_bowl_editor)
 	# 재개 시 이동 그림만 다시 보여 준다. 비용·경로·발견은 이미 불러온 도메인 상태를 사용한다.
 	if state.exploration_active():
 		_travel.start(str(state.expedition()["region"]))
@@ -298,6 +304,7 @@ func _notification(what: int) -> void:
 func _process(delta: float) -> void:
 	if state == null:
 		return
+	_sync_bowl_editor()
 	var now: int = Time.get_ticks_msec()
 	if _stop_armed_until != 0 and now > _stop_armed_until:
 		_stop_armed_until = 0
@@ -1530,7 +1537,7 @@ func _on_dev_pressed() -> void:
 	if _overlay.visible:
 		_close_overlay()
 	else:
-		_open_overlay(-1)
+		_open_overlay(TAB_LAB)
 
 
 func _open_overlay(tab: int) -> void:
@@ -1753,13 +1760,13 @@ func _on_new_recipe() -> void:
 	_refresh_all()
 
 
-func _on_option_pressed(slot: String, id: String) -> void:
+func _on_option_pressed(slot: String, id: String, source_point: Vector2 = Vector2.INF) -> void:
 	if _work_blocked("재료를 바꿀"):
 		_refresh_lab()
 		return
 	_pending_delete_id = 0
 	var previous := state.draft_config.duplicate(true)
-	var point := (_buttons[id] as Button).get_global_rect().get_center()
+	var point := (_buttons[id] as Button).get_global_rect().get_center() if source_point == Vector2.INF else source_point
 	var result: Dictionary
 	if slot == Catalog.TOPPING_SLOT:
 		var portions: Array = Catalog.toppings_of(state.draft_config)
@@ -1996,6 +2003,8 @@ func _play_reveal() -> void:
 	if not is_inside_tree():
 		return
 	var bowl := _feedback_box.find_child("FeedbackBowl", true, false) as Control
+	if is_instance_valid(_bowl_editor) and _bowl_editor.visible:
+		bowl = _bowl_editor._dish
 	if bowl != null:
 		bowl.pivot_offset = bowl.size * 0.5
 		bowl.scale = Vector2.ONE * 0.65
@@ -2778,6 +2787,55 @@ func advance_contest(seconds: float) -> Dictionary:
 	return {"ok": true, "message": "심사 연출만 진행했어요."}
 
 
+## The native editor presents existing state and delegates all mutations to the
+## established guarded actions. Hidden legacy lab nodes are controller adapters,
+## not current visual evidence; other feature pages remain reachable from its menu.
+func _sync_bowl_editor() -> void:
+	if not is_instance_valid(_bowl_editor):
+		return
+	var active: bool = _overlay.visible and tabs.current_tab in [TAB_LAB, TAB_FEEDBACK]
+	_bowl_editor.visible = active
+	_drawer_margin.visible = not active
+	if not active:
+		return
+	var warning: String = _banner_label.text if _banner.visible else ""
+	if _save_error_shown or save_locked:
+		warning = "저장하지 못했어요. 작업 메뉴의 현재 안내를 확인하세요. " + _last_save_message
+	_bowl_editor.present(state, 1 if tabs.current_tab == TAB_FEEDBACK else 0, {
+		"selected": _selected_topping_position, "busy": _development_busy(),
+		"working": work_active(), "progress": _work.progress(),
+		"phase": WorkScript.phase_name(_work.phase_index()) if work_active() else "",
+		"notice": _taste_message.text, "warning": warning, "muted": _audio.muted})
+
+
+func _on_bowl_editor_action(kind: String, data: Dictionary) -> void:
+	match kind:
+		"close": _on_close_pressed()
+		"taste": _on_taste()
+		"cancel": _on_work_cancel()
+		"serve": _on_overlay_open_pressed()
+		"ingredient": _on_option_pressed(str(data["slot"]), str(data["id"]), data["point"])
+		"slot": _select_topping_position(int(data["index"]))
+		"remove": _remove_topping_position(int(data["index"]))
+		"process": _on_process_choice(str(data["slot"]), str(data["id"]))
+		"route": _on_tab_link(int(data["index"]))
+		"name": _on_name_changed(str(data["value"]))
+		"price": _on_price_step(int(data["delta"]))
+		"new": _on_new_recipe()
+		"audio": _toggle_audio()
+		"direction": _select_direction(str(data["id"]))
+		"comparison":
+			var record: Dictionary = state.get_record(state.last_feedback_record_id)
+			var body: VBoxContainer = data["body"] as VBoxContainer
+			if body == null or record.is_empty():
+				push_error("시식 비교 대상이나 표시 영역이 없어요.")
+			else:
+				body.add_child(_comparison_card(record, Evaluator.evaluate(record["config"])))
+		_:
+			push_error("알 수 없는 편집 동작: " + kind)
+	_sync_bowl_editor()
+
+
 func _refresh_all() -> void:
 	_trip_notice.visible = state.exploration_active()
 	_refresh_header()
@@ -2838,7 +2896,8 @@ func _show_work_phase_feedback(phase: int) -> void:
 	if not work_active() or WorkScript.phase_for(_work.progress()) != phase:
 		return
 	_audio.play(["broth", "noodle", "plate"][phase])
-	_juice.burst(_work_view.get_global_rect().get_center(), TEAL, WorkScript.phase_name(phase), null, true)
+	var origin: Vector2 = _bowl_editor._dish.get_global_rect().get_center() if is_instance_valid(_bowl_editor) and _bowl_editor.visible else _work_view.get_global_rect().get_center()
+	_juice.burst(origin, TEAL, WorkScript.phase_name(phase), null, true)
 
 
 func _development_busy() -> bool:

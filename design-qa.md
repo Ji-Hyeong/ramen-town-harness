@@ -1,4 +1,129 @@
-# UI/UX reset: human rejection overrides historical acceptance
+# Native bowl editor: final bounded design review
+
+final result: passed
+
+2026-10-23. Passed means the selected native editor and affected detail flow were
+rendered, compared and checked after correction. It does not mean whole-game
+human usability/fun or physical iPhone acceptance. The human excluded phone work.
+No actionable P0/P1/P2 remains in this bounded review. Source ornamental finishing
+is retained as explicit P3 follow-up, not described as a pixel-identical clone.
+
+## Source, current render and normalization
+
+- Visual truth: game/docs/uiux-reset/refinements/concept-03-categories-v1.png,
+  the exact category-refined displayed option3 selected by the human.
+- Source853x1844 is normalized with Lanczos to390x844. Current portrait is
+  native390x844/density1, no bezel or drawn OS chrome. Landscape1280x800 is a
+  responsive adaptation. Current initial state is the real fresh default draft.
+- Current original: game/docs/uiux-reset/native-v5/portrait_editor_01_initial.png.
+- Full-view pair, composed and opened: game/docs/uiux-reset/native-v5/comparisons/portrait-source-native-v5.png.
+- Focused pair, composed and opened: game/docs/uiux-reset/native-v5/comparisons/portrait-controls-source-native-v5.png.
+  Common lower region(0,420,390,424) is enlarged2x nearest. Only labels/gutters
+  are added. These comparisons address type, spacing, food, controls and copy.
+- Actual same-state customer detail before/after, composed and opened:
+  game/docs/uiux-reset/native-v5/comparisons/portrait-feedback-before-after.png.
+
+## Current native evidence and honest manual scope
+
+Final run20261023T060457Z-94441 is actual OpenGL4.1/Metal on Apple M3 Pro:
+457checks/0failures/exit0/engine-errors0,30PNGs,15per size. Full42-file run is
+privately preserved byte-equal. All dimensions/nonblank are checked automatically.
+All4changed detail/number captures and6initial/result/save-failure regressions
+were individually opened; exact10paths are in native-v5/review.json. The priorv3
+baseline opened all28 originals and4comparisons. Only bowl_workbench.gd and
+bowl_editor_qa.gd differ since that baseline. Do not say all30current originals
+were individually opened. The09d reveal point can be identical to09b because
+all content fits in this fixture; they are not distinct gameplay cases.
+
+Frozen234sources equal the current snapshot after execution. Prep/embedded PCK
+15bd5586632484981ec649b9c3f750120ec375e4f3b68de217b8ec2f723eba43 are equal and
+unchanged; official copied-engine strict signature exits0 again. Actual final
+pack367/0, shorter390x750185/0, packaged licenses3/0 and builder34tests pass.
+Unchanged domain regression127tests/58423 checks passes. No engine errors.
+
+## Findings, corrections and comparison history
+
+1. V2 native396/1/exit1/engine0 was rejected. The initial bowl was absent and
+   two summaries collapsed; notice-time portion buttons clipped. Actual full
+   source/native pair was opened. Reflow now follows the Container's final scene
+   resize/minimum change; portions occupy a real centered cream/teal surface.
+   An integer-divided landscape texture ratio also shrank the preview; casting
+   before division restores its silhouette. First-view width/size/aspect/enclosure
+   guards were added. V3 actual439/0 and all28 originals visibly confirm these
+   fixes, including full/2x initial before/after in native-v3/comparisons/.
+2. V2 display/action hierarchy was weaker than the source. Original licensed
+   Galmuri11 Bold now handles display/name/button roles; GowunDodum remains for
+   small explanatory text.22px action,56px food thumbnails,68px rows and separate
+   nonwrapping heading/hint restore clear priority. V3/V5 full/focused comparisons
+   were opened and confirm weight/wrapping and independently scrolling content.
+3. V2's sole automated failure was a sparse-dialog nonblank false positive,
+   not an empty screen; the actual research dialog was opened. Replace8x8 sampling
+   with actual pixel scan, same four-color threshold. Explicit black/gray reject
+   and sparse-foreground tests pass; current native captures have no failures.
+   The failedv2 run remains recorded as failure, not retroactively accepted.
+4. Final completeness review found P2 lost additional customer reasons/value_note
+   despite V3 layout success. FrozenV3 reproduces14checks/5failures. Deeper detail
+   restores every selected customer's evaluated reason and price reaction, with
+   portrait/name/score, real numbers and existing version comparison. Target14/0
+   follows; final367/457 includes the name-width guard and full-text checks.
+   All4new detail/number captures and actual before/after were opened. No text
+   truncation or inaccessible numeric comparison remains in these cases.
+
+The desktop compact list can fully fit; swipe tests respect its actual scroll
+range while still requiring scroll for overflow and canceled gestures never
+commit a tap/state change. Mobile overflow remains tested. A390x750 logical
+viewport tests shorter content space; it is not a physical safe-area capture.
+
+## Required fidelity surfaces
+
+- Fonts/typography: pixel display type matches the game's direction and restores
+  the strong source hierarchy. Body explanations remain legible, wrap inside the
+  modal/list and do not turn into vertical columns. Original Galmuri11 Boldv2.40.4
+  bytes/hash/full SIL OFL1.1 are recorded and included in the pack. The generated
+  reference has no exact font file; this is an intentional matching choice.
+- Spacing/layout: food and both summaries are present immediately; portion cells
+  remain within their surface after notices, duplicates and rank projection.
+  Filters/footer stay fixed while only list/details scroll. Source category cells
+  are enlarged to practical44px+ native hits; initial3full rows plus a partial
+  fourth rather than4complete rows is an intentional touch-size tradeoff. All
+  actionable information is retained and categories handle larger collections.
+- Colors/tokens: navy193e65/creamfff6e4/teal087e80/goldffd05a keep the selected
+  hierarchy. Selection also uses checks/text and locks use conditions. This is
+  not an AA/accessibility certification. Disabled states remain visibly separate.
+- Images/assets: actual original generated food/background/steam remain byte-equal;
+  no checkerboard/opaque halo/missing image was found in reviewed states. Actual
+  noodle/broth and separate repeated portions drive the dish. Source decorative
+  green garnish is omitted from a chashu-only draft. Ordinary UI symbols come
+  from Material Symbols Rounded with original source/license, not fake food art.
+- Copy/content: actual costs/times/locks and guarded results override illustrative
+  mock values. Detail retains all selected-customer reasons and price feedback;
+  browsing has no spend/discovery side effect. Real cancel/complete/failed-save
+  states remain explicit; full error text is available from the work menu.
+
+## Interaction verification and implementation checklist
+
+Completed: actual pointer taps, button-start swipes/canceled presses, categories,
+locked info, repeated portions, full-capacity replacement, minimum-one removal,
+broth marker reset/repeated choice, name/price edits, cooking cancellation,
+one-time payment/record, customer selection/full detail, comparison/clues,
+four-slot projection and notebook route. Save-failure/collision recovery uses
+only owned isolated QA directories. Source/schema/domain/services are unchanged.
+Completed: fresh current captures, source/full/focused comparison, failure/fix
+history, postrun source/pack/signature checks and sanitized evidence/gallery.
+
+## P3 follow-up and explicit limits
+
+The source's coin decoration, callout tails and beveled ornamental frame are
+simplified native surfaces/library icons. Further ornamental polish is optional;
+no claim of exact pixel copying is made. Current review preserves usable native
+hits and clear hierarchy. VoiceOver, Dynamic Type/reduced motion, keyboard focus
+trapping, physical iPhone safe areas/touch/audio, performance and human-fun remain
+unverified. The human-rejected old0.13 usability conclusion is not reinstated.
+The four-slot example is a synthetic view projection, not earned progression.
+No normal-save/phone changes or Claude calls. Earlier prepared0.14 is stale and
+must not be installed. Sanitized current evidence: evidence/bowl-editor-native-v1.json.
+
+## Historical UI/UX reset: human rejection overrides prior acceptance
 
 Current result (2026-10-23): **needs redesign; not accepted for usability.**
 The human explicitly rejects installed0.13 UI/UX. Prior technical tests and
