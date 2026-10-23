@@ -1,6 +1,6 @@
 {
   "feature": "native bowl-centered menu editor",
-  "status": "implemented; native visual acceptance blocked pending exact QA app confirmation",
+  "status": "implemented; exactv2 approved; native visual review blocked by unavailable Computer Use tool",
   "source_reference": "game/docs/uiux-reset/refinements/concept-03-categories-v1.png",
   "frozen_runtime_sources": 230,
   "source_sha256": {
@@ -279,7 +279,9 @@
     "executed": false,
     "comparison_performed": false,
     "visual_accepted": false,
-    "app_label": "ramen-bowl-editor-qa-20261023-v2/Ramen QA.app"
+    "app_label": "ramen-bowl-editor-qa-20261023-v2/Ramen QA.app",
+    "software_execution_approved": true,
+    "current_blocker": "Computer Use unavailable; explicit alternative terminal method requested"
   },
   "boundaries": [
     "No Claude calls",

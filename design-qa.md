@@ -42,9 +42,14 @@ inspect any drift, fix P0/P1/P2 and recapture before changing result to passed.
 Physical iPhone safe areas, VoiceOver/Dynamic Type/reduced motion and human
 usability/fun remain separate limitations even after bounded Mac visual review.
 
-Blocker: action-time execution confirmation for the final reviewed local QA app
-and fresh native rendered evidence. A prepared app or headless count is not a
+Blocker: exactv2 software execution was approved, but the current session's
+available tools omit Computer Use/cua_repl. No GUI launch has occurred. A single
+request for explicit alternative terminal execution of this identical approved
+app is pending under the earlier CUA method restriction. Do not ask for Full
+Access again, infer approval from elapsed time or bypass through terminal UI.
+Fresh native rendered evidence is still missing. A prepared app or headless count is not a
 rendered implementation. See game/docs/BOWL_EDITOR_NATIVE.md for implementation.
+The human has now excluded iPhone work; the prepared0.14 app is not installed.
 Sanitized bounded technical evidence: evidence/bowl-editor-native-v1.json.
 
 ## Historical UI/UX reset: human rejection overrides prior acceptance

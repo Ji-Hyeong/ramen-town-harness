@@ -46,3 +46,8 @@ path. The second preparation and signed build succeed without disabling signing
 or weakening security. Exact Mac QA v2 still requires the reissued action-time
 confirmation. Native rendered review and conditional installation are blocked on
 that confirmation, not build availability. No Claude or main merge.
+
+## HUMAN SCOPE UPDATE
+After approving exact Mac QAv2, the human disconnected the iPhone and explicitly
+excluded device work. Installation is deferred by the human; preserve the ready
+private build, do not query/install/launch the device. Continue Mac QA only.
