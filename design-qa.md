@@ -1,4 +1,53 @@
-# UI/UX reset: human rejection overrides historical acceptance
+# Native bowl editor: current visual review
+
+final result: blocked
+
+2026-10-23. The human selected actual displayed option3 and the category
+refinement. Native implementation is on feature/bowl-editor-v1. It is not yet
+accepted for visual quality or human usability; no current implementation
+screenshot has been captured or compared. No main merge or phone update.
+
+- Source visual truth: game/docs/uiux-reset/refinements/concept-03-categories-v1.png.
+- Source dimensions:853x1844, no device bezel. Intended logical viewport390x844;
+  normalize the source to390x844 for the actual combined comparison. Secondary
+  landscape1280x800 is a responsive adaptation, not a source-identical mock.
+- Implementation screenshot: unavailable pending exact local QA app execution.
+- State: fresh default draft, full-view plus focused summary/food/filter/row/footer;
+  then category, locked details, duplicate/replacement, cooking, real paid result,
+  customer selection, comparison/clues, four-slot view projection and failed save.
+- Full-view comparison: not performed. Focused region comparison: not performed.
+  Source and implementation must be composed together before judging fidelity.
+
+Current technical evidence: final visible-editor headless312/0/exit0/engine0,
+actual finalv2 packed312/0/exit0/engine0, domain127tests/58423 checks and builder23
+tests pass. Frozen230runtime sources match the v2 snapshot byte-for-byte;
+PCK4204feec0fd9ff83dca2a842cfb344cf73b1f8143bccb3afec07449a36a6178e.
+Official copied engine strict signature0; import/export emit no engine errors.
+Exact final app: /private/tmp/ramen-bowl-editor-qa-20261023-v2/Ramen QA.app.
+V1 was not launched and is superseded. No current native captures exist.
+The stronger selection test detects four real pre-fix failures (two sizes): an
+old broth marker remains selected and repeated selection visually unchecks the
+actual broth. The identical312 checks pass after updating dialog markers from
+the accepted controller state in place, preserving scroll/focus. Initial builder
+fixture test failed because its fake pack omitted the inherited capture entry;
+fix only the fake, preserve production pack checks, then23/0 passes. Earlier
+header wrapping/list-height failures were corrected and
+headless300/0 passed; none of these are claimed as visual comparison iterations.
+
+Required fidelity surfaces remain unverified against current native rendering:
+fonts/typography (existing GowunDodum, sizes/wrapping), spacing/layout rhythm,
+navy/cream/teal/gold colors and contrast, generated image quality/transparency/
+composition, actual catalog copy/content. Need real full-view and focused pairs,
+inspect any drift, fix P0/P1/P2 and recapture before changing result to passed.
+Physical iPhone safe areas, VoiceOver/Dynamic Type/reduced motion and human
+usability/fun remain separate limitations even after bounded Mac visual review.
+
+Blocker: action-time execution confirmation for the final reviewed local QA app
+and fresh native rendered evidence. A prepared app or headless count is not a
+rendered implementation. See game/docs/BOWL_EDITOR_NATIVE.md for implementation.
+Sanitized bounded technical evidence: evidence/bowl-editor-native-v1.json.
+
+## Historical UI/UX reset: human rejection overrides prior acceptance
 
 Current result (2026-10-23): **needs redesign; not accepted for usability.**
 The human explicitly rejects installed0.13 UI/UX. Prior technical tests and

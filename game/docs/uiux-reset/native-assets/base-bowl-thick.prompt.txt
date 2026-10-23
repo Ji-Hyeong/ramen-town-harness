@@ -1,0 +1,7 @@
+Use case: precise-object-edit.
+Asset type: transparent pixel-art native ramen game sprite, thick curly noodle variant.
+Input image 1 is the exact EDIT TARGET, not loose inspiration. Preserve it with maximum fidelity.
+Change ONLY the noodles in the soup: replace the current fine mostly straight noodle strands with visibly thicker, bold, tightly curly golden ramen noodles. The new noodles must be visibly wavy and coiled with compact S-shaped curls; bold strands about 2 to 3 times thicker than the original. Keep the same pale creamy pork-bone soup around and between the noodles.
+Invariants: preserve exact red-and-white bowl shape, rim geometry, geometric ceramic decoration, color palette, shading, camera angle, soup ellipse, whole-bowl position and scale on canvas, 4:3 canvas aspect ratio, and generous transparent margins from the original. Do not zoom, crop, rotate, resize or redesign the bowl. Use same original crisp square-pixel art medium. Keep all bowl pixels aligned as closely as possible to the input; only the interior noodle appearance changes.
+Background: genuine alpha transparency exactly like the original, no background rectangle or baked checkerboard. Keep entire bowl visible with the same margins.
+No toppings or garnish of any kind: absolutely no vegetables, herbs, eggs, pork, meat, nori, seeds, food other than noodles and soup, steam, utensils, plates, text, labels, logos, UI, shadow outside the bowl or environmental objects. Only change the noodles to thick tightly curly ramen.

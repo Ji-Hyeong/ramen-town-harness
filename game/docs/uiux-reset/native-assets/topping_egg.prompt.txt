@@ -1,0 +1,7 @@
+Use case: stylized-concept
+Asset type: transparent original pixel-art food sprite for a native ramen game; both a 52x52 ingredient thumbnail and an independently layered bowl topping around 60x54.
+Input image 1 is a STYLE AND VIEWING-ANGLE REFERENCE ONLY: the selected ramen development mockup. Do not crop, copy, reproduce the interface, or reuse its pixels.
+Primary request: ONE single soft-boiled ramen egg half, shown three-quarter overhead, its cut oval face tilted toward the viewer. Glossy amber-orange jammy yolk, creamy ivory white, thin warm-brown marinated outer edge. Match the reference's crisp richly shaded pixel-art food direction: deliberate small pixel clusters, clean stair-stepped contour, compact appetizing light/shade and specular yolk accents, no painterly blur, no vector outlines.
+Composition: 256x256 square canvas, center this ONE egg half, 70-80 percent of canvas width, generous genuinely transparent margin on every side. Keep the whole egg fully inside the canvas and its cut face readable at tiny thumbnail size.
+Background: true transparent alpha, not a checkerboard drawing and not white. No external cast shadow.
+Constraints: original asset, a single portion and one half only. NO plate, bowl, noodles, garnish, second egg half, other ingredients, backdrop, text, interface, watermark, border, external drop shadow. The illustration must be standalone and ready to layer over a ramen bowl.

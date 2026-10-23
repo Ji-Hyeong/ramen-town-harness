@@ -1,0 +1,7 @@
+Use case: stylized-concept.
+Asset type: original single ramen topping sprite, transparent native mobile game asset.
+Input image1 is a pixel-art style reference only. Do not extract/crop/copy any art or UI from it.
+Subject: one small graceful tuft of yuzu citrus peel: exactly 3 to 5 delicate thin curved golden-yellow peel ribbons, lightly overlapping, with a few ivory pith highlights and warm orange edges. These are thin curls of citrus zest, not noodles, whole fruit slices, wedges, flower petals, or french fries.
+Style: crisp beautiful pixel-art ingredient sprite, limited warm golden palette, hard square pixel clusters and stepped curves, appetizing clean silhouette, matching the original polished ramen-shop game direction in the reference. Three-quarter overhead camera, fully visible small cluster, compact and readable when used as a 52px ingredient thumbnail and approximately48by38px bowl overlay.
+Canvas: square, target256by256pixels. The tuft is centered in the central60% width and height, with at least20% completely clear transparent margin on all four sides. Genuine alpha-transparent background. Visible peel opaque except clean silhouette edges.
+Absolutely no bowl, plate, soup, noodles, whole fruit, citrus slice, leaves, stems, garnish of any other type, utensil, cast shadow, glow, background, checkerboard baked into art, text, border, UI, logos, labels, or watermark. Only3to5 thin curled yuzu peel strips.
