@@ -1,0 +1,41 @@
+{
+  "date_kst": "2026-10-23",
+  "status": "signed-build-ready; native visual confirmation pending; not installed",
+  "implementation_commit": "b9091b6",
+  "verification": {
+    "signed_build_exit": 0,
+    "build_succeeded": true,
+    "warnings": 6,
+    "strict_signature_exit": 0,
+    "marketing_version": "0.14",
+    "build_version": "14.0.1",
+    "bundle_id_unchanged": true,
+    "profile_matches_device": true,
+    "profile_matches_team": true,
+    "profile_matches_app": true,
+    "profile_valid_now": true,
+    "profile_valid_until_utc": "2026-10-27T14:45:57+00:00",
+    "unexpected_capabilities": false,
+    "phone_only": true,
+    "pack_sha256": "f4bde7d906bb6131bb3cd31626f21db132585c486e189c89baa3e8563765bb74",
+    "exported_pack_matches_embedded": true,
+    "pack_checks": 43,
+    "pack_failures": 0,
+    "installed": false,
+    "launched": false,
+    "native_visual_accepted": false,
+    "sources_preserved": 230,
+    "durable_app_files_equal": 14,
+    "durable_signature_exit": 0
+  },
+  "claude_calls": 0,
+  "player_save_accessed": false,
+  "uninstalled": false,
+  "failed_initial_attempt": "Documents file-provider FinderInfo invalidated copied engine signature; diagnostics preserved; fresh private/tmp preparation succeeds without security bypass",
+  "limits": [
+    "Mac QA v2 not executed; current native screenshots/comparison unavailable",
+    "Installation waits for actual visual verification",
+    "Current physical input/audio/safe-area/accessibility/fun not accepted"
+  ],
+  "raw_logs_player_saves_accounts_profiles_and_device_identifiers": "private; not published"
+}
