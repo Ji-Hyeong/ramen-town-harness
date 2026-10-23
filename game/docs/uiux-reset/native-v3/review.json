@@ -1,0 +1,89 @@
+{
+  "run": "20261023T054850Z-90154",
+  "renderer": "OpenGL4.1/Metal Apple M3 Pro",
+  "checks": 439,
+  "failures": 0,
+  "exit": 0,
+  "engine_errors": 0,
+  "captures": 28,
+  "all_originals_opened": true,
+  "manual_original_count": 28,
+  "density": 1,
+  "sources": 234,
+  "pack_sha256": "bc26546a73ee3756ed735493c2f27f1bcb9721c049315d71cc67438cdc344ec5",
+  "postrun_sources_equal": true,
+  "postrun_pack_equal": true,
+  "postrun_vendor_signature_exit": 0,
+  "full_run_preserved_byte_equal": true,
+  "private_full_run_file_count": 40,
+  "original_sha256": {
+    "desktop_editor_06_broth_edit.png": "22b278ed6ea1179f6ea66f6d7da082c23e5fed346ea6c97e7cdc42acd330b8c4",
+    "desktop_editor_11_failed_save.png": "49501d6681d7133c045221fba54bb20ecba41802adbd8ce56ed538a153916ec9",
+    "desktop_editor_02_category.png": "c09ffc3e5e271cc4f171210119498282144dd507e75d033df948db774e3d552f",
+    "desktop_editor_04_duplicate.png": "668ac0eae95fd66b4dd5e3c157260e65515254c65230c1cc53d84a220b6d2e94",
+    "portrait_editor_01_initial.png": "f6ba6646045fa38fa604c11e86e4bffc29d0b1f63bf64d5634da357cbcfb9d1d",
+    "portrait_editor_06_broth_edit.png": "97927a81759af2f24db7376d88e455de748fcd744fe62be5caf7ca95396031d8",
+    "desktop_editor_01_initial.png": "20639167f45e8827ddd943c3e91df29afd1b5edaa320d52ad87d77a41819fe82",
+    "desktop_editor_08_result.png": "47af9e7ccb1c355232b8efb1cfba33d5d5b29b04d09619bbc0c2df40ec229aea",
+    "desktop_editor_09c_clues.png": "ae155c768a1bdcbdc50531262ffae9b7930f592a166afd30476c1cb52c10e116",
+    "desktop_editor_09b_comparison.png": "0dfb910860cdcac1be2b7ccd427ebd921b9f7aed70b1b86c962997f0c4ca44a4",
+    "portrait_editor_02_category.png": "c246ac4f63a0e8425b8a7fd1dc82b648fbf48c6778ac03ebdcc9bdaa3be22aae",
+    "desktop_editor_06b_directions.png": "2e448d637ff90614009e4e7a2b0339dd9cd3b65e6c15aa58403fe236500a492f",
+    "portrait_editor_07_cooking.png": "7cc816a1cebdd2eda8932f944eee779a558b676aa2a0ec1369fe2f354db19a68",
+    "portrait_editor_05_replace.png": "975093282508380c4c7a87fc0ff6913500890147bafe70f81d5d99324c81c7a3",
+    "desktop_editor_07_cooking.png": "1326f05f903bf0c152912ada57c25287a3e12e3f1c7f588382ea959284307c1f",
+    "desktop_editor_10_rank3_layout_projection.png": "c9f51884345082983aef35eea43bebb8b3d81e2ffe0a91a6155b7113aa0b0390",
+    "desktop_editor_05_replace.png": "f22f5220e77c1d8c41703b8d62036ad5be21b02fc0f6f96f57de2ae18bc7c5db",
+    "portrait_editor_04_duplicate.png": "f579f884a85d3a3b3216daa6f5be2e314661de7a027ea38ab2ad5abfd415966e",
+    "portrait_editor_10_rank3_layout_projection.png": "61a32882f8761e9710b4ecc2c44c006b0f4e6d7298486b85b248147f5545ea97",
+    "desktop_editor_03_details.png": "818d28f4f8ea9e64c1b4c8761ace0e5fe0b5e2dea2ad94ffdf17a97b3a65a1f5",
+    "portrait_editor_06b_directions.png": "1e513f81c0e03dfa0a3bec5b35b0371c090f04192ca4b665110418fba94983ba",
+    "portrait_editor_03_details.png": "d58b995325a39f766ef76334558c631eae414a04f541635d8a7ba5370303590d",
+    "portrait_editor_08_result.png": "b3e7e6e53bc4f5ce26abdf8f8a67cf3dd328c87fcfef87b92ebf02d6ae80c403",
+    "portrait_editor_09c_clues.png": "f0c6f3894b52be73baaae6d759b55cac00710ad5a0f1ab4d5b4301288e8090dd",
+    "portrait_editor_09_second_customer.png": "2eb746ed3b93be78510d861c249dbb0e57a4b03f76b85dacf62c43a79e0fce96",
+    "portrait_editor_11_failed_save.png": "4e48fee441a6c1dbb3f196b2b90d8e433a90fd16db044529f25bffa4cbd37332",
+    "portrait_editor_09b_comparison.png": "53c0c2bab1c263ff8a6e31ed6a77e359edd3bdc21c06ce3373717cf1fc58d16f",
+    "desktop_editor_09_second_customer.png": "d8f090ef01df3115dc42b5c72169c3a9d2abc81fe8da3dcfbe63b812e99b5342",
+    "comparisons/portrait-initial-before-after.png": "249f25ca94d2f3315f1ad40fb046d368a7381c9348a9446d3bedb6a6fee9fc46",
+    "comparisons/portrait-states-v3.png": "9f8135c36fc72433515624fbdb768bf39602d5965f5c554afbe26b9e1932a058",
+    "comparisons/portrait-controls-source-native-v3.png": "62a2c8ac96cc721a42dc63fcc6cc3ff498da4d73a6b48c6eecd96ada84fadb0d",
+    "comparisons/portrait-source-native-v3.png": "ef4eb5aaabb8b814a94461a58b5082ce279c82e0d4b3ddd8aa1e1500b88bd8bf"
+  },
+  "normalization": {
+    "source": [
+      853,
+      1844
+    ],
+    "normalized": [
+      390,
+      844
+    ],
+    "native": [
+      390,
+      844
+    ],
+    "full_pair": "labels and16px gutter only",
+    "focused_control_crop": [
+      0,
+      420,
+      390,
+      424
+    ],
+    "focused_scale": 2
+  },
+  "v2_findings_fixed": [
+    "Initial bowl/summaries reflow",
+    "Notice-time portion clipping",
+    "Display/action hierarchy",
+    "Integer division bowl allocation",
+    "Sparse-dialog nonblank false positive"
+  ],
+  "limits": [
+    "Bounded native editor visual review, not whole-game human acceptance",
+    "Four-slot view projection is synthetic",
+    "No current iPhone installation/physical safe-area/touch/audio/accessibility/fun acceptance"
+  ],
+  "status": "reflow/style visual regression reviewed; superseded by final customer-detail correction",
+  "followup": "Selected-customer additional reasons and price reaction absent; reproduced14checks/5failures before correction; finalv5 recapture required"
+}

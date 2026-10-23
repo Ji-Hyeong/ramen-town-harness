@@ -1,5 +1,20 @@
 # Native bowl editor: implementation checkpoint
 
+## Current verified checkpoint
+
+Finalv5 native OpenGL capture completes457/0/exit0/engine0. Actual packed367/0,
+shorter390x750185/0, builder34/0 and packaged-license3/0 also pass. All234runtime
+sources and exported pack15bd5586 match after the run; official engine signature0.
+[Current native originals, comparison and honest review scope](uiux-reset/native-v5/)
+and [root design QA](../../design-qa.md) record bounded acceptance. The final
+customer detail restores every selected customer's reason and price reaction,
+as well as numbers/version comparison; omission reproduced14/5 before14/0.
+Priorv2/v3 iterations and their failures are preserved, not called final success.
+
+The iPhone is excluded by the user's latest instruction. No current installation
+or human usability/fun acceptance is claimed; the earlier prepared0.14 app is
+stale and must be rebuilt if device work is requested later.
+
 ## Selected target
 
 The human selected displayed concept3 and requested categorization for a larger
@@ -68,6 +83,6 @@ require separate validation. No Claude delegation occurred.
 
 Use `game/tools/build_qa_app.py --fixture bowl-editor` for a fresh current-source
 capture app; the default full fixture is unchanged. Only the two reviewed fixture
-paths are accepted, and missing/unexported fixtures fail explicitly. Execution
-confirmation and fresh native screenshot review are required before visual
-acceptance and main merge. Do not use older captures as current proof.
+paths are accepted, and missing/unexported fixtures fail explicitly. Fresh native screenshot review is required before visual acceptance and main
+merge. The current review used the explicitly authorized terminal execution
+method because Computer Use was unavailable. Do not use older captures as proof.

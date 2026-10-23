@@ -3,11 +3,35 @@ extends "res://tests/qa_capture.gd"
 ## Capture uses the real renderer; --layout-only omits images explicitly.
 const CategoryRules = preload("res://scripts/ui/topping_categories.gd")
 const GameProjection = preload("res://scripts/domain/game_state.gd")
+const DetailsEvaluation = preload("res://scripts/domain/recipe_evaluator.gd")
 
 
 func _initialize() -> void:
 	Input.emulate_touch_from_mouse = true
+	var black := Image.create(16, 16, false, Image.FORMAT_RGBA8)
+	black.fill(Color.BLACK)
+	_check(not image_has_rendered_content(black), "nonblank guard rejects black output")
+	black.fill(Color.GRAY)
+	_check(not image_has_rendered_content(black), "nonblank guard rejects uniform gray output")
+	# Three foreground pixels miss every old8x8 sample; still real nonblank data.
+	black.set_pixel(0, 0, Color.RED)
+	black.set_pixel(2, 0, Color.GREEN)
+	black.set_pixel(4, 0, Color.BLUE)
+	_check(image_has_rendered_content(black), "nonblank guard accepts sparse actual pixels between old grid samples")
 	super._initialize()
+
+
+func _assert_current_stage(editor: Control, label: String) -> void:
+	var scene: Control = editor.get("_scene") as Control
+	var summary: Control = editor.get("_summary") as Control
+	var dish: Control = editor.get("_dish") as Control
+	var slots: Control = editor.get("_slot_surface") as Control
+	var base: Control = dish.get("_base") as Control
+	_check(summary.size.x >= scene.size.x * 0.85, label + ": summaries fill final scene width from first presentation")
+	_check(base.size.x >= 180 and base.size.y >= 120, label + ": actual base bowl has meaningful rendered dimensions")
+	_check(base.size.x > base.size.y * 1.2, label + ": landscape bowl silhouette never collapses into a square")
+	_check(scene.get_global_rect().encloses(slots.get_global_rect()), label + ": all portion controls fit the final scene after reflow")
+	_check(slots.get_global_rect().encloses((editor.get("_slots") as Control).get_global_rect()) or not (editor.get("_slots") as Control).visible, label + ": portion grid remains within its surface")
 
 
 func _point(holder: SubViewport, position: Vector2, down: bool) -> void:
@@ -79,6 +103,7 @@ func _run_profile(tag: String, vp: Vector2i, _scale: int) -> void:
 	_check((editor.get("_wallet") as Label).size.y <= 48, tag + ": wallet never wraps into a vertical column")
 	_check((editor.get("_broth_text") as Label).text.contains("간장"), tag + ": tare visible in broth summary")
 	_check((editor.get("_noodle_text") as Label).text.contains("꼬들"), tag + ": cooking firmness visible in noodle summary")
+	_assert_current_stage(editor, tag + " initial")
 	for button in (editor.get("category_buttons") as Dictionary).values():
 		_check(button.size.x >= 44 and button.size.y >= 44, tag + ": category minimum44 hit area")
 	for button in (editor.get("detail_buttons") as Dictionary).values():
@@ -104,8 +129,15 @@ func _run_profile(tag: String, vp: Vector2i, _scale: int) -> void:
 	var effects: Object = app.get("_juice")
 	effects.call("advance_effects", 5.0)
 	var acknowledgements: int = int(effects.call("acknowledgement_count"))
+	var bar: VScrollBar = scroll.get_v_scroll_bar()
+	var available_scroll: float = maxf(0.0, bar.max_value - bar.page)
 	await _drag_list(holder, add.get_global_rect().get_center())
-	_check(scroll.scroll_vertical > 20, tag + ": swipe beginning on add button scrolls actual list")
+	# Compact rows can make the entire desktop list fit. Require real scrolling
+	# when content overflows, while retaining the same canceled-press checks below.
+	if available_scroll > 2.0:
+		_check(scroll.scroll_vertical > minf(20.0, available_scroll * 0.5), tag + ": swipe beginning on add button scrolls overflowing list")
+	else:
+		_check(scroll.scroll_vertical <= ceili(available_scroll), tag + ": fully visible list stays within its actual scroll range")
 	_check(JSON.stringify(state.call("to_dict")) == before, tag + ": canceled swipe never adds or pays")
 	_check(int(effects.call("acknowledgement_count")) == acknowledgements, tag + ": canceled swipe gives no committed tap")
 	_check(stage.get_global_rect() == fixed_stage and taste.get_global_rect() == fixed_taste, tag + ": context and action stay fixed during list scroll")
@@ -119,6 +151,7 @@ func _run_profile(tag: String, vp: Vector2i, _scale: int) -> void:
 	_check(IngredientCatalog.toppings_of(config).count("topping_chashu") == 2, tag + ": real tap adds repeated portion")
 	_check(int(state.get("wallet")) == 30000, tag + ": editing does not pay trial fee")
 	_check((editor.get("add_buttons") as Dictionary)["topping_egg"].disabled, tag + ": full two slots block accidental overflow")
+	_assert_current_stage(editor, tag + " after notice")
 	await _shot(holder, tag + "_editor_04_duplicate.png")
 	await _tap(holder, editor, "EditorSlot_0")
 	_check(not (editor.get("add_buttons") as Dictionary)["topping_egg"].disabled, tag + ": selecting occupied slot enables replacement")
@@ -181,13 +214,28 @@ func _run_profile(tag: String, vp: Vector2i, _scale: int) -> void:
 	_check(not bool(app.call("advance_work", 100.0)), tag + ": completed work cannot pay twice")
 	var customer: Control = editor.find_child("EditorCustomer_0", true, false) as Control
 	_check(customer != null and scroll.get_global_rect().encloses(customer.get_global_rect()), tag + ": first customer reaction selection visible without scrolling")
+	_assert_current_stage(editor, tag + " result")
 	await _shot(holder, tag + "_editor_08_result.png")
 	await _tap(holder, editor, "EditorCustomer_1")
 	await _shot(holder, tag + "_editor_09_second_customer.png")
 	before = JSON.stringify(state.call("to_dict"))
 	await _tap(holder, editor, "EditorResultDetails")
 	_check((editor.get("_modal") as Control).find_child("ComparisonPanel", true, false) != null, tag + ": real version comparison remains accessible")
+	var actual_record: Dictionary = state.call("get_record", state.get("last_feedback_record_id"))
+	var selected_customer: Dictionary = DetailsEvaluation.evaluate(actual_record["config"])["customers"][1]
+	var detail_texts: Array[String] = []
+	var customer_name: Control = (editor.get("_modal") as Control).find_child("EditorCustomerDetailName", true, false) as Control
+	_check(customer_name != null and customer_name.size.x >= 100 and customer_name.size.y <= 80, tag + ": customer detail name remains readable beside portrait")
+	for node in (editor.get("_modal") as Control).find_children("*", "Label", true, false):
+		detail_texts.append(str((node as Label).text))
+	for reason in selected_customer["reasons"]:
+		_check(detail_texts.has(str(reason)), tag + ": all selected-customer reasons remain available in visible detail modal")
+	_check(detail_texts.has(str(selected_customer["value_note"])), tag + ": selected customer's price reaction remains available")
 	await _shot(holder, tag + "_editor_09b_comparison.png")
+	var details_scroll: ScrollContainer = (editor.get("_modal") as Control).find_child("DetailsScroll", true, false) as ScrollContainer
+	details_scroll.ensure_control_visible((editor.get("_modal") as Control).find_child("ComparisonPanel", true, false) as Control)
+	await _settle()
+	await _shot(holder, tag + "_editor_09d_numbers.png")
 	await _tap(holder, editor, "EditorDetailsBack")
 	await _tap(holder, editor, "EditorClues")
 	_check(JSON.stringify(state.call("to_dict")) == before, tag + ": actual experiment clues are read-only")
@@ -205,6 +253,7 @@ func _run_profile(tag: String, vp: Vector2i, _scale: int) -> void:
 	editor.call("present", projection, 0, view_info)
 	await _settle()
 	_check((editor.get("_slots") as GridContainer).get_child_count() == 4, tag + ": actual four-slot native layout")
+	_assert_current_stage(editor, tag + " four-slot projection")
 	if taste.get_global_rect().end.y > vp.y or scroll.size.y < 100:
 		print("LAYOUT DIAGNOSTIC ", tag, " viewport=", vp, " taste=", taste.get_global_rect(), " scroll=", scroll.get_global_rect(), " stage=", stage.get_global_rect(), " notice=", (editor.get("_notice") as Label).get_global_rect())
 	_check(taste.get_global_rect().end.y <= vp.y and scroll.size.y >= 100, tag + ": four slots retain action and usable list")

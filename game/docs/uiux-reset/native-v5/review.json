@@ -1,0 +1,101 @@
+{
+  "run": "20261023T060457Z-94441",
+  "renderer": "OpenGL4.1/Metal Apple M3 Pro",
+  "checks": 457,
+  "failures": 0,
+  "exit": 0,
+  "engine_errors": 0,
+  "captures": 30,
+  "manually_opened_originals": [
+    "portrait_editor_09b_comparison.png",
+    "portrait_editor_09d_numbers.png",
+    "desktop_editor_09b_comparison.png",
+    "desktop_editor_09d_numbers.png",
+    "portrait_editor_01_initial.png",
+    "portrait_editor_08_result.png",
+    "portrait_editor_11_failed_save.png",
+    "desktop_editor_01_initial.png",
+    "desktop_editor_08_result.png",
+    "desktop_editor_11_failed_save.png"
+  ],
+  "manual_count": 10,
+  "baseline_v3_manually_opened": 28,
+  "only_source_changes_since_v3": [
+    "scripts/ui/bowl_workbench.gd",
+    "tests/bowl_editor_qa.gd"
+  ],
+  "all_dimensions_nonblank_automatically_checked": true,
+  "all30_manually_reviewed": false,
+  "duplicate_capture_note": "09d asks to reveal comparison after09b; in this fixture all details fit so the two images can be identical, not distinct gameplay cases",
+  "sources": 234,
+  "pack_sha256": "15bd5586632484981ec649b9c3f750120ec375e4f3b68de217b8ec2f723eba43",
+  "postrun_sources_equal": true,
+  "postrun_pack_equal": true,
+  "postrun_vendor_signature_exit": 0,
+  "full_run_preserved_byte_equal": true,
+  "private_full_run_file_count": 42,
+  "file_sha256": {
+    "portrait_editor_09d_numbers.png": "f8d471843f20555474ddad48e31157eb063cd33c683ba9d08f4234546f2a1261",
+    "desktop_editor_06_broth_edit.png": "43046ac96030c984cb6852230fd8f82fd4e68fa5ebea89cbf19fcd599b26f47b",
+    "desktop_editor_11_failed_save.png": "92af3fa0c2da17fb0b896d6003a4dfc0eb874bc9d7b375f9f3811a4db7db89ca",
+    "desktop_editor_02_category.png": "604dd39d62aea063521886c0bd77f57bfe1df4d316acdb934f78abe5d57ff924",
+    "desktop_editor_04_duplicate.png": "2a29fbbc79fb786881a60652a5d8554b09d2a05dcba82a52af6b90f079abd41d",
+    "portrait_editor_01_initial.png": "e21e446289824cc0441fecc980e2573ded126c44727b92fbc4a443f59643e6b2",
+    "portrait_editor_06_broth_edit.png": "ad108bd5a71b7817151335cd4c3132f67e07815c041780668e92bcd299596dbd",
+    "desktop_editor_01_initial.png": "ebb6fa67a96f6397f2edbbd136baf20d0cd2b5de35ebb5ef33bf94c4d4767e9c",
+    "desktop_editor_08_result.png": "b47dddeab5d2bf98a79d8bcb620f0b4088a104316573bea27c4dd5b13d9d917f",
+    "desktop_editor_09c_clues.png": "ff1d186a0c17839a0069a93610a4c646612225acec402fed563160ebcec17691",
+    "desktop_editor_09b_comparison.png": "0665128b67c9530bdc519548336cf258d6a7c0740397f75505d84152bb2e4338",
+    "desktop_editor_09d_numbers.png": "0665128b67c9530bdc519548336cf258d6a7c0740397f75505d84152bb2e4338",
+    "portrait_editor_02_category.png": "76aa1a34239fdc66a7ae425895abc99ea9a0dd3fde74728e7ee1cc623cd7bd84",
+    "desktop_editor_06b_directions.png": "2e448d637ff90614009e4e7a2b0339dd9cd3b65e6c15aa58403fe236500a492f",
+    "portrait_editor_07_cooking.png": "5e8307b84ed644ff16942ccd6ea612ae26b902e48876977b4667d8f53d7a9919",
+    "portrait_editor_05_replace.png": "48d9c3df55e8c5d28567ba4cbfa9eec78094a050a61d68260f325667fb7898d9",
+    "desktop_editor_07_cooking.png": "b9c7f5d4110ec5e457fa37bcc4284cef69961842bef4c4d80f2e8ed1e30c033b",
+    "desktop_editor_10_rank3_layout_projection.png": "ed32f9d285bff3af4ee8df836cf0d3e6bda69da2015473812ef001ae6ca837c5",
+    "desktop_editor_05_replace.png": "3fb6314c4ab2f8f28252188bf8a303a28ddcdebf4b3930a5433b196f0ba49989",
+    "portrait_editor_04_duplicate.png": "f420b67958caeac7d2dd2dca298af9e3c3effac84580d3d694452468e959013e",
+    "portrait_editor_10_rank3_layout_projection.png": "167f9745742d107bbc76cab4034bec9cfc3156c14dcc0ccee4ae67e93f207e9f",
+    "desktop_editor_03_details.png": "818d28f4f8ea9e64c1b4c8761ace0e5fe0b5e2dea2ad94ffdf17a97b3a65a1f5",
+    "portrait_editor_06b_directions.png": "1e513f81c0e03dfa0a3bec5b35b0371c090f04192ca4b665110418fba94983ba",
+    "portrait_editor_03_details.png": "d58b995325a39f766ef76334558c631eae414a04f541635d8a7ba5370303590d",
+    "portrait_editor_08_result.png": "37e8319a2461969fc39cd8926ced141553ab214b27de9226b016d66448ca3d12",
+    "portrait_editor_09c_clues.png": "d64d1281ec893080e086f807847d897170c037a59ca1a6b6fd48e06b415fa37f",
+    "portrait_editor_09_second_customer.png": "61098d4d4c8b7184fef003281b1527563b46b137ae84318bc9fcdb25d7e44092",
+    "portrait_editor_11_failed_save.png": "c7846398d6ccb1b90d1b20708bfa1dc06ca853566abc457ee2b224478283b78f",
+    "portrait_editor_09b_comparison.png": "44fcefeff466a9c5b7607ef8d0aceb87ff78b43d1ab6150f7850e67a7ea042e9",
+    "desktop_editor_09_second_customer.png": "b84dacc0e96d9d0c037f8a8953223ab04f2870fc5aed3586d54c0fe5d3b8d8e3",
+    "comparisons/portrait-controls-source-native-v5.png": "ee61ca19cac89e1dd42a173012e22d9dc55bf95e00a7bd5f82e15b98be60a4ff",
+    "comparisons/portrait-feedback-before-after.png": "0aead8ec5f7d76b9b4efd8c96c86f17eb50af56a0fb564fa453c840a1e71a367",
+    "comparisons/portrait-source-native-v5.png": "2ec830180a2267f33abfacad270ac6687bf391a12120a3cb108ddf3aa422b1de"
+  },
+  "source_normalization": {
+    "original": [
+      853,
+      1844
+    ],
+    "normalized": [
+      390,
+      844
+    ],
+    "native": [
+      390,
+      844
+    ],
+    "density": 1,
+    "full_comparison": "labels and16px gutter only",
+    "focused_crop": [
+      0,
+      420,
+      390,
+      424
+    ],
+    "focused_scale": 2
+  },
+  "limits": [
+    "Bounded native editor and affected-detail review; not whole-game/human-fun acceptance",
+    "Source conceptual categories are enlarged to practical44px+ native targets; fewer complete initial rows is intentional",
+    "Four-slot view projection is synthetic",
+    "No iPhone work; earlier0.14 build is stale"
+  ]
+}

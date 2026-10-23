@@ -1,8 +1,8 @@
 {
-  "feature": "native bowl-centered menu editor",
-  "status": "implemented; exactv2 approved; native visual review blocked by unavailable Computer Use tool",
+  "date_kst": "2026-10-23",
+  "status": "bounded native editor visual/flow review passed; human usability and iPhone acceptance not claimed",
   "source_reference": "game/docs/uiux-reset/refinements/concept-03-categories-v1.png",
-  "frozen_runtime_sources": 230,
+  "frozen_runtime_sources": 234,
   "source_sha256": {
     "project.godot": "dc51a895d342d40ae50c597fa243266e6f5044507b3ef85e27b228c7c4f60d72",
     "scenes/main.tscn": "024518581dfb9fc07e1bb5ba66316964b321c6eecd784758b5ea566ebe292af4",
@@ -72,13 +72,13 @@
     "scripts/ui/bowl_editor_bounds.gd.uid": "4fcc669613b0bb872aa547525eb08c046bbec6a0f724f5ce41ca6472814ccc0c",
     "scripts/ui/bowl_view.gd": "7341d07f4ac709ede7f2c76bfeea909d74203e4f5042d4bfcb802ce4bac9c5cd",
     "scripts/ui/bowl_view.gd.uid": "c392422404452afaf0042a9fe4850f3c7ac29028cc94c3075deaa3f462ffe58d",
-    "scripts/ui/bowl_workbench.gd": "63edb8dd2ecb6a02b6698a9b9d2b9eb14d1966eb823f61d8716ed4efe8cd2584",
+    "scripts/ui/bowl_workbench.gd": "ba6f729f6ff7dbd25f3218a3a2d21b19d5c30ea12977d95ffa9e460bbc2e51ee",
     "scripts/ui/bowl_workbench.gd.uid": "33fd339fc834324d4706d0b46f59e5b60abe9119a8b9d7328a8aa172e4b595f0",
     "scripts/ui/disclosure_card.gd": "113eb6ff29e4b5ed73e4e3f7a6b4f493cb6b8311a6c4ceb1645f5c820e1d7d1a",
     "scripts/ui/disclosure_card.gd.uid": "9e10304d8e75c69b969f82c9041503515534733d3c79bac04a9e51982e3163da",
     "scripts/ui/expedition_travel.gd": "06daa75107e2f7c3d53a4720b2dd7fd28c568a06b576279172d7b547ffb1c50e",
     "scripts/ui/expedition_travel.gd.uid": "95f2de2e64084192bcc4007385e26e836d3ba5d33372a3e70f6809588e641fa9",
-    "scripts/ui/layered_recipe_view.gd": "9f5502de3e25847b215509031e86bcc59f73e2e58c22814fbeda199e6f2571a2",
+    "scripts/ui/layered_recipe_view.gd": "27c7bd36831ad757fef818c51d843aaa1aad4684fcbc4dcdd71ad62cd3474304",
     "scripts/ui/layered_recipe_view.gd.uid": "f7f6edd6e9ee353371e28af651f025c6a04de1824bf61e5a5efe910fddd20a5e",
     "scripts/ui/main.gd": "04e7777138604fd34d347259160d7a8a70b8bd5532ed4a3185a6d6fa3d87c453",
     "scripts/ui/main.gd.uid": "4c843d7e87a7f840dd7fb476f9b92ae9f85ebe1aceff93785e0a7501ac8f623a",
@@ -120,9 +120,13 @@
     "assets/audio/refuse.wav.import": "c5f15b3ddd08ef866a0088deb265230bebf2ed686e3caf35768a8e67c1e00141",
     "assets/audio/tap.wav": "71d59d74fcc88010b3d2f62e07f6f7453cb88f972d1aa1306f6a8e923313df20",
     "assets/audio/tap.wav.import": "c2f1be9d10b43c8ae19905454967657cb66f99809dbf09d72ee129ec89455a4a",
+    "assets/fonts/Galmuri-OFL.txt": "86a3ee9495f942f0243f18c103da9faca27adb88142613edb8bb852e56c892c1",
+    "assets/fonts/Galmuri11-Bold.ttf": "45d901e379138dd91873af157640f60aa4cf6beaa885c3efd2a8c279e039a237",
+    "assets/fonts/Galmuri11-Bold.ttf.import": "860c120083bdb6e384f325e054a08859d2a18c4d386649fc2a1b9c1a856c5161",
     "assets/fonts/GowunDodum-Regular.ttf": "a6e457933227483a11758fd0947bc74422a106d46f0bf057fdaa5af94a30067d",
     "assets/fonts/GowunDodum-Regular.ttf.import": "da88a173d8646ce80879a30dc02756abbe3b5e61076ba1652084a68900e11104",
     "assets/fonts/OFL.txt": "a7c73f9521cd646bbdfb6684c99a62311bbd7bce11898dc11ef0b3c69eda1aca",
+    "assets/fonts/galmuri-source.json": "9e81a0427539a2aad6ba25e38848c904f74127442145895dbc283b11ee2f229f",
     "assets/ingredients/grilled-scallop-v1.png": "ee440925bf2e22d12e8d82cde84e96abee49d2ad7fcf801280d6d12cccd08953",
     "assets/ingredients/grilled-scallop-v1.png.import": "f29e3978be3c5b0097e01ad21dad9ecfe31dca6ee420a6439ba92736046facf6",
     "assets/ui/bowl-editor/base-bowl-medium.png": "2dce80ca81941f4573b2cbc23b96f21e53f43a437d27de934cf6c60f61c9bd87",
@@ -180,7 +184,7 @@
     "assets/ui/material-rounded/sources.json": "4c167aa1bc6d4b1486b157e3557427a6af1349ef11d4e966aefe2a75e11f268c",
     "assets/ui/material-rounded/volume_up.svg": "bcdde2ec1a51696ebd065b710e46167ea53375db2ab694e7a46c37901c6cf205",
     "assets/ui/material-rounded/volume_up.svg.import": "93a76ecca3b58eda2deca0a074ad66c03e63d4fe20edd345445fc3e3516db791",
-    "tests/bowl_editor_qa.gd": "ecaa01fe8f3926efcc635c3847951a0bd54ab1e844ff190a1e7c1dbc7f2a0879",
+    "tests/bowl_editor_qa.gd": "0920a0d016ee3b0651c4853e57a20607b55884b374b834d72ba059dedb553844",
     "tests/bowl_editor_qa.gd.uid": "695807b73fff399afc30f55aaae2f891019c5151ed1c612963e20d2b2ffb56e6",
     "tests/contest_scoring_tests.gd": "95c24a17e69cf1498f8435cf90c5b35f61058ae435a42b136de2ff92f20ba557",
     "tests/contest_scoring_tests.gd.uid": "61cc517e37d461c1bd6f920f80dbfec72222fd6b51dd1c20442ea90838a97486",
@@ -206,7 +210,7 @@
     "tests/market_foraging_ui_tests.gd.uid": "78e40055cd8162188232eb08ab4017c2dfab1a5fe42fa882f959093cef07f6e7",
     "tests/menu_sales_core_tests.gd": "dd1d6a061652ace04e34500a4d6d170be41bebea7be5b92d372e4ec76b33a6ed",
     "tests/menu_sales_core_tests.gd.uid": "90bbf52854e5b394945b17408dbf2c197e71b1aaa730bc26d892a6f266454983",
-    "tests/qa_capture.gd": "79d94bbb3ca57763a823c508e69511e05f7b0d9de36cfe35b4f765b1c5c025dd",
+    "tests/qa_capture.gd": "6b9b8df84b2f10d8bd5ae228966a3c0a51b36d3e7520ba2d98ee9009539de3ad",
     "tests/qa_capture.gd.uid": "46b5a6fa9d45e3adc90a609f3183b24097f44cc0929b6e32e55945720ac06618",
     "tests/recipe_directions_runner.gd": "ea959f61aa907a26e7275cf5b269dc8d0eeb6d93e17517e04bf220dbf23bca30",
     "tests/recipe_directions_runner.gd.uid": "d48ff7e07946462db16a97109a61b65d322f0d7e97ef12dc1c79cdc9a6546a82",
@@ -235,30 +239,36 @@
     "tests/ui_depth_feedback_tests.gd": "f9f8f7028e2595181313920f3d5705fe3f0cb8645e7d8c47cc9176cbd42a531f",
     "tests/ui_depth_feedback_tests.gd.uid": "7b8395077725442256f12186d7253e31e2ce977f4eb3770651a1df4825cd8fcc"
   },
-  "pack_sha256": "4204feec0fd9ff83dca2a842cfb344cf73b1f8143bccb3afec07449a36a6178e",
+  "pack_sha256": "15bd5586632484981ec649b9c3f750120ec375e4f3b68de217b8ec2f723eba43",
   "vendor_signature_verified": true,
   "engine_import_export_errors": 0,
+  "domain_services_and_project_settings_unchanged_from_main": true,
   "checks": {
-    "visible_editor_headless": {
-      "checks": 312,
-      "failures": 0,
-      "exit": 0,
-      "engine_errors": 0,
-      "log": "bowl-editor-selection-after-v1.log"
-    },
-    "same_assertions_before_fix": {
-      "checks": 312,
-      "failures": 4,
-      "exit": 1,
-      "engine_errors": 0,
-      "log": "bowl-editor-selection-before-v1.log"
-    },
     "actual_final_pack_headless": {
-      "checks": 312,
+      "checks": 367,
       "failures": 0,
       "exit": 0,
       "engine_errors": 0,
-      "log": "bowl-editor-packed-v2.log"
+      "log": "bowl-editor-packed-v5.log"
+    },
+    "compact390x750_headless": {
+      "checks": 185,
+      "failures": 0,
+      "exit": 0,
+      "engine_errors": 0,
+      "log": "bowl-editor-compact-packed-v5.log"
+    },
+    "qa_ios_builder_units": {
+      "tests": 34,
+      "failures": 0,
+      "exit": 0,
+      "log": "bowl-editor-tools-regression-v3.log"
+    },
+    "packaged_licenses": {
+      "checks": 3,
+      "failures": 0,
+      "exit": 0,
+      "log": "bowl-editor-licenses-check-v5.log"
     },
     "domain_regression": {
       "tests": 127,
@@ -268,28 +278,81 @@
       "engine_errors": 0,
       "log": "bowl-editor-domain-v1.log"
     },
-    "qa_builder_unit": {
-      "tests": 23,
-      "failures": 0,
-      "exit": 0,
-      "log": "bowl-editor-builder-unit-v3.log"
+    "selected_customer_details_regression": {
+      "before_frozen_v3": {
+        "checks": 14,
+        "failures": 5,
+        "exit": 1
+      },
+      "after_restoration": {
+        "checks": 14,
+        "failures": 0,
+        "exit": 0
+      },
+      "final_name_width_and_full_details": "included in final367/457 checks"
     }
   },
   "native_capture": {
-    "executed": false,
-    "comparison_performed": false,
-    "visual_accepted": false,
-    "app_label": "ramen-bowl-editor-qa-20261023-v2/Ramen QA.app",
-    "software_execution_approved": true,
-    "current_blocker": "Computer Use unavailable; explicit alternative terminal method requested"
+    "executed": true,
+    "comparison_performed": true,
+    "bounded_visual_accepted": true,
+    "software_and_terminal_method_explicitly_approved": true,
+    "run": "20261023T060457Z-94441",
+    "checks": 457,
+    "failures": 0,
+    "exit": 0,
+    "engine_errors": 0,
+    "captures": 30,
+    "manual_current_originals": 10,
+    "prior_v3_manual_baseline_originals": 28,
+    "all30_manually_opened": false,
+    "current_comparisons_opened": 3,
+    "full_run_private_files_preserved_byte_equal": 42,
+    "postrun_sources_equal": true,
+    "postrun_pack_equal": true,
+    "postrun_vendor_signature_exit": 0,
+    "gallery": "game/docs/uiux-reset/native-v5",
+    "review": "game/docs/uiux-reset/native-v5/review.json"
   },
+  "iteration_history": [
+    {
+      "version": "v2",
+      "checks": 396,
+      "failures": 1,
+      "exit": 1,
+      "accepted": false,
+      "findings": "Initial missing bowl/collapsed summaries, clipping, weak hierarchy; nonblank failure is sparse-dialog false positive"
+    },
+    {
+      "version": "v3",
+      "checks": 439,
+      "failures": 0,
+      "exit": 0,
+      "accepted_for_full_feature": false,
+      "findings": "Reflow/style fixed; later review reproduces missing extra customer reasons/value_note"
+    },
+    {
+      "version": "v4",
+      "native_executed": false,
+      "reason": "Preparation superseded by final name-width guard"
+    },
+    {
+      "version": "v5",
+      "checks": 457,
+      "failures": 0,
+      "exit": 0,
+      "accepted_scope": "bounded native editor and affected details"
+    }
+  ],
   "boundaries": [
     "No Claude calls",
-    "No phone changes",
+    "No iPhone query/install/launch after latest exclusion",
+    "Earlier0.14 signed app predates corrections and must not be installed",
     "No ordinary-save changes",
-    "Domain/services/schema unchanged",
-    "No main merge before actual rendered review",
-    "Rank3 four-slot case is synthetic view projection, not earned progress"
+    "Four-slot image is a synthetic view projection, not earned progress",
+    "Source category controls enlarged to practical44px+ targets; fewer fully visible rows is intentional",
+    "Source coin/bevel/callout ornament is simplified native UI polish, not exact pixel cloning",
+    "No whole-game human-fun, physical safe-area, VoiceOver/Dynamic Type/reduced-motion or audio acceptance"
   ],
   "provenance": "game/docs/uiux-reset/native-assets/manifest.json"
 }

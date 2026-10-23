@@ -14,6 +14,7 @@ const NameEdit = preload("res://scripts/ui/scrollable_name_edit.gd")
 const Directions = preload("res://scripts/domain/recipe_directions.gd")
 const Experiments = preload("res://scripts/domain/recipe_experiments.gd")
 const Check = preload("res://scripts/domain/data_check.gd")
+const DisplayFont = preload("res://assets/fonts/Galmuri11-Bold.ttf")
 const INK := Color("18354f")
 const NAVY := Color("193e65")
 const CREAM := Color("fff6e4")
@@ -46,10 +47,12 @@ var _noodle: Button
 var _broth_text: Label
 var _noodle_text: Label
 var _slot_box: VBoxContainer
+var _slot_surface: PanelContainer
 var _slots: GridContainer
 var _slot_title: Label
 var _picker: VBoxContainer
 var _heading: Label
+var _heading_hint: Label
 var _filters: HBoxContainer
 var _scroll: ScrollContainer
 var _rows: VBoxContainer
@@ -104,6 +107,8 @@ func _label(text: String, font_size: int = 16, color: Color = INK) -> Label:
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.add_theme_font_size_override("font_size", font_size)
 	label.add_theme_color_override("font_color", color)
+	if font_size >= 18:
+		label.add_theme_font_override("font", DisplayFont)
 	return label
 
 
@@ -114,6 +119,7 @@ func _button(text: String, node_name: String, icon_name: String = "", bg: Color 
 	button.custom_minimum_size = Vector2(48, 48)
 	button.mouse_filter = Control.MOUSE_FILTER_PASS
 	button.add_theme_font_size_override("font_size", 16)
+	button.add_theme_font_override("font", DisplayFont)
 	button.add_theme_stylebox_override("normal", _style(bg))
 	button.add_theme_stylebox_override("hover", _style(bg.lightened(0.10), TEAL))
 	button.add_theme_stylebox_override("pressed", _style(TEAL, NAVY))
@@ -170,7 +176,7 @@ func _build() -> void:
 	_back.tooltip_text = "가게로 돌아가기"
 	_back.pressed.connect(func(): _emit("close"))
 	header.add_child(_back)
-	var title := _label("메뉴 개발", 21, CREAM)
+	var title := _label("메뉴 개발", 24, CREAM)
 	title.name = "EditorTitle"
 	title.autowrap_mode = TextServer.AUTOWRAP_OFF
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -211,6 +217,7 @@ func _build() -> void:
 	footer_row.add_child(cost_column)
 	_taste = _button("시식하기", "EditorTaste", "restaurant", GOLD)
 	_taste.custom_minimum_size = Vector2(155, 58)
+	_taste.add_theme_font_size_override("font_size", 22)
 	_taste.pressed.connect(_primary_action)
 	footer_row.add_child(_taste)
 
@@ -223,6 +230,9 @@ func _build_stage() -> void:
 	_content.add_child(_stage)
 	_scene = Control.new()
 	_scene.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# The panel's Container assigns its final size after the parent's layout.
+	# Reflow from that actual size, including the first frame and notice changes.
+	_scene.resized.connect(_arrange_stage)
 	_stage.add_child(_scene)
 	var background := _picture(load("res://assets/ui/bowl-editor/workbench-background.png") as Texture2D, Vector2.ZERO)
 	background.name = "WorkbenchBackground"
@@ -245,13 +255,17 @@ func _build_stage() -> void:
 	_noodle_text = _summary_content(_noodle, "면", "ramen_dining")
 	_broth.pressed.connect(func(): _show_group("broth"))
 	_noodle.pressed.connect(func(): _show_group("noodle"))
+	_slot_surface = PanelContainer.new()
+	_slot_surface.name = "ToppingPortionPanel"
+	_slot_surface.add_theme_stylebox_override("panel", _style(CREAM, TEAL))
+	_slot_surface.minimum_size_changed.connect(func(): _arrange_stage.call_deferred())
+	_scene.add_child(_slot_surface)
 	_slot_box = VBoxContainer.new()
 	_slot_box.add_theme_constant_override("separation", 2)
-	_scene.add_child(_slot_box)
-	_slot_title = _label("", 15, CREAM)
+	_slot_surface.add_child(_slot_box)
+	_slot_title = _label("", 16, INK)
+	_slot_title.add_theme_font_override("font", DisplayFont)
 	_slot_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_slot_title.add_theme_color_override("font_shadow_color", INK)
-	_slot_title.add_theme_constant_override("shadow_offset_x", 1)
 	_slot_title.add_theme_constant_override("shadow_offset_y", 1)
 	_slot_box.add_child(_slot_title)
 	_slots = GridContainer.new()
@@ -270,9 +284,16 @@ func _build_picker() -> void:
 	_picker = VBoxContainer.new()
 	_picker.add_theme_constant_override("separation", 4)
 	panel.add_child(_picker)
+	var heading_row := HBoxContainer.new()
+	_picker.add_child(heading_row)
 	_heading = _label("토핑 추가", 20)
 	_heading.name = "IngredientHeading"
-	_picker.add_child(_heading)
+	_heading.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	heading_row.add_child(_heading)
+	_heading_hint = _label("같은 재료도 가능", 13, MUTED)
+	_heading_hint.autowrap_mode = TextServer.AUTOWRAP_OFF
+	_heading_hint.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	heading_row.add_child(_heading_hint)
 	_filters = HBoxContainer.new()
 	_filters.name = "ToppingCategories"
 	_filters.add_theme_constant_override("separation", 3)
@@ -411,8 +432,9 @@ func _render_slots(config: Dictionary, result: bool) -> void:
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		if occupied:
 			button.icon = Art.food(str(portions[index]))
+			button.expand_icon = true
 			button.add_theme_color_override("icon_normal_color", Color.WHITE)
-			button.add_theme_constant_override("icon_max_width", 42)
+			button.add_theme_constant_override("icon_max_width", 56)
 		button.tooltip_text = "이 칸 교체: " + str(Catalog.find(str(portions[index]))["name"]) if occupied else "빈 칸에 추가"
 		button.disabled = result or bool(_info["busy"])
 		button.pressed.connect(func(): _emit("slot", {"index": index}))
@@ -444,7 +466,8 @@ func _render_content() -> void:
 	_filters.visible = not result and not working
 	_scroll.visible = not working
 	_work_box.visible = working
-	_heading.text = "한 그릇 완성" if result else ("조리 중" if working else "토핑 추가 · 같은 재료도 가능")
+	_heading.text = "한 그릇 완성" if result else ("조리 중" if working else "토핑 추가")
+	_heading_hint.visible = not result and not working
 	for group in category_buttons:
 		(category_buttons[group] as Button).set_pressed_no_signal(category == group)
 		(category_buttons[group] as Button).icon = Art.icon("check") if category == group else null
@@ -467,7 +490,7 @@ func _ingredient_row(item: Dictionary, slot: String, count: int = 0) -> PanelCon
 	var unlocked: bool = state.ingredient_unlocked(id)
 	var panel := PanelContainer.new()
 	panel.name = "Ingredient_" + id
-	panel.custom_minimum_size.y = 78
+	panel.custom_minimum_size.y = 68
 	panel.mouse_filter = Control.MOUSE_FILTER_PASS
 	panel.add_theme_stylebox_override("panel", _style(WHITE if unlocked else Color("e8e1d4"), Color("d5c6ab")))
 	var row := HBoxContainer.new()
@@ -475,13 +498,15 @@ func _ingredient_row(item: Dictionary, slot: String, count: int = 0) -> PanelCon
 	row.add_theme_constant_override("separation", 4)
 	panel.add_child(row)
 	var texture: Texture2D = Art.food(id) if slot == "topping" else PixelArt.scaled_tex(PixelArt.icon_image(id), 2)
-	row.add_child(_picture(texture, Vector2(48, 48)))
+	row.add_child(_picture(texture, Vector2(56, 56)))
 	var text_column := VBoxContainer.new()
 	text_column.mouse_filter = Control.MOUSE_FILTER_PASS
 	text_column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	text_column.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	row.add_child(text_column)
-	text_column.add_child(_label(str(item.get("short_name", item["name"])) + (" ×%d" % count if count > 0 else ""), 17))
+	var item_name := _label(str(item.get("short_name", item["name"])) + (" ×%d" % count if count > 0 else ""), 17)
+	item_name.add_theme_font_override("font", DisplayFont)
+	text_column.add_child(item_name)
 	text_column.add_child(_label("%s · %d초" % [won(int(item["cost"])), int(item["seconds"])] if unlocked else "탐색으로 발견", 14, MUTED))
 	var info := _button("", "EditorInfo_" + id, "info")
 	info.tooltip_text = str(item["name"]) + " 상세"
@@ -707,10 +732,26 @@ func _render_result() -> void:
 	var selected: Dictionary = evaluation["customers"][_result_customer]
 	_rows.add_child(_label(str(selected["headline"]), 19, TEAL))
 	_rows.add_child(_label(str(selected["reasons"][0]), 16))
-	var details := _button("수치와 재료 상세", "EditorResultDetails", "info")
+	var details := _button("시식평 자세히", "EditorResultDetails", "info")
 	details.pressed.connect(func():
-		var body := _modal_body("시식 상세")
-		body.add_child(_label("판매가 %s · 원가 %s\n준비 %d초\n토핑: %s" % [won(int(record["config"]["price"])), won(int(evaluation["unit_cost"])), int(evaluation["prep_seconds"]), Catalog.topping_names(record["config"])], 18))
+		var body := _modal_body(str(selected["name"]) + "의 시식평")
+		var customer_row := HBoxContainer.new()
+		customer_row.add_child(_picture(PixelArt.scaled_tex(PixelArt.portrait_image(str(selected["id"])), 3), Vector2(56, 56)))
+		var customer_title := _label("%s · %d점" % [selected["name"], selected["score"]], 20)
+		customer_title.name = "EditorCustomerDetailName"
+		customer_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		customer_title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		customer_row.add_child(customer_title)
+		body.add_child(customer_row)
+		body.add_child(_label(str(selected["headline"]), 19, TEAL))
+		# The summary shows one reason, but none of the evaluator's remaining
+		# reasons or price feedback may be lost when replacing the old screen.
+		for reason in selected["reasons"]:
+			body.add_child(_label(str(reason), 17))
+		body.add_child(_label("가격에 대한 반응", 18))
+		body.add_child(_label(str(selected["value_note"]), 17))
+		body.add_child(_label("이 그릇의 수치", 20))
+		body.add_child(_label("판매가 %s · 원가 %s\n준비 %d초\n토핑: %s" % [won(int(record["config"]["price"])), won(int(evaluation["unit_cost"])), int(evaluation["prep_seconds"]), Catalog.topping_names(record["config"])], 17))
 		_emit("comparison", {"body": body}))
 	_rows.add_child(details)
 	var clues := _button("다음 실험의 단서", "EditorClues", "info")
@@ -799,7 +840,13 @@ func _layout() -> void:
 		_root_margin.add_theme_constant_override("margin_" + edge, horizontal + int(insets.x if edge == "left" else insets.z))
 	_root_margin.add_theme_constant_override("margin_top", 6 + int(insets.y))
 	_root_margin.add_theme_constant_override("margin_bottom", 8 + int(insets.w))
-	_stage.custom_minimum_size = Vector2(0, 300 if _mode == 1 else (360 if state == null or state.topping_slots() < 4 else 412))
+	var stage_height: float = 300.0 if _mode == 1 else (360.0 if state == null or state.topping_slots() < 4 else 412.0)
+	if not wide:
+		# Safe areas or a shorter window consume real space. Share that loss with
+		# the preview so the independently scrollable list retains usable height.
+		var usable_height: float = size.y - insets.y - insets.w
+		stage_height = maxf(260.0 if _mode == 1 else 300.0, stage_height - maxf(0.0, 844.0 - usable_height) * 0.35)
+	_stage.custom_minimum_size = Vector2(0, stage_height)
 	_stage.size_flags_vertical = Control.SIZE_EXPAND_FILL if wide else Control.SIZE_FILL
 	_arrange_stage.call_deferred()
 
@@ -820,10 +867,13 @@ func _device_insets() -> Vector4:
 
 func _arrange_stage() -> void:
 	var dimensions: Vector2 = _scene.size
-	var slot_height: float = 28.0 if _mode == 1 else (126.0 if state != null and state.topping_slots() == 4 else 72.0)
+	if _slot_surface == null or _summary == null or _dish == null or dimensions.x <= 0 or dimensions.y <= 0:
+		return # Container's first real resize will finish the layout.
+	var slot_height: float = maxf(_slot_surface.get_combined_minimum_size().y, 32.0 if _mode == 1 else (144.0 if state != null and state.topping_slots() == 4 else 86.0))
 	_summary.position = Vector2(6, 6)
-	_summary.size = Vector2(dimensions.x - 12, 76)
-	_slot_box.position = Vector2(10, dimensions.y - slot_height - 5)
-	_slot_box.size = Vector2(dimensions.x - 20, slot_height)
-	_dish.position = Vector2(20, 82)
-	_dish.size = Vector2(dimensions.x - 40, maxf(80, dimensions.y - slot_height - 86))
+	_summary.size = Vector2(dimensions.x - 12, 68)
+	var slot_width: float = minf(dimensions.x - 20, 320)
+	_slot_surface.position = Vector2((dimensions.x - slot_width) * 0.5, dimensions.y - slot_height - 4)
+	_slot_surface.size = Vector2(slot_width, slot_height)
+	_dish.position = Vector2(20, 76)
+	_dish.size = Vector2(dimensions.x - 40, maxf(80, dimensions.y - slot_height - 80))

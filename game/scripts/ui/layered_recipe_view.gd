@@ -68,7 +68,9 @@ func set_config(value: Dictionary) -> void:
 func _arrange() -> void:
 	if _base == null or _base.texture == null:
 		return
-	var ratio: float = _base.texture.get_width() / _base.texture.get_height()
+	# Texture dimensions are integers: cast before division so a landscape bowl
+	# never collapses into a square and leaves unused space in a shallow preview.
+	var ratio: float = float(_base.texture.get_width()) / float(_base.texture.get_height())
 	var width: float = minf(size.x, size.y * ratio)
 	var bowl_size := Vector2(width, width / ratio)
 	var origin: Vector2 = (size - bowl_size) * 0.5

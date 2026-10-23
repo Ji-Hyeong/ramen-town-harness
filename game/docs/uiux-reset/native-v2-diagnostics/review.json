@@ -1,0 +1,82 @@
+{
+  "run": "20261023T052903Z-85261",
+  "renderer": "OpenGL4.1/Metal Apple M3 Pro",
+  "checks": 396,
+  "failures": 1,
+  "exit": 1,
+  "engine_errors": 0,
+  "captures": 28,
+  "status": "not accepted; first-frame reflow P1 and source type/portion surface P2; sparse dialog false nonblank failure",
+  "original_file_sha256": {
+    "exit-status.txt": "c3dc465add53371fc459b6090b818a3818492aca43c3a995ec8d509d139a8cbe",
+    "godot.log": "33cb3611167477453156b55d191acb543246ba05b63fd1cd9489b662c1bbca83",
+    "started.txt": "bc64f7b9348f781d4a20ac7397515c35d1619fdbe08c17fd61a9bddf763de5b0",
+    "console.log": "33cb3611167477453156b55d191acb543246ba05b63fd1cd9489b662c1bbca83",
+    "captures/desktop_editor_06_broth_edit.png": "5d11ae35284beb40946a167eaa84c1074ab9b40648b2183ab3eda4e8d2bf7472",
+    "captures/desktop_editor_11_failed_save.png": "3e3ed050809074a16e9d25339b271a3d98c6982e7d8b7c80824b7b69a2231f40",
+    "captures/desktop_editor_02_category.png": "6e2b69dd374bf9a933901015debe8fc8b4300265d03849469d4508c2993da199",
+    "captures/desktop_editor_04_duplicate.png": "2040536f45bb01484a8b5ba1fc05f40d195d30b9e481d1a6ae401edbb0afc8f9",
+    "captures/portrait_editor_01_initial.png": "2d85ec6435408bc0d4e5c7c9ac5c480cf1e77f507df448fa1ee5287274fbaaaf",
+    "captures/portrait_editor_06_broth_edit.png": "185fdc0e4f804e1bea23ddcb92c25c840cdc357a7e4d2c7efe7f08d51cdb9ffc",
+    "captures/desktop_editor_01_initial.png": "ac939dc457eff44be0c48e05d588973fb707e384a297cb0be2966f672087a9fa",
+    "captures/desktop_editor_08_result.png": "3b16f2e2d972b386a481302c9f4140f2abb41e78cd8960783f6212159b95db36",
+    "captures/desktop_editor_09c_clues.png": "f6173cd4b46099e063e15240be6ee9c0517a875f3a80e87ae9cfd800d4fb180e",
+    "captures/desktop_editor_09b_comparison.png": "aa3f86a20a4dc202c454dfb3c53d8c273e050d7890521feb1bf05163608841a0",
+    "captures/portrait_editor_02_category.png": "45f984ad618d1656e788a4385f4a12a7c854e080773e94d4eecc108200e34ddb",
+    "captures/desktop_editor_06b_directions.png": "0d634c4e60c3c384e6a37b28ce38fcf96cd3f8bb93ed7b40d259c9ed738592cb",
+    "captures/portrait_editor_07_cooking.png": "e5da171b4567e4fb0e42c414222354dbd268587444ad06dd2e484856bf92cb40",
+    "captures/portrait_editor_05_replace.png": "8bc1490ab88c47c131b16f0b55c8138ca3bd7bd112cb2a046499b3fde4739d28",
+    "captures/desktop_editor_07_cooking.png": "f6af3cc5c48da07694e8db97fb395b6eb6212433223022d3ebe5993585625da4",
+    "captures/desktop_editor_10_rank3_layout_projection.png": "cc7e52a82d891ebd6c618356077f11a240125eac900cda185eed9bfd511eef83",
+    "captures/desktop_editor_05_replace.png": "7e2d264531f937e56b5d5f989f40ea44e98fc57e48c898efe45b5e7a9c559a3a",
+    "captures/portrait_editor_04_duplicate.png": "3bd82c540062f5f46c52c660f8f7bc9a61436e834f0d95df71b86b16faee4b93",
+    "captures/portrait_editor_10_rank3_layout_projection.png": "588585c7e47f4f37fb616e031f2672082a05c88ab7c53872dfad2b71e01f5f33",
+    "captures/desktop_editor_03_details.png": "64bbefb4a9f48e2f80e7edf485b67e51d2cbb4bdfe5ea0ea27c063697c42f539",
+    "captures/portrait_editor_06b_directions.png": "dcacef85974e90deb8b1ec722ec86d034ad44f1ab4318858746d97d03a4cc87b",
+    "captures/portrait_editor_03_details.png": "dc8b3ef1eab073a70530477d59ac39995afc307fee875868bfbfbb7736ddce6c",
+    "captures/portrait_editor_08_result.png": "22a452414e2c34889de22c1bd98fa8d962303e4cc4135e2a4d50a2f2f349a833",
+    "captures/portrait_editor_09c_clues.png": "92d52785383082221e5af0abdcba094b2639d779f4bcea3e8381cea4e92bf8f0",
+    "captures/portrait_editor_09_second_customer.png": "96763b1cace83a747e54d90fdef0e1baa030de40787627492bf2f07e7fc2c445",
+    "captures/portrait_editor_11_failed_save.png": "7472578f963627b63ded9c80334d8d77b40a542099cc5bf6ba536f39a152ebd8",
+    "captures/portrait_editor_09b_comparison.png": "57bc9198a056952185dcbc20ad40b88d40993a293158b12b90613dd0c6d1b68c",
+    "captures/desktop_editor_09_second_customer.png": "a8351ff48bbf39a3772cc3050b96247d74881f8e5eb36b2ac4f8efb5526d169e",
+    "qa-data/portrait_bowl_editor/ramen_lab_save.json.bak": "b7e9d777b8e34a40918bb533c05e878991437a53b80d1b54a4564022b8d7e4c6",
+    "qa-data/portrait_bowl_editor/ramen_lab_save.json": "b7e9d777b8e34a40918bb533c05e878991437a53b80d1b54a4564022b8d7e4c6",
+    "qa-data/desktop_bowl_editor/ramen_lab_save.json.bak": "b7e9d777b8e34a40918bb533c05e878991437a53b80d1b54a4564022b8d7e4c6",
+    "qa-data/desktop_bowl_editor/ramen_lab_save.json": "b7e9d777b8e34a40918bb533c05e878991437a53b80d1b54a4564022b8d7e4c6",
+    "qa-data/portrait_bowl_editor_failedsave/ramen_lab_save.json.bak": "78452482d1df80eac6cb0c5108418731254523530bd7c57d912b4d432f5d0134",
+    "qa-data/portrait_bowl_editor_failedsave/ramen_lab_save.json": "069dea3c6a308d9d60f7354a8e88380aca300649b7f661180ad78aa6c8dcfb28",
+    "qa-data/desktop_bowl_editor_failedsave/ramen_lab_save.json.bak": "78452482d1df80eac6cb0c5108418731254523530bd7c57d912b4d432f5d0134",
+    "qa-data/desktop_bowl_editor_failedsave/ramen_lab_save.json": "069dea3c6a308d9d60f7354a8e88380aca300649b7f661180ad78aa6c8dcfb28"
+  },
+  "all_files_preserved_byte_equal": true,
+  "manually_opened_originals": [
+    "desktop_editor_01_initial.png",
+    "desktop_editor_03_details.png",
+    "desktop_editor_04_duplicate.png",
+    "portrait_editor_01_initial.png",
+    "portrait_editor_06b_directions.png",
+    "portrait_editor_08_result.png",
+    "portrait_editor_10_rank3_layout_projection.png",
+    "portrait_editor_06_broth_edit.png",
+    "portrait_editor_09c_clues.png",
+    "portrait_editor_11_failed_save.png"
+  ],
+  "combined_comparison": "portrait-source-native-v2.png",
+  "normalization": {
+    "source": [
+      853,
+      1844
+    ],
+    "source_resized_to": [
+      390,
+      844
+    ],
+    "native": [
+      390,
+      844
+    ],
+    "density": 1,
+    "labels_only_extra": true
+  }
+}

@@ -1,5 +1,9 @@
 # 라멘 아틀리에 검증 기록
 
+## Native bowl editor current checkpoint
+
+Final native457/0/exit0/engine0; actual pack367/0, compact185/0, builder34/0, licenses3/0. Bounded current detail review plus prior28-image reflow baseline; no whole-game/human/iPhone acceptance. See [scope and source comparison](../design-qa.md), [current originals](docs/uiux-reset/native-v5/) and [sanitized evidence](../evidence/bowl-editor-native-v1.json). Historical checks below are not current editor visual proof.
+
 ## 상세 그릇과 다음 실험 단서 (2026-10-22)
 
 사용자의 Claude 한도에 따른 명시적 지시로 Codex가 전부 구현·검증했고 Claude 호출은0회입니다. 개발/시식 전용48×32 그릇과 실제 시식 기반 한 가지 변경 단서를 추가합니다. 기존 도메인/서비스46파일과 영업용12×7 그릇은 보존하며 저장v12와 평가/돈/샘플 계산을 바꾸지 않습니다.

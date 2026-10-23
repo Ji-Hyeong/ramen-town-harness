@@ -203,7 +203,8 @@ def export_presets_text() -> str:
         "dedicated_server=false\n"
         'custom_features=""\n'
         'export_filter="all_resources"\n'
-        'include_filter=""\n'
+        # Raw licenses are not importable resources; include them explicitly.
+        'include_filter="assets/fonts/*OFL.txt,assets/ui/material-rounded/LICENSE.txt"\n'
         'exclude_filter=""\n'
         'export_path=""\n'
         "script_export_mode=0\n"
