@@ -1,241 +1,98 @@
-# Native bowl editor: final bounded design review
+# Native editor typography and spacing review
 
 final result: passed
 
-2026-10-23. Passed means the selected native editor and affected detail flow were
-rendered, compared and checked after correction. It does not mean whole-game
-human usability/fun or physical iPhone acceptance. The human excluded phone work.
-No actionable P0/P1/P2 remains in this bounded review. Source ornamental finishing
-is retained as explicit P3 follow-up, not described as a pixel-identical clone.
+2026-10-23. Bounded internal review of the human-reported font/border-crowding
+problem. This is not whole-game design acceptance, human approval of this new
+appearance, exact mock reproduction or physical iPhone acceptance. The human's
+rejection superseded the previous v5 technical pass.
 
-## Source, current render and normalization
+## Findings and corrections
 
-- Visual truth: game/docs/uiux-reset/refinements/concept-03-categories-v1.png,
-  the exact category-refined displayed option3 selected by the human.
-- Source853x1844 is normalized with Lanczos to390x844. Current portrait is
-  native390x844/density1, no bezel or drawn OS chrome. Landscape1280x800 is a
-  responsive adaptation. Current initial state is the real fresh default draft.
-- Current original: game/docs/uiux-reset/native-v5/portrait_editor_01_initial.png.
-- Full-view pair, composed and opened: game/docs/uiux-reset/native-v5/comparisons/portrait-source-native-v5.png.
-- Focused pair, composed and opened: game/docs/uiux-reset/native-v5/comparisons/portrait-controls-source-native-v5.png.
-  Common lower region(0,420,390,424) is enlarged2x nearest. Only labels/gutters
-  are added. These comparisons address type, spacing, food, controls and copy.
-- Actual same-state customer detail before/after, composed and opened:
-  game/docs/uiux-reset/native-v5/comparisons/portrait-feedback-before-after.png.
+1. P2, broth/noodle summaries: headings touched their top border. A full-rect child
+   had only horizontal5px margins; Button style padding did not inset it. Actual
+   horizontal12/vertical10px insets,4px title/value separation, centered headings
+   and76px height fix this. Tests assert actual child rectangles inside the inset.
+   The opened top-focused before/after visibly confirms the breathing room.
+2. P2, typography: bitmap Galmuri Bold was used for small filters, ingredient names
+   and all buttons. Original licensed Pretendard Regular/SemiBold replaces it:
+   header22px, summary18px, names17px, price/time14px, portion15px and CTA22px.
+   Full and lower-focused comparisons show smooth readable type and calmer weight.
+3. P2 regression, shorter390x750: larger text-card padding also consumed the image
+   stage and list. Packedv2 compact202checks/5failures is preserved. Image-only stage
+   uses its actual2px frame rather than text padding, four-slot preview408px and
+   major gaps5px. Current packed compact202/0 retains the bowl, list and fixed CTA.
 
-## Current native evidence and honest manual scope
+## Comparison evidence
 
-Final run20261023T060457Z-94441 is actual OpenGL4.1/Metal on Apple M3 Pro:
-457checks/0failures/exit0/engine-errors0,30PNGs,15per size. Full42-file run is
-privately preserved byte-equal. All dimensions/nonblank are checked automatically.
-All4changed detail/number captures and6initial/result/save-failure regressions
-were individually opened; exact10paths are in native-v5/review.json. The priorv3
-baseline opened all28 originals and4comparisons. Only bowl_workbench.gd and
-bowl_editor_qa.gd differ since that baseline. Do not say all30current originals
-were individually opened. The09d reveal point can be identical to09b because
-all content fits in this fixture; they are not distinct gameplay cases.
+Target: game/docs/uiux-reset/refinements/concept-03-categories-v1.png,
+853x1844 normalized with Lanczos to390x844. Before: actual native-v5 portrait
+initial, explicitly the human-rejected historical baseline. After: actual fresh
+portrait initial in game/docs/uiux-reset/typography-v1/,390x844/density1 native
+SubViewport; desktop1280x800 is responsive adaptation, no drawn OS/device chrome.
 
-Frozen234sources equal the current snapshot after execution. Prep/embedded PCK
-15bd5586632484981ec649b9c3f750120ec375e4f3b68de217b8ec2f723eba43 are equal and
-unchanged; official copied-engine strict signature exits0 again. Actual final
-pack367/0, shorter390x750185/0, packaged licenses3/0 and builder34tests pass.
-Unchanged domain regression127tests/58423 checks passes. No engine errors.
+Three-way full/source/before/after and focused comparisons were composed and
+opened in typography-v1/comparisons/. Common crops (0,58,390,105) summaries and
+(0,420,390,424) lower controls are enlarged2x nearest. Only captions/gutters and
+normalization are added. Full view checks composition; focused views check type
+and padding at readable size.
 
-## Findings, corrections and comparison history
+Current actual OpenGL4.1/Metal run20261023T110902Z-58114:490checks/0failures,
+exit0/engine-errors0,30original PNGs (15/profile). All dimensions/nonblank checked.
+13 current originals and3 comparisons opened; exact paths/hashes/manual scope in
+typography-v1/review.json. Do not claim all30 were individually opened.09d may
+equal09b when the entire numeric comparison already fits, not distinct gameplay.
+All42 raw-run files preserved byte-equal privately. All240 source hashes, actual
+exported/embedded PCK4da0e678a91027a521720446045fd56766d730ebaa4209a3f749aeff87420d4d,
+and copied official-engine strict signature0 match after execution. Current
+actual packed compact390x750202/0 passes; this is not physical safe-area proof.
 
-1. V2 native396/1/exit1/engine0 was rejected. The initial bowl was absent and
-   two summaries collapsed; notice-time portion buttons clipped. Actual full
-   source/native pair was opened. Reflow now follows the Container's final scene
-   resize/minimum change; portions occupy a real centered cream/teal surface.
-   An integer-divided landscape texture ratio also shrank the preview; casting
-   before division restores its silhouette. First-view width/size/aspect/enclosure
-   guards were added. V3 actual439/0 and all28 originals visibly confirm these
-   fixes, including full/2x initial before/after in native-v3/comparisons/.
-2. V2 display/action hierarchy was weaker than the source. Original licensed
-   Galmuri11 Bold now handles display/name/button roles; GowunDodum remains for
-   small explanatory text.22px action,56px food thumbnails,68px rows and separate
-   nonwrapping heading/hint restore clear priority. V3/V5 full/focused comparisons
-   were opened and confirm weight/wrapping and independently scrolling content.
-3. V2's sole automated failure was a sparse-dialog nonblank false positive,
-   not an empty screen; the actual research dialog was opened. Replace8x8 sampling
-   with actual pixel scan, same four-color threshold. Explicit black/gray reject
-   and sparse-foreground tests pass; current native captures have no failures.
-   The failedv2 run remains recorded as failure, not retroactively accepted.
-4. Final completeness review found P2 lost additional customer reasons/value_note
-   despite V3 layout success. FrozenV3 reproduces14checks/5failures. Deeper detail
-   restores every selected customer's evaluated reason and price reaction, with
-   portrait/name/score, real numbers and existing version comparison. Target14/0
-   follows; final367/457 includes the name-width guard and full-text checks.
-   All4new detail/number captures and actual before/after were opened. No text
-   truncation or inaccessible numeric comparison remains in these cases.
+## Five fidelity surfaces
 
-The desktop compact list can fully fit; swipe tests respect its actual scroll
-range while still requiring scroll for overflow and canceled gestures never
-commit a tap/state change. Mobile overflow remains tested. A390x750 logical
-viewport tests shorter content space; it is not a physical safe-area capture.
+Fonts: real Regular/SemiBold faces, not simulated bold. Original officialv1.3.9
+archive/font hashes, full OFL and provenance retained. The actual pack's full OFL
+is checked. The generated mock has no exact font file; this is the human-requested
+readable approximation. Legacy numeric comparison retains its established body
+theme; this does not migrate unrelated game screens.
+The original upstream OFL's single trailing space is retained byte-for-byte;
+only this vendor license is excluded from the staged whitespace check.
 
-## Required fidelity surfaces
+Spacing: real summary insets, shared10px horizontal/8px vertical text-card padding;
+rows8px,72px minimum height,8px horizontal gaps and4px name/price gap. Row borders
+are lighter1px, native hits remain48px/categories>=44px. Initial390x844 shows three
+complete rows instead of the source's four; preserving readable text and touch
+space is intentional, independent scrolling/categories handle more. Portions and
+footer remain enclosed in initial, notice, result and synthetic rank projection.
 
-- Fonts/typography: pixel display type matches the game's direction and restores
-  the strong source hierarchy. Body explanations remain legible, wrap inside the
-  modal/list and do not turn into vertical columns. Original Galmuri11 Boldv2.40.4
-  bytes/hash/full SIL OFL1.1 are recorded and included in the pack. The generated
-  reference has no exact font file; this is an intentional matching choice.
-- Spacing/layout: food and both summaries are present immediately; portion cells
-  remain within their surface after notices, duplicates and rank projection.
-  Filters/footer stay fixed while only list/details scroll. Source category cells
-  are enlarged to practical44px+ native hits; initial3full rows plus a partial
-  fourth rather than4complete rows is an intentional touch-size tradeoff. All
-  actionable information is retained and categories handle larger collections.
-- Colors/tokens: navy193e65/creamfff6e4/teal087e80/goldffd05a keep the selected
-  hierarchy. Selection also uses checks/text and locks use conditions. This is
-  not an AA/accessibility certification. Disabled states remain visibly separate.
-- Images/assets: actual original generated food/background/steam remain byte-equal;
-  no checkerboard/opaque halo/missing image was found in reviewed states. Actual
-  noodle/broth and separate repeated portions drive the dish. Source decorative
-  green garnish is omitted from a chashu-only draft. Ordinary UI symbols come
-  from Material Symbols Rounded with original source/license, not fake food art.
-- Copy/content: actual costs/times/locks and guarded results override illustrative
-  mock values. Detail retains all selected-customer reasons and price feedback;
-  browsing has no spend/discovery side effect. Real cancel/complete/failed-save
-  states remain explicit; full error text is available from the work menu.
+Colors: navy/cream/teal/gold and disabled/selected distinctions remain. This is
+not contrast/accessibility certification. Images/icons: original food/background/
+steam/library-icon bytes untouched, correct aspect/separate repeated portions
+retained; no fake replacement assets or system font install. Copy: real names,
+costs/time/rank, all selected-customer reasons and price reaction remain available;
+illustrative mock values do not replace game data.
 
-## Interaction verification and implementation checklist
+Native pointer verification covers category changes, button-start swipe/canceled
+press, duplicates/replacement/minimum-one removal, locked details, broth markers,
+name/price, actual cooking/cancel/once-only payment, selected customer/full reasons/
+price note/version comparison/clues, notebook and isolated failed-save recovery.
+Domain/services/schema unchanged; earlier domain totals are not claimed as rerun.
 
-Completed: actual pointer taps, button-start swipes/canceled presses, categories,
-locked info, repeated portions, full-capacity replacement, minimum-one removal,
-broth marker reset/repeated choice, name/price edits, cooking cancellation,
-one-time payment/record, customer selection/full detail, comparison/clues,
-four-slot projection and notebook route. Save-failure/collision recovery uses
-only owned isolated QA directories. Source/schema/domain/services are unchanged.
-Completed: fresh current captures, source/full/focused comparison, failure/fix
-history, postrun source/pack/signature checks and sanitized evidence/gallery.
+## Iterations, limits and completion
 
-## P3 follow-up and explicit limits
+First refinement packv1 failed test script parsing (untyped inset), despite exit0:
+no checks/graphics accepted. Explicit Rect2 fixes it. V2 standard source400/0
+preceded its compact regression; it is not final visual acceptance. V3 actual
+490/0 and final packed compact202/0 are current. Failed logs/packs preserved.
 
-The source's coin decoration, callout tails and beveled ornamental frame are
-simplified native surfaces/library icons. Further ornamental polish is optional;
-no claim of exact pixel copying is made. Current review preserves usable native
-hits and clear hierarchy. VoiceOver, Dynamic Type/reduced motion, keyboard focus
-trapping, physical iPhone safe areas/touch/audio, performance and human-fun remain
-unverified. The human-rejected old0.13 usability conclusion is not reinstated.
-The four-slot example is a synthetic view projection, not earned progression.
-No normal-save/phone changes or Claude calls. Earlier prepared0.14 is stale and
-must not be installed. Sanitized current evidence: evidence/bowl-editor-native-v1.json.
+Source beveled ornament/callout tails/coin decoration remain known polish debt;
+this targets the human's font/padding complaint, not complete source reproduction.
+Some real Mac result captures retain a hover label over the bowl, not baked image
+text. Whole-game aesthetics/fun, VoiceOver/text scaling/reduced motion/keyboard
+focus and physical iPhone safe areas/touch require separate validation. Phone work
+remains excluded; no Claude delegation, normal-save access or security change.
 
-## Historical UI/UX reset: human rejection overrides prior acceptance
-
-Current result (2026-10-23): **needs redesign; not accepted for usability.**
-The human explicitly rejects installed0.13 UI/UX. Prior technical tests and
-bounded screenshot reviews remain historical evidence; their broad P0/P1/P2-free
-conclusion does not establish a usable game and is superseded by this finding.
-Pause chef/growth additions. See [the new five-game reference study, six-state
-fresh audit and three original visual concepts](game/docs/KAIROSOFT_UIUX_RESET.md).
-
-Fresh unchanged native run20261022T173150Z-32949:1980/0/exit0/engine0,
-28captures; this audit opened six portrait states. It confirms the rendered
-hierarchy problems despite successful layout checks. Findings: core choices
-below the fold, global navigation inside the editor, nested explanatory routing,
-competing cooking/editor states and customer reactions below the first result
-screen. Native redesign awaits concrete visual selection, not another test-count
-threshold. No runtime, phone, player-save or Claude changes in this checkpoint.
-
-## Historical discovery workbench technical and visual review
-
-Historical result: passed in a bounded reviewer assessment; **not current human
-usability acceptance**. Text below is preserved as the original review record,
-including claims now superseded by the fresh audit and human feedback.
-
-## Current scope and verification boundary
-2026-10-23. Existing native Godot target, palette, detailed dynamic dishes and
-disclosures are the source, not a web clone or a new generated mockup. Larger
-food-first lab/result, expandable eight-task navigation, three open-ended farmed
-ingredient directions, deliberate receipt depth and original audio are current.
-Historical harbor/expression PNGs establish prior style or comparison inputs only;
-they are not evidence for current behavior.
-
-Current161source files equal the fresh QA snapshot byte-for-byte. PCK976beff7,
-strict vendor signature0; pure55, actual packed flow1896, expression/depth3724,
-harbor918, touch70 and domain127tests/58423 checks pass with no engine errors.
-Full two-size layout19496/0/exit0/engine0 also passes. These automated counts
-alone are not visual or human-fun acceptance.
-
-The human approved the exact current app:
-/private/tmp/ramen-discovery-workbench-qa-20261023-v1/Ramen QA.app.
-Fresh OpenGL4.1/Metal run20261022T163531Z-15310 completed1980checks/failure0/
-exit0/engine-errors0. All28 original scene captures were individually opened
-and inspected:14each at390x844 portrait and1280x800 landscape, density1.
-The full36-file run is privately preserved byte-equal. Postrun source161/PCK/
-engine hashes still match and official engine strict signature verification exits0.
-The initial CUA observation timed out, but the fresh run and actual native-rendered
-SubViewport PNGs establish completion; the gray QA root is not a game screenshot.
-An initial postrun signature command used an incorrect path nested inside the
-wrapper; corrected to the manifest's unchanged runtime/Godot.app and verified0.
-
-## Combined comparison and focused inspection
-- Source:game/docs/expression-screenshots/{portrait,desktop}_expression_01_preview.png. Current:game/docs/workbench-screenshots/{portrait,desktop}_workbench_01_food.png. Both are fresh day1/30000/default2200-cost100-prep dishes, initial top-scroll, same respective viewport/density. The food hierarchy and collapsed navigation intentionally replace the prior hierarchy; this is a native product redesign, not a pixel-identical web clone.
-- Both full-view source/current pairs were composed, opened and compared together:game/docs/workbench-screenshots/comparisons/{portrait,desktop}_before_after.png. Only labels and16px gutters were added; no crop or density change in full-view pairs.
-- Focused portrait_bowl_focus.png uses two224x144 actual crops at3x nearest-neighbor. It confirms retained48x32 dynamic art, sharper integer scaling and intentional2x-to4x in-game enlargement. Source coordinates, hashes and method are in review.json.
-- portrait_three_dishes.png and portrait_three_results.png were also opened. All three actual witness dishes differ visually and in cost/prep/profile:1490/80,2540/170,1670/129. These are examples, not fixed output guarantees. Different wallets are real sequential paid transactions.
-- Current gallery:game/docs/workbench-screenshots/README.md. All28 originals and5 comparison dimensions/hashes/manual review are recorded in review.json. No runtime changes followed the accepted captures.
-
-## Required surfaces and interactions
-- Fonts/typography:existing GowunDodum is retained. Heading, ingredient composition, cost/time and status form a readable hierarchy in both sizes. Long conditions wrap within the scroll area; no orphaned ingredient-title glyph or inaccessible primary action found. Compact condition grouping remains P3 polish.
-- Spacing/layout:initial food is centered and enlarged; eight-task navigation collapses deliberately. Whole-row icon/chevron disclosures retain accessible visual affordance. Expanded navigation may require scrolling of body content, while close/taste or service action stays fixed and reachable. Result receipt intentionally collapses behind its labeled disclosure. Actual swipe over the food and canceled press retain scrolling without click activation/audio.
-- Colors/tokens:paper/card, brown borders, vermilion action and teal status match the existing native game. Status also uses words/checks/chevrons. Some unchanged palette pairs remain marginal (about4.48:1 teal/paper and4.49:1 vermilion/paper in prior token analysis); do not claim AA compliance. Brief completion-overlay text also has modest contrast; persistent result text remains readable. Retain as P3 visual polish.
-- Image quality/assets:the actual procedural bowl reads current broth, noodles, oil, repeated topping portions and processes; original service-size dishes remain unchanged. Crisp integer pixel edges, no interpolated blur, missing texture, opaque icon background or false static finished dish observed. Native code-generated dynamic game art is the established editable source, not a substitute for a requested raster mockup.
-- Copy/content:real per-recipe fees/prep, ingredient conditions, stored-tasting counts and phase names agree with actual transactions. Choosing a direction is not awarded as a discovery. Reload retains3 witnesses without a fresh-discovery caption. Repeated completion/name copy and the first customer card being below the fold in some results remain P3 refinements, with working scrolling.
-- States:initial, expanded navigation, directions, existing goal, three real ingredient compositions, broth/noodle/plating busy progress, three paid results and reload are rendered. Headless/packed tests separately cover real transaction cancellation, refusal, non-mutating navigation, mute, busy guards, canceled swipe, record removal and restoration. A screenshot alone does not prove all these behaviors.
-
-## Current findings, acceptance and limits
-No actionable P0/P1/P2 finding remains in the bounded workbench flow after all28
-originals and5 comparisons were opened. P3 follow-ups are concrete copy grouping,
-condition wrapping and retained palette/overlay contrast, not another feature gate.
-Existing keyboard input/screen semantics are retained but VoiceOver, Dynamic Type,
-reduced-motion preference, text zoom and comprehensive accessibility are unverified.
-Native audio signal/file checks do not prove human speaker volume/quality. Physical
-iPhone input/performance, subjective enjoyment and6-10hour completion are deferred.
-No ordinary-save write, iPhone installation or Claude call occurred in this task.
-
-## Historical harbor acceptance, preserved separately from current scope
-Historical final result: passed (main7fe2964; not current workbench acceptance).
-
-## Current-run evidence and source
-- Fresh native run:20261022T070256Z-95998, official OpenGL4.1/Metal engine,688checks/failure0/exit0/engine-errors0. All24PNG originals were opened and manually inspected; full32-file run preserved byte-equal.
-- Viewports:portrait390x844 and landscape1280x800, SubViewport density1, no device bezel or density rescaling.
-- Evidence manifest:game/docs/harbor-screenshots/v1-review.json. Current-run diagnostics:game/docs/harbor-screenshots/v1-diagnostics/.
-- Existing project/style source:game/docs/exploration-screenshots/portrait_35_exploration_harbor.png. This older source is a style reference only, not evidence for current behavior. New sampling and old supplier trips intentionally have different content.
-- Accepted current implementation run:20261022T072702Z-2212, actual OpenGL SubViewport capture962checks/failure0/exit0/engine-errors0,28PNG originals all manually opened. Full38-file run preserved byte-equal.
-- Current implementation screenshots:game/docs/harbor-screenshots/v2/; hashes/manual-review state:game/docs/harbor-screenshots/v2-review.json.
-- Source/implementation full-view comparisons were composed and opened together:game/docs/harbor-screenshots/comparisons/portrait_06_waiting.png, portrait_08_workbench.png, portrait_12_label.png, portrait_09_triple_dish.png, portrait_10_result.png and portrait_style_reference.png. Both original images remain390x844 at density1; canvas adds only labels/a16px gutter, no density scaling. Different scroll positions for collection/handoff are the intentional fix, not a geometry discrepancy.
-- Focused comparison opened:comparisons/portrait_label_focus.png. Each151x90 actual button-region crop is displayed at3x nearest-neighbor for reading; no image content or colors were edited. The shorter button naturally occupies less height. Original full views were also inspected.
-- Old supplier-trip/source reference and current sampling are intentionally different states. The style comparison establishes retained font/palette/border/sprite direction, not a pixel-identical clone. Current audit findings rely on the two fresh runs only.
-
-## Resolved findings from iteration1
-1. [P2] Portrait pending-claim action below fold. Evidence:portrait_harbor_06_waiting.png. Repeated instructions precede the result, leaving its primary collection action out of view. Fix:after layout, reveal the pending harbor collection button without collecting or changing tabs. A failed-save warning keeps priority. Resolved in v2 portrait06; portrait14/desktop14 preserve the warning.
-2. [P2] Handoff exposes a section header, with the actual catch below the viewport. Evidence:portrait_harbor_08_workbench.png and matching desktop08. Fix:open the existing section, then reveal the catch's actual ingredient control without selecting it or changing the draft. Resolved in v2 portrait08/desktop08; actual scallop button visible.
-3. [P2] Sardine broth title wraps its last syllable onto a separate line. Evidence:portrait_harbor_12_broth_dish.png (actually a choices screen) and desktop12. Fix:compact ingredient-button label; retain full name in stock, section headers and details. Resolved in v2 portrait12/desktop12 and focused before-after crop.
-4. [P1 verification gap] Declared dish/result captures09/10 show the shop, in both sizes. The test toggled an already open overlay closed and then emitted hidden semantic button signals. Reject these four files as dish/result evidence. Fix:open the lab idempotently, assert the overlay/dish are visible and explicitly capture the actual BowlPreview and FeedbackBowl. Add a separate broth-dish capture; old12 is only choices evidence. Resolved in v2 screenshots09/10/13 in both sizes; each shows the declared actual scene/dish.
-
-## Required surfaces
-- Typography:existing GowunDodum and hierarchy retained; full names/details are readable. Compact broth button fits one line in v2; the full name remains in its section and details. Existing long descriptions wrap naturally inside their scroll area.
-- Spacing/layout:fixed navigation/footer remain visible. Scroll overflow is intentional; the collection action and catch are now visible at the destination without test-driven scrolling. The failed-save case deliberately stays at the warning.
-- Color/tokens:paper, brown borders, vermilion titles and teal progress match the existing game. Screenshots do not establish WCAG compliance; color is accompanied by labels/chevrons/counts. Existing code-token contrast is about4.48:1 teal/paper and4.49:1 vermilion/paper versus4.90/4.91 on light card surfaces: a retained, marginal P3 palette follow-up, not an AA-compliance claim.
-- Image quality:original region art retained with hard pixel edges. Generated scallop icon is distinct on the paper card; no opaque rectangular background observed. V2 images09/10/13 show actual triple scallops and a distinct broth/nori dish with readable cost/time facts. No old screenshot substitutes for these states.
-- Copy:departure1200, optional extra600/three vs free/one, stock3 then0/1 and read-only development handoff are visible and match transactions. Technical duplicate-claim reassurance and repeated instructions remain P3 copy refinements.
-
-## Comparison history
-- Iteration1:24fresh PNGs inspected. Three product P2 findings and one capture-verification gap recorded; no visual completion accepted.
-- Corrections:reward/control auto-reveal, compact sardine-button label, actual visible-state assertions/dish captures, and failed-save-warning priority test.
-- Negative control:new assertions on frozen pre-fix source yield860checks/5failures/exit1/engine-errors0. Same assertions on fixed source yield860/0/exit0/engine-errors0. This is layout/behavior evidence, not the required post-fix rendering.
-- Iteration2:final focused878/packed878/touch70/domain127tests58423/full two-size layout19066 all0/exit0/engine0. Fresh native962/0 and28originals plus7combined comparisons inspected. Source135/PCK2da6bdc7 unchanged, vendor signature0 after run. Earlier P1/P2 findings are resolved; no new actionable P0/P1/P2 finding in the bounded harbor flow.
-
-## Final implementation checklist
-- [x] Explicit fees/quantities, stock changes, repeat portions, zero-stock sales and restart states covered by real transactions.
-- [x] Reproduce pre-fix UI failures; retain source/dish-state assertions and failed-save warning-priority regression.
-- [x] Fresh corrected collection/control/label/actual-dish/warning captures in both sizes, all28 manually inspected.
-- [x] Full-view and focused source/implementation comparisons composed together, opened and reviewed.
-- [x] Typography, spacing, tokens, asset fidelity and copy reviewed from current renders.
-
-## P3 follow-up and limits
-Repeated instructions, technical duplicate-claim reassurance, some existing locked-ingredient label density and marginal palette contrast remain polish follow-ups; they do not block this bounded loop. This is not full accessibility compliance, production readiness or proof of6–10hours of fun. Physical iPhone input, VoiceOver, Dynamic Type and reduced-motion preference remain separate. Native tests route Godot viewport input; the gray harness root-window observation was not accepted as a game screenshot. Actual image evidence comes from OpenGL-rendered scene SubViewports. No iPhone install or normal-save write occurred.
+Completed: preserve all10 unexpected copies in place; independent main-based
+checkout; licensed type/real insets; actual guards; fresh native pack/capture;
+compact regression correction; full/focused comparison; postrun source/pack/
+signature checks and bounded evidence. Ready publication/matching-head merge is
+already authorized by the standing human instruction.

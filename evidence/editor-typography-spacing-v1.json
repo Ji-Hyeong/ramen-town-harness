@@ -1,0 +1,75 @@
+{
+  "task": "editor-typography-spacing-v1",
+  "base_main": "33eac7c7b676d852e2170c60c96211b61a9b5d29",
+  "human_finding": "Heavy bitmap UI type and text crowding summary borders; v5 pass superseded.",
+  "implementation": [
+    "Original Pretendardv1.3.9 Regular/SemiBold and full OFL",
+    "Actual summary horizontal12/vertical10px inset;72px ingredient rows and calmer borders",
+    "Image-only padding and four-slot layout retain compact preview/list"
+  ],
+  "runtime_change_scope": [
+    "scripts/ui/bowl_workbench.gd",
+    "tests/bowl_editor_qa.gd",
+    "assets/fonts/Pretendard files and provenance"
+  ],
+  "native": {
+    "run": "20261023T110902Z-58114",
+    "renderer": "OpenGL4.1 Metal; Apple M3 Pro",
+    "checks": 490,
+    "failures": 0,
+    "exit": 0,
+    "engine_errors": 0,
+    "native_pngs": 30,
+    "pack_sha256": "4da0e678a91027a521720446045fd56766d730ebaa4209a3f749aeff87420d4d",
+    "runtime_source_count": 240,
+    "snapshot_and_embedded_pack_equal_after_run": true,
+    "official_engine_strict_signature_after_run": 0
+  },
+  "packed_compact": {
+    "viewport": [
+      390,
+      750
+    ],
+    "checks": 202,
+    "failures": 0,
+    "exit": 0,
+    "engine_errors": 0
+  },
+  "manual_review": {
+    "current_originals": 13,
+    "composed_comparisons": 3,
+    "all30_individually_opened": false,
+    "gallery": "game/docs/uiux-reset/typography-v1",
+    "detail": "game/docs/uiux-reset/typography-v1/review.json"
+  },
+  "iterations": [
+    {
+      "version": 1,
+      "outcome": "test script parse error despite process exit0; no QA accepted"
+    },
+    {
+      "version": 2,
+      "outcome": "standard source400/0; packed compact202/5 failed; diagnosed actual geometry"
+    },
+    {
+      "version": 3,
+      "outcome": "current actual native490/0 and packed compact202/0"
+    }
+  ],
+  "preservation": {
+    "old_checkout_untouched": true,
+    "unexpected_files": 10,
+    "all10_byte_identical": true,
+    "raw_native_files": 42,
+    "raw_native_byte_equal": true,
+    "durable_checkout_outside_file_provider": true
+  },
+  "limits": [
+    "Bounded internal typography/spacing review, not whole-game or human acceptance",
+    "No iPhone work",
+    "No Claude invocation",
+    "Domain/services/schema and ordinary saves unchanged",
+    "No domain or unchanged builder suite rerun claimed",
+    "Legacy numeric comparison retains its body theme; source ornament remains polish debt"
+  ]
+}

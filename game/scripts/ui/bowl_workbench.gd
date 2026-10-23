@@ -14,7 +14,8 @@ const NameEdit = preload("res://scripts/ui/scrollable_name_edit.gd")
 const Directions = preload("res://scripts/domain/recipe_directions.gd")
 const Experiments = preload("res://scripts/domain/recipe_experiments.gd")
 const Check = preload("res://scripts/domain/data_check.gd")
-const DisplayFont = preload("res://assets/fonts/Galmuri11-Bold.ttf")
+const BodyFont = preload("res://assets/fonts/Pretendard-Regular.otf")
+const DisplayFont = preload("res://assets/fonts/Pretendard-SemiBold.otf")
 const INK := Color("18354f")
 const NAVY := Color("193e65")
 const CREAM := Color("fff6e4")
@@ -92,11 +93,11 @@ func _style(bg: Color, border: Color = INK) -> StyleBoxFlat:
 	style.bg_color = bg
 	style.border_color = border
 	style.set_border_width_all(2)
-	style.set_corner_radius_all(3)
-	style.content_margin_left = 8
-	style.content_margin_right = 8
-	style.content_margin_top = 5
-	style.content_margin_bottom = 5
+	style.set_corner_radius_all(5)
+	style.content_margin_left = 10
+	style.content_margin_right = 10
+	style.content_margin_top = 8
+	style.content_margin_bottom = 8
 	return style
 
 
@@ -107,8 +108,9 @@ func _label(text: String, font_size: int = 16, color: Color = INK) -> Label:
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.add_theme_font_size_override("font_size", font_size)
 	label.add_theme_color_override("font_color", color)
-	if font_size >= 18:
-		label.add_theme_font_override("font", DisplayFont)
+	# UI text stays smooth at small native sizes; pixel filtering belongs to art.
+	# Use an actual semibold face for hierarchy instead of thick bitmap glyphs.
+	label.add_theme_font_override("font", DisplayFont if font_size >= 18 else BodyFont)
 	return label
 
 
@@ -170,13 +172,13 @@ func _build() -> void:
 	_column.add_theme_constant_override("separation", 5)
 	_root_margin.add_child(_column)
 	var header := HBoxContainer.new()
-	header.add_theme_constant_override("separation", 5)
+	header.add_theme_constant_override("separation", 8)
 	_column.add_child(header)
 	_back = _button("", "EditorBack", "arrow_back")
 	_back.tooltip_text = "가게로 돌아가기"
 	_back.pressed.connect(func(): _emit("close"))
 	header.add_child(_back)
-	var title := _label("메뉴 개발", 24, CREAM)
+	var title := _label("메뉴 개발", 22, CREAM)
 	title.name = "EditorTitle"
 	title.autowrap_mode = TextServer.AUTOWRAP_OFF
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -209,9 +211,10 @@ func _build() -> void:
 	footer_row.add_theme_constant_override("separation", 12)
 	footer.add_child(footer_row)
 	var cost_column := VBoxContainer.new()
+	cost_column.add_theme_constant_override("separation", 4)
 	cost_column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	cost_column.add_child(_label("현재 재료비", 14, MUTED))
-	_cost = _label("", 23)
+	_cost = _label("", 22)
 	_cost.name = "EditorTrialCost"
 	cost_column.add_child(_cost)
 	footer_row.add_child(cost_column)
@@ -226,7 +229,12 @@ func _build_stage() -> void:
 	_stage = PanelContainer.new()
 	_stage.name = "RecipeStage"
 	_stage.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_stage.add_theme_stylebox_override("panel", _style(CREAM, NAVY))
+	var stage_style := _style(CREAM, NAVY)
+	# This image-only surface needs its frame, not the text-card padding. Keep
+	# that space for the dish when a shorter window also shows four portions.
+	stage_style.content_margin_top = 2
+	stage_style.content_margin_bottom = 2
+	_stage.add_theme_stylebox_override("panel", stage_style)
 	_content.add_child(_stage)
 	_scene = Control.new()
 	_scene.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -261,12 +269,11 @@ func _build_stage() -> void:
 	_slot_surface.minimum_size_changed.connect(func(): _arrange_stage.call_deferred())
 	_scene.add_child(_slot_surface)
 	_slot_box = VBoxContainer.new()
-	_slot_box.add_theme_constant_override("separation", 2)
+	_slot_box.add_theme_constant_override("separation", 6)
 	_slot_surface.add_child(_slot_box)
-	_slot_title = _label("", 16, INK)
+	_slot_title = _label("", 15, INK)
 	_slot_title.add_theme_font_override("font", DisplayFont)
 	_slot_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_slot_title.add_theme_constant_override("shadow_offset_y", 1)
 	_slot_box.add_child(_slot_title)
 	_slots = GridContainer.new()
 	_slots.add_theme_constant_override("h_separation", 6)
@@ -282,7 +289,7 @@ func _build_picker() -> void:
 	panel.add_theme_stylebox_override("panel", _style(WHITE, NAVY))
 	_content.add_child(panel)
 	_picker = VBoxContainer.new()
-	_picker.add_theme_constant_override("separation", 4)
+	_picker.add_theme_constant_override("separation", 6)
 	panel.add_child(_picker)
 	var heading_row := HBoxContainer.new()
 	_picker.add_child(heading_row)
@@ -296,7 +303,7 @@ func _build_picker() -> void:
 	heading_row.add_child(_heading_hint)
 	_filters = HBoxContainer.new()
 	_filters.name = "ToppingCategories"
-	_filters.add_theme_constant_override("separation", 3)
+	_filters.add_theme_constant_override("separation", 4)
 	_picker.add_child(_filters)
 	for group in Categories.GROUPS:
 		var button := _button(group, "Category_" + str(Categories.GROUPS.find(group)))
@@ -316,7 +323,7 @@ func _build_picker() -> void:
 	_rows = VBoxContainer.new()
 	_rows.name = "IngredientRows"
 	_rows.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_rows.add_theme_constant_override("separation", 3)
+	_rows.add_theme_constant_override("separation", 4)
 	_scroll.add_child(_rows)
 	_work_box = VBoxContainer.new()
 	_work_box.visible = false
@@ -336,20 +343,28 @@ func _build_picker() -> void:
 
 func _summary_content(button: Button, title: String, icon_name: String) -> Label:
 	var margin := MarginContainer.new()
+	margin.name = "SummaryContent"
 	margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	# A Button does not apply StyleBox content margins to arbitrary children.
+	# Inset this full-rect overlay explicitly on every side, including its title.
 	for edge in ["left", "right"]:
-		margin.add_theme_constant_override("margin_" + edge, 5)
+		margin.add_theme_constant_override("margin_" + edge, 12)
+	for edge in ["top", "bottom"]:
+		margin.add_theme_constant_override("margin_" + edge, 10)
 	var column := VBoxContainer.new()
 	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	column.add_theme_constant_override("separation", 0)
+	column.add_theme_constant_override("separation", 4)
 	margin.add_child(column)
 	var title_row := HBoxContainer.new()
+	title_row.name = "SummaryHeadingRow"
 	title_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	title_row.add_theme_constant_override("separation", 6)
 	var symbol := _picture(Art.icon(icon_name), Vector2(22, 22))
 	symbol.self_modulate = INK
 	title_row.add_child(symbol)
-	var heading := _label(title, 19)
+	var heading := _label(title, 18)
+	heading.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	heading.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	title_row.add_child(heading)
 	var arrow := _picture(Art.icon("chevron_right"), Vector2(22, 22))
@@ -357,7 +372,9 @@ func _summary_content(button: Button, title: String, icon_name: String) -> Label
 	title_row.add_child(arrow)
 	column.add_child(title_row)
 	var value := _label("", 13)
+	value.name = "SummaryValue"
 	value.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	value.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	value.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	column.add_child(value)
 	button.add_child(margin)
@@ -490,12 +507,16 @@ func _ingredient_row(item: Dictionary, slot: String, count: int = 0) -> PanelCon
 	var unlocked: bool = state.ingredient_unlocked(id)
 	var panel := PanelContainer.new()
 	panel.name = "Ingredient_" + id
-	panel.custom_minimum_size.y = 68
+	panel.custom_minimum_size.y = 72
 	panel.mouse_filter = Control.MOUSE_FILTER_PASS
-	panel.add_theme_stylebox_override("panel", _style(WHITE if unlocked else Color("e8e1d4"), Color("d5c6ab")))
+	var row_style := _style(WHITE if unlocked else Color("e8e1d4"), Color("d5c6ab"))
+	row_style.set_border_width_all(1)
+	row_style.content_margin_left = 8
+	row_style.content_margin_right = 8
+	panel.add_theme_stylebox_override("panel", row_style)
 	var row := HBoxContainer.new()
 	row.mouse_filter = Control.MOUSE_FILTER_PASS
-	row.add_theme_constant_override("separation", 4)
+	row.add_theme_constant_override("separation", 8)
 	panel.add_child(row)
 	var texture: Texture2D = Art.food(id) if slot == "topping" else PixelArt.scaled_tex(PixelArt.icon_image(id), 2)
 	row.add_child(_picture(texture, Vector2(56, 56)))
@@ -503,6 +524,7 @@ func _ingredient_row(item: Dictionary, slot: String, count: int = 0) -> PanelCon
 	text_column.mouse_filter = Control.MOUSE_FILTER_PASS
 	text_column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	text_column.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	text_column.add_theme_constant_override("separation", 4)
 	row.add_child(text_column)
 	var item_name := _label(str(item.get("short_name", item["name"])) + (" ×%d" % count if count > 0 else ""), 17)
 	item_name.add_theme_font_override("font", DisplayFont)
@@ -834,13 +856,13 @@ func _layout() -> void:
 		return
 	var wide: bool = size.x >= 720
 	_content.columns = 2 if wide else 1
-	var horizontal: int = maxi(6, int((size.x - 1180.0) * 0.5))
+	var horizontal: int = maxi(8, int((size.x - 1180.0) * 0.5))
 	var insets: Vector4 = _device_insets()
 	for edge in ["left", "right"]:
 		_root_margin.add_theme_constant_override("margin_" + edge, horizontal + int(insets.x if edge == "left" else insets.z))
 	_root_margin.add_theme_constant_override("margin_top", 6 + int(insets.y))
 	_root_margin.add_theme_constant_override("margin_bottom", 8 + int(insets.w))
-	var stage_height: float = 300.0 if _mode == 1 else (360.0 if state == null or state.topping_slots() < 4 else 412.0)
+	var stage_height: float = 300.0 if _mode == 1 else (360.0 if state == null or state.topping_slots() < 4 else 408.0)
 	if not wide:
 		# Safe areas or a shorter window consume real space. Share that loss with
 		# the preview so the independently scrollable list retains usable height.
@@ -871,9 +893,9 @@ func _arrange_stage() -> void:
 		return # Container's first real resize will finish the layout.
 	var slot_height: float = maxf(_slot_surface.get_combined_minimum_size().y, 32.0 if _mode == 1 else (144.0 if state != null and state.topping_slots() == 4 else 86.0))
 	_summary.position = Vector2(6, 6)
-	_summary.size = Vector2(dimensions.x - 12, 68)
+	_summary.size = Vector2(dimensions.x - 12, 76)
 	var slot_width: float = minf(dimensions.x - 20, 320)
 	_slot_surface.position = Vector2((dimensions.x - slot_width) * 0.5, dimensions.y - slot_height - 4)
 	_slot_surface.size = Vector2(slot_width, slot_height)
-	_dish.position = Vector2(20, 76)
-	_dish.size = Vector2(dimensions.x - 40, maxf(80, dimensions.y - slot_height - 80))
+	_dish.position = Vector2(20, 84)
+	_dish.size = Vector2(dimensions.x - 40, maxf(80, dimensions.y - slot_height - 88))

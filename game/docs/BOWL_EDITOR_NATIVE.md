@@ -2,14 +2,18 @@
 
 ## Current verified checkpoint
 
-Finalv5 native OpenGL capture completes457/0/exit0/engine0. Actual packed367/0,
-shorter390x750185/0, builder34/0 and packaged-license3/0 also pass. All234runtime
-sources and exported pack15bd5586 match after the run; official engine signature0.
-[Current native originals, comparison and honest review scope](uiux-reset/native-v5/)
-and [root design QA](../../design-qa.md) record bounded acceptance. The final
+The human rejected v5's heavy bitmap UI type and border-crowded headings.
+The typography refinement uses original licensed Pretendard Regular/SemiBold,
+real four-sided summary insets and more card/list breathing room. Current native
+OpenGL capture completes490/0/exit0/engine0, packed shorter390x750202/0. All240
+runtime sources and exported pack4da0e678 match after the run; official engine
+signature0.13 current originals and3 composed comparisons were opened.
+[Current native originals, before/after and honest scope](uiux-reset/typography-v1/)
+and [root design QA](../../design-qa.md) record this bounded review. The final
 customer detail restores every selected customer's reason and price reaction,
 as well as numbers/version comparison; omission reproduced14/5 before14/0.
-Priorv2/v3 iterations and their failures are preserved, not called final success.
+Prior native-v2/v3/v5 evidence and refinement failures remain historical, not
+human acceptance. The font/padding change does not alter gameplay or save schema.
 
 The iPhone is excluded by the user's latest instruction. No current installation
 or human usability/fun acceptance is claimed; the earlier prepared0.14 app is
