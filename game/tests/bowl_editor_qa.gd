@@ -8,6 +8,7 @@ const DetailsEvaluation = preload("res://scripts/domain/recipe_evaluator.gd")
 
 func _initialize() -> void:
 	Input.emulate_touch_from_mouse = true
+	_check(FileAccess.get_file_as_string("res://assets/fonts/Pretendard-OFL.txt").contains("SIL OPEN FONT LICENSE Version 1.1"), "original UI font redistribution license ships in the actual pack")
 	var black := Image.create(16, 16, false, Image.FORMAT_RGBA8)
 	black.fill(Color.BLACK)
 	_check(not image_has_rendered_content(black), "nonblank guard rejects black output")
@@ -28,6 +29,14 @@ func _assert_current_stage(editor: Control, label: String) -> void:
 	var slots: Control = editor.get("_slot_surface") as Control
 	var base: Control = dish.get("_base") as Control
 	_check(summary.size.x >= scene.size.x * 0.85, label + ": summaries fill final scene width from first presentation")
+	# Check the actual laid-out content, not just a theme constant: a Button's
+	# full-rect child can otherwise ignore its border/content margins entirely.
+	for button in summary.get_children():
+		var heading: Control = button.find_child("SummaryHeadingRow", true, false)
+		var value: Control = button.find_child("SummaryValue", true, false)
+		var inset: Rect2 = button.get_global_rect().grow_individual(-12, -10, -12, -10)
+		_check(inset.encloses(heading.get_global_rect()), label + ": summary heading has real horizontal12/vertical10 breathing room")
+		_check(inset.encloses(value.get_global_rect()), label + ": summary value stays inside padded content")
 	_check(base.size.x >= 180 and base.size.y >= 120, label + ": actual base bowl has meaningful rendered dimensions")
 	_check(base.size.x > base.size.y * 1.2, label + ": landscape bowl silhouette never collapses into a square")
 	_check(scene.get_global_rect().encloses(slots.get_global_rect()), label + ": all portion controls fit the final scene after reflow")
