@@ -2,21 +2,21 @@
 
 ## Current verified checkpoint
 
-The human rejected the typography refinement's divergence from the selected mock.
-The current rebuild uses that same category-refined option3 as visual truth:
-filled stockpot/noodle callouts with connectors, shallow layered bowl, centered
-compact teal portion dock, four visible initial rows and framed gold primary CTA.
-Original generated textures and licensed Pretendard Regular/Bold are real native
-resources; data, actual controls and guarded handlers remain live.
+The selected option3 composition remains the editor's first screen. Current work
+adds compact ingredient details with a fixed apply action, explicit actual-slot
+replacement at capacity, and fixed broth/noodle sub-tabs with context/scroll
+restoration. Directed experiment links open their relevant ingredient/method tab.
+[Player rules](INGREDIENT_EDITOR_FLOW_V1.md), [fresh captures and comparisons](uiux-reset/ingredient-flow-v1/).
 
-Final native OpenGL run20261024T095711Z-34614 completes524/0/exit0/engine0;
-packed shorter390x750 layout219/0. All275 runtime files, exported/embedded pack
-200761113c54c98d96020192bf953d31424005dc8b660e6d5571a7cc471180c4 and
-post-run official-engine strict signature0 match.13 originals and4 full/focused
-comparisons were opened. [Current captures and exact comparison scope](uiux-reset/mock-fidelity-v1/)
-and [root design QA](../../design-qa.md) supersede prior visual pass claims.
-Typography/native-v5 galleries remain historical evidence. This is bounded
-internal review, not human aesthetic approval or whole-game acceptance.
+Final same-pack actual OpenGL flow567/0 and editor regression524/0, exit0 and
+engine errors0;48 current PNGs total. Same packed390x750 layout flow261/0 and
+editor219/0; live sheet resize and nonzero tab scroll restoration are included.
+All277 runtime files and exported/embedded pack
+2c0b06b227f8b7f667f3d572aa144c63e8b36ddcaf9e112fd2b2a76421e3c8f8 match,
+with post-run official-engine strict signature0.14 new-flow originals,8 regression
+originals and5 composed views were opened. Root [design QA](../../design-qa.md)
+records exact scope/limits. The old [selected-mock rebuild evidence](uiux-reset/mock-fidelity-v1/)
+remains historical; continuing work did not change its art/fonts/game rules.
 
 The iPhone is excluded by the user's latest instruction. No current installation
 or human usability/fun acceptance is claimed; the earlier prepared0.14 app is

@@ -2,13 +2,16 @@
 
 ## 최신 메뉴 개발 화면
 
-[현재 실제 게임 화면](docs/uiux-reset/mock-fidelity-v1/)
+[현재 실제 게임 화면](docs/uiux-reset/ingredient-flow-v1/)
 
 사용자가 고른 3번 시안을 기준으로 메뉴 개발 화면을 다시 구현했습니다.
 국물·면 그림과 연결선, 얕고 큰 그릇, 작은 청록 토핑 패널, 네 줄 재료 목록,
 장식 프레임과 금색 시식 버튼을 반영했습니다. 글자는 읽기 편한 실제 글꼴을 씁니다.
 
-![선택 시안과 실제 재구현 비교](docs/uiux-reset/mock-fidelity-v1/comparisons/portrait-full-source-current.png)
+![선택 시안과 실제 재구현 비교](docs/uiux-reset/ingredient-flow-v1/comparisons/portrait-initial-source-current.png)
+
+재료 상세의 고정 버튼에서 바로 추가·교체하고, 가득 차면 바꿀 칸을 고릅니다.
+국물·면은 항목별 탭으로 나누며 상세 복귀와 탭별 스크롤을 유지합니다.
 
 큰 그릇을 보면서 국물·면과 토핑을 고르는 네이티브 편집 화면입니다. 토핑은
 전체/고기·달걀/채소·과일/해산물로 분류하고 같은 재료도 랭크에 따른 각 칸에

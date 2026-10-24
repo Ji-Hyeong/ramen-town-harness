@@ -71,6 +71,7 @@ var _work_title: Label
 var _work_box: VBoxContainer
 var _result_customer: int = 0
 var _group_scroll: Dictionary = {}
+var _group_tab: Dictionary = {}
 
 
 func _ready() -> void:
@@ -156,6 +157,18 @@ func _picture(texture: Texture2D, minimum: Vector2) -> TextureRect:
 	picture.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	picture.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return picture
+
+
+func _ingredient_texture(id: String) -> Texture2D:
+	# Reuse the selected mock's filled symbols consistently in rows and details.
+	# Actual topping images stay ingredient-specific, including farmed materials.
+	if id.begins_with("topping_"):
+		return Art.food(id)
+	if id.begins_with("broth_"):
+		return MockArt.texture("pot")
+	if id.begins_with("noodle_"):
+		return MockArt.texture("noodles")
+	return PixelArt.scaled_tex(PixelArt.icon_image(id),3)
 
 
 func _emit(kind: String, data: Dictionary = {}) -> void:
@@ -503,7 +516,7 @@ func _render_slots(config: Dictionary, result: bool) -> void:
 	_clear(_slots)
 	var portions: Array = Catalog.toppings_of(config)
 	var capacity: int = state.topping_slots()
-	_slot_title.text = "토핑 교체" if _selected >= 0 else "토핑"
+	_slot_title.text = "토핑 교체" if _selected >= 0 and _selected < portions.size() else "토핑"
 	_slot_count.text = "%d / %d칸" % [portions.size(),capacity]
 	_slot_surface.tooltip_text = "랭크%d · 칸을 누르면 교체하고 빨간 버튼으로 한 분량씩 빼요." % state.rank()
 	_slots.columns = 3 if capacity == 3 else 2
@@ -597,6 +610,8 @@ func _render_content() -> void:
 	_work_box.visible = working
 	_heading.text = "한 그릇 완성" if result else ("조리 중" if working else "토핑 추가")
 	_heading_hint.visible = not result and not working
+	var portion_count: int = Catalog.toppings_of(state.draft_config).size()
+	_heading_hint.text = ("선택한 칸에 교체" if _selected < portion_count else "선택한 칸에 추가") if _selected >= 0 else ("칸을 눌러 교체" if portion_count >= state.topping_slots() else "같은 재료도 가능")
 	for group in category_buttons:
 		(category_buttons[group] as Button).set_pressed_no_signal(category == group)
 		(category_buttons[group] as Button).icon = Art.icon("check") if category == group else null
@@ -632,7 +647,7 @@ func _ingredient_row(item: Dictionary, slot: String, count: int = 0) -> PanelCon
 	row.mouse_filter = Control.MOUSE_FILTER_PASS
 	row.add_theme_constant_override("separation", 6)
 	panel.add_child(row)
-	var texture: Texture2D = Art.food(id) if slot == "topping" else PixelArt.scaled_tex(PixelArt.icon_image(id), 2)
+	var texture: Texture2D = _ingredient_texture(id)
 	var tile := PanelContainer.new()
 	var tile_style := _style(Color("eee0c1"),Color("eee0c1"))
 	tile_style.set_border_width_all(0)
@@ -672,18 +687,24 @@ func _ingredient_row(item: Dictionary, slot: String, count: int = 0) -> PanelCon
 	if slot == "topping":
 		add.disabled = add.disabled or (_selected < 0 and Catalog.toppings_of(state.draft_config).size() >= state.topping_slots())
 	add.pressed.connect(func():
-		var before: String = JSON.stringify(state.draft_config)
-		_emit("ingredient", {"slot": slot, "id": id, "point": add.get_global_rect().get_center()})
-		_refresh_modal_selections()
-		# A refused transaction may still produce a button press; only a real
-		# recipe change receives the food-addition celebration.
-		if JSON.stringify(state.draft_config) != before:
-			_dish.play_addition())
+		_choose_ingredient(slot, id, add.get_global_rect().get_center()))
 	row.add_child(add)
 	if slot == "topping":
 		add_buttons[id] = add
 		detail_buttons[id] = info
 	return panel
+
+
+func _choose_ingredient(slot: String, id: String, point: Vector2) -> bool:
+	# Row and detail actions share the same guarded controller. Only accepted
+	# recipe changes animate the food; browsing and rejected actions never do.
+	var before: String = JSON.stringify(state.draft_config)
+	_emit("ingredient", {"slot": slot, "id": id, "point": point})
+	_refresh_modal_selections()
+	var changed: bool = JSON.stringify(state.draft_config) != before
+	if changed:
+		_dish.play_addition()
+	return changed
 
 
 func _refresh_modal_selections() -> void:
@@ -709,6 +730,11 @@ func _refresh_modal_selections() -> void:
 				var selected: bool = ProcessRules.selected(state.draft_config.get("process", {}), slot) == id
 				button.set_pressed_no_signal(selected)
 				button.icon = Art.icon("check") if selected else null
+	var current: Label = _modal.find_child("GroupCurrentChoice",true,false) as Label
+	if current != null:
+		var tab: String = str(_modal.get_meta("tab"))
+		var group: String = str(_modal.get_meta("group"))
+		current.text = "현재 · " + (str(ProcessRules.method(group,ProcessRules.selected(state.draft_config.get("process",{}),group))["name"]) if tab == "method" else str(Catalog.find(str(state.draft_config[tab]))["name"]))
 
 
 func _modal_body(title: String) -> VBoxContainer:
@@ -722,17 +748,14 @@ func _modal_body(title: String) -> VBoxContainer:
 	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_modal.add_child(dim)
 	var margin := MarginContainer.new()
+	margin.name = "DetailsMargin"
 	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	for edge in ["left", "right"]:
-		margin.add_theme_constant_override("margin_" + edge, 14)
-	var safe: Vector4 = _device_insets()
-	margin.add_theme_constant_override("margin_top", maxi(72, int(safe.y) + 8))
-	margin.add_theme_constant_override("margin_bottom", maxi(32, int(safe.w) + 8))
 	_modal.add_child(margin)
 	var panel := PanelContainer.new()
-	panel.add_theme_stylebox_override("panel", _style(CREAM, NAVY))
+	panel.add_theme_stylebox_override("panel", MockArt.style("panel",Vector2(14,12)))
 	margin.add_child(panel)
 	var column := VBoxContainer.new()
+	column.name = "DetailsColumn"
 	column.add_theme_constant_override("separation", 8)
 	panel.add_child(column)
 	var header := HBoxContainer.new()
@@ -755,6 +778,7 @@ func _modal_body(title: String) -> VBoxContainer:
 	body.add_theme_constant_override("separation", 10)
 	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.add_child(body)
+	_arrange_modal()
 	return body
 
 
@@ -765,50 +789,228 @@ func _close_modal() -> void:
 		_modal = null
 
 
+func _arrange_modal() -> void:
+	if _modal == null:
+		return
+	var margin: MarginContainer = _modal.find_child("DetailsMargin",true,false) as MarginContainer
+	if margin == null:
+		return # The sheet is still being constructed during its initial resize.
+	var safe: Vector4 = _device_insets()
+	# Recompute width and safe-area margins on a live resize, not just when the
+	# sheet opens. Desktop margins must not survive into a narrow phone window.
+	var horizontal: int = maxi(14,int((size.x-680)*0.5))
+	margin.add_theme_constant_override("margin_left",horizontal+int(safe.x))
+	margin.add_theme_constant_override("margin_right",horizontal+int(safe.z))
+	if _modal.has_meta("compact_height"):
+		var bottom: float = maxf(32,safe.w+8)
+		var available: float = size.y-maxf(72,safe.y+8)-bottom
+		margin.anchor_top = 1
+		margin.anchor_bottom = 1
+		margin.offset_top = -bottom-minf(float(_modal.get_meta("compact_height")),available)
+		margin.offset_bottom = -bottom
+		margin.add_theme_constant_override("margin_top",0)
+		margin.add_theme_constant_override("margin_bottom",0)
+	else:
+		margin.anchor_top = 0
+		margin.anchor_bottom = 1
+		margin.offset_top = 0
+		margin.offset_bottom = 0
+		margin.add_theme_constant_override("margin_top",maxi(72,int(safe.y)+8))
+		margin.add_theme_constant_override("margin_bottom",maxi(32,int(safe.w)+8))
+
+
+func _compact_detail(height: float) -> void:
+	# Short tasks retain the actual bowl context, with fixed back/action and a
+	# scrollable body. Store the intent so a later resize can safely reflow it.
+	_modal.set_meta("compact_height",height)
+	_arrange_modal()
+
+
+func _modal_footer(hint: String, title: String, action: Callable, disabled: bool = false) -> Button:
+	var column: VBoxContainer = _modal.find_child("DetailsColumn",true,false) as VBoxContainer
+	var footer := VBoxContainer.new()
+	footer.name = "DetailsFooter"
+	footer.add_theme_constant_override("separation",6)
+	column.add_child(footer)
+	var message := _label(hint,14,MUTED)
+	message.name = "DetailsActionHint"
+	footer.add_child(message)
+	var button := _button(title,"EditorDetailApply","",GOLD)
+	button.custom_minimum_size.y = 52
+	button.add_theme_font_size_override("font_size",20)
+	button.disabled = disabled
+	button.pressed.connect(action)
+	footer.add_child(button)
+	return button
+
+
+func _save_group_scroll() -> void:
+	# Only the selector owns a tab scroll position. A nested ingredient detail
+	# must not overwrite it with its own unrelated scroll when going back.
+	if _modal == null or str(_modal.get_meta("view_kind","")) != "group":
+		return
+	var key: String = str(_modal.get_meta("group"))+":"+str(_modal.get_meta("tab"))
+	var scroll: ScrollContainer = _modal.find_child("DetailsScroll",true,false) as ScrollContainer
+	_group_scroll[key] = scroll.scroll_vertical
+
+
+func _exit_group() -> void:
+	_save_group_scroll()
+	_close_modal()
+
+
 func _show_item(item: Dictionary) -> void:
-	var group: String = ""
-	if not str(item["id"]).begins_with("topping_"):
-		group = "noodle" if str(item["id"]).begins_with("noodle_") or str(item["id"]).begins_with("cook_") else "broth"
-		if _modal != null:
-			var previous: ScrollContainer = _modal.find_child("DetailsScroll", true, false) as ScrollContainer
-			_group_scroll[group] = previous.scroll_vertical
+	_save_group_scroll()
+	var id: String = str(item["id"])
+	var slot: String = id.get_slice("_",0)
+	var group: String = "" if slot == "topping" else ("noodle" if slot in ["noodle","cook"] else "broth")
 	var body := _modal_body(str(item["name"]))
+	_modal.set_meta("view_kind","ingredient")
 	if group != "":
-		var back: Button = _modal.find_child("EditorDetailsBack", true, false) as Button
+		var back: Button = _modal.find_child("EditorDetailsBack",true,false) as Button
 		back.pressed.disconnect(_close_modal)
 		back.pressed.connect(_show_group.bind(group))
-	var id: String = str(item["id"])
-	var texture: Texture2D = Art.food(id) if id.begins_with("topping_") else PixelArt.scaled_tex(PixelArt.icon_image(id), 3)
-	body.add_child(_picture(texture, Vector2(120, 100)))
-	body.add_child(_label(str(item["desc"]), 18))
-	body.add_child(_label("한 분량 · " + won(int(item["cost"])) + "\n그릇당 준비시간 +%d초" % int(item["seconds"]), 17))
-	body.add_child(_label(Catalog.axes_text(item), 16, TEAL))
+	var hero := HBoxContainer.new()
+	hero.add_theme_constant_override("separation",12)
+	body.add_child(hero)
+	var texture: Texture2D = _ingredient_texture(id)
+	hero.add_child(_picture(texture,Vector2(112,112)))
+	var stats := VBoxContainer.new()
+	stats.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	stats.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	stats.add_theme_constant_override("separation",6)
+	hero.add_child(stats)
+	stats.add_child(_label(("설정" if slot == "cook" else "1분량")+" · "+str(Catalog.SLOT_NAMES[slot]),14,MUTED))
+	stats.add_child(_label(won(int(item["cost"])),24))
+	stats.add_child(_label("준비 +%d초" % int(item["seconds"]),16))
+	body.add_child(_label(str(item["desc"]),18))
+	body.add_child(_label(Catalog.axes_text(item),16,TEAL))
 	if Catalog.is_farmed(id):
-		body.add_child(_label("시제품용 샘플 %d개 · 완성할 때 분량만큼 사용해요." % state.sample_stock(id), 16))
-	if not state.ingredient_unlocked(id):
-		for locked in state.locked_items("topping" if id.begins_with("topping_") else str(id.split("_")[0])):
+		body.add_child(_label("시제품용 샘플 %d개 · 완성할 때 분량만큼 사용해요." % state.sample_stock(id),16))
+	var unlocked: bool = state.ingredient_unlocked(id)
+	if not unlocked:
+		for locked in state.locked_items(slot):
 			if str(locked["id"]) == id:
-				body.add_child(_label(str(locked["lock"]["hint"]), 16, RED))
+				body.add_child(_label(str(locked["lock"]["hint"]),16,RED))
+	var full: bool = Catalog.toppings_of(state.draft_config).size() >= state.topping_slots()
+	var selected: bool = slot != "topping" and str(state.draft_config[slot]) == id
+	var title: String = "선택 중" if selected else ("이 익힘으로 선택" if slot == "cook" else "이 재료 선택")
+	var hint: String = "시식이 완료될 때 재료비가 나가요."
+	if slot == "topping":
+		title = ("선택한 칸에 교체" if _selected < Catalog.toppings_of(state.draft_config).size() else "선택한 칸에 추가") if _selected >= 0 else ("교체할 칸 고르기" if full else "이 토핑 추가")
+		if full and _selected < 0:
+			hint = "가득 찼어요. 어떤 토핑을 바꿀지 골라요."
+	if not unlocked:
+		title = "아직 발견하지 못했어요"
+		hint = "발견 조건을 먼저 확인해 주세요."
+	var apply := _modal_footer(hint,title,func():
+		if slot == "topping" and full and _selected < 0:
+			_show_replacement(item)
+		else:
+			_apply_detail(item,group),not unlocked or selected or bool(_info["busy"]))
+	apply.tooltip_text = str(item["name"])+" 선택 · 시식 전에는 결제하지 않아요."
+	_compact_detail(560 if Catalog.is_farmed(id) else 440)
+
+
+func _apply_detail(item: Dictionary, group: String, replacement: int = -1) -> void:
+	var id: String = str(item["id"])
+	var slot: String = id.get_slice("_",0)
+	if replacement >= 0 and _selected != replacement:
+		_emit("slot",{"index":replacement})
+	if replacement >= 0 and _selected != replacement:
+		push_error("교체할 토핑 칸을 선택하지 못했어요.")
+		return
+	var apply: Control = _modal.find_child("EditorDetailApply",true,false) as Control
+	var point: Vector2 = apply.get_global_rect().get_center() if apply != null else _modal.get_global_rect().get_center()
+	var was_replacing: bool = slot == "topping" and _selected >= 0
+	var changed: bool = _choose_ingredient(slot,id,point)
+	if _modal == null:
+		return # The controller closed the sheet for a work transition and displays its notice.
+	# An accepted same-ingredient replacement is a no-op. The controller clears
+	# its slot only after success; close normally without a food-change animation.
+	var accepted: bool = changed or (was_replacing and _selected < 0)
+	if accepted:
+		if group == "":
+			_close_modal()
+		else:
+			_show_group(group)
+	else:
+		var hint: Label = _modal.find_child("DetailsActionHint",true,false) as Label
+		hint.text = str(_info["warning"]) if str(_info["warning"]) != "" else str(_info["notice"])
+		hint.add_theme_color_override("font_color",RED)
+
+
+func _show_replacement(item: Dictionary) -> void:
+	var body := _modal_body("교체할 칸 고르기")
+	_modal.set_meta("view_kind","replacement")
+	var back: Button = _modal.find_child("EditorDetailsBack",true,false) as Button
+	back.pressed.disconnect(_close_modal)
+	back.pressed.connect(_show_item.bind(item))
+	body.add_child(_label("추가할 토핑 · "+str(item["name"]),18))
+	body.add_child(_label("고르기 전에는 구성이 바뀌지 않아요.",14,MUTED))
+	var portions: Array = Catalog.toppings_of(state.draft_config)
+	for index in portions.size():
+		var old: Dictionary = Catalog.find(str(portions[index]))
+		var choose := _button("%d번 칸 · %s" % [index+1,str(old["name"])],"EditorReplace_"+str(index))
+		choose.custom_minimum_size.y = 72
+		choose.icon = Art.food(str(portions[index]))
+		choose.expand_icon = true
+		choose.add_theme_constant_override("icon_max_width",56)
+		choose.add_theme_color_override("icon_normal_color",Color.WHITE)
+		choose.disabled = bool(_info["busy"])
+		choose.pressed.connect(_apply_detail.bind(item,"",index))
+		body.add_child(choose)
+	_compact_detail(186+portions.size()*76)
+
+
+func _switch_group_tab(group: String, tab: String) -> void:
+	_save_group_scroll()
+	_group_tab[group] = tab
+	_show_group(group)
 
 
 func _show_group(group: String) -> void:
+	var tab: String = str(_group_tab.get(group,group))
 	var body := _modal_body("국물 만들기" if group == "broth" else "면 고르기")
-	var slots: Array[String] = []
-	slots.assign(["broth", "tare", "oil"] if group == "broth" else ["noodle", "cook"])
-	for slot in slots:
-		body.add_child(_label(str(Catalog.SLOT_NAMES[slot]), 20))
-		for item in Catalog.all_items(slot):
-			body.add_child(_ingredient_row(item, slot))
-	body.add_child(_label("육수 공법" if group == "broth" else "면 반죽", 20))
-	for id in ProcessRules.ids(group):
-		var method: Dictionary = ProcessRules.method(group, id)
-		var button := _button(str(method["name"]) + " · 랭크%d" % int(method["rank"]), "EditorProcess_" + group + "_" + id)
-		button.disabled = bool(_info["busy"]) or state.rank() < int(method["rank"])
+	_modal.set_meta("view_kind","group")
+	_modal.set_meta("group",group)
+	_modal.set_meta("tab",tab)
+	var back: Button = _modal.find_child("EditorDetailsBack",true,false) as Button
+	back.pressed.disconnect(_close_modal)
+	back.pressed.connect(_exit_group)
+	var tabs := HBoxContainer.new()
+	tabs.name = "IngredientGroupTabs"
+	tabs.add_theme_constant_override("separation",4)
+	var column: VBoxContainer = _modal.find_child("DetailsColumn",true,false) as VBoxContainer
+	column.add_child(tabs)
+	column.move_child(tabs,1)
+	var definitions: Array = [["broth","육수"],["tare","타레"],["oil","향미유"],["method","공법"]] if group == "broth" else [["noodle","면"],["cook","익힘"],["method","반죽"]]
+	for definition in definitions:
+		var button := _button(str(definition[1]),"EditorGroupTab_"+str(definition[0]))
+		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		button.custom_minimum_size = Vector2(44,44)
 		button.toggle_mode = true
-		button.pressed.connect(func(): _emit("process", {"slot": group, "id": id}); _refresh_modal_selections())
-		body.add_child(button)
+		button.set_pressed_no_signal(tab == str(definition[0]))
+		button.pressed.connect(_switch_group_tab.bind(group,str(definition[0])))
+		tabs.add_child(button)
+	var current := _label("",15,TEAL)
+	current.name = "GroupCurrentChoice"
+	body.add_child(current)
+	if tab == "method":
+		body.add_child(_label("시식할 때 반영되는 공법이에요.",14,MUTED))
+		for id in ProcessRules.ids(group):
+			var method: Dictionary = ProcessRules.method(group,id)
+			var button := _button(str(method["name"])+" · 랭크%d" % int(method["rank"]),"EditorProcess_"+group+"_"+id)
+			button.disabled = bool(_info["busy"]) or state.rank() < int(method["rank"])
+			button.toggle_mode = true
+			button.pressed.connect(func(): _emit("process",{"slot":group,"id":id}); _refresh_modal_selections())
+			body.add_child(button)
+	else:
+		for item in Catalog.all_items(tab):
+			body.add_child(_ingredient_row(item,tab))
 	_refresh_modal_selections()
-	(body.get_parent() as ScrollContainer).set_deferred("scroll_vertical", int(_group_scroll.get(group, 0)))
+	_modal_footer("선택은 바로 반영돼요. 시식 전까지 바꿀 수 있어요.","그릇으로 돌아가기",_exit_group)
+	(body.get_parent() as ScrollContainer).set_deferred("scroll_vertical",int(_group_scroll.get(group+":"+tab,0)))
 
 
 func _show_menu() -> void:
@@ -970,7 +1172,11 @@ func _show_clues() -> void:
 			_emit("route", {"index": 0})
 			var slot: String = str(clue["slot"])
 			if slot != "topping":
-				_show_group("noodle" if slot in ["noodle", "cook"] else "broth"))
+				var group: String = "noodle" if slot in ["noodle", "cook"] else "broth"
+				# A directed experiment must open its actual category, even if the
+				# player last visited a different tab. Method clues share slot names.
+				var method_changed: bool = slot in ProcessRules.SLOTS and ProcessRules.selected(record["config"].get("process",{}),slot) != ProcessRules.selected(clue["config"].get("process",{}),slot)
+				_switch_group_tab(group,"method" if method_changed else slot))
 		body.add_child(go)
 
 
@@ -999,6 +1205,7 @@ func _layout() -> void:
 	_stage.custom_minimum_size = Vector2(0, stage_height)
 	_stage.size_flags_vertical = Control.SIZE_EXPAND_FILL if wide else Control.SIZE_FILL
 	_arrange_stage.call_deferred()
+	_arrange_modal()
 
 
 func _device_insets() -> Vector4:
