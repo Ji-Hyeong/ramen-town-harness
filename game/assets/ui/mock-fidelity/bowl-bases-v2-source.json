@@ -1,0 +1,71 @@
+{
+  "asset": "bowl-bases-v2.png",
+  "tool": "built-in image_gen",
+  "intent": "One targeted edit ofv1: reduce lower ceramic body depth to match selected mock silhouette.",
+  "edit_target": "game/assets/ui/mock-fidelity/bowl-bases.png",
+  "reference": "game/docs/uiux-reset/refinements/concept-03-categories-v1.png",
+  "original_generated_file": "/Users/ji/.codex/generated_images/01a16d32-98e7-76d1-a5ca-001f7185dd5c/exec-fe7efb1f-134d-4dd5-8591-254cdb4f63a5.png",
+  "sha256": "851454d50680b81da713b2bcbd51c9192f6f4a93173037abef3e4efee1942774",
+  "size": [
+    2172,
+    724
+  ],
+  "mode": "RGBA",
+  "alpha_extrema": [
+    0,
+    255
+  ],
+  "modifications": "none; original PNG bytes copied unchanged; v1 retained",
+  "equal_third_cells": [
+    [
+      0,
+      0,
+      724,
+      724
+    ],
+    [
+      724,
+      0,
+      724,
+      724
+    ],
+    [
+      1448,
+      0,
+      724,
+      724
+    ]
+  ],
+  "visible_alpha_threshold": 8,
+  "atlas_regions_xywh": {
+    "fine": [
+      42,
+      146,
+      676,
+      408
+    ],
+    "curly": [
+      748,
+      146,
+      677,
+      408
+    ],
+    "thick": [
+      1453,
+      146,
+      678,
+      408
+    ]
+  },
+  "visible_width_height_ratios": {
+    "fine": 1.65686,
+    "curly": 1.65931,
+    "thick": 1.66176
+  },
+  "cell_boundary_check": "All visible alpha>=8 regions are fully within their equal-third cells.",
+  "caveats": [
+    "Alpha1-7 generator noise extends beyond visible bowls; use measured alpha>=8 Atlas regions without editing the PNG.",
+    "New geometry preserves existing noodlevessel style and order, but full game rendering/compositing is for the parent to verify."
+  ],
+  "prompt": "Use case: precise-object-edit. TARGETED GEOMETRY CORRECTION ONLY.\nImage1 is the existing transparent THREE-bowl sprite strip to edit. Image2 is the authoritative selected UI reference, particularly its noticeably shallow bowl silhouette. Preserve Image1's three red/white vessels, exact coarse pixel-art palette and technique, amber soup, identical alignment and scale, and left fine-straight / middle curly / right thick noodle order. Keep absolutely NO toppings, meat, egg, garnish, steam, shadow, text, interface, marker or backdrop. Preserve the actual transparent background.\nChange ONE thing in all three sprites consistently: make the bowls visibly SHALLOWER by reducing the depth of the lower red ceramic body and foot, while retaining the broad soup ellipse, rim width and matching perspective from the selected mock. Required visible silhouette WIDTH divided by full HEIGHT from top rim to bottom foot is 1.65 to 1.70, target1.67. This means full visible bowl height is only60% of its width, instead of the previous ~71%. Do not simply squish the entire picture or change the noodles to force it; redraw the lower ceramic body to be shallower as in Image2. Keep the three vessels identical in contour, viewpoint and size, noodle geometry being the sole variation. No deep cereal-bowl profile.\nOutput one wide PNG sprite strip, ideally3.6:1 canvas. Exactly three full bowls in one horizontal row, each completely inside its equal one-third cell, transparent gaps between bowls, no clipping. Each visible bowl should occupy around82% of its cell width, and its visible height around49% of that cell width. Maintain clean bold square pixel clusters and restrained highlights, not photoreal shine. Real alpha transparency outside each bowl; avoid faint stray colored or alpha specks in the empty transparent areas."
+}

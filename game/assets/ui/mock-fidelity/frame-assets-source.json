@@ -1,0 +1,59 @@
+{
+  "generator": "Built-in image_gen imagegen tool",
+  "reference": "game/docs/uiux-reset/refinements/concept-03-categories-v1.png",
+  "creation_date": "2026-10-24",
+  "edits": "None. Generated original PNG bytes copied into project; no image postprocessing or source edits.",
+  "files": [
+    {
+      "path": "gold-cta-v1.png",
+      "size": [
+        1933,
+        814
+      ],
+      "sha256": "b2a7c2c2488b46a0e66f87ba42bf16205fd66d7a782ec2ac3fa9f5177a348b61",
+      "alpha_bbox_threshold8": [
+        41,
+        165,
+        1891,
+        619
+      ],
+      "intended_native_size": [
+        190,
+        58
+      ],
+      "recommended_native_corner_margin": [
+        14,
+        14,
+        14,
+        14
+      ],
+      "prompt": "Asset type: one reusable native pixel-art game UI button, not a mockup. Input reference image is style/composition reference only. Closely reproduce the blank GOLD CTA button at the bottom of the provided ramen editor reference: dark chocolate brown stepped pixel silhouette, 2-3 layered amber/gold beveled border, bright pale yellow glint strip at upper left/top, warm golden-orange fill with broad clean calm center. Remove every word, letter, icon, sparkle floating outside, utensil, coin and other object. One single wide button only, full front view, no perspective. Shape aspect ratio about 3.25:1 for eventual native 190x58 pixels. Deliberate crisp chunky pixel steps and pixel highlights, matching the reference's Japanese simulation-game aesthetic. This is a nine-slice UI texture: corners and border thickness uniform, uninterrupted straight horizontal and vertical center-edge regions, very broad blank gold fill in the middle; no curves crossing center slicing seams. Fill most of canvas with the wide button but leave a small transparent margin around all edges. True transparent RGBA outside the stepped outline, opaque warm gold interior. No checkerboard drawn into pixels, no gray/white backdrop, no text, no shadow cast on a floor. Preserve premium crisp pixel depth rather than flat vector or smooth generic rounded UI."
+    },
+    {
+      "path": "navy-panel-v1.png",
+      "size": [
+        1328,
+        1184
+      ],
+      "sha256": "ccc9def2638fd3f54378b4a636dfcbbfc32e2180e11a3faba50c004d8b5cdd8a",
+      "alpha_bbox_threshold8": [
+        30,
+        46,
+        1299,
+        1138
+      ],
+      "intended_native_size": [
+        382,
+        340
+      ],
+      "recommended_native_corner_margin": [
+        12,
+        12,
+        12,
+        12
+      ],
+      "prompt": "Asset type: one reusable native pixel-art game UI content-panel texture, not a mockup. Input image is a style reference. Closely recreate the large NAVY BLUE BORDER around the cream '토핑 추가' ingredient panel in the lower half of the reference: layered dark midnight navy outer pixel frame, indigo/blue mid-tone inner stepped bevel, small pale cream corner chips and short corner highlights. Warm off-white cream paper interior, extremely subtle barely visible parchment shading. One single upright nearly square panel, aspect 1.12:1 (eventual native 382x340 pixels). NO text, lettering, icons, food, cards, buttons, separators, bolts, logos or content anywhere. Broad perfectly calm blank cream interior for future live UI. Accurate crisp logical-pixel steps with square bevel corners, matching the reference, not generic rounded UI. Make a nine-slice-friendly texture with about 10 logical pixels of border and corner decoration, straight regular middle edges on all four sides. Artwork should occupy almost the entire canvas, small transparent margin outside the stepped contour, actual transparent RGBA outside only; interior is opaque cream. Do not create a gray or black or checkerboard backdrop, no perspective, no floor shadow. Reference pixel frame style and navy/cream palette are the visual truth."
+    }
+  ],
+  "integration_note": "AtlasTexture display-region clipping may omit transparent margin without editing original bytes. Source images are high resolution: source-pixel margins are not native logical-pixel margins. Configure standard import size_limit/native texture scale before applying final nine-slice margins. Pixel palette/frame artwork and opaque center are preserved."
+}

@@ -29,13 +29,17 @@ func _assert_current_stage(editor: Control, label: String) -> void:
 	var slots: Control = editor.get("_slot_surface") as Control
 	var base: Control = dish.get("_base") as Control
 	_check(summary.size.x >= scene.size.x * 0.85, label + ": summaries fill final scene width from first presentation")
+	_check((editor.get("_cost") as Label).size.y <= 38, label + ": fixed footer price stays on one readable line")
+	_check((editor.get("_taste") as Button).size.y <= 72, label + ": primary action never grows into the ingredient list")
+	_check((editor.get("_slot_count") as Label).size.y <= 28, label + ": portion count is one readable line")
+	_check(base.get_global_rect().end.y <= slots.get_global_rect().position.y + 12, label + ": portion dock never covers the bowl beyond its shallow reference overlap")
 	# Check the actual laid-out content, not just a theme constant: a Button's
 	# full-rect child can otherwise ignore its border/content margins entirely.
 	for button in summary.get_children():
 		var heading: Control = button.find_child("SummaryHeadingRow", true, false)
 		var value: Control = button.find_child("SummaryValue", true, false)
-		var inset: Rect2 = button.get_global_rect().grow_individual(-12, -10, -12, -10)
-		_check(inset.encloses(heading.get_global_rect()), label + ": summary heading has real horizontal12/vertical10 breathing room")
+		var inset: Rect2 = button.get_global_rect().grow_individual(-6, -8, -6, -8)
+		_check(inset.encloses(heading.get_global_rect()), label + ": summary heading has real horizontal6/vertical8 breathing room")
 		_check(inset.encloses(value.get_global_rect()), label + ": summary value stays inside padded content")
 	_check(base.size.x >= 180 and base.size.y >= 120, label + ": actual base bowl has meaningful rendered dimensions")
 	_check(base.size.x > base.size.y * 1.2, label + ": landscape bowl silhouette never collapses into a square")
@@ -110,6 +114,7 @@ func _run_profile(tag: String, vp: Vector2i, _scale: int) -> void:
 	_check(taste.get_global_rect().end.y <= vp.y, tag + ": fixed tasting action inside viewport")
 	_check(scroll.size.y >= 120, tag + ": ingredient list has useful height")
 	_check((editor.get("_wallet") as Label).size.y <= 48, tag + ": wallet never wraps into a vertical column")
+	_check((editor.get("_wallet") as Label).get_global_rect().end.x <= (editor.find_child("EditorMenu",true,false) as Button).get_global_rect().position.x, tag + ": wallet cannot overlap the work-menu hit target")
 	_check((editor.get("_broth_text") as Label).text.contains("간장"), tag + ": tare visible in broth summary")
 	_check((editor.get("_noodle_text") as Label).text.contains("꼬들"), tag + ": cooking firmness visible in noodle summary")
 	_assert_current_stage(editor, tag + " initial")

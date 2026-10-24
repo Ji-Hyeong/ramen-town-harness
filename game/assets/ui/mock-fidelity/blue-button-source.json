@@ -1,0 +1,30 @@
+{
+  "generator": "Built-in image_gen imagegen tool",
+  "reference": "game/docs/uiux-reset/refinements/concept-03-categories-v1.png",
+  "creation_date": "2026-10-24",
+  "file": "blue-button-v1.png",
+  "size": [
+    1712,
+    919
+  ],
+  "sha256": "fbe51971d93205b1214d04c45499a7b91d6f077f26725c13224aa2966ed50dcb",
+  "alpha_bbox_threshold8": [
+    66,
+    180,
+    1646,
+    739
+  ],
+  "intended_native_size": [
+    82,
+    44
+  ],
+  "recommended_native_corner_margin": [
+    12,
+    12,
+    12,
+    12
+  ],
+  "edits": "None. Original generated PNG bytes/alpha retained; display-region cropping may be performed by AtlasTexture without editing source.",
+  "integration_note": "High-resolution source. Use standard Godot texture import size_limit or appropriate native texture scale before final nine-slice margins. Its visible rectangle can be reshaped with nine-slice, not whole-image stretch.",
+  "prompt": "Asset type: one blank reusable native pixel-art game header/back button. The supplied reference image is the exact style reference. Recreate the BLUE button at the TOP LEFT of that reference, which contains the arrow and Korean 가게 in the reference, but remove every word, letter and icon. Single front-facing short wide rectangular button, aspect ratio about 1.86:1 for intended native82x44 pixels. Match the reference closely: dark navy stepped pixel outer outline, clipped/stepped square corners, layered medium steel-blue bevel rim, thin pale cream/icy-blue highlight line along the upper and left inner edge, calm deeper blue broad blank center, darker blue/brown underside edge. Crisp chunky logical-pixel geometry, not generic smooth rounded vector UI and not a pill. A nine-slice-safe texture: uniform consistent border thickness, stable corner details, broad uninterrupted straight center edges with no ornament crossing slicing seams. Fill most of canvas leaving a small transparent outer margin. True transparent RGBA outside the stepped silhouette only; opaque blue center. No text, no arrow, no icons, no coin, no background scene, no white or gray or checkerboard backdrop, no perspective or floor shadow. Source palette and beveled pixel depth are the visual truth."
+}

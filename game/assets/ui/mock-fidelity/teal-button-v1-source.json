@@ -1,0 +1,40 @@
+{
+  "asset": "teal-button-v1.png",
+  "tool": "built-in image_gen",
+  "reference": "game/docs/uiux-reset/refinements/concept-03-categories-v1.png",
+  "original_generated_file": "/Users/ji/.codex/generated_images/01a16d32-98e7-76d1-a5ca-001f7185dd5c/exec-ad457621-7790-46ce-9e2c-f1a9a0fc2273.png",
+  "sha256": "65fd31a8323f80216c9131909d49367ee3232d749b8c8c7d321a8ec7bd4e3318",
+  "size": [
+    1227,
+    1281
+  ],
+  "alpha_extrema": [
+    0,
+    255
+  ],
+  "modifications": "none; original PNG copied byte-for-byte",
+  "full_alpha_bbox": [
+    0,
+    0,
+    1177,
+    1255
+  ],
+  "visible_alpha_threshold": 8,
+  "visible_atlas_region_xywh": [
+    209,
+    244,
+    809,
+    795
+  ],
+  "edge_detail_band_source_pixels": 116,
+  "intended_native_size": [
+    46,
+    48
+  ],
+  "nine_slice_note": "Regular blank edges allow slicing. Source margins are approx116px (~6px at native fixed-button scale); do not mistake source margins for native UI pixels. Fixed-size button may use the complete visible Atlas region stretched to46x48.",
+  "caveats": [
+    "Alpha1-7 generator noise extends outside the visible contour; recommended Atlas crop uses alpha>=8.",
+    "No text/plus/check is baked in. Keep actual interactive icon separate."
+  ],
+  "prompt": "Use case: precise-object-edit / reusable game UI button asset.\nThe attached image is the exact selected game UI mock and is the authoritative style reference. Recreate ONLY the blank teal/turquoise square add button from the right side of its ingredient rows, with absolutely NO plus sign, NO text, NO symbol or icon. This is a reusable nine-slice button background, not a full interface or screenshot. Match the selected reference's turquoise face, slightly brighter upper-left bevel, darker lower-right bevel, dark teal stepped outline and clipped round-step corners. Keep the face largely smooth and uniform enough to place a white plus or check above it later. Use clean deliberate 16-bit pixel blocks and restrained shading matching the reference; do not substitute a generic flat smooth CSS-like rounded rectangle. Front-facing flat orthographic UI, no perspective, no cast shadow, no three-dimensional scene. Single centered almost-square button with width:height 46:48, generous actual transparent alpha outside its contour. Nine-slice-safe regular edges and blank central face, all ornamental detail confined to edge and corner bands. Tight clear silhouette, no checkerboard, no backdrop, no lettering or watermark."
+}

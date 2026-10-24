@@ -1,0 +1,63 @@
+{
+  "asset": "bowl-bases.png",
+  "tool": "built-in image_gen",
+  "reference": "game/docs/uiux-reset/refinements/concept-03-categories-v1.png",
+  "original_generated_file": "/Users/ji/.codex/generated_images/01a16d32-98e7-76d1-a5ca-001f7185dd5c/exec-f2e79cc8-8c6f-4cb4-99b2-fb59c95fab16.png",
+  "sha256": "a7b2093d1ccf75ab5912fdc7199f0c43becc23428fb148d330ea5b63cce87d16",
+  "size": [
+    2172,
+    724
+  ],
+  "mode": "RGBA",
+  "alpha_extrema": [
+    0,
+    255
+  ],
+  "modifications": "none; original bytes copied unchanged",
+  "equal_cells": [
+    [
+      0,
+      0,
+      724,
+      724
+    ],
+    [
+      724,
+      0,
+      724,
+      724
+    ],
+    [
+      1448,
+      0,
+      724,
+      724
+    ]
+  ],
+  "visible_alpha_threshold": 8,
+  "atlas_regions_xywh": {
+    "fine": [
+      39,
+      114,
+      677,
+      480
+    ],
+    "curly": [
+      748,
+      115,
+      676,
+      479
+    ],
+    "thick": [
+      1457,
+      115,
+      676,
+      479
+    ]
+  },
+  "caveats": [
+    "Alpha1-7 contains faint generator specks beyond the visible bowls, including at cell boundaries; use the measured alpha>=8 Atlas regions without editing the image.",
+    "Visible bowl silhouette is about1.41, slightly deeper than requested1.6; vessels are consistent and no toppings are baked in."
+  ],
+  "prompt": "Use case: precise-object-edit / game sprite asset extraction and variants.\nInput image 1 is the exact selected game UI mockup and the authoritative pixel-art style reference. Extract and faithfully recreate ONLY its red-and-white ramen bowl and noodles as a transparent sprite strip. Remove every pork slice, green garnish, topping, interface card, background, steam, text, line and marker. Preserve the mockup bowl's foreshortened wide ellipse, viewpoint, red ceramic lower half, white rim, restrained red decoration, warm amber broth and deliberate chunky 16-bit pixel clusters. This MUST look like the selected mockup, NOT a shiny photoreal spaghetti illustration. Use clean hard square pixel clusters, small coherent palette and modest highlights, with a bowl width/height silhouette about 1.6.\nCreate one wide transparent PNG sprite strip containing exactly THREE separate bowls evenly arranged left to right in equal thirds: LEFT fine straight ramen noodles, MIDDLE curly ramen noodles, RIGHT thicker ramen noodles. All three have IDENTICAL vessel silhouette, viewpoint, scale, rim and broth and differ only in noodle geometry. Each bowl is entirely inside its own one-third cell with substantial transparent spacing, identical alignment and no overlap or shadow crossing cells. A wide 3:1 canvas is ideal. No toppings at all, no labels, no lettering, no extra ornaments, no shadows under the sprites, no backdrop and no checkerboard. Actual transparent alpha background. The single sprite strip will be used directly as AtlasTextures by the game engine."
+}

@@ -1,0 +1,95 @@
+{
+  "run": "20261024T095711Z-34614",
+  "date": "2026-10-24",
+  "renderer": "OpenGL4.1 Metal; Apple M3 Pro",
+  "checks": 524,
+  "failures": 0,
+  "exit": 0,
+  "engine_errors": 0,
+  "compact_layout": {
+    "viewport": [
+      390,
+      750
+    ],
+    "checks": 219,
+    "failures": 0,
+    "exit": 0,
+    "actual_rendering": false
+  },
+  "capture_dimensions": {
+    "desktop": [
+      1280,
+      800
+    ],
+    "portrait": [
+      390,
+      844
+    ]
+  },
+  "native_pngs": 30,
+  "opened_originals": [
+    "portrait_editor_01_initial.png",
+    "portrait_editor_07_cooking.png",
+    "portrait_editor_03_details.png",
+    "portrait_editor_06_broth_edit.png",
+    "portrait_editor_08_result.png",
+    "portrait_editor_09b_comparison.png",
+    "portrait_editor_04_duplicate.png",
+    "portrait_editor_05_replace.png",
+    "portrait_editor_10_rank3_layout_projection.png",
+    "portrait_editor_11_failed_save.png",
+    "desktop_editor_01_initial.png",
+    "desktop_editor_08_result.png",
+    "desktop_editor_10_rank3_layout_projection.png"
+  ],
+  "opened_comparisons": [
+    "comparisons/portrait-controls-source-current.png",
+    "comparisons/portrait-full-source-before-after.png",
+    "comparisons/portrait-full-source-current.png",
+    "comparisons/portrait-stage-source-current.png"
+  ],
+  "private_preserved_files": 42,
+  "pack_sha256": "200761113c54c98d96020192bf953d31424005dc8b660e6d5571a7cc471180c4",
+  "exported_embedded_pack_equal": true,
+  "runtime_source_count": 275,
+  "vendor_strict_signature_postrun_exit": 0,
+  "asset_original_manifest_hash_checks": 11,
+  "font_original_archive_matches": 4,
+  "visual_target": "game/docs/uiux-reset/refinements/concept-03-categories-v1.png",
+  "reference_normalization": [
+    390,
+    844
+  ],
+  "acceptance_boundary": "Internal selected-source composition and current-control review only; not human aesthetic/fun acceptance, complete game QA or physical iPhone validation.",
+  "manual_limits": [
+    "13 originals read individually; all30 checked by fixture for nonblank/dimensions, not each read individually.",
+    "Four-slot rank3 is a view projection, not earned/persisted progress.",
+    "Some tap-effect/hover labels remain in intermediate states; they are actual runtime effects.",
+    "09d may equal09b when the full numeric comparison already fits."
+  ],
+  "intentional_adaptations": [
+    "Category hits remain44px rather than the illustration smaller tabs.",
+    "Separate44px removal hit overlays26px badge, stopping before next tile.",
+    "Desktop uses responsive side-by-side panes.",
+    "Real data/ingredients retained; no fake garnish added to a one-topping recipe.",
+    "Generated shading, smooth licensed font and minor ornaments approximate reference, not pixel identity."
+  ],
+  "unchanged": [
+    "domain",
+    "services",
+    "save schema",
+    "player saves",
+    "iPhone",
+    "Claude instruction"
+  ],
+  "rejected_iterations": [
+    "v1 prepared only: footer wrapped digits.",
+    "v2 native506/0 visually rejected: vertical portion count inflated dock over bowl.",
+    "v3 native522/0: comparison led heading/category/empty-slot fixes.",
+    "v4 prepared only: superseded after wallet guard.",
+    "v5 native524/0: smaller summary chevron then corrected.",
+    "v6 native524/0: cooking disabled44px removal surface covered food; fixed in v7."
+  ],
+  "review": "game/docs/uiux-reset/mock-fidelity-v1/review.json",
+  "source_preservation": "Old Documents repository/copies untouched; unfinished journey UI remains stashed9d2270c5."
+}

@@ -1,0 +1,70 @@
+{
+  "path": "/Users/ji/.local/share/ramen-atelier/workspaces/ramen-typography-20261023/game/assets/ui/mock-fidelity/summary-icons-v1.png",
+  "original": "/Users/ji/.codex/generated_images/01a16d32-5717-7b53-b3a9-af6b74cc69b1/exec-e17ddef8-c433-4d3b-a1ed-8f201b298d4e.png",
+  "sha256": "409f1e2626fbe8caa473cb69b9a906cd8bc08f4fcedf1b94db04fa6ad1dd5b54",
+  "dimensions": [
+    1774,
+    887
+  ],
+  "alpha_range": [
+    0,
+    255
+  ],
+  "cells": [
+    {
+      "id": "broth_pot",
+      "cell": [
+        0,
+        0,
+        887,
+        887
+      ],
+      "alpha8_bbox": [
+        71,
+        156,
+        817,
+        765
+      ],
+      "atlas_region": [
+        71,
+        156,
+        746,
+        609
+      ],
+      "native_size": [
+        42,
+        42
+      ]
+    },
+    {
+      "id": "noodle_bundle",
+      "cell": [
+        887,
+        0,
+        887,
+        887
+      ],
+      "alpha8_bbox": [
+        979,
+        212,
+        1711,
+        781
+      ],
+      "atlas_region": [
+        979,
+        212,
+        732,
+        569
+      ],
+      "native_size": [
+        42,
+        42
+      ]
+    }
+  ],
+  "reference": "game/docs/uiux-reset/refinements/concept-03-categories-v1.png",
+  "tool": "built-in image_gen;transparent_background=true",
+  "prompt": "Create ONE transparent game ingredient-icon strip with exactly TWO separate front-facing chunky pixel-art sprites in TWO EQUAL HORIZONTAL CELLS, faithfully derived from the top ingredient icons in the attached selected UI reference. The reference is the design truth. Left cell: a small SILVER STOCKPOT of warm amber broth, with dark side handles, silver stepped shading, its small lid lifted/tilted behind the upper edge so the amber broth is visible, matching the broth-card pot in the reference. Right cell: a compact GOLDEN RAW NOODLE BUNDLE/BLOCK, dry yellow-gold short strands arranged as a chunky folded block, matching the noodle-card icon in the reference. Each sprite must be centered in its own half, approximately the same visual weight and scale, with generous true transparent separation between them and all pixels comfortably inside its own cell. Intended native display42 by42 logical pixels each; use deliberately chunky square pixel clusters at that logical resolution, crisp stepped silhouettes and limited silver/charcoal/amber or golden-yellow/brown palettes. No smooth illustration, photorealistic metal, microdetail, thin hair strands, antialiasing or blurry glow. Simple original cozy management-game pixel sprites in precisely the attached reference's visual style. Canvas landscape about2:1; exactly two equal-sized invisible cells. Both objects isolated on TRUE transparent alpha, no backgrounds, no baked checkerboards, no floor, no shadows, no visible grid/cell borders. NO text, labels, numbers, arrows, speech boxes, other food or extra objects. Do not place any pot pixels in the right half or noodle pixels in the left half. Left pot should read instantly as the broth selector and right noodle block as the noodle selector.",
+  "modified": false,
+  "inspection": "Both reference-matching sprites are completely separated, no text/card/frame/background. Original PNG retained; alpha bounds measured for AtlasTexture only."
+}
