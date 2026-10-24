@@ -2,6 +2,12 @@
 
 ## Current verified checkpoint
 
+2026-10-25: [Ingredient payoff](INGREDIENT_PAYOFF_V1.md) adds an opt-in
+before/after dish preview below material details and surfaces real completed
+direction/research feedback in the native result. The initial editor composition
+and existing game rules remain unchanged. [Current capture gallery](uiux-reset/ingredient-payoff-v1/)
+and root design QA supersede earlier counts for this bounded addition.
+
 2026-10-25: [Native exploration](EXPLORATION_WORKBENCH_V1.md) now hands received
 materials to the actual editor detail via read-only reveal_ingredient. Current
 same-pack editor regression524/0/exit0 and compact219/0 retain this editor's

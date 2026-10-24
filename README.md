@@ -1,5 +1,15 @@
 # Ramen Town — Codex × Claude 개발 하네스
 
+## 재료 발견에서 메뉴 실험으로
+
+획득한 재료의 그림·수량·풍미를 확인하고, 지금 그릇과 넣은 뒤의 그릇을 비교합니다.
+원가·기본 준비 시간·샘플·궁합·연구 조건을 살핀 뒤 한 재료만 직접 반영합니다.
+실제 시식으로 완성한 방향은 결과에 이름과 발견 효과를 보여 줍니다.
+
+![실제 획득·비교·발견 화면](game/docs/uiux-reset/ingredient-payoff-v1/comparisons/portrait-payoff-journey.png)
+
+[조작과 범위](game/docs/INGREDIENT_PAYOFF_V1.md) · [화면·전후 비교](game/docs/uiux-reset/ingredient-payoff-v1/)
+
 ## 재료 탐색과 획득
 
 탐색도 메뉴 개발과 같은 프레임·글꼴·선택 버튼으로 이어집니다. 지역과 목적을

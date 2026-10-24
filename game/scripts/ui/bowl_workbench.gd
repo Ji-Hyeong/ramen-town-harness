@@ -17,6 +17,7 @@ const Check = preload("res://scripts/domain/data_check.gd")
 const BodyFont = preload("res://assets/fonts/Pretendard-Regular.otf")
 const DisplayFont = preload("res://assets/fonts/Pretendard-Bold.otf")
 const MockArt = preload("res://scripts/ui/mock_fidelity_art.gd")
+const TrialPreview = preload("res://scripts/ui/ingredient_trial_preview.gd")
 const INK := Color("18354f")
 const NAVY := Color("193e65")
 const CREAM := Color("fff6e4")
@@ -484,7 +485,8 @@ func present(new_state: Game, mode: int, information: Dictionary) -> void:
 	var key: String = JSON.stringify([state.draft_config, state.draft_name, state.wallet,
 		state.rank(), state.topping_slots(), state.last_feedback_record_id, mode,
 		_info["busy"], _info["working"], _selected, state.discovered_ingredients(),
-		state.sample_stock("topping_citrus_peel"), state.sample_stock("topping_scallop")])
+		state.sample_stock("topping_citrus_peel"), state.sample_stock("topping_scallop"),
+		_info.get("new_directions",[]),_info.get("new_themes",[])])
 	if key == _last_key:
 		return
 	if _last_key != "" and _filters.visible:
@@ -903,6 +905,9 @@ func _show_item(item: Dictionary) -> void:
 	body.add_child(_label(Catalog.axes_text(item),16,TEAL))
 	if Catalog.is_farmed(id):
 		body.add_child(_label("시제품용 샘플 %d개 · 완성할 때 분량만큼 사용해요." % state.sample_stock(id),16))
+	var preview := _button("넣기 전후 비교","EditorIngredientExperiment","ramen_dining")
+	preview.pressed.connect(_show_ingredient_experiment.bind(item))
+	body.add_child(preview)
 	var unlocked: bool = state.ingredient_unlocked(id)
 	if not unlocked:
 		for locked in state.locked_items(slot):
@@ -926,6 +931,97 @@ func _show_item(item: Dictionary) -> void:
 			_apply_detail(item,group),not unlocked or selected or bool(_info["busy"]))
 	apply.tooltip_text = str(item["name"])+" 선택 · 시식 전에는 결제하지 않아요."
 	_compact_detail(560 if Catalog.is_farmed(id) else 440)
+
+
+func _show_ingredient_experiment(item: Dictionary, chosen: int = -1) -> void:
+	var projection: Dictionary=TrialPreview.candidates(state,str(item["id"]),_selected)
+	var body := _modal_body("한 재료 실험")
+	_modal.set_meta("view_kind","experiment")
+	var back: Button=_modal.find_child("EditorDetailsBack",true,false) as Button
+	back.pressed.disconnect(_close_modal)
+	back.pressed.connect(_show_item.bind(item))
+	if str(projection["error"])!="":
+		body.add_child(_label(str(projection["error"]),17,RED))
+		return
+	body.add_child(_label(str(item["name"])+" · 넣기 전후 비교",20))
+	var rows: Array=projection["rows"]
+	if rows.size()==1: chosen=0
+	if rows.size()>1:
+		body.add_child(_label("가득 찬 토핑 중 바꿀 한 칸을 골라요. 아직 초안은 바뀌지 않아요.",15,MUTED))
+		for index in rows.size():
+			var button := _button(str(rows[index]["title"]),"EditorExperimentSlot_"+str(index),"check" if index==chosen else "",TEAL if index==chosen else CREAM)
+			if index==chosen: button.add_theme_color_override("font_color",Color.WHITE)
+			button.pressed.connect(_show_ingredient_experiment.bind(item,index))
+			body.add_child(button)
+	if chosen<0:
+		_modal_footer("비교할 칸을 골라도 결제하지 않아요.","교체할 칸을 골라 주세요",func(): pass,true)
+		_compact_detail(640)
+		return
+	var row: Dictionary=rows[chosen]
+	var pair := HBoxContainer.new()
+	pair.add_theme_constant_override("separation",12)
+	body.add_child(pair)
+	for data in [["지금 그릇",projection["base"]],["바꾸면",row["config"]]]:
+		var column := VBoxContainer.new()
+		column.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+		pair.add_child(column)
+		column.add_child(_label(str(data[0]),15,TEAL))
+		var dish := Dish.new()
+		dish.name="ExperimentDishBefore" if data[0]=="지금 그릇" else "ExperimentDishAfter"
+		dish.custom_minimum_size=Vector2(100,100)
+		column.add_child(dish)
+		dish.set_config(data[1])
+	var flavor := _label(str(row["flavor"]),18,TEAL)
+	flavor.name="ExperimentFlavor"
+	body.add_child(flavor)
+	body.add_child(_label("원가 %s → %s (%+d원)" % [won(row["before_cost"]),won(row["after_cost"]),int(row["after_cost"])-int(row["before_cost"])],16))
+	body.add_child(_label("기본 준비 %d초 → %d초 (%+d초)" % [row["before_seconds"],row["after_seconds"],int(row["after_seconds"])-int(row["before_seconds"])],16))
+	var facts := _button("풍미·샘플·실험 목표", "EditorExperimentFacts", "info")
+	facts.pressed.connect(_show_experiment_facts.bind(item,chosen,row))
+	body.add_child(facts)
+	var hint: String="초안에만 반영해요. 유료 시식이 끝나야 샘플을 쓰고 기록돼요."
+	if str(row["sample_error"])!="":
+		body.add_child(_label(str(row["sample_error"]),15,RED))
+		hint="초안 편집은 가능해요. 시식 전에 부족한 샘플을 구하세요."
+	var unavailable: bool=not state.ingredient_unlocked(str(item["id"]))
+	var title: String="아직 발견하지 못했어요" if unavailable else ("초안에 반영" if bool(row["changed"]) else "현재와 같은 구성")
+	_modal_footer(hint,title,_apply_experiment.bind(item,projection["base"],row),unavailable or not bool(row["changed"]) or bool(_info["busy"]))
+	_compact_detail(640)
+
+
+func _show_experiment_facts(item: Dictionary, chosen: int, row: Dictionary) -> void:
+	var body := _modal_body("실험의 자세한 변화")
+	_modal.set_meta("view_kind","experiment_facts")
+	var back: Button=_modal.find_child("EditorDetailsBack",true,false) as Button
+	back.pressed.disconnect(_close_modal)
+	back.pressed.connect(_show_ingredient_experiment.bind(item,chosen))
+	for axis in row["axes"]:
+		body.add_child(_label("%s %d → %d (%+d)" % [axis["name"],axis["before"],axis["after"],axis["delta"]],16))
+	body.add_child(_label("시식에 필요한 샘플",20))
+	if (row["samples"] as Array).is_empty(): body.add_child(_label("연구 샘플이 필요한 재료가 없어요.",16))
+	for sample in row["samples"]:
+		body.add_child(_label("%s · 필요 %d / 보관 %d개" % [Catalog.find(str(sample["id"]))["name"],sample["needed"],sample["stock"]],16))
+	body.add_child(_label("이 조합의 궁합",20))
+	if (row["compat"] as Array).is_empty(): body.add_child(_label("현재 조합에 별도 궁합 규칙이 없어요.",16))
+	for rule in row["compat"]: body.add_child(_label(str(rule["note"]),16))
+	for direction in row["directions"]:
+		body.add_child(_label("실험 목표 · "+str(direction["title"]),20,TEAL))
+		for condition in direction["assessment"]["checks"]:
+			body.add_child(_label(("충족 · " if bool(condition["met"]) else "남은 조건 · ")+str(condition["text"]),16))
+	body.add_child(_label("조합의 예상 변화예요. 손님 취향에 따라 반응이 달라져요.",15,MUTED))
+	_modal_footer("아직 구성·돈·샘플·기록을 바꾸지 않았어요.","비교로 돌아가기",_show_ingredient_experiment.bind(item,chosen))
+
+
+func _apply_experiment(item: Dictionary, base: Dictionary, row: Dictionary) -> void:
+	# Never apply a comparison to a different draft after another action changed
+	# it. Rebuild the comparison, rather than overwriting any intervening edit.
+	if not Check.same_config(state.draft_config,base):
+		_show_ingredient_experiment(item)
+		(_modal.find_child("DetailsActionHint",true,false) as Label).text="초안이 바뀌었어요. 새 비교를 확인하고 다시 골라 주세요."
+		return
+	var slot: String=str(item["id"]).get_slice("_",0)
+	var group: String="" if slot=="topping" else ("noodle" if slot in ["noodle","cook"] else "broth")
+	_apply_detail(item,group,int(row["replacement"]))
 
 
 func _apply_detail(item: Dictionary, group: String, replacement: int = -1) -> void:
@@ -1083,6 +1179,19 @@ func _render_result() -> void:
 		return
 	var evaluation: Dictionary = Evaluator.evaluate(record["config"])
 	_rows.add_child(_label("%s v%d · 평균 %d점" % [record["name"], record["version"], evaluation["average_score"]], 20))
+	var fresh: Array=_info.get("new_directions",[])
+	var new_themes: Array=_info.get("new_themes",[])
+	var actual: Array[String]=[]
+	for definition in Directions.catalog():
+		if bool(Directions.assess(str(definition["id"]),record["config"])["matched"]):
+			actual.append(str(definition["title"]))
+	if not fresh.is_empty() or not new_themes.is_empty() or not actual.is_empty():
+		var title: String=(str(fresh[0])+" · 새 방향 발견") if not fresh.is_empty() else ((str(new_themes[0])+" · 새 연구 기록") if not new_themes.is_empty() else str(actual[0])+" · 완성한 방향")
+		var found := _button(title,"EditorDiscoveryReward","check",GOLD)
+		found.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
+		found.custom_minimum_size.y=56
+		found.pressed.connect(_show_result_discoveries)
+		_rows.add_child(found)
 	var customers := HBoxContainer.new()
 	_rows.add_child(customers)
 	for index in (evaluation["customers"] as Array).size():
@@ -1129,6 +1238,40 @@ func _render_result() -> void:
 	again.pressed.connect(func(): _emit("route", {"index": 0}))
 	_rows.add_child(again)
 	_scroll.set_deferred("scroll_vertical", 0)
+
+
+func _show_result_discoveries() -> void:
+	var record: Dictionary=state.get_record(state.last_feedback_record_id)
+	var body := _modal_body("이번 시식의 발견")
+	_modal.set_meta("view_kind","result_discoveries")
+	if record.is_empty():
+		body.add_child(_label("확인할 시식 노트가 없어요.",17,RED))
+		return
+	for title in _info.get("new_directions",[]):
+		body.add_child(_label("새 방향 발견 · "+str(title),21,TEAL))
+	for title in _info.get("new_themes",[]):
+		body.add_child(_label("새 연구 기록 · "+str(title),18,TEAL))
+	var tested: Array[String]=Directions.tested_ids(state.records())
+	body.add_child(_label("보관 중인 시식 노트 · 연구 방향 %d/%d" % [tested.size(),Directions.catalog().size()],18))
+	for definition in Directions.catalog():
+		var assessment: Dictionary=Directions.assess(str(definition["id"]),record["config"])
+		if not bool(assessment["matched"]): continue
+		body.add_child(_label("이 그릇으로 완성 · "+str(definition["title"]),20,TEAL))
+		for condition in assessment["checks"]:
+			body.add_child(_label(str(condition["text"]),16))
+	body.add_child(_label("실제로 시식한 노트를 기준으로 확인해요. 방향이 같아도 재료·풍미·손님 반응은 달라질 수 있어요.",16,MUTED))
+	_modal_footer("이 시식의 비용과 샘플은 완성할 때 반영했어요.","시식 결과로",_close_modal)
+
+
+func play_discovery_reveal() -> void:
+	# Called only after a real completed tasting, never by rendering or customer
+	# selection. Revisiting/reloading results does not replay the reward animation.
+	var badge: Control=_rows.find_child("EditorDiscoveryReward",true,false) as Control
+	if badge==null: return
+	badge.pivot_offset=badge.size*0.5
+	badge.scale=Vector2.ONE*0.94
+	var tween:=badge.create_tween()
+	tween.tween_property(badge,"scale",Vector2.ONE,0.35).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 
 func _show_directions() -> void:

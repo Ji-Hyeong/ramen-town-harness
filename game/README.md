@@ -1,5 +1,15 @@
 # 라멘 아틀리에 — 도트 라멘가게 프로토타입
 
+## 재료 발견에서 메뉴 실험으로
+
+획득한 재료의 그림·수량·풍미를 확인하고, 넣기 전후의 그릇·원가·시간을 비교합니다.
+반영 전에는 초안·돈·샘플을 바꾸지 않습니다. 실제 시식으로 완성한 방향은 결과에
+이름과 발견 효과를 보여 주고 자세한 조건을 열어 볼 수 있습니다.
+
+![실제 획득·비교·발견 화면](docs/uiux-reset/ingredient-payoff-v1/comparisons/portrait-payoff-journey.png)
+
+[조작과 범위](docs/INGREDIENT_PAYOFF_V1.md) · [실제 화면](docs/uiux-reset/ingredient-payoff-v1/)
+
 ## 재료 탐색과 획득
 
 탐색도 메뉴 개발과 같은 프레임·글꼴·선택 버튼으로 이어집니다. 지역과 목적을

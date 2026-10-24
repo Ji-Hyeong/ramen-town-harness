@@ -1,0 +1,163 @@
+{
+  "date": "2026-10-25",
+  "status": "passed: bounded native UI/interaction acceptance",
+  "base_main": "cc15341390ab251026191daee3050b787d4275f2",
+  "renderer": "OpenGL4.1 Metal Apple M3 Pro",
+  "native_payoff": {
+    "checks": 467,
+    "failures": 0,
+    "exit": 0,
+    "engine_errors": 0,
+    "pngs": 24
+  },
+  "native_editor": {
+    "run": "20261024T154708Z-11291",
+    "checks": 524,
+    "failures": 0,
+    "exit": 0,
+    "engine_errors": 0,
+    "pngs": 30
+  },
+  "compact_layout_only": {
+    "viewport": [
+      390,
+      750
+    ],
+    "payoff_checks": 226,
+    "editor_checks": 219,
+    "failures": 0,
+    "exit": 0,
+    "rendering": false
+  },
+  "other_layout_only": {
+    "ingredient_checks": 519,
+    "exploration_checks": 594,
+    "failures": 0,
+    "exit": 0,
+    "rendering": false
+  },
+  "baseline": {
+    "main": "cc15341390ab251026191daee3050b787d4275f2",
+    "frozen_runtime_files_equal_main": 281,
+    "checks": 80,
+    "failures": 0,
+    "exit": 0,
+    "pngs": 6
+  },
+  "source_count": 285,
+  "pack_sha256": "a019513a3576de4020749ac0f83ed15d1b05b64d79a004f9e66cc343ae41cbc9",
+  "exported_embedded_pack_equal": true,
+  "postrun_vendor_strict_signature_exit": 0,
+  "error_free_current_and_baseline_logs": 17,
+  "generated_current_pngs": 54,
+  "published_current_originals": 32,
+  "published_baseline_originals": 6,
+  "comparisons": [
+    "portrait-design-system.png",
+    "portrait-material-before-after.png",
+    "portrait-payoff-journey.png",
+    "portrait-reward-before-after.png"
+  ],
+  "opened_flow_originals": [
+    "portrait_payoff_01_reward.png",
+    "portrait_payoff_02_material.png",
+    "portrait_payoff_03_preview.png",
+    "portrait_payoff_04_facts.png",
+    "portrait_payoff_05_replacement.png",
+    "portrait_payoff_06_discovery.png",
+    "portrait_payoff_07_discovery_facts.png",
+    "portrait_payoff_08_repeat.png",
+    "portrait_payoff_09_shortage.png",
+    "portrait_payoff_10_stale.png",
+    "portrait_payoff_11_locked.png",
+    "desktop_payoff_01_reward.png",
+    "desktop_payoff_03_preview.png",
+    "desktop_payoff_05_replacement.png",
+    "desktop_payoff_06_discovery.png",
+    "desktop_payoff_07_discovery_facts.png",
+    "desktop_payoff_09_shortage.png",
+    "desktop_payoff_11_locked.png"
+  ],
+  "opened_editor_originals": [
+    "portrait_editor_01_initial.png",
+    "portrait_editor_07_cooking.png",
+    "portrait_editor_08_result.png",
+    "portrait_editor_11_failed_save.png",
+    "desktop_editor_01_initial.png",
+    "desktop_editor_07_cooking.png",
+    "desktop_editor_08_result.png",
+    "desktop_editor_11_failed_save.png"
+  ],
+  "opened_baseline_originals": [
+    "portrait_01_received.png",
+    "portrait_02_material.png",
+    "portrait_03_result.png",
+    "desktop_03_result.png"
+  ],
+  "source_visual": "game/docs/uiux-reset/refinements/concept-03-categories-v1.png",
+  "normalization": {
+    "reference_original": [
+      853,
+      1844
+    ],
+    "reference_normalized": [
+      390,
+      844
+    ],
+    "reference_method": "Lanczos",
+    "native_portrait": [
+      390,
+      844
+    ],
+    "native_desktop": [
+      1280,
+      800
+    ],
+    "device_frame": false
+  },
+  "before_after_scope": "Reward and material same actual fixture; baseline result has one citrus and current two, so no exact same-recipe result comparison is asserted.",
+  "observed_fixes": [
+    "Once-only receipt food reveal",
+    "Opt-in counterfactual with explicit full-slot target",
+    "Actual native result direction/research badge",
+    "Remove technical evaluator wording from player copy",
+    "Reject missing qa_tag engine error despite success count"
+  ],
+  "unchanged": [
+    "domain",
+    "services",
+    "schema",
+    "economy",
+    "assets",
+    "fonts",
+    "normal player saves",
+    "unfinished stash"
+  ],
+  "not_claimed": [
+    "full domain rerun",
+    "CI pass",
+    "iPhone install or physical touch acceptance",
+    "human fun acceptance",
+    "full accessibility",
+    "new ingredients/regions",
+    "permanent achievement ledger"
+  ],
+  "private_preserved_counts": {
+    "baseline": 10,
+    "payoff": 24,
+    "editor_run": 42
+  },
+  "private_preserved_qa_data_counts": {
+    "ramen-ingredient-payoff-native-v2-data": 4,
+    "ramen-ingredient-payoff-packed-compact-v2-data": 2,
+    "ramen-payoff-exploration-regression-v2-data": 6,
+    "ramen-payoff-ingredient-regression-v2-data": 4,
+    "ramen-payoff-editor-compact-v2-data": 4
+  },
+  "opened_comparisons": [
+    "portrait-design-system.png",
+    "portrait-material-before-after.png",
+    "portrait-payoff-journey.png",
+    "portrait-reward-before-after.png"
+  ]
+}
