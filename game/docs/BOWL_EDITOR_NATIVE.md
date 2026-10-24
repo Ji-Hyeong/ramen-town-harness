@@ -2,6 +2,13 @@
 
 ## Current verified checkpoint
 
+2026-10-25: [Native exploration](EXPLORATION_WORKBENCH_V1.md) now hands received
+materials to the actual editor detail via read-only reveal_ingredient. Current
+same-pack editor regression524/0/exit0 and compact219/0 retain this editor's
+accepted composition. [Current exploration evidence](uiux-reset/exploration-workbench-v1/)
+and root design QA record its separate new flow; the earlier editor checkpoint
+below remains the historical basis, not a new iPhone acceptance claim.
+
 The selected option3 composition remains the editor's first screen. Current work
 adds compact ingredient details with a fixed apply action, explicit actual-slot
 replacement at capacity, and fixed broth/noodle sub-tabs with context/scroll
