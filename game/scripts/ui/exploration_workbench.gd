@@ -48,6 +48,8 @@ var _regions_row: HBoxContainer
 var _modes_row: HBoxContainer
 var _return_scroll: int = 0
 var _render_serial: int = 0
+var _reward_art: TextureRect
+var _celebrations: int = 0
 
 
 func _ready() -> void:
@@ -295,15 +297,17 @@ func _render() -> void:
 		_body.remove_child(child)
 		child.queue_free()
 	_progress=null
+	_reward_art=null
 	var trip: Dictionary = state.expedition()
 	var active: bool = not trip.is_empty()
+	var received: bool=not active and not _hide_receipt and not _receipt().is_empty()
 	_status.text = "%d일차 · 랭크%d · %s" % [state.day,state.rank(),"오늘 출발 사용함" if state.departed_today() else "오늘 한 번 출발 가능"]
 	var warning: String = str(_info["warning"])
 	var notice: String = warning if warning!="" else str(_info["notice"])
 	_notice.visible = notice!=""
 	_notice.text = "저장 안내 · 눌러서 확인" if warning!="" else "탐색 안내 · 눌러서 확인"
 	_notice.tooltip_text = notice
-	_regions_row.visible=not active and _detail==""
+	_regions_row.visible=not active and not received and _detail==""
 	_modes_row.visible=_regions_row.visible
 	for id in _region_buttons:
 		var button: Button = _region_buttons[id]
@@ -333,9 +337,7 @@ func _render() -> void:
 		_render_active(trip)
 	elif not _hide_receipt and not _receipt().is_empty():
 		var receipt: Dictionary = _receipt()
-		_body.add_child(_label("수령 완료",22,TEAL))
-		_material(str(receipt["ingredient"]),"×%d개 수령 · 현재 %d/20개" % [receipt["amount"],state.sample_stock(str(receipt["ingredient"]))] if mode=="sample" else "공급처 발견 · 개발에서 계속 사용 가능")
-		_body.add_child(_label("개발에서는 초안을 유지한 채 이 재료의 상세를 열어요. 직접 골라 조합하세요.",16))
+		_render_reward(receipt)
 		_cost.text="지불 합계 "+Editor.won(int(receipt["fee"])+int(receipt["extra"]))+" · 추가 결제 없음"
 		_secondary.text="지역 보기"
 		_action.text="이 재료로 개발"
@@ -352,6 +354,42 @@ func _select_skin(button: Button, selected: bool) -> void:
 		button.add_theme_stylebox_override(property,Mock.style("teal" if selected else "summary"))
 	for property in ["font_color","font_hover_color"]:
 		button.add_theme_color_override(property,Color.WHITE if selected else INK)
+
+
+func _render_reward(receipt: Dictionary) -> void:
+	var id: String=str(receipt["ingredient"])
+	var item: Dictionary=Catalog.find(id)
+	_body.add_child(_label("연구 재료 획득!" if mode=="sample" else ("새 공급처 발견!" if bool(receipt["new"]) else "알고 있는 공급처예요"),24,TEAL))
+	_reward_art=_image(_food(id),Vector2(112,112))
+	_reward_art.name="ExploreRewardArt"
+	_body.add_child(_reward_art)
+	var title:=_label(str(item["name"])+(" ×%d" % int(receipt["amount"]) if mode=="sample" else ""),22)
+	title.name="ExploreRewardName"
+	_body.add_child(title)
+	var stock:=_label("지금 보관 %d/20개 · 시제품 완성 때 사용" % state.sample_stock(id) if mode=="sample" else "개발에서 계속 사용할 수 있는 공급처예요.",16,TEAL)
+	stock.name="ExploreRewardStock"
+	_body.add_child(stock)
+	_body.add_child(_label(Catalog.axes_text(item),18))
+	_body.add_child(_label(str(item["desc"]),16))
+	_body.add_child(_label("개발에서 넣기 전후를 비교해 보세요. 직접 반영하기 전에는 초안이 바뀌지 않아요.",15,MUTED))
+
+
+func celebrate_receipt(id: String) -> Vector2:
+	# The controller calls this only after a successful once-only claim. Merely
+	# drawing/restoring a receipt must not celebrate or grant it again.
+	await get_tree().process_frame
+	if not is_visible_in_tree() or not is_instance_valid(_reward_art) or str(_receipt().get("ingredient",""))!=id:
+		return Vector2(-1,-1)
+	_celebrations+=1
+	_reward_art.pivot_offset=_reward_art.size*0.5
+	_reward_art.scale=Vector2.ONE*0.65
+	var tween:=_reward_art.create_tween()
+	tween.tween_property(_reward_art,"scale",Vector2.ONE,0.45).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	return _reward_art.get_global_rect().get_center()
+
+
+func celebration_count() -> int:
+	return _celebrations
 
 
 func _material(id: String, caption: String) -> void:
@@ -549,5 +587,5 @@ func _layout() -> void:
 	for pair in [["left",safe.x],["top",safe.y],["right",safe.z],["bottom",safe.w]]:
 		_margin.add_theme_constant_override("margin_"+str(pair[0]),(horizontal if pair[0] in ["left","right"] else 12)+int(pair[1]))
 	_grid.columns=2 if size.x>=720 else 1
-	var focused: bool=state!=null and (state.exploration_active() or _detail!="")
+	var focused: bool=state!=null and (state.exploration_active() or _detail!="" or (not _hide_receipt and not _receipt().is_empty()))
 	_picture.custom_minimum_size.y=(120 if focused else 160) if size.x>=720 else (64 if focused else (72 if size.y<780 else 104))

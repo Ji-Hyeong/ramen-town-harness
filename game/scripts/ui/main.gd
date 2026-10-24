@@ -2008,6 +2008,9 @@ func _play_reveal() -> void:
 	await get_tree().process_frame
 	if not is_inside_tree():
 		return
+	_sync_bowl_editor()
+	if _bowl_editor.visible:
+		_bowl_editor.play_discovery_reveal()
 	var bowl := _feedback_box.find_child("FeedbackBowl", true, false) as Control
 	if is_instance_valid(_bowl_editor) and _bowl_editor.visible:
 		bowl = _bowl_editor._dish
@@ -2594,8 +2597,12 @@ func _on_exploration_collect() -> void:
 	if result["ok"] and result.has("receipt"):
 		await get_tree().process_frame
 		var id: String = str(result["receipt"]["ingredient"])
+		_sync_bowl_editor()
+		var origin: Vector2=await _exploration_view.celebrate_receipt(id)
+		if origin.x<0:
+			origin=get_viewport_rect().size*Vector2(0.5,0.4)
 		var caption: String = "%s +%d" % [Catalog.find(id)["name"], result["receipt"]["amount"]] if Catalog.is_farmed(id) else str(Catalog.find(id)["name"])+" 발견!"
-		_juice.burst(get_viewport_rect().size * Vector2(0.5, 0.4), TEAL, caption, _icon(id, 3), true)
+		_juice.burst(origin, TEAL, caption, _icon(id, 3), true)
 
 
 func _on_exploration_retire() -> void:
@@ -2821,7 +2828,9 @@ func _sync_bowl_editor() -> void:
 		"selected": _selected_topping_position, "busy": _development_busy(),
 		"working": work_active(), "progress": _work.progress(),
 		"phase": WorkScript.phase_name(_work.phase_index()) if work_active() else "",
-		"notice": _taste_message.text, "warning": warning, "muted": _audio.muted})
+		"notice": _taste_message.text, "warning": warning, "muted": _audio.muted,
+		"new_directions":_direction_new_titles if _direction_new_record==state.last_feedback_record_id else [],
+		"new_themes":_journal_new_titles if _journal_new_record_id==state.last_feedback_record_id else []})
 
 
 func _on_bowl_editor_action(kind: String, data: Dictionary) -> void:
