@@ -1,0 +1,118 @@
+{
+  "date": "2026-10-24",
+  "baseline": {
+    "source_main": "ac467b8a605af30f2bd4076efb65a4c61ef7132b",
+    "checks": 48,
+    "failures": 0,
+    "native_pngs": 8,
+    "opened": [
+      "portrait_02_ingredient.png",
+      "portrait_03_broth.png",
+      "portrait_04_oil.png",
+      "desktop_02_ingredient.png"
+    ]
+  },
+  "renderer": "OpenGL4.1 Metal; Apple M3 Pro",
+  "native_flow": {
+    "checks": 567,
+    "failures": 0,
+    "exit": 0,
+    "engine_errors": 0,
+    "pngs": 18
+  },
+  "native_editor_regression": {
+    "run": "20261024T104201Z-46751",
+    "checks": 524,
+    "failures": 0,
+    "exit": 0,
+    "engine_errors": 0,
+    "pngs": 30
+  },
+  "compact_layout_only": {
+    "viewport": [
+      390,
+      750
+    ],
+    "flow_checks": 261,
+    "editor_checks": 219,
+    "failures": 0,
+    "exit": 0,
+    "rendering": false
+  },
+  "live_resize": {
+    "narrow_viewport": [
+      390,
+      640
+    ],
+    "scope": "Open detail/group sheets only; not whole-game640px acceptance. Pointer tab changes restore real nonzero scroll.",
+    "before_fix_checks": 500,
+    "before_fix_failures": 2,
+    "before_fix_failure": "Desktop-created detail/group footer was outside narrow viewport.",
+    "current_included_in_native_flow": true
+  },
+  "opened_flow_originals": [
+    "portrait_flow_01_locked.png",
+    "portrait_flow_02_ingredient.png",
+    "portrait_flow_03_replacement.png",
+    "portrait_flow_04_replaced.png",
+    "portrait_flow_05_broth.png",
+    "portrait_flow_06_oil.png",
+    "portrait_flow_07_method.png",
+    "portrait_flow_08_firmness.png",
+    "portrait_flow_09_clue_target.png",
+    "desktop_flow_02_ingredient.png",
+    "desktop_flow_03_replacement.png",
+    "desktop_flow_05_broth.png",
+    "desktop_flow_08_firmness.png",
+    "desktop_flow_09_clue_target.png"
+  ],
+  "opened_regression_originals": [
+    "desktop_editor_01_initial.png",
+    "desktop_editor_07_cooking.png",
+    "desktop_editor_08_result.png",
+    "desktop_editor_11_failed_save.png",
+    "portrait_editor_01_initial.png",
+    "portrait_editor_07_cooking.png",
+    "portrait_editor_08_result.png",
+    "portrait_editor_11_failed_save.png"
+  ],
+  "opened_comparisons": [
+    "portrait-detail-before-after.png",
+    "portrait-flow-preview.png",
+    "portrait-initial-source-current.png",
+    "portrait-selector-before-after.png",
+    "portrait-source-controls-current.png"
+  ],
+  "published_current_originals": 26,
+  "native_generated_current_originals": 48,
+  "runtime_source_count": 277,
+  "pack_sha256": "2c0b06b227f8b7f667f3d572aa144c63e8b36ddcaf9e112fd2b2a76421e3c8f8",
+  "exported_embedded_pack_equal": true,
+  "vendor_strict_signature_postrun_exit": 0,
+  "private_preserved_file_counts": {
+    "baseline": 10,
+    "flow": 22,
+    "regression": 42
+  },
+  "scope": [
+    "UI view/selection/detail/tab routing only. Controller/domain/services/schema/assets/fonts unchanged.",
+    "No ordinary saves, phone actions, Claude calls or prior stash restoration."
+  ],
+  "manual_limits": [
+    "14/18 new-flow and8/30 regression originals individually opened; all48 dimension/nonblank checked by fixture.",
+    "390x640 live resize is sheet geometry/input coverage without extra screenshot captures.",
+    "Some intermediate photos contain actual transient tap feedback; this is not baked art.",
+    "Per-tab nonzero scroll checked in the real narrow layout, restored to the capture profile before PNG capture."
+  ],
+  "visual_truth": "game/docs/uiux-reset/refinements/concept-03-categories-v1.png governs the unchanged initial screen. It does not depict the new detail/tab states.",
+  "acceptance_boundary": "Bounded internal UX/rendering review, not human taste/fun approval, full accessibility or physical iPhone acceptance.",
+  "diagnostics": [
+    "Initial new test had a wrong inherited Catalog reference; parse failure despite exit0 was rejected and fixed.",
+    "First v1 native462/0 was functionally green but kept excess full-height detail whitespace; replaced by compact sheets.",
+    "v2-v4 prepared only; superseded by source/test/copy review.",
+    "v5 native494/0 preceded live-resize guard; targeted source test reproduced500/2.",
+    "v6 native562/0 preceded selected-empty-slot copy correction.",
+    "Final v7 is the only current evidence."
+  ],
+  "full_review": "game/docs/uiux-reset/ingredient-flow-v1/review.json"
+}
