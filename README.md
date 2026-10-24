@@ -1,5 +1,15 @@
 # Ramen Town — Codex × Claude 개발 하네스
 
+## 팔린 라멘과 영업 결과
+
+시안의 음식·목재·프레임·글꼴을 영업 결과까지 이어 씁니다. 남긴 돈과 완료 주문을
+먼저 보고, 그림이 있는 음식 카드 전체를 눌러 메뉴별 판매·손님·비용을 확인합니다.
+영업 탭에서 지난 결과를 다시 열거나 현재 초안을 유지하며 개발로 돌아갈 수 있습니다.
+
+![실제 영업 결과·메뉴·손님 화면](game/docs/uiux-reset/service-result-v1/comparisons/portrait-sales-journey.png)
+
+[조작과 기록의 범위](game/docs/SERVICE_RESULT_WORKBENCH_V1.md) · [실제 화면·시안 비교](game/docs/uiux-reset/service-result-v1/)
+
 ## 재료 발견에서 메뉴 실험으로
 
 획득한 재료의 그림·수량·풍미를 확인하고, 지금 그릇과 넣은 뒤의 그릇을 비교합니다.

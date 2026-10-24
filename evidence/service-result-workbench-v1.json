@@ -1,0 +1,159 @@
+{
+  "date": "2026-10-25",
+  "status": "passed: bounded native service-result UI/interaction acceptance",
+  "base_main": "97dd0634480761606556142ece36de9c64c676b0",
+  "renderer": "OpenGL4.1 Metal Apple M3 Pro",
+  "native_sales": {
+    "checks": 466,
+    "failures": 0,
+    "exit": 0,
+    "engine_errors": 0,
+    "pngs": 22
+  },
+  "native_editor": {
+    "run": "20261024T164353Z-24348",
+    "checks": 524,
+    "failures": 0,
+    "exit": 0,
+    "engine_errors": 0,
+    "pngs": 30
+  },
+  "compact_layout_only": {
+    "viewport": [
+      390,
+      750
+    ],
+    "sales_checks": 202,
+    "payoff_checks": 226,
+    "failures": 0,
+    "exit": 0,
+    "rendering": false
+  },
+  "baseline": {
+    "checks": 108,
+    "failures": 0,
+    "exit": 0,
+    "pngs": 6,
+    "frozen_files_equal_previous_main": 285
+  },
+  "source_count": 289,
+  "pack_sha256": "8c7f0562733a38540bf6878882fa7a685d61aac9dc531523f65675603dcf9669",
+  "embedded_export_equal": true,
+  "postrun_vendor_strict_signature_exit": 0,
+  "error_free_current_and_baseline_logs": 13,
+  "generated_current_originals": 52,
+  "published_current_originals": 26,
+  "published_baseline_originals": 6,
+  "private_preserved_counts": {
+    "baseline_captures": 6,
+    "current_captures": 22,
+    "editor_run": 42,
+    "ramen-service-result-baseline-v2-20261025-data": 4,
+    "ramen-service-native-v2-data": 8,
+    "ramen-service-compact-v2-data": 4,
+    "ramen-service-payoff-regression-v2-data": 2
+  },
+  "opened_sales_originals": [
+    "portrait_sales_01_single.png",
+    "portrait_sales_02_menu.png",
+    "portrait_sales_03_customers.png",
+    "portrait_sales_04_costs.png",
+    "portrait_sales_05_restored_single.png",
+    "portrait_sales_06_pair.png",
+    "portrait_sales_07_pair_detail.png",
+    "portrait_sales_08_pair_customers.png",
+    "portrait_sales_09_restored_pair.png",
+    "portrait_sales_10_loss.png",
+    "portrait_sales_11_save_failure.png",
+    "desktop_sales_02_menu.png",
+    "desktop_sales_05_restored_single.png",
+    "desktop_sales_06_pair.png",
+    "desktop_sales_08_pair_customers.png",
+    "desktop_sales_10_loss.png",
+    "desktop_sales_11_save_failure.png"
+  ],
+  "opened_editor_originals": [
+    "portrait_editor_01_initial.png",
+    "portrait_editor_08_result.png",
+    "desktop_editor_01_initial.png",
+    "desktop_editor_08_result.png"
+  ],
+  "opened_baseline_originals": [
+    "portrait_01_single.png",
+    "portrait_02_pair.png",
+    "portrait_03_history.png",
+    "desktop_02_pair.png"
+  ],
+  "comparisons": [
+    "desktop-menu-layout-v1-v2.png",
+    "focused-food-card-v1-v2.png",
+    "portrait-design-system.png",
+    "portrait-pair-before-after.png",
+    "portrait-sales-journey.png",
+    "portrait-single-before-after.png"
+  ],
+  "source_visual": "game/docs/uiux-reset/refinements/concept-03-categories-v1.png",
+  "normalization": {
+    "reference_pixels": [
+      853,
+      1844
+    ],
+    "reference_normalized": [
+      390,
+      844
+    ],
+    "reference_only_method": "Lanczos",
+    "native_portrait": [
+      390,
+      844
+    ],
+    "native_desktop": [
+      1280,
+      800
+    ],
+    "device_frame": false,
+    "focused_native_crop": [
+      22,
+      360,
+      369,
+      495
+    ],
+    "focused_scale": 2
+  },
+  "scope": "Matched actual single/two-menu receipts before/after; selected source is an editor reference, so report layout is an intentional design-system extension.",
+  "rejected_and_fixed": [
+    "Baseline wrong clock API; corrected to existing helper",
+    "Test wrong dish property; reject engine-error/exit0 output",
+    "Actual reopened GUI input order corrected independently of z_index",
+    "Immediate native editor handoff synchronization",
+    "Pale detail arrow and sparse desktop menu layout corrected",
+    "Zero completed orders show no satisfaction aggregate"
+  ],
+  "not_claimed": [
+    "whole-game UI redesign",
+    "full domain rerun",
+    "CI pass",
+    "iPhone install/physical touch acceptance",
+    "full accessibility",
+    "human fun acceptance",
+    "new report schema or permanent live-reaction history"
+  ],
+  "unchanged": [
+    "domain",
+    "services",
+    "schema",
+    "economy",
+    "assets",
+    "fonts",
+    "normal saves",
+    "unfinished stash"
+  ],
+  "opened_comparisons": [
+    "desktop-menu-layout-v1-v2.png",
+    "focused-food-card-v1-v2.png",
+    "portrait-design-system.png",
+    "portrait-pair-before-after.png",
+    "portrait-sales-journey.png",
+    "portrait-single-before-after.png"
+  ]
+}

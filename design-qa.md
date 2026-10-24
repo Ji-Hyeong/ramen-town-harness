@@ -1,97 +1,119 @@
-# Ingredient discovery and experiment payoff review
+# Native service-result design and interaction review
 
 final result: passed
 
-2026-10-25. Bounded internal native UI/interaction acceptance. The approved next
-priority was to connect ingredient discovery to deliberate menu experiments.
-This does not certify the entire game, physical iPhone, accessibility or fun.
+2026-10-25. Bounded internal acceptance for actual service-result summary,
+food/customer/cost details and history handoff. The human explicitly requested
+more design elements aligned to chosen option3. Whole-game UI, physical iPhone,
+accessibility certification and human fun acceptance are outside this slice.
 
-## Sources and actual comparisons
+## Source and comparison evidence
 
 Visual truth: [chosen option3](game/docs/uiux-reset/refinements/concept-03-categories-v1.png)
-and the accepted native editor/exploration frames, food art and Pretendard fonts.
-The853x1844 reference alone is normalized to390x844 with Lanczos. Actual portrait
-390x844 and desktop1280x800 originals retain their pixels without device frames.
-The source describes the initial editor; new detail/reward states extend that
-system rather than claiming a missing exact mock.
+and the accepted native editor/exploration design. The853x1844 reference alone is
+normalized to390x844 with Lanczos; actual portrait390x844 and desktop1280x800
+PNGs are unframed, unretouched native pixels. This is Godot, not CSS/browser
+content, and no browser/device chrome is included. The chosen source depicts
+menu editing. A service report is an intentional extension of its original food,
+wood, frames, fonts and navy/cream/teal/gold palette, not an exact missing mock.
 
-[Numbered actual flow and comparisons](game/docs/uiux-reset/ingredient-payoff-v1/),
-[exact source/image hashes and manual scope](game/docs/uiux-reset/ingredient-payoff-v1/review.json).
-Fresh unchanged PR28 baseline80/0/exit0 produced6PNGs; all281 frozen baseline files
-match merged maincc15341. Reward and material before/after use the same actual
-fixture. Baseline result uses one citrus and this new journey two, so no exact
-same-recipe result comparison is asserted. The source/current editor/new detail
-comparison checks continuity. Screenshot controls and contents are not retouched.
+[Numbered actual flow, full comparisons and focused food-card crop](game/docs/uiux-reset/service-result-v1/),
+[exact hashes and manual scope](game/docs/uiux-reset/service-result-v1/review.json).
+Fresh285-file previous-main97dd063 baseline108/0/exit0 supplies matched single
+and pair receipts. Same recipe/day/orders/revenue/cost/wallet are compared; the
+baseline history capture shows the old service tab initially, not the actual old
+receipt at a matched scroll position. Source/current editor/report are combined
+in one comparison. The focused food card uses actual crops(22,360,369,495),2x
+nearest enlargement only in evidence, to inspect the detail affordance and insets.
+Desktop v1/v2 compares the same actual pair receipt at1280x800 without rescaling.
 
-## Findings, changes and rejected evidence
+## Findings, iterations and fixes
 
-1. P2 weak collection payoff: a small material row and unrelated tabs obscured
-   the reward. Show actual112px food,22px name/quantity, stock/supplier distinction,
-   flavor and a once-per-success reveal. Duplicate claim and redraw do not replay
-   or grant. Fixed development handoff preserves the draft.
-2. P2 blind experimentation: add an opt-in comparison below ingredient details.
-   Render actual before/after dishes and evaluator-derived flavor/cost/basic prep
-   changes. Deeper facts show all axes, per-portion sample needs, compatibility and
-   actual existing direction conditions. Browsing does not edit, pay or record.
-3. P2 implicit replacement risk: a full dock requires an explicit actual target;
-   no automatic choice. Apply only that one guarded edit. Cover duplicate portions,
-   unchanged composition, locked ingredients, shortage and an intervening price
-   edit. Stale preview cannot overwrite the changed draft.
-4. P2 hidden discovery: existing real new-direction/research messages previously
-   reached legacy controls and a transient burst. Show them in the native result
-   as a named gold badge and actual conditions. Completed repeat/restart states
-   say completed direction; they do not invent another discovery or reward.
-5. P3 copy: nativev1 facts exposed technical evaluator wording. Replace it with
-   plain predicted-change/customer-preference copy and inspect finalv2 rendering.
-6. QA integrity: the first layout run printed173/0 but emitted missing qa_tag
-   engine errors from an inherited helper. Reject it, set actual viewport metadata
-   and rerun. Final dedicated capture467/0 has no engine/script errors. Old logs
-   remain privately preserved and do not support final acceptance.
+1. P2 buried results: the baseline mixes full finance, two menu rows, customer
+   sources and saving into a narrow long label. Show actual net/units/revenue
+   first; clickable food cards lead to per-menu details; customers/cost/complete
+   receipt have explicit depths. Fixed54px return/develop actions stay reachable.
+2. P2 sparse visual hierarchy: respond to human feedback with original coin,
+   actual sold dish thumbnails/large detail dish, wood context and actual customer
+   portraits, licensed font hierarchy and supplied frame/CTA textures. Do not
+   paint substitute art or add dashboard decoration unrelated to the game.
+3. P1 reopened input: a visually higher result initially still sat before the
+   drawer in sibling input order. Actual pointer regression reproduced a missed
+   menu tap and wrong handoff. Move the result to the last sibling on open; final
+   pointer tests cover reopening above the visible service drawer and detail taps.
+4. P2 handoff: paused deterministic QA exposed reliance on the next process frame
+   to show the editor. Explicitly synchronize the existing native editor after
+   the development route. Preserve the whole draft/ledger; do not load a sold
+   recipe automatically.
+5. P2 v1 affordance/density: nativev1 showed a pale white detail arrow and two
+   stretched desktop rows. Finalv2 uses a teal arrow/hover icon tint, real wood
+   food context and side-by-side desktop cards. Focused/full same-state v1/v2
+   comparisons verify the visible correction; portrait remains a scrolling list.
+6. P2 misleading empty reaction: no completed orders means no satisfaction
+   aggregate, not a bad0.0/5 review. Final loss screenshot shows0bowls/-3000 and
+   no aggregate. Actual zero/negative amounts remain in the ledger unchanged.
+7. P2 unavailable history: a stored old single receipt lacks full recipe/live
+   reaction fields. Use the exact matching just-finished sold snapshot only;
+   after restart omit missing dishes/stars explicitly. Stored expanded snapshots
+   retain the real dish/wait. Current draft never substitutes historical food.
+8. QA setup corrections: reject wrong baseline clock API and nil dish-property
+   engine errors despite exit0/success counts. Use the existing advance helper
+   and actual config property. Preserve all failed diagnostics separately. The
+   product input/handoff failures above were fixed rather than weakening checks.
 
-## Current verification and provenance
+## Final verification and provenance
 
-Final frozen packv2 only. Actual OpenGL4.1 Metal Apple M3 Pro: new payoff467/0,
-24PNGs; existing editor524/0,30PNGs; both actual process exits0. Same packed
-390x750 layout-only payoff226/0 and editor219/0. Same packed ingredient flow519/0
-and exploration594/0 are headless interaction/layout regressions, not rendering.
-All six final runners exited0.17 current preparation/baseline/native log files
-contain no engine/script errors. No full-domain rerun or CI pass is claimed.
+Final frozen packv2 only. Actual OpenGL4.1 Metal Apple M3 Pro: service466/0/exit0,
+22PNGs; existing native editor524/0/exit0,30PNGs, run20261024T164353Z-24348.
+Same packed390x750 service202/0 and ingredient payoff226/0 are explicitly
+layout-only, both exit0; no compact rendering claim.13 final preparation/native/
+baseline logs have no engine/script errors. No full-domain rerun or CI pass.
 
-Actual pointer flow collects3samples, previews without mutation, deliberately
-replaces one portion, cancels cooking without payment, completes tasting using
-exactly2samples/cost once, revisits read-only facts, then tastes1sample with no
-new direction grant. Restart, three-portion public-setter equivalence, repeated
-samples, canceled apply swipes, shortage, locks and stale preview are covered.
-Existing editor regression retains isolated real save-failure and tasting paths;
-exploration retains supplier/claim/retire/save paths. No normal player save read.
+Real pointer coverage: summary/detail/back/receipt; card swipe cancellation;
+fixed controls; reopen over drawer; current-draft independence; development
+handoff; saved restart; actual two menus; live compact resize; zero-sale loss;
+abort; actual isolated save failure, unchanged disk and successful recovery.
+Settlement changes day/wallet once; a duplicate settlement is refused. Sum of
+actual menu contributions minus common overhead equals the net once. All page
+browsing/handoffs preserve the state. Existing editor/payoff regressions retain
+prior tasting, sample, replacement, canceled input and save-failure coverage.
 
-All285 runtime source hashes equal the final snapshot; exported/embedded pack
-`a019513a3576de4020749ac0f83ed15d1b05b64d79a004f9e66cc343ae41cbc9` matches.
-Official-engine strict vendor signature passes after execution. Whole baseline,
-payoff captures and editor run directories10/24/42files plus20isolated QA-data
-files are privately copied byte-equal, with frozen source/pack/logs. Publish32
-current originals,6baseline originals and4comparisons.18/24 payoff,8/30 editor,
-4/6baseline originals and4composed comparisons were opened; no all-images manual
-claim. All54 current originals pass fixture dimensions/nonblank checks.
+All289 runtime sources match the snapshot; exported and embedded pack
+`8c7f0562733a38540bf6878882fa7a685d61aac9dc531523f65675603dcf9669` matches.
+Official copied engine hash and post-run strict vendor signature pass. Whole
+baseline/current/editor directories6/22/42files and18isolated data files are
+privately preserved byte-equal, with source/pack/logs and rejected diagnostics.
+Publish26current originals,6baseline originals and6comparisons.17/22result,
+4/30editor,4/6baseline originals and6comparisons were opened. All52 current
+originals satisfy actual fixture dimensions/nonblank guards; not all were read
+manually. Two-menu fixture research names are actual QA-created records, not new
+fixed product labels or evidence of first-time player progression.
 
-## Five fidelity surfaces and limits
+## Five fidelity surfaces and residual limits
 
-Fonts: licensed existing Pretendard,20-24px headings,15-18px facts and14px hints.
-Spacing: existing paper insets,12px dish separation,44px+ targets, fixed gold
-apply action below scrolling body. Full-dock facts scroll; compact/live resize
-keeps the action reachable. Colors: existing navy/cream/teal/gold/red; locked
-controls are visibly disabled. No contrast certification. Images: original food,
-region, frames and fonts remain byte-identical; some region art remains coarser.
-Copy: actual quantity, stock, per-portion consumption, basic prep vs real wait,
-preview vs paid tasting and retained notebook vs permanent achievement differ.
+Typography: original licensed Pretendard Regular/Bold,32px net,22-24px heading/
+figures,18px menu titles,14-16px supporting copy. Menu summary titles truncate
+only after2lines; full titles are available in detail. Spacing:14px outer paper
+insets,12px card content insets,10-12px gaps,126px full food-card targets and48px+
+actions. Main body scrolls below fixed header/footer; desktop max860px and two
+columns, compact margins14px. Colors: supplied navy/cream/teal/gold textures,
+red losses/warnings; teal icon fix is inspected. No formal contrast certification.
+Images: exact existing food/wood/coin/frame/portrait/font bytes, nearest food
+sampling and no invented historic dish. Coarse older portraits/region art remain.
+Copy: actual completed orders, per-menu contribution vs common operating cost,
+net vs historic wallet, taste vs live stars, missing history and save failure
+are distinguished. No invented reactions, forecast-as-actual or duplicate grant.
 
-No unresolved P1/P2 observed in these bounded surfaces. Existing gray cooking
-progress styling and coarse region/tare art remain P3 follow-ups outside scope.
-Human fun, physical touch/safe areas, VoiceOver, keyboard-only, text scaling and
-reduced motion remain untested. New materials/regions/balance and a permanent
-collection ledger are separate. No Claude, iPhone or unfinished-stash work.
+No actionable P0/P1/P2 observed in these bounded surfaces. P3 follow-ups include
+coarser older character art, idle single-card space in the desktop grid and the
+separate gray cooking progress styling. Surrounding shop/staff/story drawers
+retain their older design and need a separate scope; this is not whole-game UI
+completion. VoiceOver, keyboard-only, text scaling, reduced motion, real phone
+safe areas/touch and human fun remain untested. No Claude, phone, normal save,
+domain/service/schema/balance/asset/font or unfinished-stash changes.
 
-Completed: fresh baseline, bounded implementation, copy correction, final native/
-compact/regression checks, actual comparisons, hashes and preservation. Ready
-publication and expected-head squash merge use standing human authorization.
-Previous exploration review remains in its [gallery](game/docs/uiux-reset/exploration-workbench-v1/).
+Completed checklist: fresh baseline; bounded implementation; pointer/handoff and
+visual fixes; final native/compact/regression checks; full/focused comparisons;
+source/signature verification and exact preservation. Ready PR/verified-head
+squash merge use standing human authorization. Earlier work remains in the
+[ingredient payoff gallery](game/docs/uiux-reset/ingredient-payoff-v1/).
