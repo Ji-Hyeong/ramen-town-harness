@@ -1,5 +1,15 @@
 # 라멘 아틀리에 — 도트 라멘가게 프로토타입
 
+## 재료 탐색과 획득
+
+탐색도 메뉴 개발과 같은 프레임·글꼴·선택 버튼으로 이어집니다. 지역과 목적을
+고른 뒤 사건을 선택하고, 고정 버튼에서 추가 비용을 확인해 확정합니다.
+재료는 직접 수령하며 작성하던 초안을 유지한 채 실제 개발의 재료 상세로 갑니다.
+
+![실제 탐색·선택·수령 화면](docs/uiux-reset/exploration-workbench-v1/comparisons/portrait-journey-preview.png)
+
+[조작과 기존 규칙](docs/EXPLORATION_WORKBENCH_V1.md) · [현재 화면·전후 비교](docs/uiux-reset/exploration-workbench-v1/)
+
 ## 최신 메뉴 개발 화면
 
 [현재 실제 게임 화면](docs/uiux-reset/ingredient-flow-v1/)

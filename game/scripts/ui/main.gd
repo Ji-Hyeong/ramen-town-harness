@@ -42,6 +42,8 @@ const TravelScript = preload("res://scripts/ui/expedition_travel.gd")
 const Contest = preload("res://scripts/domain/ramen_contest.gd")
 const BowlWorkbenchScript = preload("res://scripts/ui/bowl_workbench.gd")
 var _bowl_editor: BowlWorkbenchScript
+const ExplorationWorkbenchScript = preload("res://scripts/ui/exploration_workbench.gd")
+var _exploration_view: ExplorationWorkbenchScript
 
 const INK: Color = Color(0.17, 0.12, 0.08)
 const PAPER: Color = Color(0.96, 0.92, 0.82)
@@ -275,6 +277,10 @@ func _ready() -> void:
 	_bowl_editor.visible = false
 	_bowl_editor.action_requested.connect(_on_bowl_editor_action)
 	add_child(_bowl_editor)
+	_exploration_view = ExplorationWorkbenchScript.new()
+	_exploration_view.visible = false
+	_exploration_view.action_requested.connect(_on_exploration_view_action)
+	add_child(_exploration_view)
 	# 재개 시 이동 그림만 다시 보여 준다. 비용·경로·발견은 이미 불러온 도메인 상태를 사용한다.
 	if state.exploration_active():
 		_travel.start(str(state.expedition()["region"]))
@@ -2526,12 +2532,13 @@ func _open_sample_lab(id: String) -> void:
 		return
 	var slot: String = "broth" if id.begins_with("broth_") else "topping"
 	await _open_experiment_choices(slot)
-	_taste_message.text = "%s %d개 보관. 초안은 유지했어요. 직접 재료를 골라 조합해 보세요." % [item["name"], state.sample_stock(id)]
+	_taste_message.text = "%s · 초안은 유지했어요. 직접 골라 조합해 보세요." % item["name"]
 	await get_tree().process_frame
-	# A section header can sit at the bottom edge with all choices offscreen.
-	# Reveal the actual catch's existing button, still without selecting it.
-	if tabs.current_tab == TAB_LAB and _buttons.has(id):
-		(tabs.get_child(TAB_LAB) as ScrollContainer).ensure_control_visible(_buttons[id])
+	# The actual native editor, rather than its hidden legacy adapter, owns the
+	# material handoff. Revealing details must not apply an ingredient or charge.
+	_sync_bowl_editor()
+	if tabs.current_tab == TAB_LAB:
+		_bowl_editor.reveal_ingredient(id)
 
 
 func _on_foraging_depart() -> void:
@@ -2584,10 +2591,11 @@ func _on_exploration_collect() -> void:
 		return
 	var result: Dictionary = state.finish_expedition()
 	_finish_exploration_action(result)
-	if result["ok"] and result.has("receipt") and Harbor.IDS.has(result["receipt"].get("ingredient", "")):
+	if result["ok"] and result.has("receipt"):
 		await get_tree().process_frame
 		var id: String = str(result["receipt"]["ingredient"])
-		_juice.burst(get_viewport_rect().size * Vector2(0.5, 0.4), TEAL, "%s +%d" % [Catalog.find(id)["name"], result["receipt"]["amount"]], _icon(id, 3), true)
+		var caption: String = "%s +%d" % [Catalog.find(id)["name"], result["receipt"]["amount"]] if Catalog.is_farmed(id) else str(Catalog.find(id)["name"])+" 발견!"
+		_juice.burst(get_viewport_rect().size * Vector2(0.5, 0.4), TEAL, caption, _icon(id, 3), true)
 
 
 func _on_exploration_retire() -> void:
@@ -2794,8 +2802,16 @@ func _sync_bowl_editor() -> void:
 	if not is_instance_valid(_bowl_editor):
 		return
 	var active: bool = _overlay.visible and tabs.current_tab in [TAB_LAB, TAB_FEEDBACK]
+	var exploring: bool = _overlay.visible and tabs.current_tab == TAB_EXPLORATION
 	_bowl_editor.visible = active
-	_drawer_margin.visible = not active
+	_exploration_view.visible = exploring
+	_drawer_margin.visible = not active and not exploring
+	if exploring:
+		var save_warning: String = _last_save_message if _last_save_message!="" else (_banner_label.text if _banner.visible else "")
+		_exploration_view.present(state,{
+			"busy":_work.is_running() or state.service_active() or _contest_left>0.0 or _training_left>0.0,
+			"travel":_travel.running(),"progress":_travel.progress(),
+			"warning":save_warning,"notice":_exploration_message.text if _exploration_message.get_theme_color("font_color")==VERMILION else ""})
 	if not active:
 		return
 	var warning: String = _banner_label.text if _banner.visible else ""
@@ -2833,6 +2849,29 @@ func _on_bowl_editor_action(kind: String, data: Dictionary) -> void:
 				body.add_child(_comparison_card(record, Evaluator.evaluate(record["config"])))
 		_:
 			push_error("알 수 없는 편집 동작: " + kind)
+	_sync_bowl_editor()
+
+
+func _on_exploration_view_action(kind: String, data: Dictionary) -> void:
+	# View-only selection never calls the state. Paid/claim actions retain the
+	# same business and travel guards as the legacy controller entry points.
+	match kind:
+		"close": _on_close_pressed()
+		"depart":
+			if str(data["mode"])=="supplier":
+				_on_exploration_depart(str(data["region"]))
+			elif str(data["mode"])=="sample" and str(data["region"])=="market":
+				_on_foraging_depart()
+			elif str(data["mode"])=="sample" and str(data["region"])=="harbor":
+				_on_harbor_foraging_depart()
+			else:
+				push_error("탐색 출발 지역이나 목적이 올바르지 않아요.")
+		"choice": _on_exploration_choice(str(data["id"]))
+		"collect": _on_exploration_collect()
+		"retire": _on_exploration_retire()
+		"lab": _on_tab_link(TAB_LAB)
+		"material": _open_sample_lab(str(data["id"]))
+		_: push_error("알 수 없는 탐색 화면 동작: "+kind)
 	_sync_bowl_editor()
 
 

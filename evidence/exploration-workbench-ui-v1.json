@@ -1,0 +1,143 @@
+{
+  "date": "2026-10-25",
+  "status": "passed: bounded internal native UI/interaction review",
+  "base_main": "85ac5df6812dd07fef21eb63e66773edf840428d",
+  "renderer": "OpenGL4.1 Metal Apple M3 Pro",
+  "native_flow": {
+    "checks": 678,
+    "failures": 0,
+    "exit": 0,
+    "engine_errors": 0,
+    "pngs": 28
+  },
+  "native_editor": {
+    "run": "20261024T151237Z-2931",
+    "checks": 524,
+    "failures": 0,
+    "exit": 0,
+    "engine_errors": 0,
+    "pngs": 30
+  },
+  "compact_layout_only": {
+    "viewport": [
+      390,
+      750
+    ],
+    "flow_checks": 301,
+    "editor_checks": 219,
+    "failures": 0,
+    "exit": 0,
+    "rendering": false
+  },
+  "focused_domain": {
+    "market_checks": 163,
+    "harbor_checks": 182,
+    "failures": 0,
+    "exit": 0,
+    "tested_pack": "v1",
+    "unchanged_final_graph_files_verified": 185
+  },
+  "baseline": {
+    "main": "85ac5df6812dd07fef21eb63e66773edf840428d",
+    "same_runtime_as_pr27": true,
+    "checks": 74,
+    "failures": 0,
+    "exit": 0,
+    "pngs": 10
+  },
+  "pack_sha256": "7bea84dcd1c7e51a25fe4df1467b9843cf9adb45ac35cf8c904e32f08b6a2285",
+  "exported_embedded_pack_equal": true,
+  "vendor_strict_signature_postrun_exit": 0,
+  "published_current_originals": 36,
+  "generated_current_originals": 58,
+  "preserved_private_counts": {
+    "baseline": 14,
+    "flow": 34,
+    "regression": 42
+  },
+  "opened_current_flow_originals": [
+    "desktop_explore_02_locked.png",
+    "desktop_explore_03_sample.png",
+    "desktop_explore_07b_selected.png",
+    "desktop_explore_08_pending.png",
+    "desktop_explore_10_native_handoff.png",
+    "desktop_explore_13_save_warning.png",
+    "portrait_explore_01_supplier.png",
+    "portrait_explore_02_locked.png",
+    "portrait_explore_03_sample.png",
+    "portrait_explore_04_detail.png",
+    "portrait_explore_05_travel.png",
+    "portrait_explore_06_target.png",
+    "portrait_explore_07_quantity.png",
+    "portrait_explore_07b_selected.png",
+    "portrait_explore_08_pending.png",
+    "portrait_explore_09_received.png",
+    "portrait_explore_10_native_handoff.png",
+    "portrait_explore_11_harbor.png",
+    "portrait_explore_12_retire.png",
+    "portrait_explore_13_save_warning.png"
+  ],
+  "opened_editor_originals": [
+    "portrait_editor_01_initial.png",
+    "portrait_editor_07_cooking.png",
+    "portrait_editor_08_result.png",
+    "portrait_editor_11_failed_save.png",
+    "desktop_editor_01_initial.png",
+    "desktop_editor_07_cooking.png",
+    "desktop_editor_08_result.png",
+    "desktop_editor_11_failed_save.png"
+  ],
+  "opened_baseline_originals": [
+    "portrait_01_regions.png",
+    "portrait_03_quantity.png",
+    "portrait_05_collected.png",
+    "desktop_01_regions.png"
+  ],
+  "source_visual": "game/docs/uiux-reset/refinements/concept-03-categories-v1.png",
+  "normalization": {
+    "source_pixels": [
+      853,
+      1844
+    ],
+    "normalized": [
+      390,
+      844
+    ],
+    "method": "Lanczos; reference only",
+    "current_portrait": [
+      390,
+      844
+    ],
+    "current_desktop": [
+      1280,
+      800
+    ],
+    "device_frame": false
+  },
+  "iterations": [
+    "Nativev1 684/0: functional but inactive region/mode tabs crowd the event; pale info icons and selected hover drift corrected.",
+    "Nativev2 658/0: compact focused stage, clearer selection/fees.",
+    "Source compact v3 298/1: nonzero-scroll coverage missing; actual swipe added.",
+    "Source compact v4 299/1: actual detail return lost nonzero scroll during reflow.",
+    "Source compact v5 299/0: serial-guarded post-layout restoration fixes it.",
+    "Nativev3 674/0: pre-final loading visual.",
+    "Only final v4 native678/0 and packed compact301/0 are current."
+  ],
+  "limits": [
+    "20/28 flow and8/30 editor originals individually opened; all58 fixture dimension/nonblank checked.",
+    "Received screenshots include real transient click/reward effects.",
+    "No phone, VoiceOver, keyboard-only, text scaling, reduced-motion or user fun/design acceptance.",
+    "No new region/ingredient/balance/schema/assets/fonts; broader town/staff/story screens remain separate.",
+    "No Claude calls or ordinary save access; prior stash and Documents copies preserved.",
+    "No full-domain-suite or CI pass claimed."
+  ],
+  "opened_comparisons": [
+    "portrait-design-system.png",
+    "portrait-preview-before-after.png",
+    "portrait-choice-before-after.png",
+    "portrait-journey-preview.png",
+    "portrait-active-v1-v4.png"
+  ],
+  "engine_logs_checked": 8,
+  "full_review": "game/docs/uiux-reset/exploration-workbench-v1/review.json"
+}

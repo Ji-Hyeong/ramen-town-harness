@@ -859,6 +859,22 @@ func _exit_group() -> void:
 	_close_modal()
 
 
+func reveal_ingredient(id: String) -> void:
+	# Collection navigation exposes the current material without selecting it,
+	# replacing an edited draft or spending samples. Return context stays local.
+	var item: Dictionary = Catalog.find(id)
+	if item.is_empty():
+		push_error("개발에서 열 재료가 없어요: "+id)
+		return
+	if id.begins_with("topping_"):
+		category=Categories.category(id)
+		_last_key=""
+		_render_content()
+	else:
+		_group_tab["broth"]=id.get_slice("_",0)
+	_show_item(item)
+
+
 func _show_item(item: Dictionary) -> void:
 	_save_group_scroll()
 	var id: String = str(item["id"])
