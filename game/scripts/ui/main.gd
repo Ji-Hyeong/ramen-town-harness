@@ -44,6 +44,14 @@ const BowlWorkbenchScript = preload("res://scripts/ui/bowl_workbench.gd")
 var _bowl_editor: BowlWorkbenchScript
 const ExplorationWorkbenchScript = preload("res://scripts/ui/exploration_workbench.gd")
 var _exploration_view: ExplorationWorkbenchScript
+const ServiceResultScript = preload("res://scripts/ui/service_result_view.gd")
+var _service_result: ServiceResultScript
+# Runtime evidence belongs only to the exact completed receipt. It is never
+# serialized or inferred later from an edited draft or a different service day.
+var _service_result_context: Dictionary = {}
+var _service_result_key: String = ""
+var _service_sold_snapshot: Array = []
+var _last_report_button: Button
 
 const INK: Color = Color(0.17, 0.12, 0.08)
 const PAPER: Color = Color(0.96, 0.92, 0.82)
@@ -676,37 +684,15 @@ func _build_nav() -> void:
 
 
 func _build_result() -> void:
-	_result_layer = Control.new()
-	_result_layer.name = "ResultLayer"
-	_result_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_result_layer.visible = false
-	var dim: ColorRect = ColorRect.new()
-	dim.color = Color(0, 0, 0, 0.55)
-	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_result_layer.add_child(dim)
-	var center: CenterContainer = CenterContainer.new()
-	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_result_layer.add_child(center)
-	var panel: PanelContainer = _card("ResultPanel")
-	panel.custom_minimum_size = Vector2(320.0, 0.0)
-	panel.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	center.add_child(panel)
-	var box: VBoxContainer = _vbox(8)
-	panel.add_child(box)
-	_result_title = _label("영업 결과", 22, VERMILION)
-	_result_title.name = "ResultTitle"
-	box.add_child(_result_title)
-	_result_label = _label("", 16, INK)
-	_result_label.name = "ResultLabel"
-	box.add_child(_result_label)
-	_result_note = _label("", 15, TEAL)
-	_result_note.name = "ResultNote"
-	box.add_child(_result_note)
-	var ok: Button = _button("확인", "ResultOkButton")
-	_primary(ok)
-	ok.pressed.connect(_on_result_ok)
-	box.add_child(ok)
+	_service_result=ServiceResultScript.new()
+	_service_result.visible=false
+	_service_result.z_index=40
+	_service_result.action_requested.connect(_on_service_result_action)
+	_result_layer=_service_result
 	add_child(_result_layer)
+	_result_title=_service_result.get("_title") as Label
+	_result_label=_service_result.get("_receipt") as Label
+	_result_note=_service_result.get("_note") as Label
 
 
 func _build_overlay() -> void:
@@ -1221,6 +1207,9 @@ func _build_serve(box: VBoxContainer) -> void:
 	var ib: VBoxContainer = _vbox(6)
 	intro_card.add_child(ib)
 	ib.add_child(_label("오늘의 영업", 20, VERMILION))
+	_last_report_button=ServiceResultScript.make_button("지난 영업 결과 보기","LastServiceReport","summary","chevron_right")
+	_last_report_button.pressed.connect(_show_service_report)
+	ib.add_child(_last_report_button)
 	_serve_intro = _label("", 16, INK)
 	_serve_intro.name = "ServeIntro"
 	ib.add_child(_serve_intro)
@@ -1617,11 +1606,13 @@ func _start_service() -> void:
 	_flash_text = ""
 	_flash_until = 0
 	_shop.set_session(state.active_session())
+	_service_sold_snapshot=state.selling_records().duplicate(true)
 	_refresh_all()
 
 
 func _abort_service(message: String) -> void:
 	state.cancel_service()
+	_service_sold_snapshot.clear()
 	_shop.set_session(null)
 	_stop_armed_until = 0
 	_fast = false
@@ -1660,8 +1651,35 @@ func _finish_service() -> void:
 		experience = "\n함께 일한 보조 직원: 각자 실무 +1일 · 경험 +%d그릇" % int(report["units"])
 	_result_note.text = "평균 만족도 %.1f / 5 · 매장 앞에서 돌아간 손님 %d명%s\n%s" % [float(res["avg_stars"]), int(res["turned_away"]), experience, save_line]
 	_result_note.add_theme_color_override("font_color", TEAL if saved else VERMILION)
-	_result_layer.visible = true
+	_service_result_key=JSON.stringify(report,"",true)
+	_service_result_context={"sold":_service_sold_snapshot.duplicate(true),"avg_stars":res["avg_stars"],"turned_away":res["turned_away"],"experience":experience.strip_edges()}
+	_service_sold_snapshot.clear()
+	_show_service_report()
+	_service_result.play_reveal()
 	_refresh_all()
+
+
+func _show_service_report() -> void:
+	if state.last_report.is_empty() or state.service_active() or _development_busy():
+		return
+	var context: Dictionary=_service_result_context.duplicate(true) if _service_result_key==JSON.stringify(state.last_report,"",true) else {}
+	context["saved"]=_last_save_message=="" and not save_locked
+	context["save_note"]="영업 정산을 저장했어요." if bool(context["saved"]) else "저장하지 못했어요: %s\n정산은 지금 실행 중인 게임에만 반영돼 있고, 지금 닫으면 이 영업은 사라질 수 있어요." % _last_save_message
+	if context.has("avg_stars"):
+		var reaction: String="평균 만족도 %.1f / 5" % float(context["avg_stars"]) if int(state.last_report["units"])>0 else "완료 주문 없음 · 만족도 집계 없음"
+		context["save_note"]="%s · 매장 앞에서 돌아간 손님 %d명\n%s\n%s" % [reaction,int(context["turned_away"]),str(context.get("experience","")),context["save_note"]]
+	_service_result.present(state.last_report,context,_report_text(state.last_report))
+	_result_layer.visible=true
+	# Godot GUI picking follows sibling order, independently of visual z_index.
+	# A report opened above the drawer must also receive its actual pointer input.
+	move_child(_result_layer,get_child_count()-1)
+
+
+func _on_service_result_action(kind: String) -> void:
+	_on_result_ok()
+	if kind=="develop":
+		_open_overlay(TAB_LAB)
+		_sync_bowl_editor()
 
 
 func _on_result_ok() -> void:
@@ -3656,6 +3674,8 @@ func _notebook_row(rec: Dictionary) -> PanelContainer:
 
 
 func _refresh_serve() -> void:
+	_last_report_button.disabled=state.last_report.is_empty() or _development_busy()
+	_last_report_button.text="아직 마친 영업이 없어요" if state.last_report.is_empty() else "%d일차 영업 결과 보기" % int(state.last_report["day"])
 	_serve_intro.text = "영업은 가게 화면의 [영업 시작]으로 해요. 한 번은 점심 피크 %d분(게임 시간)이고 손님이 도착해 자리에 앉고 주문·조리·서빙·식사를 마친 만큼만 정산돼요. 운영비 %s는 하루마다 들어요.\n지금: %d일차 · 보유 자금 %s\n%s" % [Sim.SERVICE_SECONDS / 60, _won(Sim.overhead_for(state.current_staffing())), state.day, _won(state.wallet), NOT_SAVED_NOTE]
 	_refresh_selling()
 	var selling: Array = state.selling_records()
