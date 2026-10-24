@@ -1,0 +1,23 @@
+{
+  "generator": "Built-in image_gen imagegen tool",
+  "reference": "game/docs/uiux-reset/refinements/concept-03-categories-v1.png",
+  "creation_date": "2026-10-24",
+  "file": "gold-coin-v1.png",
+  "size": [
+    1254,
+    1254
+  ],
+  "sha256": "30c3e090cd8737266479aeea3698624eca89f5c6161082fcd4beda1a11a4e01f",
+  "alpha_bbox_threshold8": [
+    66,
+    104,
+    1188,
+    1165
+  ],
+  "intended_native_size": [
+    24,
+    24
+  ],
+  "edits": "None. Original generated PNG/alpha retained. AtlasTexture may remove transparent margins at display time.",
+  "prompt": "Asset type: one standalone tiny pixel-art gold currency coin sprite for a native simulation-game UI. The supplied ramen-editor reference is exact style reference: closely match the little GOLD COIN beside 30,000원 at top right and beside 2,200원 at bottom left. One single round/front-facing slightly thick gold coin, clean chunky square pixel clusters with stepped circular silhouette, orange/amber outer rim, deeper orange small lower-right bevel, golden-yellow flat face, pale cream/yellow upper-left specular highlight. Restrained small pixel-art palette, deliberately crisp edges and large readable clusters suitable for native24x24 pixels, displayed as a larger pixel-perfect sprite in output. Broad centered coin occupies most of canvas with a small transparent margin. True transparent RGBA outside coin; opaque gold inside. No text, numerals, currency sign, emblem, logo, letter, holes, extra objects, sparkles, scene, perspective floor, cast shadow or backdrop. No smooth vector circle, photoreal material or antialiased blurry edges. Match reference coin geometry and warm palette rather than inventing a treasure icon."
+}

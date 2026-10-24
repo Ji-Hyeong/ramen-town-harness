@@ -1,0 +1,40 @@
+{
+  "path": "/Users/ji/.local/share/ramen-atelier/workspaces/ramen-typography-20261023/game/assets/ui/mock-fidelity/pointer-v1.png",
+  "original": "/Users/ji/.codex/generated_images/01a16d32-5717-7b53-b3a9-af6b74cc69b1/exec-73c69e98-258b-4335-a07b-91a1d12fc623.png",
+  "sha256": "c445b18433422333e936d450f11ef75f023b14fea2cce9dc99534abd7efeb37f",
+  "dimensions": [
+    1041,
+    1510
+  ],
+  "alpha_range": [
+    0,
+    255
+  ],
+  "alpha_bbox": [
+    177,
+    85,
+    1011,
+    1510
+  ],
+  "alpha16_bbox": [
+    247,
+    195,
+    811,
+    1322
+  ],
+  "recommended_atlas_region": [
+    247,
+    195,
+    564,
+    1127
+  ],
+  "intended_native_envelope": [
+    40,
+    58
+  ],
+  "render_note": "Keep aspect ratio within40x58 logical envelope; mirror horizontally for noodle side. This is a fixed connector, not a nine-slice. Anchor top endpoint to summary bottom and marker to bowl surface; no game state encoded. Original alpha bytes retained, analysis only.",
+  "tool": "built-in image_gen; transparent_background=true",
+  "prompt": "Create exactly ONE small reusable raster UI connector asset, faithfully matching the bent speech-card connector under the TOP LEFT BROTH CARD in the attached reference. Output only the connector on TRUE transparent alpha, nothing else. Intended native dimensions approximately 40 by 58 logical pixels, portrait aspect about 0.69:1, deliberately crisp 1px-square stepped pixel-art geometry enlarged for export. A thin warm ivory/gold line with a very dark warm-brown outer border: it starts near the TOP LEFT, runs a short distance vertically DOWN, bends diagonally DOWN AND RIGHT, then continues vertically DOWN near the RIGHT side, ending at the bottom in one small ROUND cream/gold marker dot with a dark outline. Match that exact reference path and colors. The line's complete outlined width should feel only about 3 logical pixels at native40x58; the marker diameter about7-8 logical pixels. Marker centered on the final right-side vertical segment. Flat front-facing pixel-art overlay, no perspective, no 3D, no shadows, no glow, no texture/noise. Keep the whole path inside the canvas with a tiny transparent margin; no crop of the endpoint marker. Do NOT include a speech box/card, food, plate, background, text, arrows, icons, extra lines or a second connector. The transparent background must be actual alpha, never a baked checkerboard. This single connector will be mirrored horizontally in the game for the noodle side.",
+  "reference": "game/docs/uiux-reset/refinements/concept-03-categories-v1.png",
+  "modified": false
+}

@@ -1,98 +1,115 @@
-# Native editor typography and spacing review
+# Selected-mock native bowl editor review
 
 final result: passed
 
-2026-10-23. Bounded internal review of the human-reported font/border-crowding
-problem. This is not whole-game design acceptance, human approval of this new
-appearance, exact mock reproduction or physical iPhone acceptance. The human's
-rejection superseded the previous v5 technical pass.
+2026-10-24. Bounded internal source-composition/current-control review. The human
+rejected the previous typography refinement as too different from their chosen
+mock. That rejection supersedes the old technical visual pass. This is neither
+human approval of the new appearance nor whole-game/fun/iPhone acceptance.
+
+## Source and evidence
+
+Visual truth: [selected category-refined option3](game/docs/uiux-reset/refinements/concept-03-categories-v1.png),
+853x1844 normalized with Lanczos to390x844. No new direction or selection.
+[Current originals and comparisons](game/docs/uiux-reset/mock-fidelity-v1/)
+contain actual Godot390x844 and1280x800 SubViewport output, not a screenshot shell.
+The before column is the rejected historical typography-v1 actual capture.
+
+Full two-way/three-way and focused stage/controls comparisons were composed and
+opened together. Common focused crops are (0,55,390,371) and (0,426,390,418),
+enlarged2x nearest; only normalization, captions and gutters are added. Actual
+control text/costs remain live. The source's decorative green garnish is not
+falsely added to the initial one-chashu recipe.
 
 ## Findings and corrections
 
-1. P2, broth/noodle summaries: headings touched their top border. A full-rect child
-   had only horizontal5px margins; Button style padding did not inset it. Actual
-   horizontal12/vertical10px insets,4px title/value separation, centered headings
-   and76px height fix this. Tests assert actual child rectangles inside the inset.
-   The opened top-focused before/after visibly confirms the breathing room.
-2. P2, typography: bitmap Galmuri Bold was used for small filters, ingredient names
-   and all buttons. Original licensed Pretendard Regular/SemiBold replaces it:
-   header22px, summary18px, names17px, price/time14px, portion15px and CTA22px.
-   Full and lower-focused comparisons show smooth readable type and calmer weight.
-3. P2 regression, shorter390x750: larger text-card padding also consumed the image
-   stage and list. Packedv2 compact202checks/5failures is preserved. Image-only stage
-   uses its actual2px frame rather than text padding, four-slot preview408px and
-   major gaps5px. Current packed compact202/0 retains the bowl, list and fixed CTA.
+- P1/P2 composition drift: previous deep bowl, full-width portion bar, plain
+  surfaces and small generic summary symbols did not carry the chosen design.
+  Rebuilt shallow vessel, filled food callouts/connectors, compact centered teal
+  dock, decorated navy frames and beveled gold/teal/blue controls from original
+  generated assets. A fourth initial ingredient row is now visible.
+- P2 footer wrapping: unconstrained numeric Label wrapped digits into a243px tall
+  footer, consuming the list. Nonwrapping price and actual-height guards fix it.
+- P2 portion count: smart wrapping made the compact count vertical and inflated
+  the dock over the bowl, despite a green native test run. Keep count on one line;
+  assert its height and actual bowl/dock overlap (maximum12px reference overlap).
+- P2 crowding/affordance: inset the list heading clear of decorative corners,
+  center portion controls, use a framed empty tile, larger summary chevrons and
+  separate circle-info controls. Summary children retain real6px horizontal/8px
+  vertical insets; long values ellipsize with full selection available in details.
+- P2 cooking regression: generic disabled44px removal surface covered the food.
+  Preserve a compact faded26px badge over a transparent disabled44px hit target.
+  Fresh v7 cooking capture confirms the correction. Guarded removal is unchanged.
 
-## Comparison evidence
+## Final verification
 
-Target: game/docs/uiux-reset/refinements/concept-03-categories-v1.png,
-853x1844 normalized with Lanczos to390x844. Before: actual native-v5 portrait
-initial, explicitly the human-rejected historical baseline. After: actual fresh
-portrait initial in game/docs/uiux-reset/typography-v1/,390x844/density1 native
-SubViewport; desktop1280x800 is responsive adaptation, no drawn OS/device chrome.
+Actual OpenGL4.1/Metal Apple M3 Pro run20261024T095711Z-34614:524checks,
+0failures, exit0, script/engine errors0,30 nonblank dimension-checked PNGs.
+13 originals were individually opened: portrait initial/duplicates/replacement,
+locked detail/broth selection/cooking/result/customer comparison/rank projection/
+failed save; desktop initial/result/rank projection. All4 comparisons were opened.
+Exact manual scope and all hashes: [review.json](game/docs/uiux-reset/mock-fidelity-v1/review.json).
+Do not claim every30 original was individually read.09d can equal09b when all
+numeric comparison fits; it is not a distinct gameplay result.
 
-Three-way full/source/before/after and focused comparisons were composed and
-opened in typography-v1/comparisons/. Common crops (0,58,390,105) summaries and
-(0,420,390,424) lower controls are enlarged2x nearest. Only captions/gutters and
-normalization are added. Full view checks composition; focused views check type
-and padding at readable size.
+Actual current packed shorter390x750 flow:219checks/0/exit0, explicitly layout
+only. Native input checks preserve category selection, button-start swipe/cancel,
+duplicate/replace/minimum-one removal, details return, broth/firmness markers,
+name/price, cooking cancel/once-only payment, selected customer/all reasons/price
+reaction/comparison/clues, notebook route and isolated save-failure recovery.
 
-Current actual OpenGL4.1/Metal run20261023T110902Z-58114:490checks/0failures,
-exit0/engine-errors0,30original PNGs (15/profile). All dimensions/nonblank checked.
-13 current originals and3 comparisons opened; exact paths/hashes/manual scope in
-typography-v1/review.json. Do not claim all30 were individually opened.09d may
-equal09b when the entire numeric comparison already fits, not distinct gameplay.
-All42 raw-run files preserved byte-equal privately. All240 source hashes, actual
-exported/embedded PCK4da0e678a91027a521720446045fd56766d730ebaa4209a3f749aeff87420d4d,
-and copied official-engine strict signature0 match after execution. Current
-actual packed compact390x750202/0 passes; this is not physical safe-area proof.
+All275 allowed runtime source files match the frozen QA snapshot byte-for-byte,
+with no added/missing files. Exported and app-embedded PCK SHA256 both equal
+200761113c54c98d96020192bf953d31424005dc8b660e6d5571a7cc471180c4.
+Official engine strict signature passes before preparation and after execution.
+Import/export/runtime logs have no script/engine errors. All42 raw-run files are
+preserved byte-equal privately; public originals remain unchanged.
 
-## Five fidelity surfaces
+## Five fidelity surfaces and adaptations
 
-Fonts: real Regular/SemiBold faces, not simulated bold. Original officialv1.3.9
-archive/font hashes, full OFL and provenance retained. The actual pack's full OFL
-is checked. The generated mock has no exact font file; this is the human-requested
-readable approximation. Legacy numeric comparison retains its established body
-theme; this does not migrate unrelated game screens.
-The original upstream OFL's single trailing space is retained byte-for-byte;
-only this vendor license is excluded from the staged whitespace check.
+Fonts: licensed original Pretendard Regular/Bold; original font/OFL bytes match
+the officialv1.3.9 archive (4 files). Smooth real text, pixel-filtered artwork.
+The mock has no exact font file; glyph shapes are an approximation.
 
-Spacing: real summary insets, shared10px horizontal/8px vertical text-card padding;
-rows8px,72px minimum height,8px horizontal gaps and4px name/price gap. Row borders
-are lighter1px, native hits remain48px/categories>=44px. Initial390x844 shows three
-complete rows instead of the source's four; preserving readable text and touch
-space is intentional, independent scrolling/categories handle more. Portions and
-footer remain enclosed in initial, notice, result and synthetic rank projection.
+Spacing: source-sized60px callouts, compact224px portion panel,60px list rows,
+fixed54px gold CTA. Readable insets are real child geometry, not style declarations
+alone. Category hit areas remain44px instead of the source illustration's smaller
+tabs; desktop uses responsive side-by-side panes. Four-slot dock grows without
+covering the bowl. The26px red badge retains an independent44px target stopping
+before the next tile. This is not physical-touch certification.
 
-Colors: navy/cream/teal/gold and disabled/selected distinctions remain. This is
-not contrast/accessibility certification. Images/icons: original food/background/
-steam/library-icon bytes untouched, correct aspect/separate repeated portions
-retained; no fake replacement assets or system font install. Copy: real names,
-costs/time/rank, all selected-customer reasons and price reaction remain available;
-illustrative mock values do not replace game data.
+Colors: navy/cream/teal/gold and warm wood follow the source. Selected, disabled,
+pressed and guarded-action feedback remain distinct. Contrast certification is
+not claimed. Generated food shading, smaller ornaments and source-outline details
+are known minor visual differences; no pixel-identity claim.
 
-Native pointer verification covers category changes, button-start swipe/canceled
-press, duplicates/replacement/minimum-one removal, locked details, broth markers,
-name/price, actual cooking/cancel/once-only payment, selected customer/full reasons/
-price note/version comparison/clues, notebook and isolated failed-save recovery.
-Domain/services/schema unchanged; earlier domain totals are not claimed as rerun.
+Images/icons:11 original generated PNG hashes match provenance; unchanged PNGs
+are cropped only via AtlasTexture and normal Godot import settings. Three real
+noodle variants and each actual topping remain live layers. Full prompts/bounds
+are retained. Existing food/background and licensed Material symbols are reused;
+third-party game art is not shipped. [Asset notes](game/docs/uiux-reset/mock-fidelity-v1/ASSETS.md).
 
-## Iterations, limits and completion
+Copy: real names/prices/times/rank capacity and selected-customer reasons remain.
+Illustrative source numbers are not injected into gameplay. Wallet clips rather
+than overlaps the menu for a long balance, with full value available in tooltip.
 
-First refinement packv1 failed test script parsing (untyped inset), despite exit0:
-no checks/graphics accepted. Explicit Rect2 fixes it. V2 standard source400/0
-preceded its compact regression; it is not final visual acceptance. V3 actual
-490/0 and final packed compact202/0 are current. Failed logs/packs preserved.
+## Rejected iterations, limits and completion
 
-Source beveled ornament/callout tails/coin decoration remain known polish debt;
-this targets the human's font/padding complaint, not complete source reproduction.
-Some real Mac result captures retain a hover label over the bowl, not baked image
-text. Whole-game aesthetics/fun, VoiceOver/text scaling/reduced motion/keyboard
-focus and physical iPhone safe areas/touch require separate validation. Phone work
-remains excluded; no Claude delegation, normal-save access or security change.
+v1 prepared-only had price wrapping; v2 actual506/0 was visually rejected for
+count wrapping/dock overlap. v3 actual522/0 led heading/category/empty-tile fixes.
+v4 prepared-only was superseded by wallet guard. v5 actual524/0 preceded chevron
+correction. v6 actual524/0 exposed the cooking-disabled badge regression. These
+packs/logs remain private diagnostics, not current acceptance evidence.
 
-Completed: preserve all10 unexpected copies in place; independent main-based
-checkout; licensed type/real insets; actual guards; fresh native pack/capture;
-compact regression correction; full/focused comparison; postrun source/pack/
-signature checks and bounded evidence. Ready publication/matching-head merge is
-already authorized by the standing human instruction.
+No unresolved P1/P2 defect was observed in the bounded surfaces opened above.
+Human appearance/usability/fun judgment, physical iPhone safe areas/touch, keyboard,
+VoiceOver, text scaling and reduced motion remain outside this acceptance.
+Some intermediate captures contain actual transient tap/hover labels. Rank3/four
+portions is a synthetic view projection, not earned or persisted player progress.
+Domain/services/schema/balance/ordinary saves are unchanged; broad domain suites
+were not rerun or claimed as current. No Claude calls or iPhone work occurred.
+
+Completed: preserve prior Documents copies and unfinished journey stash; rebuild
+selected composition and assets; correct visual regressions; native/compact/input
+validation; exact full/focused comparison; source/PCK/signature verification;
+publish bounded evidence and ready review under standing merge authorization.

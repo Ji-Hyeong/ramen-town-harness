@@ -2,18 +2,21 @@
 
 ## Current verified checkpoint
 
-The human rejected v5's heavy bitmap UI type and border-crowded headings.
-The typography refinement uses original licensed Pretendard Regular/SemiBold,
-real four-sided summary insets and more card/list breathing room. Current native
-OpenGL capture completes490/0/exit0/engine0, packed shorter390x750202/0. All240
-runtime sources and exported pack4da0e678 match after the run; official engine
-signature0.13 current originals and3 composed comparisons were opened.
-[Current native originals, before/after and honest scope](uiux-reset/typography-v1/)
-and [root design QA](../../design-qa.md) record this bounded review. The final
-customer detail restores every selected customer's reason and price reaction,
-as well as numbers/version comparison; omission reproduced14/5 before14/0.
-Prior native-v2/v3/v5 evidence and refinement failures remain historical, not
-human acceptance. The font/padding change does not alter gameplay or save schema.
+The human rejected the typography refinement's divergence from the selected mock.
+The current rebuild uses that same category-refined option3 as visual truth:
+filled stockpot/noodle callouts with connectors, shallow layered bowl, centered
+compact teal portion dock, four visible initial rows and framed gold primary CTA.
+Original generated textures and licensed Pretendard Regular/Bold are real native
+resources; data, actual controls and guarded handlers remain live.
+
+Final native OpenGL run20261024T095711Z-34614 completes524/0/exit0/engine0;
+packed shorter390x750 layout219/0. All275 runtime files, exported/embedded pack
+200761113c54c98d96020192bf953d31424005dc8b660e6d5571a7cc471180c4 and
+post-run official-engine strict signature0 match.13 originals and4 full/focused
+comparisons were opened. [Current captures and exact comparison scope](uiux-reset/mock-fidelity-v1/)
+and [root design QA](../../design-qa.md) supersede prior visual pass claims.
+Typography/native-v5 galleries remain historical evidence. This is bounded
+internal review, not human aesthetic approval or whole-game acceptance.
 
 The iPhone is excluded by the user's latest instruction. No current installation
 or human usability/fun acceptance is claimed; the earlier prepared0.14 app is
@@ -37,7 +40,7 @@ screenshot. The native implementation remains Godot, with the iPhone target.
 - Fixed All, Meat/Egg, Vegetables/Fruit and Seafood filters cover the current
   eight catalog toppings. The ingredient list scrolls independently; draft,
   category and scroll position survive details. Locked items expose their real
-  discovery conditions. Information and add/replace use separate48px controls.
+  discovery conditions. Information uses a44px hit; add/replace uses a separate48px control.
 - Each row reads the real catalog cost and preparation time. A successful recipe
   change animates the dish; a refused change does not celebrate food addition.
   Existing committed-click feedback and audio remain connected.
@@ -55,14 +58,15 @@ nodes as current rendered evidence. Domain/services and save schema are unchange
 
 ## Assets and scope
 
-Original food/background/steam PNGs were generated for this visual direction.
-Their bytes, prompts, hashes and measured alpha bounds are preserved in
-`uiux-reset/native-assets/`. Runtime AtlasTextures omit transparent margins
-without editing the originals. The existing original scallop is reused. Broth
-palette shading affects the soup region, preserving the bowl and separate food.
-Noodle variants have small generated silhouette differences; they are not claimed
-to be pixel-identical ceramic. Broth/noodle/topping appearance is supported, not
-an exact distinct visualization of every oil, firmness or process setting.
+New original frame/button/callout/icon and three-noodle bowl PNGs recreate the
+selected reference, with full prompts, hashes and measured alpha regions in
+`assets/ui/mock-fidelity/`. AtlasTexture bounds account for standard Godot import
+size limits; PNG originals are unchanged. The rejected deeper bowl generation is
+preserved but unused. Existing food/background/steam originals remain in
+`uiux-reset/native-assets/`. The bowl has no baked toppings: actual repeated
+portions are layered and broth-region shading preserves the vessel. Generated
+pixel shading, smooth UI font and minor decorative details approximate the mock;
+no pixel-identity claim. [Asset integration notes](uiux-reset/mock-fidelity-v1/ASSETS.md).
 
 The13 interface symbols are upstream Google Material Symbols Rounded icons,
 with source URLs, original/modified hashes and Apache2 license in

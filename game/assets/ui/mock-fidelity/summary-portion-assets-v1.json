@@ -1,0 +1,103 @@
+{
+  "tool": "built-in image_gen; transparent_background=true; no postprocessing",
+  "reference": "game/docs/uiux-reset/refinements/concept-03-categories-v1.png",
+  "assets": [
+    {
+      "path": "/Users/ji/.local/share/ramen-atelier/workspaces/ramen-typography-20261023/game/assets/ui/mock-fidelity/summary-card-v1.png",
+      "original": "/Users/ji/.codex/generated_images/01a16d32-5717-7b53-b3a9-af6b74cc69b1/exec-c830d0a9-a0f5-4ef2-839e-179dea56e44b.png",
+      "sha256": "e049e69af124955a8feb1d79550684407a1ed46bb005671dcf5ca9d64fc823d2",
+      "dimensions": [
+        2079,
+        756
+      ],
+      "alpha_range": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        38,
+        75,
+        2039,
+        672
+      ],
+      "alpha16_bbox": [
+        44,
+        78,
+        2036,
+        666
+      ],
+      "modified": false,
+      "recommended_atlas_region": [
+        44,
+        78,
+        1992,
+        588
+      ],
+      "recommended_source_slice_margins": [
+        128,
+        128,
+        128,
+        128
+      ],
+      "intended_native_size": [
+        165,
+        60
+      ],
+      "intended_native_corner_inset": [
+        9,
+        9
+      ],
+      "prompt": "Create exactly ONE production game UI raster asset derived faithfully from the attached reference. The reference is the design truth. Isolate/recreate a BLANK cream rectangular summary speech-box surface matching the top two broth/noodle cards in that image, but omit ALL text, ALL icons, ALL food, ALL arrows, ALL callout tails/pointers and ALL surroundings. This is just a reusable nine-slice-safe blank card, intended to render at 165 by 60 game pixels. Aspect ratio about 2.75:1. A warm near-white cream untextured center, thin very dark warm brown outline, little clipped stepped pixel corners, subtle ivory inner edge matching the reference. All visible edges are deliberate crisp square pixel-art steps corresponding to approximately 1 logical pixel at target size; no smooth rounded app-card corners, no 3D perspective, no drop shadow, no gradients, no grain/noise, no embellishments. Flat front-facing rectangle. Straight horizontal/vertical edges must be uniform and suitable for nine-slicing, corners only at the far corners. Keep the interior blank opaque cream. Outside the stepped corner contour must be TRUE transparent alpha, never a checkerboard drawn into pixels, no surrounding background. Crop the canvas tightly around the card with at most 1 percent outside padding. Do not produce a screenshot, entire interface, multiple assets or a contact sheet. Preserve the restrained cream/dark-brown treatment of the reference summary boxes.",
+      "review": "Inspected generated output; blank cream interior, dark stepped outline, no text/icons/tails. True exterior alpha verified; canvas excess is retained unmodified and measured for AtlasTexture."
+    },
+    {
+      "path": "/Users/ji/.local/share/ramen-atelier/workspaces/ramen-typography-20261023/game/assets/ui/mock-fidelity/portion-panel-v1.png",
+      "original": "/Users/ji/.codex/generated_images/01a16d32-5717-7b53-b3a9-af6b74cc69b1/exec-54101702-a33b-4142-8ec5-37b39080d296.png",
+      "sha256": "a30b3afa5b9162fed49e4c8c56d39f1ddf23553617d5ed3b2c5421e02c3eaeb7",
+      "dimensions": [
+        1806,
+        871
+      ],
+      "alpha_range": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        36,
+        61,
+        1769,
+        813
+      ],
+      "alpha16_bbox": [
+        43,
+        64,
+        1765,
+        806
+      ],
+      "modified": false,
+      "recommended_atlas_region": [
+        43,
+        64,
+        1722,
+        742
+      ],
+      "recommended_source_slice_margins": [
+        110,
+        110,
+        110,
+        110
+      ],
+      "intended_native_size": [
+        220,
+        106
+      ],
+      "intended_native_corner_inset": [
+        10,
+        10
+      ],
+      "prompt": "Create exactly ONE blank production game UI raster asset derived faithfully from the attached design reference: the turquoise framed cream TOPPING PORTION PANEL in the middle of the reference, under the ramen bowl. Recreate ONLY its rectangular outer surface, omitting ALL text, ALL food, ALL slots, ALL buttons, ALL symbols, ALL pointers/tails and ALL other surroundings. This is a reusable nine-slice-safe blank panel intended to render about 220 by 106 native game pixels (aspect about 2.08:1). Match the reference's turquoise multi-edge pixel outline: dark teal exterior edge, vivid teal border, delicate pale aqua/ivory highlight inset, small clipped stepped pixel corners. The whole broad interior is blank warm ivory cream, near-white. Straight horizontal/vertical border sections must remain regular, thin and uniformly colored for nine-slicing; no texture or ornament that will stretch strangely. Crisp deliberate square pixel steps corresponding to 1-2px at intended native size, not smooth rounded SaaS UI, not a glossy plastic capsule. Front-facing, no perspective, no shadow. Outside the clipped corner contour must be TRUE transparent alpha; never a baked checkerboard or colored backdrop. Canvas tight around the asset with at most one percent outer padding. Exactly one panel, not a mockup, sprite sheet, screenshot, or contact sheet. No words or icons anywhere.",
+      "review": "Inspected generated output; turquoise multi-edge frame and cream interior, no text/icons/slots. True exterior alpha verified. Original bytes retained; use measured AtlasTexture region."
+    }
+  ],
+  "integration_note": "Source slice margins are original-image pixels, not native logical margins. Transform to the intended rendering scale; assigning them directly as a small StyleBox minimum will over-expand the native control."
+}

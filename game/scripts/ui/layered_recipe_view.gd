@@ -2,6 +2,7 @@ extends Control
 ## 이미지 원본의 그릇과 각 분량을 별도 레이어로 합성한다. 중복 분량도 별도 노드다.
 const Catalog = preload("res://scripts/domain/ingredient_catalog.gd")
 const Art = preload("res://scripts/ui/bowl_editor_art.gd")
+const MockArt = preload("res://scripts/ui/mock_fidelity_art.gd")
 const BrothShader = preload("res://scripts/ui/bowl_broth_tint.gdshader")
 var config: Dictionary = {}
 var _base: TextureRect
@@ -38,8 +39,7 @@ func set_config(value: Dictionary) -> void:
 	if _base == null:
 		return
 	var noodle: String = str(config.get("noodle", "noodle_thin"))
-	var variant: String = "base-bowl" if noodle == "noodle_thin" else ("base-bowl-medium" if noodle == "noodle_medium" else "base-bowl-thick")
-	_base.texture = Art.food(variant)
+	_base.texture = MockArt.bowl(noodle)
 	var palette := ShaderMaterial.new()
 	palette.shader = BrothShader
 	var atlas: AtlasTexture = _base.texture as AtlasTexture
@@ -77,10 +77,10 @@ func _arrange() -> void:
 	_base.position = origin
 	_base.size = bowl_size
 	# Positions follow the soup ellipse, not the transparent source canvas.
-	var points: Array[Vector2] = [Vector2(0.35, 0.38), Vector2(0.64, 0.39), Vector2(0.40, 0.57), Vector2(0.65, 0.56)]
+	var points: Array[Vector2] = [Vector2(0.32, 0.52), Vector2(0.65, 0.40), Vector2(0.46, 0.58), Vector2(0.70, 0.60)]
 	for i in _portions.size():
 		var image: TextureRect = _portions[i]
-		var portion_size := Vector2(width * 0.33, bowl_size.y * 0.35)
+		var portion_size := Vector2(width * 0.43, bowl_size.y * 0.60)
 		image.size = portion_size
 		image.position = origin + bowl_size * points[i] - portion_size * 0.5
 	_arrange_steam(origin, bowl_size)
