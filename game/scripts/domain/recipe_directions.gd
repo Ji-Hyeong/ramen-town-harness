@@ -1,5 +1,5 @@
 extends RefCounted
-## Three ingredient-led experiments, projected from real recipes. These are
+## Ingredient-led experiments, projected from real recipes. These are
 ## open constraints, never saved recipes, permanent unlocks or score bonuses.
 ## Retained paid tasting records alone witness completion; deleting a witness
 ## can remove that status, just as it does in the existing research map.
@@ -21,6 +21,14 @@ const DATA: Array = [
 		"brief": "정어리 육수에 가리비를 더해 바다의 맛을. 타레로 짠맛을 다듬어 보세요.",
 		"source": "아침 항구 · 어획물 채집", "requires": ["broth_roasted_sardine", "topping_scallop"],
 		"limits": [{"axis": "salt", "max": 7}]},
+	{"id":"mountain_clear","title":"산향 메밀탕","ingredient":"noodle_buckwheat","slot":"noodle",
+		"brief":"산메밀의 향을 가벼운 국물에. 익힘과 반죽으로 식감을 다듬어 보세요.",
+		"source":"산골 농가 · 제분소","requires":["noodle_buckwheat"],
+		"limits":[{"axis":"rich","max":5},{"axis":"aroma","min":6},{"axis":"chew","min":6}]},
+	{"id":"shiitake_depth","title":"산표고 진국","ingredient":"topping_grilled_shiitake","slot":"topping",
+		"brief":"직화 산표고의 향과 진한 국물의 균형. 고명을 겹치면 시간과 원가도 늘어요.",
+		"source":"산골 농가 · 산표고 화덕","requires":["topping_grilled_shiitake"],
+		"limits":[{"axis":"rich","min":7},{"axis":"aroma","min":7}]},
 ]
 
 

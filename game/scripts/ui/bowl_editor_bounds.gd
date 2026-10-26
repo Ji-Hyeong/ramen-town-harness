@@ -1,6 +1,9 @@
 extends RefCounted
 ## Generated from measured original alpha bounds; originals remain byte-equal.
 const DATA: Dictionary = {
+  "noodle_buckwheat": {"file":"noodle_buckwheat-v1.png", "rect":[340,200,950,699]},
+  "base-bowl-buckwheat": {"file":"base-bowl-buckwheat-v1.png", "rect":[175, 165, 1186, 719]},
+  "topping_grilled_shiitake": {"file":"topping_grilled_shiitake-v1.png", "rect":[281, 231, 947, 642]},
   "base-bowl": {
     "file": "base-bowl.png",
     "rect": [

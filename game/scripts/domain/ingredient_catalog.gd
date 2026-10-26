@@ -167,12 +167,16 @@ static func discovery_items(slot: String) -> Array:
 const FARMED_ITEMS: Dictionary = {
 	"broth": [{"id": "broth_roasted_sardine", "name": "구운 정어리 육수", "short_name": "정어리 육수", "cost": 450, "seconds": 30, "region": "harbor",
 		"desc": "항구의 작은 생선을 구워 낸 맑은 육수. 향이 강하고 간이 있지만 진함은 낮아요. 손질에는 시간이 들어요.", "axes": {"rich": 1, "salt": 2, "aroma": 5}}],
+	"noodle": [{"id":"noodle_buckwheat", "name":"산메밀면", "cost":480, "seconds":65, "region":"mountain",
+		"desc":"산골 제분소의 향긋한 메밀면. 식감이 단단하고 메밀 향이 있지만 가는 면보다 비싸고 천천히 삶아야 해요.", "axes":{"aroma":2,"chew":6}}],
 	"oil": [{"id": "oil_roasted_sesame", "name": "볶은 참깨유", "cost": 240, "seconds": 12,
 		"desc": "장터에서 구한 고소한 연구 재료. 진함과 향이 강하고 손질 시간이 길어요.", "axes": {"rich": 2, "aroma": 4}}],
 	"topping": [{"id": "topping_citrus_peel", "name": "유자 껍질", "cost": 220, "seconds": 4,
 		"desc": "장터의 산뜻한 노란 고명. 국물을 가볍게 하고 향을 더해요.", "axes": {"rich": -2, "aroma": 2}},
 		{"id": "topping_scallop", "name": "가리비 고명", "cost": 550, "seconds": 16, "region": "harbor",
-		"desc": "노릇하게 구운 항구 가리비. 진함과 향을 보태요. 겹쳐 넣으면 원가와 준비 시간도 함께 늘어요.", "axes": {"rich": 2, "aroma": 1}}],
+		"desc": "노릇하게 구운 항구 가리비. 진함과 향을 보태요. 겹쳐 넣으면 원가와 준비 시간도 함께 늘어요.", "axes": {"rich": 2, "aroma": 1}},
+		{"id":"topping_grilled_shiitake", "name":"구운 산표고", "cost":460, "seconds":19, "region":"mountain",
+		"desc":"농가에서 통째로 구운 산표고. 향과 씹는 맛은 더하지만 국물은 가벼워지고 준비 시간이 늘어요.", "axes":{"rich":-1,"aroma":3,"chew":1}}],
 }
 
 

@@ -7,6 +7,8 @@ extends RefCounted
 const Catalog = preload("res://scripts/domain/ingredient_catalog.gd")
 const SCALLOP: Texture2D = preload("res://assets/ingredients/grilled-scallop-v1.png")
 static var _scallop_cache: Dictionary = {}
+const SHIITAKE: Texture2D = preload("res://assets/ui/bowl-editor/topping_grilled_shiitake-v1.png")
+static var _shiitake_cache: Dictionary = {}
 
 
 ## Crop the actual alpha bounds once per logical size, then sample with nearest
@@ -20,6 +22,18 @@ static func _scallop_sprite(w: int, h: int) -> Image:
 		sprite.resize(w, h, Image.INTERPOLATE_NEAREST)
 		_scallop_cache[key] = sprite
 	return _scallop_cache[key]
+
+
+## Same generated topping is downsampled for actual tiny service sprites.
+static func _shiitake_sprite(w: int, h: int) -> Image:
+	var key := Vector2i(w, h)
+	if not _shiitake_cache.has(key):
+		var source: Image = SHIITAKE.get_image()
+		source.decompress()
+		var sprite: Image = source.get_region(Rect2i(281,231,947,642))
+		sprite.resize(w, h, Image.INTERPOLATE_NEAREST)
+		_shiitake_cache[key] = sprite
+	return _shiitake_cache[key]
 
 
 const INK: Color = Color(0.149, 0.102, 0.071)
@@ -623,6 +637,8 @@ static func _base_broth_color(config: Dictionary) -> Color:
 ## 토핑 하나일 때의 예전 그림(그릇 왼쪽/오른쪽 위 고정 위치). 단일 토핑 레시피의 모습을 바꾸지 않는다.
 static func _draw_topping_single(img: Image, id: String) -> void:
 	match id:
+		"topping_grilled_shiitake":
+			img.blend_rect(_shiitake_sprite(3,2),Rect2i(0,0,3,2),Vector2i(2,1))
 		"topping_scallop":
 			img.blend_rect(_scallop_sprite(3, 2), Rect2i(0, 0, 3, 2), Vector2i(2, 1))
 		"topping_chashu":
@@ -653,6 +669,8 @@ static func _draw_topping_single(img: Image, id: String) -> void:
 ## 토핑이 둘 이상일 때의 2칸 폭 작은 모양. ax 는 왼쪽 끝 x(2/5/8). 모두 국물 면 두 줄(y 1~2)과 테두리(y 0) 안에 있다.
 static func _draw_topping_compact(img: Image, id: String, ax: int) -> void:
 	match id:
+		"topping_grilled_shiitake":
+			img.blend_rect(_shiitake_sprite(2,2),Rect2i(0,0,2,2),Vector2i(ax,1))
 		"topping_scallop":
 			img.blend_rect(_scallop_sprite(2, 2), Rect2i(0, 0, 2, 2), Vector2i(ax, 1))
 		"topping_chashu":
@@ -697,6 +715,7 @@ static func bowl_image(config: Dictionary) -> Image:
 	# 면: 굵을수록 줄무늬가 성기고 색이 진하다.
 	var noodle: Color = Color(0.97, 0.88, 0.58)
 	var n: String = str(config.get("noodle", ""))
+	if n=="noodle_buckwheat": noodle=Color("b19a79")
 	if n == "noodle_thick":
 		noodle = Color(0.93, 0.80, 0.44)
 	var process: Dictionary = config.get("process", {})
@@ -772,7 +791,7 @@ static func recipe_bowl_image(config: Dictionary) -> Image:
 		rect(img, 11, 11, 9, 1, soup.lightened(0.30))
 	var n: String = str(config.get("noodle", "noodle_thin"))
 	var cook: String = str(config.get("cook", "cook_normal"))
-	var noodle: Color = Color(0.98, 0.84, 0.46)
+	var noodle: Color = Color("b19a79") if n=="noodle_buckwheat" else Color(0.98, 0.84, 0.46)
 	if process.get("noodle", "standard") == "rested": noodle = noodle.darkened(0.15)
 	if process.get("noodle", "standard") == "moist" or cook == "cook_soft": noodle = noodle.lightened(0.18)
 	for row in 4:
@@ -815,6 +834,8 @@ static func _dish_oval(img: Image, cx: int, cy: int, rx: int, ry: int, color: Co
 
 static func _dish_topping(img: Image, id: String, x: int, y: int) -> void:
 	match id:
+		"topping_grilled_shiitake":
+			img.blend_rect(_shiitake_sprite(11,8),Rect2i(0,0,11,8),Vector2i(x-5,y-4))
 		"topping_scallop":
 			img.blend_rect(_scallop_sprite(11, 8), Rect2i(0, 0, 11, 8), Vector2i(x - 5, y - 4))
 		"topping_chashu":
@@ -846,6 +867,7 @@ static func _dish_topping(img: Image, id: String, x: int, y: int) -> void:
 # ---------- 재료 아이콘 (12x12) ----------
 
 static func icon_image(id: String) -> Image:
+	if id=="topping_grilled_shiitake": return _shiitake_sprite(12,12).duplicate()
 	if id == "topping_scallop":
 		return _scallop_sprite(12, 12).duplicate()
 	var img: Image = new_image(12, 12)
@@ -901,7 +923,7 @@ static func icon_image(id: String) -> Image:
 		for row in 3:
 			for x in 12:
 				var yy: int = 2 + row * 3 + (amp if (x / 2) % 2 == 0 else 0)
-				rect(img, x, yy, 1, thick, Color(0.97, 0.88, 0.58))
+				rect(img, x, yy, 1, thick, Color("b19a79") if id=="noodle_buckwheat" else Color(0.97, 0.88, 0.58))
 	elif id.begins_with("topping_"):
 		match id:
 			"topping_chashu":

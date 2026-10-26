@@ -3,6 +3,8 @@ extends RefCounted
 ## 음식과 아이콘은 실제 원본 자산이며, 플레이 중 임의 도형으로 대체하지 않는다.
 const ROOT: String = "res://assets/ui/bowl-editor/"
 const Bounds = preload("res://scripts/ui/bowl_editor_bounds.gd")
+const AlphaCutout = preload("res://scripts/ui/food_alpha_cutout.gdshader")
+static var _cutout: ShaderMaterial
 static var _textures: Dictionary = {}
 static var _icons: Dictionary = {}
 static var _bounds: Dictionary = {}
@@ -25,8 +27,21 @@ static func food(id: String) -> Texture2D:
 	var atlas := AtlasTexture.new()
 	atlas.atlas = texture
 	atlas.region = Rect2(float(rect[0]), float(rect[1]), float(rect[2]), float(rect[3]))
+	if id=="noodle_buckwheat": atlas.set_meta("solid_alpha",true)
 	_textures[id] = atlas
 	return atlas
+
+
+## Existing images retain their exact material. Only the marked new noodle
+## bundle clips its generated translucent exterior; no palette is invented.
+static func image_material(texture: Texture2D) -> ShaderMaterial:
+	# Exploration intentionally creates an unbound region image before present().
+	if texture==null: return null
+	if not texture.get_meta("solid_alpha",false): return null
+	if _cutout==null:
+		_cutout=ShaderMaterial.new()
+		_cutout.shader=AlphaCutout
+	return _cutout
 
 
 static func icon(id: String) -> Texture2D:

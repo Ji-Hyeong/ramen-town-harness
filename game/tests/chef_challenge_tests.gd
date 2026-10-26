@@ -88,9 +88,9 @@ func run(callback: Callable, data_dir: String) -> void:
 	var deleted:=State.new()
 	check.call(deleted.load_from_dict(state.to_dict())=="" and deleted.chef_challenge_review()["status"]=="mastered","deleted witness remains valid after strict load")
 	# Every historical root shape migrates without granting a challenge/reward.
-	for version in range(1,14):
+	for version in range(1,15):
 		var raw: Dictionary=State.new().to_dict()
-		var keys: Array=State.TOP_KEYS_V13
+		var keys: Array=State.TOP_KEYS_V14 if version==14 else State.TOP_KEYS_V13
 		if version<=2: keys=State.TOP_KEYS_V1 if version==1 else State.TOP_KEYS_V2
 		elif version==3: keys=State.TOP_KEYS_V3
 		elif version==4: keys=State.TOP_KEYS_V4
@@ -146,6 +146,7 @@ func run(callback: Callable, data_dir: String) -> void:
 	check.call(historical.load_from_dict(grown.to_dict())=="","post-mastery historical report validated")
 	var fake_old: Dictionary=grown.to_dict()
 	fake_old.erase("chef_challenge")
+	fake_old.erase("mountain_foraging")
 	fake_old["schema_version"]=13
 	check.call(historical.load_from_dict(fake_old)!="","old schema rejects nested mastery snapshot")
 
@@ -166,6 +167,7 @@ func run(callback: Callable, data_dir: String) -> void:
 	check.call(DirAccess.make_dir_recursive_absolute(old_dir)==OK,"isolated progressed v13 directory")
 	var raw13: Dictionary=multi.to_dict()
 	raw13.erase("chef_challenge")
+	raw13.erase("mountain_foraging")
 	raw13["schema_version"]=13
 	var old_text: String=JSON.stringify(raw13,"\t",true)
 	var old_store=Save.new(old_dir)
@@ -178,6 +180,7 @@ func run(callback: Callable, data_dir: String) -> void:
 	check.call(old_store.load_into(migrated)["status"]=="ok" and migrated.chef_challenge_review()["status"]=="open","progressed v13 migration has no retroactive grant")
 	var projected: Dictionary=migrated.to_dict()
 	projected.erase("chef_challenge")
+	projected.erase("mountain_foraging")
 	projected["schema_version"]=13
 	check.call(JSON.stringify(projected,"",true)==JSON.stringify(raw13,"",true),"all v13 progression/report/records/wallet remain exact")
 	check.call(old_store.save_state(migrated)["ok"] and FileAccess.get_file_as_string(old_store.legacy_bak_path(13))==old_text,"first schema14 save preserves exact v13 original")

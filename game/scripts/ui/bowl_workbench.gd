@@ -70,6 +70,7 @@ var _back: Button
 var _progress: ProgressBar
 var _work_title: Label
 var _work_box: VBoxContainer
+var _work_scroll: ScrollContainer
 var _result_customer: int = 0
 var _group_scroll: Dictionary = {}
 var _group_tab: Dictionary = {}
@@ -152,6 +153,7 @@ func _button(text: String, node_name: String, icon_name: String = "", bg: Color 
 func _picture(texture: Texture2D, minimum: Vector2) -> TextureRect:
 	var picture := TextureRect.new()
 	picture.texture = texture
+	picture.material = Art.image_material(texture)
 	picture.custom_minimum_size = minimum
 	picture.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	picture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
@@ -163,7 +165,7 @@ func _picture(texture: Texture2D, minimum: Vector2) -> TextureRect:
 func _ingredient_texture(id: String) -> Texture2D:
 	# Reuse the selected mock's filled symbols consistently in rows and details.
 	# Actual topping images stay ingredient-specific, including farmed materials.
-	if id.begins_with("topping_"):
+	if id=="noodle_buckwheat" or id.begins_with("topping_"):
 		return Art.food(id)
 	if id.begins_with("broth_"):
 		return MockArt.texture("pot")
@@ -413,10 +415,20 @@ func _build_picker() -> void:
 	_rows.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_rows.add_theme_constant_override("separation", 2)
 	_scroll.add_child(_rows)
+	# A hidden wrapped VBox retains its narrow startup text height. Giving that
+	# height directly to the picker can push the dish/footer off the viewport
+	# when cooking starts. Bound the work body exactly like the ingredient list.
+	_work_scroll=ScrollContainer.new()
+	_work_scroll.name="CookingScroll"
+	_work_scroll.horizontal_scroll_mode=ScrollContainer.SCROLL_MODE_DISABLED
+	_work_scroll.size_flags_vertical=Control.SIZE_EXPAND_FILL
+	_work_scroll.scroll_deadzone=10
+	_work_scroll.visible=false
+	_picker.add_child(_work_scroll)
 	_work_box = VBoxContainer.new()
-	_work_box.visible = false
+	_work_box.size_flags_horizontal=Control.SIZE_EXPAND_FILL
 	_work_box.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_picker.add_child(_work_box)
+	_work_scroll.add_child(_work_box)
 	_work_title = _label("", 23)
 	_work_box.add_child(_work_title)
 	_work_box.add_child(_label("국물 → 면 → 한 그릇", 18))
@@ -504,6 +516,9 @@ func present(new_state: Game, mode: int, information: Dictionary) -> void:
 	_broth.tooltip_text = "%s · %s · %s" % [Catalog.find(str(config["broth"]))["name"], Catalog.find(str(config["tare"]))["name"], Catalog.find(str(config["oil"]))["name"]]
 	_noodle_text.text = str(Catalog.find(str(config["noodle"]))["name"]) + "·" + str(Catalog.find(str(config["cook"]))["name"]).replace("하게", "")
 	_noodle.tooltip_text = str(Catalog.find(str(config["cook"]))["name"])
+	var noodle_art: TextureRect=_noodle.find_child("SummaryHeadingRow",true,false).get_child(0)
+	noodle_art.texture=_ingredient_texture(str(config["noodle"]))
+	noodle_art.material=Art.image_material(noodle_art.texture)
 	_broth.disabled = result or bool(_info["busy"])
 	_noodle.disabled = _broth.disabled
 	_cost.text = won(Evaluator.unit_cost(config))
@@ -609,7 +624,7 @@ func _render_content() -> void:
 	var result: bool = _mode == 1
 	_filters.visible = not result and not working
 	_scroll.visible = not working
-	_work_box.visible = working
+	_work_scroll.visible = working
 	_heading.text = "한 그릇 완성" if result else ("조리 중" if working else "토핑 추가")
 	_heading_hint.visible = not result and not working
 	var portion_count: int = Catalog.toppings_of(state.draft_config).size()
@@ -1291,7 +1306,7 @@ func _show_directions() -> void:
 			go.pressed.connect(func(): _emit("direction", {"id": id}); _close_modal())
 			detail.add_child(go)
 			var find := _button("재료 찾기", "EditorDirectionExplore", "chevron_right")
-			find.pressed.connect(func(): _close_modal(); _emit("route", {"index": 6}))
+			find.pressed.connect(func(): _close_modal(); _emit("direction_source", {"id": id}))
 			detail.add_child(find))
 		body.add_child(button)
 

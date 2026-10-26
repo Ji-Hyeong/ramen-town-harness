@@ -7,6 +7,7 @@ const Catalog = preload("res://scripts/domain/ingredient_catalog.gd")
 const Regions = preload("res://scripts/domain/ingredient_exploration.gd")
 const Market = preload("res://scripts/domain/market_foraging.gd")
 const Harbor = preload("res://scripts/domain/harbor_foraging.gd")
+const Mountain = preload("res://scripts/domain/mountain_foraging.gd")
 const Pixel = preload("res://scripts/ui/pixel_art.gd")
 const Art = preload("res://scripts/ui/bowl_editor_art.gd")
 const Mock = preload("res://scripts/ui/mock_fidelity_art.gd")
@@ -50,6 +51,15 @@ var _return_scroll: int = 0
 var _render_serial: int = 0
 var _reward_art: TextureRect
 var _celebrations: int = 0
+
+
+## Select a read-only source page. The controller retains every paid action.
+func open_samples(id: String) -> void:
+	region=id
+	mode="sample"
+	_detail=""
+	_hide_receipt=true
+	_key=""
 
 
 func _ready() -> void:
@@ -118,6 +128,7 @@ func _box(parent: Node, gap: int = 8) -> VBoxContainer:
 func _image(texture: Texture2D, minimum: Vector2) -> TextureRect:
 	var picture := TextureRect.new()
 	picture.texture = texture
+	picture.material = Art.image_material(texture)
 	picture.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	picture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	picture.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
@@ -127,7 +138,7 @@ func _image(texture: Texture2D, minimum: Vector2) -> TextureRect:
 
 
 func _food(id: String) -> Texture2D:
-	if id.begins_with("topping_"):
+	if id=="noodle_buckwheat" or id.begins_with("topping_"):
 		return Art.food(id)
 	if id.begins_with("broth_"):
 		return Mock.texture("pot")
@@ -241,7 +252,7 @@ func present(new_state: Game, information: Dictionary) -> void:
 		var trip: Dictionary = state.expedition()
 		if not trip.is_empty():
 			region = str(trip["region"])
-			mode = "sample" if not state.foraging_state()["active"].is_empty() or not state.harbor_foraging_state()["active"].is_empty() else "supplier"
+			mode = "sample" if not state.foraging_state()["active"].is_empty() or not state.harbor_foraging_state()["active"].is_empty() or not state.mountain_foraging_state()["active"].is_empty() else "supplier"
 			_choice = ""
 			_detail = ""
 			_hide_receipt = false
@@ -254,8 +265,6 @@ func present(new_state: Game, information: Dictionary) -> void:
 
 func _choose_region(id: String) -> void:
 	region=id
-	if region=="mountain":
-		mode="supplier"
 	_choice=""
 	_detail=""
 	_retiring=false
@@ -272,15 +281,15 @@ func _choose_mode(value: String) -> void:
 
 
 func _review() -> Dictionary:
-	return state.exploration_region(region) if mode=="supplier" else (state.foraging_review() if region=="market" else state.harbor_foraging_review())
+	return state.exploration_region(region) if mode=="supplier" else (state.foraging_review() if region=="market" else (state.harbor_foraging_review() if region=="harbor" else state.mountain_foraging_review()))
 
 
 func _ids() -> Array:
-	return Regions.find_region(region)["ingredients"] if mode=="supplier" else (Market.IDS if region=="market" else Harbor.IDS)
+	return Regions.find_region(region)["ingredients"] if mode=="supplier" else (Market.IDS if region=="market" else (Harbor.IDS if region=="harbor" else Mountain.IDS))
 
 
 func _receipt() -> Dictionary:
-	var history: Array = state.exploration_history() if mode=="supplier" else (state.foraging_state()["history"] if region=="market" else state.harbor_foraging_state()["history"])
+	var history: Array = state.exploration_history() if mode=="supplier" else (state.foraging_state()["history"] if region=="market" else (state.harbor_foraging_state()["history"] if region=="harbor" else state.mountain_foraging_state()["history"]))
 	if history.is_empty():
 		return {}
 	var last: Dictionary = history.back()
@@ -315,7 +324,7 @@ func _render() -> void:
 		_select_skin(button,region==id)
 	for id in _mode_buttons:
 		var button: Button = _mode_buttons[id]
-		button.disabled=active or (region=="mountain" and id=="sample")
+		button.disabled=active
 		_select_skin(button,mode==id)
 	_picture.texture=Pixel.scaled_tex(Pixel.exploration_image(region),4)
 	_region_title.text=str(Regions.find_region(region)["name"])
@@ -432,7 +441,7 @@ func _render_preview() -> void:
 		reason.name="ExploreReason"
 		_body.add_child(reason)
 	if mode=="sample":
-		_body.add_child(_label("2개 / 추가 0원 · 3개 / 추가 300원" if region=="market" else "1개 / 추가 0원 · 3개 / 추가 600원",15,TEAL))
+		_body.add_child(_label("2개 / 추가 0원 · 3개 / 추가 300원" if region=="market" else ("1개 / 추가 0원 · 3개 / 추가 600원" if region=="harbor" else "1개 / 추가 0원 · 3개 / 추가 800원"),15,TEAL))
 	_action.text="출발 · "+Editor.won(int(review["fee"]))
 	_action.disabled=_action.disabled or not bool(review["can_start"])
 	_cost.text="출발비 "+Editor.won(int(review["fee"]))+" · 선택 비용은 별도 표시"
@@ -469,7 +478,7 @@ func _render_active(trip: Dictionary) -> void:
 	if str(trip["stage"])==Regions.STAGE_RESULT:
 		var reward: Dictionary = {"ingredient":Regions.ingredient_for(region,trip["path"])}
 		if mode=="sample":
-			reward=Market.outcome(trip["path"]) if region=="market" else Harbor.outcome(trip["path"])
+			reward=Market.outcome(trip["path"]) if region=="market" else (Harbor.outcome(trip["path"]) if region=="harbor" else Mountain.outcome(trip["path"]))
 		_body.add_child(_label("발견! 직접 받아 주세요",22,TEAL))
 		_material(str(reward["ingredient"]),"연구 재료 ×%d개 · 아직 보관함에 들어오지 않았어요" % int(reward["amount"]) if mode=="sample" else "수령하면 공급처가 열려요")
 		_body.add_child(_label(str(trip["result"]["message"]),17))
