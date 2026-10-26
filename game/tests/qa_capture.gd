@@ -157,11 +157,18 @@ func _state(app: Node) -> Object:
 
 
 func _spawn(holder: SubViewport, data_dir: String) -> Node:
+	var had_save: bool=FileAccess.file_exists(data_dir.path_join("ramen_lab_save.json"))
 	var scene: PackedScene = load("res://scenes/main.tscn") as PackedScene
 	var app: Node = scene.instantiate()
 	# 사용자 저장소(user://)를 건드리지 않도록 저장 위치를 ready 전에 주입한다.
 	app.set("data_location", {"ok": true, "dir": data_dir, "is_dev": true, "error": ""})
 	holder.add_child(app)
+	await _settle()
+	# Historical QA retains the pre-v16 supplier model. Raw-broth QA explicitly
+	# replaces this with a genuine current new game and tests the mandatory gate.
+	if not had_save:
+		app.set("state",load("res://tests/legacy_game_fixture.gd").new())
+		app.call("_refresh_all")
 	await _settle()
 	return app
 
@@ -848,7 +855,7 @@ func _run_save_failure(holder: SubViewport, tag: String, vp: Vector2i) -> void:
 	_overflow(app, vp, tag + " 저장 실패")
 	await _shot(holder, tag + "_10_save_failed.png")
 	# 파일에는 정산이 없다: 불러오면 여전히 1일차
-	var probe: Variant = load("res://scripts/domain/game_state.gd").new()
+	var probe: Variant = load("res://tests/legacy_game_fixture.gd").new()
 	var lr: Dictionary = saver.load_into(probe)
 	_check(str(lr["status"]) == "ok" and int(probe.get("day")) == 1, tag + ": 실패한 저장이 파일에 반영되면 안 돼요")
 	app.queue_free()
@@ -859,7 +866,7 @@ func _run_save_failure(holder: SubViewport, tag: String, vp: Vector2i) -> void:
 
 
 func _load_probe(dir: String) -> Dictionary:
-	var probe: Object = load("res://scripts/domain/game_state.gd").new()
+	var probe: Object = load("res://tests/legacy_game_fixture.gd").new()
 	var res: Dictionary = SaveServiceScript.new(dir).load_into(probe)
 	return {"status": str(res["status"]), "state": probe}
 

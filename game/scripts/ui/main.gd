@@ -336,6 +336,20 @@ func _notification(what: int) -> void:
 func _process(delta: float) -> void:
 	if state == null:
 		return
+	if state.broth_active():
+		var result: Dictionary=state.advance_broth(delta)
+		if bool(result["finished"]):
+			_taste_message.text=str(result["message"])
+			if result["ok"]:
+				_persist()
+				_audio.play("broth")
+				_juice.burst(get_viewport_rect().size*Vector2(0.5,0.42),TEAL,"육수 완성!")
+				_taste_message.text=_unsaved_notice(str(result["message"]))
+			_refresh_all()
+			_sync_bowl_editor()
+			_bowl_editor._show_broth_workshop("library" if result["ok"] else "blend")
+		else:
+			_bowl_editor.update_broth_progress()
 	_sync_bowl_editor()
 	var now: int = Time.get_ticks_msec()
 	if _stop_armed_until != 0 and now > _stop_armed_until:
@@ -1398,6 +1412,8 @@ func manual_save() -> Dictionary:
 	var message: String = ""
 	if state.service_active():
 		message = "영업 중에는 직접 저장할 수 없어요. 영업을 끝까지 마쳐 정산되면 자동으로 저장돼요."
+	elif state.broth_active():
+		message = "육수를 우리는 중이에요. 배합은 보존되지만 진행 중인 우림은 저장하지 않아요. 완료 후 자동으로 저장돼요."
 	elif _work.is_running():
 		message = "시식 준비 중에는 직접 저장할 수 없어요. 준비가 끝나 기록되면 자동으로 저장돼요."
 	elif save_locked:
@@ -1658,6 +1674,9 @@ func _on_result_ok() -> void:
 ## 시식 준비 중 잠금 판정. 버튼을 꺼 두는 것과 별개로 모든 상태 변경 핸들러가 맨 앞에서 이 함수를 불러 막는다
 ## (버튼 비활성만 믿으면 직접 호출/단축 입력으로 초안이 시작 때 복사한 스냅샷과 어긋날 수 있다). 막았으면 true.
 func _work_blocked(action: String, allow_trip: bool = false) -> bool:
+	if state.broth_active():
+		_flash("육수를 우리는 중에는 %s 수 없어요. 완료를 기다리거나 우림을 취소해 주세요." % action)
+		return true
 	if _training_left > 0.0 and not allow_trip:
 		_flash("훈련 결과를 정리하는 중에는 %s 수 없어요. 잠시 기다려 주세요." % action)
 		return true
@@ -1848,6 +1867,7 @@ func _on_quick_taste() -> void:
 ## 이 시점에는 자금/기록/보상이 전혀 바뀌지 않는다(도메인 taste()는 완료 때 정확히 한 번만 부른다).
 ## 거부 사유: 이미 준비 중(중복 시작), 영업 중, 또는 시식해도 도메인이 거부할 초안(이름/중복 구성/자금 등 — 복제본으로 미리 확인한다).
 func start_tasting() -> Dictionary:
+	if state.broth_active(): return _taste_refused("육수를 우리는 중이에요. 완료를 기다리거나 우림을 취소해 주세요.")
 	_pending_delete_id = 0
 	if _training_left > 0.0:
 		return _taste_refused("훈련 결과를 정리한 뒤 시식할 수 있어요.")
@@ -2840,7 +2860,7 @@ func _sync_bowl_editor() -> void:
 	_bowl_editor.present(state, 1 if tabs.current_tab == TAB_FEEDBACK else 0, {
 		"selected": _selected_topping_position, "busy": _development_busy(),
 		"working": work_active(), "progress": _work.progress(),
-		"phase": WorkScript.phase_name(_work.phase_index()) if work_active() else "",
+		"phase": ("개발 육수 데우기" if state.draft_config.has("broth_recipe") and _work.phase_index()==0 else WorkScript.phase_name(_work.phase_index())) if work_active() else "",
 		"notice": _taste_message.text, "warning": warning, "muted": _audio.muted,
 		"new_directions":_direction_new_titles if _direction_new_record==state.last_feedback_record_id else [],
 		"new_themes":_journal_new_titles if _journal_new_record_id==state.last_feedback_record_id else []})
@@ -2958,6 +2978,9 @@ func _operations_style(node: Node) -> void:
 
 
 func _on_bowl_editor_action(kind: String, data: Dictionary) -> void:
+	if kind.begins_with("broth_"):
+		_on_broth_action(kind,data)
+		return
 	match kind:
 		"close": _on_close_pressed()
 		"taste": _on_taste()
@@ -2992,6 +3015,42 @@ func _on_bowl_editor_action(kind: String, data: Dictionary) -> void:
 		_:
 			push_error("알 수 없는 편집 동작: " + kind)
 	_sync_bowl_editor()
+
+
+func _on_broth_action(kind: String, data: Dictionary) -> void:
+	if kind!="broth_cancel" and _work_blocked("육수 배합을 바꿀"): return
+	var review: Dictionary=state.broth_review()
+	var ids: Array=review["blend"]["ingredients"].duplicate()
+	var method: String=review["blend"]["method"]
+	var result: Dictionary
+	match kind:
+		"broth_add":
+			ids.append(str(data["id"]))
+			result=state.set_broth_blend(ids,method)
+		"broth_remove":
+			var index: int=int(data["index"])
+			if index<0 or index>=ids.size():
+				_flash("뺄 원재료를 다시 골라 주세요.")
+				return
+			ids.remove_at(index)
+			result=state.set_broth_blend(ids,method)
+		"broth_method": result=state.set_broth_blend(ids,str(data["method"]))
+		"broth_begin": result=state.begin_broth()
+		"broth_cancel": result=state.cancel_broth()
+		"broth_use": result=state.use_broth(int(data["index"]))
+		_:
+			push_error("알 수 없는 육수 개발 동작: "+kind)
+			return
+	_taste_message.text=str(result["message"])
+	if result["ok"]:
+		if kind!="broth_begin":
+			_persist()
+			_taste_message.text=_unsaved_notice(str(result["message"]))
+		_audio.play("broth" if kind=="broth_begin" else "plate")
+	else: _flash(str(result["message"]))
+	_refresh_all()
+	_sync_bowl_editor()
+	if kind!="broth_use": _bowl_editor._show_broth_workshop()
 
 
 func _on_exploration_view_action(kind: String, data: Dictionary) -> void:
@@ -3085,7 +3144,7 @@ func _show_work_phase_feedback(phase: int) -> void:
 
 
 func _development_busy() -> bool:
-	return _work.is_running() or state.exploration_active() or state.service_active() or _contest_left > 0.0 or _training_left > 0.0
+	return state.broth_active() or _work.is_running() or state.exploration_active() or state.service_active() or _contest_left > 0.0 or _training_left > 0.0
 
 
 func _apply_work_lock() -> void:
@@ -3497,7 +3556,7 @@ func _refresh_feedback() -> void:
 	var ingredients: Array[String] = []
 	for slot in Catalog.SLOTS:
 		if slot != Catalog.TOPPING_SLOT:
-			ingredients.append(str(Catalog.find(str(config[slot]))["name"]))
+			ingredients.append(str(Catalog.recipe_item(config,str(config[slot]))["name"]))
 	var recipe_details: Label = _label(" · ".join(ingredients), 14, MUTED)
 	recipe_details.name = "FeedbackRecipeDetails"
 	recipe_receipt.body.add_child(recipe_details)

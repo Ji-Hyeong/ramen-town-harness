@@ -116,7 +116,7 @@ static func build_profile(config: Dictionary) -> Dictionary:
 		profile[axis] = 0
 	# 토핑을 포함한 모든 선택 재료를 Catalog.item_ids() 하나로 훑는다(토핑마다 정확히 한 번 반영, 하나뿐인 옛 구성은 예전과 같은 합).
 	for id in Catalog.item_ids(config):
-		var item: Dictionary = Catalog.find(id)
+		var item: Dictionary = Catalog.recipe_item(config,id)
 		var axes: Dictionary = item["axes"]
 		for axis in axes:
 			profile[axis] = int(profile[axis]) + int(axes[axis])
@@ -133,7 +133,7 @@ static func build_profile(config: Dictionary) -> Dictionary:
 static func unit_cost(config: Dictionary) -> int:
 	var total: int = 0
 	for id in Catalog.item_ids(config):
-		var item: Dictionary = Catalog.find(id)
+		var item: Dictionary = Catalog.recipe_item(config,id)
 		total += int(item["cost"])
 	if config.has("process"):
 		total += int(ProcessRules.effects(config["process"])["cost"])
@@ -144,7 +144,7 @@ static func unit_cost(config: Dictionary) -> int:
 static func prep_seconds(config: Dictionary) -> int:
 	var total: int = 0
 	for id in Catalog.item_ids(config):
-		var item: Dictionary = Catalog.find(id)
+		var item: Dictionary = Catalog.recipe_item(config,id)
 		total += int(item["seconds"])
 	if config.has("process"):
 		total += int(ProcessRules.effects(config["process"])["seconds"])

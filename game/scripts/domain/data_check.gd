@@ -5,6 +5,7 @@ extends RefCounted
 
 const Catalog = preload("res://scripts/domain/ingredient_catalog.gd")
 const ProcessRules = preload("res://scripts/domain/recipe_process.gd")
+const Broth = preload("res://scripts/domain/broth_workshop.gd")
 
 ## 정규 구성의 키(토핑은 "toppings" 배열). 옛 구성(v1/v2 저장, 예전 시험 조합)은 "topping" 문자열 하나를 쓴다.
 const CONFIG_KEYS: Array = ["broth", "tare", "oil", "noodle", "toppings", "cook", "price"]
@@ -61,6 +62,8 @@ static func config_error(config: Dictionary) -> String:
 	var expected: Array = LEGACY_CONFIG_KEYS if legacy else CONFIG_KEYS
 	if not legacy and config.has("process"):
 		expected = CONFIG_KEYS + ["process"]
+	if not legacy and config.has("broth_recipe"):
+		expected = expected + ["broth_recipe"]
 	var key_err: String = keys_error(config, expected, "레시피 구성")
 	if key_err != "":
 		return key_err
@@ -68,6 +71,12 @@ static func config_error(config: Dictionary) -> String:
 		var process_error: String = ProcessRules.error(config["process"])
 		if process_error != "":
 			return process_error
+	if config.has("broth_recipe"):
+		var broth_error: String = Broth.error(config["broth_recipe"])
+		if broth_error != "": return broth_error
+		if config["broth"] != Broth.base_id(config["broth_recipe"]): return "육수 종류가 원재료 배합과 달라요."
+		if config["broth_recipe"]["method"] != ProcessRules.selected(config.get("process",{}),"broth"):
+			return "육수를 우린 방식과 라멘 공법이 달라요."
 	for slot in Catalog.SLOTS:
 		if slot == Catalog.TOPPING_SLOT:
 			continue
@@ -118,6 +127,8 @@ static func parse_config(raw: Variant, ctx: String, legacy: bool = false) -> Dic
 	var expected: Array = LEGACY_CONFIG_KEYS if legacy else CONFIG_KEYS
 	if not legacy and d.has("process"):
 		expected = CONFIG_KEYS + ["process"]
+	if not legacy and d.has("broth_recipe"):
+		expected = expected + ["broth_recipe"]
 	var key_err: String = keys_error(d, expected, ctx)
 	if key_err != "":
 		return {"error": key_err, "config": {}}
@@ -132,6 +143,8 @@ static func parse_config(raw: Variant, ctx: String, legacy: bool = false) -> Dic
 		config["toppings"] = d["toppings"]
 	if d.has("process"):
 		config["process"] = d["process"]
+	if d.has("broth_recipe"):
+		config["broth_recipe"] = d["broth_recipe"]
 	if not is_whole(d["price"]):
 		return {"error": ctx + ": 가격 형식이 올바르지 않아요.", "config": {}}
 	config["price"] = int(d["price"])
@@ -139,6 +152,8 @@ static func parse_config(raw: Variant, ctx: String, legacy: bool = false) -> Dic
 	if err != "":
 		return {"error": ctx + ": " + err, "config": {}}
 	var canonical: Dictionary = Catalog.normalize_config(config)
+	if d.has("broth_recipe") and d["broth_recipe"] != canonical["broth_recipe"]:
+		return {"error":ctx+": 육수 원재료 순서가 올바르지 않아요.","config":{}}
 	if d.has("process") and not canonical.has("process"):
 		return {"error": ctx + ": 기본 공법은 별도 키 없이 저장해야 해요.", "config": {}}
 	if not legacy:
@@ -162,4 +177,4 @@ static func same_config(a: Dictionary, b: Dictionary) -> bool:
 				return false
 		elif na[k] != nb[k]:
 			return false
-	return na.get("process", {}) == nb.get("process", {})
+	return na.get("process", {}) == nb.get("process", {}) and na.get("broth_recipe",{}) == nb.get("broth_recipe",{})

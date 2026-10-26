@@ -49,6 +49,12 @@ func set_config(value: Dictionary) -> void:
 		palette.set_shader_parameter("uv_region", Vector4(atlas.region.position.x / source_size.x, atlas.region.position.y / source_size.y, atlas.region.size.x / source_size.x, atlas.region.size.y / source_size.y))
 	var shifts: Dictionary = {"broth_tonkotsu": Vector3.ZERO, "broth_chicken": Vector3(0.0, -0.08, -0.15), "broth_dashi": Vector3(-0.08, -0.12, -0.15), "broth_clam": Vector3(-0.02, 0.0, 0.04), "broth_roasted_sardine": Vector3(-0.15, -0.17, -0.16)}
 	var shift: Vector3 = shifts.get(str(config.get("broth", "broth_tonkotsu")), Vector3.ZERO)
+	if config.has("broth_recipe"):
+		# Only new crafted soup pixels vary with actual blend richness. Preserve
+		# every historical bowl, ceramic rim and independent topping sprite.
+		var raw: Dictionary=Catalog.Broth.product(config["broth_recipe"])
+		var rich: float=float(raw["axes"]["rich"])/10.0
+		shift+=Vector3(0.03*rich,-0.10*rich,-0.16*rich)
 	if config.get("tare", "") == "tare_miso":
 		shift += Vector3(-0.03, -0.07, -0.10)
 	if config.get("oil", "") == "oil_chili":

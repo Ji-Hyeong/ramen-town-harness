@@ -73,7 +73,7 @@ func _run_profile(tag: String, vp: Vector2i, _scale: int) -> void:
 	_check(app.get("_juice").effect_count() == 0 and JSON.stringify(state.call("to_dict")) == unchanged, tag + ": effects expire without economic side effects")
 	var saver = app.get("saver")
 	_check(saver.save_state(state)["ok"], tag + ": repeated portions save")
-	var restored = load("res://scripts/domain/game_state.gd").new()
+	var restored = load("res://tests/legacy_game_fixture.gd").new()
 	_check(saver.load_into(restored)["status"] == "ok" and JSON.stringify(restored.to_dict()) == unchanged, tag + ": repeated portions restart intact")
 	# A second trial must reveal the actual result, even if the previous review
 	# was scrolled down. Otherwise its celebratory bowl starts off screen.
