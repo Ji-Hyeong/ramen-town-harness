@@ -57,6 +57,10 @@ var _home: ShopHomeScript
 const StaffGrowthScript = preload("res://scripts/ui/staff_growth_workbench.gd")
 var _growth_view: StaffGrowthScript
 var _growth_revision: int = 0
+const OperationsScript = preload("res://scripts/ui/operations_workbench.gd")
+var _operations_view: OperationsScript
+var _operations_revision: int = 0
+var _operations_notice: String = ""
 
 const INK: Color = Color(0.17, 0.12, 0.08)
 const PAPER: Color = Color(0.96, 0.92, 0.82)
@@ -298,6 +302,10 @@ func _ready() -> void:
 	_growth_view.visible = false
 	_growth_view.action_requested.connect(_on_growth_view_action)
 	add_child(_growth_view)
+	_operations_view = OperationsScript.new()
+	_operations_view.visible = false
+	_operations_view.action_requested.connect(_on_operations_action)
+	add_child(_operations_view)
 	# 재개 시 이동 그림만 다시 보여 준다. 비용·경로·발견은 이미 불러온 도메인 상태를 사용한다.
 	if state.exploration_active():
 		_travel.start(str(state.expedition()["region"]))
@@ -2650,6 +2658,7 @@ func _contest_picture(band: int, magazine: bool = false) -> TextureRect:
 
 
 func _refresh_contests() -> void:
+	_operations_revision += 1
 	if _contest_box == null:
 		return
 	_clear(_contest_box)
@@ -2783,7 +2792,22 @@ func _sync_bowl_editor() -> void:
 	_bowl_editor.visible = active
 	_exploration_view.visible = exploring
 	var growing: bool = _overlay.visible and tabs.current_tab == TAB_GROWTH
-	_drawer_margin.visible = not active and not exploring and not growing
+	var operating: bool = _overlay.visible and tabs.current_tab in [TAB_NOTEBOOK,TAB_SERVE,TAB_RESEARCH,7]
+	_drawer_margin.visible = not active and not exploring and not growing and not operating
+	if is_instance_valid(_operations_view):
+		_operations_view.visible = operating
+		if operating:
+			var section: String = {TAB_NOTEBOOK:"notebook",TAB_SERVE:"selling",TAB_RESEARCH:"stories" if _story_mode else "research",7:"contests"}[tabs.current_tab]
+			var notice: String = _operations_notice
+			if section in ["research","stories"]: notice = _research_message.text
+			elif section=="contests": notice = _contest_message.text
+			elif section=="selling": notice = _selling_message.text
+			_operations_view.present(state,section,{"revision":_operations_revision,"busy":_development_busy(),
+				"closing_blocked":_work.is_running() or _training_left>0.0 or _contest_left>0.0,
+				"notice":notice,"warning":_banner_label.text if _banner.visible else "",
+				"save_status":_save_label.text,"save_policy":AUTOSAVE_NOTE,"forecast":_serve_forecast.text,
+				"delete_id":_pending_delete_id,"story_armed":_story_armed if Time.get_ticks_msec()<=_story_armed_until else "",
+				"contest_left":_contest_left})
 	if is_instance_valid(_growth_view):
 		_growth_view.visible = growing
 		if growing:
@@ -2835,6 +2859,86 @@ func _on_growth_view_action(kind: String, id: String, style: String) -> void:
 			_training_armed_until = 0
 		_: push_error("알 수 없는 성장 화면 동작: " + kind)
 	_sync_bowl_editor()
+
+
+## Remaining feature views share navigation, but not transaction ownership.
+## In particular, loading a submission target still uses the existing record
+## handler; browsing a card or a receipt never selects it implicitly.
+func _on_operations_action(kind: String, data: Dictionary) -> void:
+	match kind:
+		"close": _on_close_pressed()
+		"route": _on_tab_link(int(data["tab"]))
+		"section":
+			if not _work_blocked("화면을 바꿀"):
+				_story_armed=""
+				_story_armed_until=0
+				var section: String=data["section"]
+				if section in ["research","stories"]: _on_research_mode(section=="stories")
+				_open_overlay({"notebook":TAB_NOTEBOOK,"selling":TAB_SERVE,"research":TAB_RESEARCH,"stories":TAB_RESEARCH,"contests":7}[section])
+		"select": _on_select_record(int(data["id"]))
+		"target":
+			var previous: int=tabs.current_tab
+			_on_select_record(int(data["id"]))
+			tabs.current_tab=previous
+			if state.selected_record_id==int(data["id"]):
+				_operations_notice="시식 기록을 의뢰·대접 대상으로 골랐어요. 의뢰 또는 단골 탭에서 제출하세요."
+		"delete": _on_delete_record(int(data["id"]))
+		"selling": _on_selling_toggle(int(data["id"]))
+		"auto": _on_selling_auto()
+		"research": _on_research_submit(str(data["id"]))
+		"story_choice": _on_story_choice(str(data["id"]),str(data["route"]))
+		"story_complete": _on_story_complete(str(data["id"]))
+		"contest": _on_contest_enter(str(data["id"]))
+		"magazine": _on_magazine_accept(str(data["id"]))
+		"save":
+			_on_manual_save_pressed()
+			_operations_notice=_manual_save_result.text
+		"report":
+			if not state.last_report.is_empty() and not _development_busy():
+				_close_overlay()
+				_show_service_report()
+		"cancel":
+			_pending_delete_id=0
+			_story_armed=""
+			_story_armed_until=0
+		"selling_detail":
+			_open_overlay(TAB_SERVE)
+			_operations_view.call("_navigate","detail",str(data["id"]))
+		"comparison":
+			var node: Control=_comparison_card(data["record"],Evaluator.evaluate(data["record"]["config"]))
+			_operations_style(node)
+			data["body"].add_child(node)
+		"map_page": _operations_view.call("_navigate","map")
+		"map":
+			var map:=JournalScript.new()
+			map.name="OpsResearchMap"
+			map.mode="map"
+			map.target_selected.connect(_select_recipe_target)
+			data["body"].add_child(map)
+			map.present(_recipe_pages(),_journal_target_id,_development_busy())
+			_operations_style(map)
+		_: push_error("알 수 없는 운영 화면 동작: "+kind)
+	# Content callbacks run synchronously inside present(); recursively invoking
+	# present() here would rebuild the very body they are populating.
+	if kind not in ["comparison","map"]: _sync_bowl_editor()
+
+
+## Existing comparison/map adapters retain their actual content while adopting
+## the same imported font, padded paper and button feedback as native pages.
+func _operations_style(node: Node) -> void:
+	if node is Label:
+		node.add_theme_font_override("font",OperationsScript.BODY)
+		node.add_theme_font_size_override("font_size",16)
+		node.add_theme_color_override("font_color",OperationsScript.INK)
+		node.mouse_filter=Control.MOUSE_FILTER_IGNORE
+	elif node is PanelContainer:
+		node.add_theme_stylebox_override("panel",OperationsScript.Mock.style("summary",Vector2(14,14)))
+	elif node is Button:
+		node.add_theme_font_override("font",OperationsScript.BOLD)
+		node.add_theme_font_size_override("font_size",16)
+		node.mouse_filter=Control.MOUSE_FILTER_PASS
+		for skin in ["normal","hover","disabled"]: node.add_theme_stylebox_override(skin,OperationsScript.Mock.style("summary"))
+	for child in node.get_children(): _operations_style(child)
 
 
 func _on_bowl_editor_action(kind: String, data: Dictionary) -> void:
@@ -3580,6 +3684,7 @@ func _comparison_card(rec: Dictionary, evaluation: Dictionary) -> PanelContainer
 
 
 func _refresh_notebook() -> void:
+	_operations_revision += 1
 	_journal_map.visible = _journal_map_open
 	_journal_toggle.text = "연구 지도 접기" if _journal_map_open else "연구 지도 펼치기"
 	if _journal_map_open:
@@ -3678,6 +3783,7 @@ func _notebook_row(rec: Dictionary) -> PanelContainer:
 
 
 func _refresh_serve() -> void:
+	_operations_revision += 1
 	_last_report_button.disabled=state.last_report.is_empty() or _development_busy()
 	_last_report_button.text="아직 마친 영업이 없어요" if state.last_report.is_empty() else "%d일차 영업 결과 보기" % int(state.last_report["day"])
 	_serve_intro.text = "영업은 가게 화면의 [영업 시작]으로 해요. 한 번은 점심 피크 %d분(게임 시간)이고 손님이 도착해 자리에 앉고 주문·조리·서빙·식사를 마친 만큼만 정산돼요. 운영비 %s는 하루마다 들어요.\n지금: %d일차 · 보유 자금 %s\n%s" % [Sim.SERVICE_SECONDS / 60, _won(Sim.overhead_for(state.current_staffing())), state.day, _won(state.wallet), NOT_SAVED_NOTE]
@@ -3744,6 +3850,7 @@ func _refresh_selling() -> void:
 
 
 func _refresh_research() -> void:
+	_operations_revision += 1
 	if _research_box == null:
 		return
 	if _story_mode:
