@@ -24,8 +24,8 @@ const SPEC: Dictionary = {
   "targets": [
     {
       "id": "buckwheat_mill",
-      "label": "산메밀면을 찾는다",
-      "desc": "메밀 향과 단단한 식감. 가는 면보다 비싸고 삶는 시간이 길어요.",
+      "label": "제면용 산메밀을 찾는다",
+      "desc": "산메밀 배합분으로 제면을 개발해요. 향은 좋지만 재료비가 올라가요.",
       "cost": 0,
       "ingredient_hint": "noodle_buckwheat"
     },

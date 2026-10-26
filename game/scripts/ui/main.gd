@@ -350,6 +350,20 @@ func _process(delta: float) -> void:
 			_bowl_editor._show_broth_workshop("library" if result["ok"] else "blend")
 		else:
 			_bowl_editor.update_broth_progress()
+	if state.noodle_active():
+		var result: Dictionary=state.advance_noodle(delta)
+		if bool(result["finished"]):
+			_taste_message.text=str(result["message"])
+			if result["ok"]:
+				_persist()
+				_audio.play("noodle")
+				_juice.burst(get_viewport_rect().size*Vector2(0.5,0.42),TEAL,"자가제면 완성!")
+				_taste_message.text=_unsaved_notice(str(result["message"]))
+			_refresh_all()
+			_sync_bowl_editor()
+			_bowl_editor._show_noodle_workshop("library" if result["ok"] else "formula")
+		else:
+			_bowl_editor.update_noodle_progress()
 	_sync_bowl_editor()
 	var now: int = Time.get_ticks_msec()
 	if _stop_armed_until != 0 and now > _stop_armed_until:
@@ -1412,6 +1426,8 @@ func manual_save() -> Dictionary:
 	var message: String = ""
 	if state.service_active():
 		message = "영업 중에는 직접 저장할 수 없어요. 영업을 끝까지 마쳐 정산되면 자동으로 저장돼요."
+	elif state.noodle_active():
+		message = "면을 만드는 중이에요. 배합은 보존되지만 진행 중인 제면은 저장하지 않아요. 완료 후 자동으로 저장돼요."
 	elif state.broth_active():
 		message = "육수를 우리는 중이에요. 배합은 보존되지만 진행 중인 우림은 저장하지 않아요. 완료 후 자동으로 저장돼요."
 	elif _work.is_running():
@@ -1674,6 +1690,9 @@ func _on_result_ok() -> void:
 ## 시식 준비 중 잠금 판정. 버튼을 꺼 두는 것과 별개로 모든 상태 변경 핸들러가 맨 앞에서 이 함수를 불러 막는다
 ## (버튼 비활성만 믿으면 직접 호출/단축 입력으로 초안이 시작 때 복사한 스냅샷과 어긋날 수 있다). 막았으면 true.
 func _work_blocked(action: String, allow_trip: bool = false) -> bool:
+	if state.noodle_active():
+		_flash("면을 만드는 중에는 %s 수 없어요. 완료를 기다리거나 제면을 취소해 주세요." % action)
+		return true
 	if state.broth_active():
 		_flash("육수를 우리는 중에는 %s 수 없어요. 완료를 기다리거나 우림을 취소해 주세요." % action)
 		return true
@@ -1867,6 +1886,7 @@ func _on_quick_taste() -> void:
 ## 이 시점에는 자금/기록/보상이 전혀 바뀌지 않는다(도메인 taste()는 완료 때 정확히 한 번만 부른다).
 ## 거부 사유: 이미 준비 중(중복 시작), 영업 중, 또는 시식해도 도메인이 거부할 초안(이름/중복 구성/자금 등 — 복제본으로 미리 확인한다).
 func start_tasting() -> Dictionary:
+	if state.noodle_active(): return _taste_refused("면을 만드는 중이에요. 완료를 기다리거나 제면을 취소해 주세요.")
 	if state.broth_active(): return _taste_refused("육수를 우리는 중이에요. 완료를 기다리거나 우림을 취소해 주세요.")
 	_pending_delete_id = 0
 	if _training_left > 0.0:
@@ -2978,6 +2998,9 @@ func _operations_style(node: Node) -> void:
 
 
 func _on_bowl_editor_action(kind: String, data: Dictionary) -> void:
+	if kind.begins_with("noodle_"):
+		_on_noodle_action(kind,data)
+		return
 	if kind.begins_with("broth_"):
 		_on_broth_action(kind,data)
 		return
@@ -3015,6 +3038,30 @@ func _on_bowl_editor_action(kind: String, data: Dictionary) -> void:
 		_:
 			push_error("알 수 없는 편집 동작: " + kind)
 	_sync_bowl_editor()
+
+
+## All noodle UI selections and paid work cross the same guarded domain API.
+func _on_noodle_action(kind: String, data: Dictionary) -> void:
+	if kind!="noodle_cancel" and _work_blocked("제면 배합을 바꿀"): return
+	var result: Dictionary
+	match kind:
+		"noodle_set": result=state.set_noodle_formula(str(data["field"]),str(data["id"]))
+		"noodle_begin": result=state.begin_noodle()
+		"noodle_cancel": result=state.cancel_noodle()
+		"noodle_use": result=state.use_noodle(int(data["index"]))
+		_:
+			push_error("알 수 없는 제면 개발 동작: "+kind)
+			return
+	_taste_message.text=str(result["message"])
+	if result["ok"]:
+		if kind!="noodle_begin":
+			_persist()
+			_taste_message.text=_unsaved_notice(str(result["message"]))
+		_audio.play("noodle" if kind=="noodle_begin" else "plate")
+	else: _flash(str(result["message"]))
+	_refresh_all()
+	_sync_bowl_editor()
+	if kind!="noodle_use": _bowl_editor._show_noodle_workshop()
 
 
 func _on_broth_action(kind: String, data: Dictionary) -> void:
@@ -3144,7 +3191,7 @@ func _show_work_phase_feedback(phase: int) -> void:
 
 
 func _development_busy() -> bool:
-	return state.broth_active() or _work.is_running() or state.exploration_active() or state.service_active() or _contest_left > 0.0 or _training_left > 0.0
+	return state.craft_active() or _work.is_running() or state.exploration_active() or state.service_active() or _contest_left > 0.0 or _training_left > 0.0
 
 
 func _apply_work_lock() -> void:
@@ -3738,9 +3785,9 @@ func _comparison_card(rec: Dictionary, evaluation: Dictionary) -> PanelContainer
 			# 토핑은 여러 개일 수 있어 종류별 분량을 비교한다(카탈로그 순서로 정규화돼 있어 순서만 다른 경우는 "바뀐 점"이 아니다).
 			if str(Catalog.toppings_of(prev_cfg)) != str(Catalog.toppings_of(cfg)):
 				changes.append("%s: %s → %s" % [str(Catalog.SLOT_NAMES[slot]), Catalog.topping_names(prev_cfg), Catalog.topping_names(cfg)])
-		elif str(prev_cfg[slot]) != str(cfg[slot]):
-			var old_item: Dictionary = Catalog.find(str(prev_cfg[slot]))
-			var new_item: Dictionary = Catalog.find(str(cfg[slot]))
+		elif str(prev_cfg[slot]) != str(cfg[slot]) or prev_cfg.get(slot+"_recipe",{})!=cfg.get(slot+"_recipe",{}):
+			var old_item: Dictionary = Catalog.recipe_item(prev_cfg,str(prev_cfg[slot]))
+			var new_item: Dictionary = Catalog.recipe_item(cfg,str(cfg[slot]))
 			changes.append("%s: %s → %s" % [str(Catalog.SLOT_NAMES[slot]), str(old_item["name"]), str(new_item["name"])])
 	if int(prev_cfg["price"]) != int(cfg["price"]):
 		changes.append("가격: %s → %s" % [_won(int(prev_cfg["price"])), _won(int(cfg["price"]))])

@@ -429,8 +429,11 @@ func _record_page() -> void:
 	hero.add_child(_label("%s v%d" % [rec["name"],rec["version"]],24,INK,true,"OpsRecordName"))
 	hero.add_child(_label("판매가 %s · 원가 %s\n준비 %d초 · %d일차 시식" % [Growth._won(cfg["price"]),Growth._won(Eval.unit_cost(cfg)),Eval.prep_seconds(cfg),rec["tasted_day"]],16,TEAL))
 	var ingredients: PackedStringArray=[]
-	for id in Catalog.item_ids(cfg): ingredients.append(Catalog.find(id)["name"])
+	for id in Catalog.item_ids(cfg): ingredients.append(Catalog.recipe_item(cfg,id)["name"])
 	hero.add_child(_label(" · ".join(ingredients),16))
+	# The notebook retains the actual raw formula, even for same-name variants.
+	for slot in ["broth","noodle"]:
+		if cfg.has(slot+"_recipe"): hero.add_child(_label(Catalog.recipe_item(cfg,cfg[slot])["desc"],15))
 	if cfg.has("process"): hero.add_child(_label("제조: "+Process.summary(cfg["process"]),15))
 	var ratings:=_paper(_body)
 	ratings.add_child(_label("단골 시식 평가",20,INK,true))

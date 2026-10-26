@@ -18,6 +18,8 @@ const BodyFont = preload("res://assets/fonts/Pretendard-Regular.otf")
 const DisplayFont = preload("res://assets/fonts/Pretendard-Bold.otf")
 const MockArt = preload("res://scripts/ui/mock_fidelity_art.gd")
 const TrialPreview = preload("res://scripts/ui/ingredient_trial_preview.gd")
+const Noodle=preload("res://scripts/domain/noodle_workshop.gd")
+const NoodleView=preload("res://scripts/ui/noodle_work_view.gd")
 const Broth = preload("res://scripts/domain/broth_workshop.gd")
 const PantryArt = preload("res://scripts/ui/broth_material_art.gd")
 const WorkView = preload("res://scripts/ui/tasting_work_view.gd")
@@ -518,10 +520,11 @@ func present(new_state: Game, mode: int, information: Dictionary) -> void:
 	if result and not record.is_empty():
 		config = record["config"]
 	_dish.set_config(config)
-	_dish.visible=result or state.broth_ready()
+	_dish.visible=result or (state.broth_ready() and state.noodle_ready())
 	_broth_text.text = "%s·%s·%s" % [Catalog.broth_name(config).replace(" 진국", "").replace(" 육수", ""), str(Catalog.find(str(config["tare"]))["name"]).replace(" 타레", ""), Catalog.find(str(config["oil"]))["name"]] if result or state.broth_ready() else "첫 육수를 개발해 주세요"
 	_broth.tooltip_text = "%s · %s · %s" % [Catalog.broth_name(config), Catalog.find(str(config["tare"]))["name"], Catalog.find(str(config["oil"]))["name"]]
-	_noodle_text.text = str(Catalog.find(str(config["noodle"]))["name"]) + "·" + str(Catalog.find(str(config["cook"]))["name"]).replace("하게", "")
+	_noodle_text.text = Catalog.noodle_name(config) + "·" + str(Catalog.find(str(config["cook"]))["name"]).replace("하게", "")
+	if not result and not state.noodle_ready(): _noodle_text.text="첫 면을 개발해 주세요"
 	_noodle.tooltip_text = str(Catalog.find(str(config["cook"]))["name"])
 	var noodle_art: TextureRect=_noodle.find_child("SummaryHeadingRow",true,false).get_child(0)
 	noodle_art.texture=_ingredient_texture(str(config["noodle"]))
@@ -533,6 +536,9 @@ func present(new_state: Game, mode: int, information: Dictionary) -> void:
 	if not result and not state.broth_ready():
 		_taste.text="육수 개발하기"
 		_cost.text="육수 미개발"
+	if not result and state.broth_ready() and not state.noodle_ready():
+		_taste.text="면 개발하기"
+		_cost.text="면 미개발"
 	_taste.disabled = bool(_info["busy"]) and not result
 	_render_slots(config, result)
 	_render_content()
@@ -893,6 +899,9 @@ func reveal_ingredient(id: String) -> void:
 	if item.is_empty():
 		push_error("개발에서 열 재료가 없어요: "+id)
 		return
+	if id.begins_with("noodle_"):
+		_show_noodle_source(id)
+		return
 	if id.begins_with("broth_"):
 		_show_raw_broth_source(id)
 		return
@@ -906,6 +915,9 @@ func reveal_ingredient(id: String) -> void:
 
 
 func _show_item(item: Dictionary) -> void:
+	if str(item["id"]).begins_with("noodle_"):
+		_show_noodle_source(item["id"])
+		return
 	if str(item["id"]).begins_with("broth_"):
 		_show_raw_broth_source(item["id"])
 		return
@@ -1114,6 +1126,9 @@ func _switch_group_tab(group: String, tab: String) -> void:
 
 func _show_group(group: String) -> void:
 	var tab: String = str(_group_tab.get(group,group))
+	if group=="noodle" and tab in ["noodle","method"]:
+		_show_noodle_workshop()
+		return
 	if group=="broth" and tab=="broth":
 		_show_broth_workshop()
 		return
@@ -1170,6 +1185,149 @@ func _show_group(group: String) -> void:
 
 ## Broth has its own focused task depth; the accepted ramen composition stays
 ## behind this sheet. Mixing never silently replaces the currently used broth.
+## Four focused selection depths keep the formula readable as the pantry grows.
+## The controller owns edits; browsing a source never applies a finished noodle.
+func _show_noodle_workshop(page: String="formula") -> void:
+	var review: Dictionary=state.noodle_review()
+	var active: bool=review["active"]
+	var formula: Dictionary=review["formula"]
+	var item: Dictionary=review["product"]
+	var method: Dictionary=ProcessRules.method("noodle",formula["method"])
+	var body:=_modal_body("제면 개발실")
+	_modal.set_meta("view_kind","noodle")
+	var back: Button=_modal.find_child("EditorDetailsBack",true,false)
+	back.disabled=active
+	var tabs:=HBoxContainer.new()
+	tabs.add_theme_constant_override("separation",4)
+	var column: VBoxContainer=_modal.find_child("DetailsColumn",true,false)
+	column.add_child(tabs)
+	column.move_child(tabs,1)
+	for definition in [["formula","배합"],["library","완성 면 %d" % review["recipes"].size()],["cook","익힘"]]:
+		var button:=_button(definition[1],"NoodleTab_"+definition[0])
+		button.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+		button.toggle_mode=true
+		button.set_pressed_no_signal(page==definition[0])
+		button.disabled=active
+		if definition[0]=="cook": button.pressed.connect(func(): _switch_group_tab("noodle","cook"))
+		else: button.pressed.connect(_show_noodle_workshop.bind(definition[0]))
+		tabs.add_child(button)
+	if str(_info.get("warning",""))!="": body.add_child(_label(str(_info["warning"]),15,RED))
+	if page=="library" and not active:
+		body.add_child(_label("직접 반죽해 뽑은 면",22))
+		if review["recipes"].is_empty(): body.add_child(_label("아직 완성한 면이 없어요. 밀가루와 배합수를 골라 첫 면을 만들어 보세요.",17,MUTED))
+		for index in review["recipes"].size():
+			var recipe: Dictionary=review["recipes"][index]["recipe"]
+			var product: Dictionary=Noodle.product(recipe)
+			var process: Dictionary=ProcessRules.method("noodle",recipe["method"])
+			var panel:=PanelContainer.new()
+			panel.mouse_filter=Control.MOUSE_FILTER_PASS
+			panel.add_theme_stylebox_override("panel",_style(WHITE,TEAL))
+			var card:=VBoxContainer.new()
+			card.mouse_filter=Control.MOUSE_FILTER_PASS
+			card.add_theme_constant_override("separation",10)
+			panel.add_child(card)
+			card.add_child(_picture(_ingredient_texture(product["id"]),Vector2(72,48)))
+			card.add_child(_label(product["name"],21))
+			card.add_child(_label(product["desc"],16,MUTED))
+			card.add_child(_label("한 그릇 %s · 삶기 %d초" % [won(int(product["cost"])+int(process["cost"])),int(product["seconds"])+int(process["seconds"])],16,TEAL))
+			var use:=_button("이 면으로 라멘 만들기","NoodleUse_"+str(index),"check",GOLD)
+			use.disabled=bool(_info["busy"])
+			use.pressed.connect(func(): _emit("noodle_use",{"index":index}); _close_modal())
+			card.add_child(use)
+			body.add_child(panel)
+		_modal_footer("새로운 가루·배합수·굵기·숙성을 조합해 보세요.","다른 면 개발",_show_noodle_workshop)
+		_compact_detail(minf(650,290+220*maxi(1,review["recipes"].size())))
+		return
+	if page in Noodle.FIELDS and not active:
+		back.pressed.disconnect(_close_modal)
+		back.pressed.connect(_show_noodle_workshop)
+		var definitions: Array=Noodle.options(page) if page!="method" else []
+		if page=="method":
+			for id in ProcessRules.ids("noodle"): definitions.append(ProcessRules.method("noodle",id))
+		for option in definitions:
+			var panel:=PanelContainer.new()
+			panel.mouse_filter=Control.MOUSE_FILTER_PASS
+			panel.add_theme_stylebox_override("panel",_style(WHITE,TEAL if formula[page]==option["id"] else MUTED))
+			var card:=VBoxContainer.new()
+			card.mouse_filter=Control.MOUSE_FILTER_PASS
+			card.add_theme_constant_override("separation",12)
+			panel.add_child(card)
+			if page in ["flour","water"]: card.add_child(_picture(PantryArt.texture(option["id"]),Vector2(64,64)))
+			card.add_child(_label(option["name"],21))
+			var desc: String=option.get("desc","식감 %d · 삶기 %d초" % [option.get("chew",0),option.get("seconds",0)])
+			card.add_child(_label(desc,16,MUTED))
+			card.add_child(_label("한 그릇 재료비 %s" % won(option["cost"]),16,TEAL))
+			var next: Dictionary=formula.duplicate(true)
+			next[page]=option["id"]
+			var reason: String=Noodle.error(next,state.rank(),state.discovered_ingredients(),true)
+			if option["id"]=="buckwheat":
+				card.add_child(_label("산골 채집 · 라멘 시식 완료 때 연구 샘플 1개 사용",15,MUTED))
+				_modal.set_meta("raw_material","buckwheat")
+			var choose:=_button("선택됨" if formula[page]==option["id"] else "이 배합으로", "NoodleChoose_"+str(option["id"]),"check",GOLD)
+			choose.disabled=bool(_info["busy"]) or reason!=""
+			choose.pressed.connect(func(): _emit("noodle_set",{"field":page,"id":option["id"]}))
+			card.add_child(choose)
+			if reason!="": card.add_child(_label(reason,15,RED))
+			body.add_child(panel)
+		_modal_footer("선택해도 아직 면이 완성되거나 비용이 들지 않아요.","배합으로 돌아가기",_show_noodle_workshop)
+		return
+	var hero:=HBoxContainer.new()
+	hero.add_theme_constant_override("separation",14)
+	var work:=NoodleView.new()
+	work.name="NoodleBoard"
+	work.buckwheat=formula["flour"]=="buckwheat"
+	work.thick=formula["cut"]=="thick"
+	hero.add_child(work)
+	var description:=VBoxContainer.new()
+	description.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+	hero.add_child(description)
+	description.add_child(_label(item["name"],22))
+	# These are component contributions. Keep a negative aroma visible; the
+	# evaluator clamps only after adding the soup, seasoning and other parts.
+	var flavor:=_label("식감 %d · 향 %+d" % [int(item["axes"]["chew"])+int(method["axes"]["chew"]),int(item["axes"]["aroma"])+int(method["axes"]["aroma"])],17,TEAL)
+	flavor.name="NoodleExpectedFlavor"
+	description.add_child(flavor)
+	description.add_child(_label("한 그릇 %s\n삶기 %d초" % [won(review["cost"]),int(item["seconds"])+int(method["seconds"])],16,MUTED))
+	body.add_child(hero)
+	if active:
+		var phase:=_label("",19,TEAL)
+		phase.name="NoodlePhase"
+		body.add_child(phase)
+		var progress:=ProgressBar.new()
+		progress.name="NoodleProgress"
+		progress.custom_minimum_size.y=24
+		body.add_child(progress)
+		body.add_child(_label("반죽 → 밀기·숙성 → 면 뽑기",16,MUTED))
+		_modal_footer("완료할 때 개발비 %s · 취소하면 비용이 들지 않아요." % won(review["cost"]),"제면 취소",func(): _emit("noodle_cancel"))
+		_compact_detail(450)
+		update_noodle_progress()
+		return
+	for definition in [["flour","밀가루"],["water","배합수"],["cut","면 굵기"],["method","반죽·숙성"]]:
+		var selected: Dictionary=method if definition[0]=="method" else Noodle.option(definition[0],formula[definition[0]])
+		var row:=_button(definition[1]+" · "+str(selected["name"]),"NoodleField_"+definition[0],"chevron_right")
+		row.pressed.connect(_show_noodle_workshop.bind(definition[0]))
+		body.add_child(row)
+	body.add_child(_label("배합수 비율 · "+("고가수 40%" if formula["method"]=="moist" else ("저가수 30% · 숙성" if formula["method"]=="rested" else "기본 35%")),16,MUTED))
+	_modal_footer(review["reason"] if review["reason"]!="" else "개발비 %s · 약 %d초 · 완성 후 직접 그릇에 넣어요." % [won(review["cost"]),int(ceil(review["duration"]))],"반죽하고 면 뽑기",func(): _emit("noodle_begin"),review["reason"]!="" or bool(_info["busy"]))
+	_compact_detail(680)
+
+
+func _show_noodle_source(id: String) -> void:
+	_show_noodle_workshop("flour" if id=="noodle_buckwheat" else "cut")
+
+
+func update_noodle_progress() -> void:
+	if _modal==null or _modal.get_meta("view_kind","")!="noodle": return
+	var progress: ProgressBar=_modal.find_child("NoodleProgress",true,false)
+	if progress==null: return
+	var review: Dictionary=state.noodle_review()
+	progress.value=100.0*float(review["progress"])
+	var phase: Label=_modal.find_child("NoodlePhase",true,false)
+	phase.text=["반죽을 치대는 중","밀기·숙성하는 중","면을 뽑는 중"][mini(2,int(float(review["progress"])*3.0))]+" · %d%%" % int(round(progress.value))
+	var board: Control=_modal.find_child("NoodleBoard",true,false)
+	board.progress=review["progress"]
+
+
 func _show_broth_workshop(page: String="blend") -> void:
 	if _modal!=null and _modal.get_meta("view_kind","")=="broth":
 		var previous_scroll: ScrollContainer=_modal.find_child("DetailsScroll",true,false)
@@ -1587,6 +1745,9 @@ func _show_clues() -> void:
 
 
 func _primary_action() -> void:
+	if _mode==0 and state.broth_ready() and not state.noodle_ready():
+		_show_noodle_workshop()
+		return
 	if _mode==0 and not state.broth_ready():
 		_show_broth_workshop()
 		return

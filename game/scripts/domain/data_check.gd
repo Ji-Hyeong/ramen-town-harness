@@ -5,6 +5,7 @@ extends RefCounted
 
 const Catalog = preload("res://scripts/domain/ingredient_catalog.gd")
 const ProcessRules = preload("res://scripts/domain/recipe_process.gd")
+const Noodle = preload("res://scripts/domain/noodle_workshop.gd")
 const Broth = preload("res://scripts/domain/broth_workshop.gd")
 
 ## 정규 구성의 키(토핑은 "toppings" 배열). 옛 구성(v1/v2 저장, 예전 시험 조합)은 "topping" 문자열 하나를 쓴다.
@@ -62,6 +63,8 @@ static func config_error(config: Dictionary) -> String:
 	var expected: Array = LEGACY_CONFIG_KEYS if legacy else CONFIG_KEYS
 	if not legacy and config.has("process"):
 		expected = CONFIG_KEYS + ["process"]
+	if not legacy and config.has("noodle_recipe"):
+		expected = expected + ["noodle_recipe"]
 	if not legacy and config.has("broth_recipe"):
 		expected = expected + ["broth_recipe"]
 	var key_err: String = keys_error(config, expected, "레시피 구성")
@@ -77,6 +80,11 @@ static func config_error(config: Dictionary) -> String:
 		if config["broth"] != Broth.base_id(config["broth_recipe"]): return "육수 종류가 원재료 배합과 달라요."
 		if config["broth_recipe"]["method"] != ProcessRules.selected(config.get("process",{}),"broth"):
 			return "육수를 우린 방식과 라멘 공법이 달라요."
+	if config.has("noodle_recipe"):
+		var noodle_error: String=Noodle.error(config["noodle_recipe"])
+		if noodle_error!="": return noodle_error
+		if config["noodle"]!=Noodle.base_id(config["noodle_recipe"]): return "면 종류가 제면 배합과 달라요."
+		if config["noodle_recipe"]["method"]!=ProcessRules.selected(config.get("process",{}),"noodle"): return "제면 방식과 라멘 공법이 달라요."
 	for slot in Catalog.SLOTS:
 		if slot == Catalog.TOPPING_SLOT:
 			continue
@@ -127,6 +135,8 @@ static func parse_config(raw: Variant, ctx: String, legacy: bool = false) -> Dic
 	var expected: Array = LEGACY_CONFIG_KEYS if legacy else CONFIG_KEYS
 	if not legacy and d.has("process"):
 		expected = CONFIG_KEYS + ["process"]
+	if not legacy and d.has("noodle_recipe"):
+		expected = expected + ["noodle_recipe"]
 	if not legacy and d.has("broth_recipe"):
 		expected = expected + ["broth_recipe"]
 	var key_err: String = keys_error(d, expected, ctx)
@@ -143,6 +153,8 @@ static func parse_config(raw: Variant, ctx: String, legacy: bool = false) -> Dic
 		config["toppings"] = d["toppings"]
 	if d.has("process"):
 		config["process"] = d["process"]
+	if d.has("noodle_recipe"):
+		config["noodle_recipe"] = d["noodle_recipe"]
 	if d.has("broth_recipe"):
 		config["broth_recipe"] = d["broth_recipe"]
 	if not is_whole(d["price"]):
@@ -177,4 +189,4 @@ static func same_config(a: Dictionary, b: Dictionary) -> bool:
 				return false
 		elif na[k] != nb[k]:
 			return false
-	return na.get("process", {}) == nb.get("process", {}) and na.get("broth_recipe",{}) == nb.get("broth_recipe",{})
+	return na.get("process", {}) == nb.get("process", {}) and na.get("broth_recipe",{}) == nb.get("broth_recipe",{}) and na.get("noodle_recipe",{}) == nb.get("noodle_recipe",{})

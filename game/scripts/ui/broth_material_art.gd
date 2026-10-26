@@ -19,6 +19,22 @@ static func texture(id: String) -> Texture2D:
 	var img:=Image.create(32,32,false,Image.FORMAT_RGBA8)
 	img.fill(Color.TRANSPARENT)
 	match id:
+		"wheat","strong","buckwheat":
+			var bag:=Color("b79a71") if id=="buckwheat" else Color("ead4a0")
+			rect(img,Rect2i(5,7,22,23),INK)
+			rect(img,Rect2i(6,8,20,20),bag)
+			rect(img,Rect2i(8,4,16,5),INK)
+			rect(img,Rect2i(10,5,12,3),LIGHT)
+			rect(img,Rect2i(10,13,12,10),Color("567c64") if id=="strong" else Color("c08c52"))
+			rect(img,Rect2i(15,14,2,8),LIGHT)
+			for x in [12,18]: rect(img,Rect2i(x,16,2,3),LIGHT)
+		"clear","alkaline":
+			rect(img,Rect2i(9,4,13,25),INK)
+			rect(img,Rect2i(10,5,11,22),Color("b8d4cb"))
+			rect(img,Rect2i(11,15,9,11),Color("5e9dac") if id=="clear" else Color("d9b76a"))
+			rect(img,Rect2i(21,9,7,13),INK)
+			rect(img,Rect2i(22,11,4,9),Color.TRANSPARENT)
+			rect(img,Rect2i(11,3,13,2),LIGHT)
 		"pork_bone","chicken_bone":
 			var pink:=Color("c58373") if id=="pork_bone" else Color("c99f68")
 			rect(img,Rect2i(10,8,12,17),INK)
