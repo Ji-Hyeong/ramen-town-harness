@@ -1,8 +1,11 @@
 extends "res://tests/bowl_editor_qa.gd"
 ## Actual pointer navigation and settlement/save boundaries. State preparation
 ## uses public transactions; only this isolated session clock is fast-forwarded.
+## Selling navigation uses the native Operations view introduced in PR33,
+## never the hidden legacy LastServiceReport controller adapter.
 const SalesFixture = preload("res://tests/harbor_foraging_tests.gd")
 const SalesCheck = preload("res://scripts/domain/data_check.gd")
+var _sales_completed: int = 0
 
 
 func _run() -> void:
@@ -11,6 +14,7 @@ func _run() -> void:
 		profiles=[{"tag":"compact","size":Vector2i(390,750)}]
 	for profile in profiles:
 		await _sales(str(profile["tag"]),profile["size"])
+	_check(_sales_completed==profiles.size(),"every actual sales flow reaches its final assertion")
 	print("SERVICE RESULT mode=%s checks=%d failures=%d" % ["layout-only" if _layout_only else "capture",_checks,_failures.size()])
 	for failure in _failures: printerr("FAIL: "+failure)
 	quit(0 if _failures.is_empty() else 1)
@@ -64,7 +68,9 @@ func _sales(tag: String, vp: Vector2i) -> void:
 	var st: Object=app.get("state")
 	app.call("_open_overlay",3)
 	await _settle()
-	_check((app.find_child("LastServiceReport",true,false) as Button).disabled,tag+": empty history disabled")
+	if app.get("_operations_view").get("_page")!="forecast": await _tap(holder,app.get("_operations_view"),"OpsForecastLink")
+	await _settle()
+	_check((app.find_child("OpsLastReport",true,false) as Button).disabled,tag+": empty history disabled")
 	app.call("_on_result_ok")
 	app.call("_close_overlay")
 	_check(st.set_draft_name("가게의 첫 라멘")["ok"] and st.taste()["ok"],tag+": real single menu tasting")
@@ -98,7 +104,9 @@ func _sales(tag: String, vp: Vector2i) -> void:
 	_check(st.set_draft_choice("broth","broth_chicken")["ok"],tag+": actual subsequent draft edit")
 	var edited: String=_json(app)
 	app.call("_open_overlay",3)
-	await _tap(holder,app,"LastServiceReport")
+	await _settle()
+	if app.get("_operations_view").get("_page")!="forecast": await _tap(holder,app.get("_operations_view"),"OpsForecastLink")
+	await _tap(holder,app,"OpsLastReport")
 	await _tap(holder,view,"ResultMenu_0")
 	var previous_dish: Control=view.find_child("ResultSoldDish",true,false) as Control
 	_check(previous_dish!=null,tag+": reopened sold dish detail exists")
@@ -118,7 +126,9 @@ func _sales(tag: String, vp: Vector2i) -> void:
 	app.set_process(false)
 	st=app.get("state")
 	app.call("_open_overlay",3)
-	await _tap(holder,app,"LastServiceReport")
+	await _settle()
+	if app.get("_operations_view").get("_page")!="forecast": await _tap(holder,app.get("_operations_view"),"OpsForecastLink")
+	await _tap(holder,app,"OpsLastReport")
 	view=app.get("_service_result")
 	_check(not view.get("_context").has("avg_stars"),tag+": restart cannot invent live satisfaction")
 	await _tap(holder,view,"ResultMenu_0")
@@ -170,6 +180,7 @@ func _sales(tag: String, vp: Vector2i) -> void:
 	await _zero_and_failure(holder,tag)
 	holder.queue_free()
 	await _frames(3)
+	_sales_completed+=1
 
 
 func _zero_and_failure(holder: SubViewport, tag: String) -> void:

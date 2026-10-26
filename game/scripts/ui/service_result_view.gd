@@ -224,6 +224,13 @@ func _summary() -> void:
 		var box:=_box(numbers,2)
 		box.add_child(_label(str(pair[0]),14,MUTED))
 		box.add_child(_label(str(pair[1]),22,INK,str(pair[2])))
+	var chef: Dictionary=_context.get("chef_challenge",{})
+	if not chef.is_empty():
+		var status: String=chef["status"]
+		var text: String={"open":"요리사 새 도전 보기","active":"요리사 현재 도전 · %d/6 조건" % chef["met"],"ready":"요리사 도전 달성! 성장 확인","mastered":"요리사 · 점심 조리 습득"}[status]
+		var goal:=make_button(text,"ResultChef","gold" if status=="ready" else "summary","chevron_right")
+		goal.pressed.connect(func(): action_requested.emit("chef"))
+		_body.add_child(goal)
 	_body.add_child(_label("어떤 메뉴가 팔렸나요?",20))
 	var menu_grid:=GridContainer.new()
 	menu_grid.name="ResultMenuGrid"
@@ -288,6 +295,7 @@ func _summary() -> void:
 	var cost:=make_button("비용 영수증","ResultCosts","summary","chevron_right")
 	cost.pressed.connect(_show_page.bind("cost"))
 	_body.add_child(cost)
+
 
 
 func _menu_details() -> void:

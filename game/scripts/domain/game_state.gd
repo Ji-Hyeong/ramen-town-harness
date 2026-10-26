@@ -16,6 +16,7 @@ const Session = preload("res://scripts/domain/service_session.gd")
 const Research = preload("res://scripts/domain/ramen_research.gd")
 const Growth = preload("res://scripts/domain/shop_growth.gd")
 const Staffing = preload("res://scripts/domain/shop_staffing.gd")
+const Chef = preload("res://scripts/domain/chef_challenge.gd")
 const Training = preload("res://scripts/domain/staff_training.gd")
 const Exploration = preload("res://scripts/domain/ingredient_exploration.gd")
 const Foraging = preload("res://scripts/domain/market_foraging.gd")
@@ -49,7 +50,8 @@ const Stories = preload("res://scripts/domain/regular_stories.gd")
 ## v11 adds isolated market samples; v1..10 receive no samples or retroactive rewards.
 ## v12 allows repeated paid topping portions and rank-only 2/3/4 positions.
 ## v13 adds harbor research samples with a shared calendar and strict old-version validation.
-const SCHEMA_VERSION: int = 13
+## v14 records explicit base-chef challenge acceptance and actual service proof.
+const SCHEMA_VERSION: int = 14
 const EXPANSION_PRICE: int = 60000
 const MIN_SCHEMA_VERSION: int = 1
 const LEGACY_MAX_RECORDS: int = 30
@@ -74,7 +76,8 @@ const TOP_KEYS_V7: Array = TOP_KEYS_V6 + ["shop"]
 const TOP_KEYS_V9: Array = TOP_KEYS_V7 + ["stories"]
 const TOP_KEYS_V10: Array = TOP_KEYS_V9 + ["taste_achievements"]
 const TOP_KEYS_V11: Array = TOP_KEYS_V10 + ["foraging"]
-const TOP_KEYS: Array = TOP_KEYS_V11 + ["harbor_foraging"]
+const TOP_KEYS_V13: Array = TOP_KEYS_V11 + ["harbor_foraging"]
+const TOP_KEYS: Array = TOP_KEYS_V13 + ["chef_challenge"]
 const RECORD_KEYS: Array = ["record_id", "lineage_id", "name", "version", "tasted_day", "config", "scores", "comparison"]
 const COMPARISON_KEYS: Array = ["prev_record_id", "prev_version", "prev_scores", "prev_config"]
 const DRAFT_KEYS: Array = ["config", "name", "lineage_id"]
@@ -102,6 +105,7 @@ var _rank: int = 1
 var _facilities: Array = []
 var _hired: Array = []
 var _training: Dictionary = {}
+var _chef_challenge: Dictionary = Chef.empty_state()
 var _expanded: bool = false
 var _menu_ids: Array = []
 ## 재료 탐험 상태(저장). 발견한 재료(영구), 마지막 출발일(하루 1번 규칙), 누적 완료/포기 횟수, 진행 중 탐험, 최근 영수증. 구조는 ingredient_exploration.gd 참고.
@@ -617,7 +621,9 @@ func settle_service() -> Dictionary:
 	var trained: Dictionary = _service_experience(units)
 	if str(trained["error"]) != "":
 		return _fail(str(trained["error"]))
+	var chef_after: Dictionary = Chef.observe(_chef_challenge, rec, day, s.completed)
 	# --- 여기부터는 실패 지점이 없다 ---
+	_chef_challenge = chef_after
 	last_report = {
 		"day": day,
 		"recipe_name": str(rec["name"]),
@@ -732,6 +738,8 @@ func _settle_menu_session(s: Session) -> Dictionary:
 	var trained: Dictionary = _service_experience(int(sm["units"]))
 	if str(trained["error"]) != "":
 		return _fail(str(trained["error"]))
+	var chef_after: Dictionary = Chef.observe(_chef_challenge, today[0], day, s.completed) if today.size() == 1 else _chef_challenge.duplicate(true)
+	_chef_challenge = chef_after
 	# 검사 뒤에만 비용/경험/일차/불변 보고를 함께 반영한다. 공통 운영비는 이 한 번뿐이다.
 	wallet = after
 	_training = trained["state"]
@@ -965,9 +973,30 @@ func free_staff_slots() -> int:
 	return Growth.free_staff_slots(_facilities, _hired)
 
 
-## 현재 고용 목록에서 만든 직원 구성(영업 시작 때 이 값이 세션으로 복사된다). 아무도 고용하지 않으면 기준과 같은 값(100%, 운영비 0).
+## Read-only challenge status; no retroactive service credit or draft mutation.
+func chef_challenge_review() -> Dictionary:
+	return Chef.review(_chef_challenge)
+
+
+func start_chef_challenge() -> Dictionary:
+	if _busy(): return _locked_fail()
+	if not _chef_challenge["start"].is_empty(): return _fail("이미 수락한 도전이에요.")
+	_chef_challenge = {"start": {"day":day, "min_record_id":next_record_id, "config":draft_config.duplicate(true)}, "attempt":{}, "completed_day":0}
+	return _ok("점심 라멘 도전을 수락했어요. 구성을 바꿔 새로 시식한 메뉴로 영업해 보세요.")
+
+
+func claim_chef_challenge() -> Dictionary:
+	if _busy(): return _locked_fail()
+	if Chef.review(_chef_challenge)["status"] != "ready": return _fail("도전 조건을 먼저 달성해 주세요. 완료한 보상은 다시 받을 수 없어요.")
+	var next: Dictionary = _chef_challenge.duplicate(true)
+	next["completed_day"] = day
+	_chef_challenge = next
+	return _ok("요리사가 점심 조리를 익혔어요! 다음 영업부터 조리 시간이 5% 줄어요.")
+
+
+## Freeze assistant qualifications and earned base-chef mastery for this service.
 func current_staffing() -> Dictionary:
-	return Staffing.snapshot(_hired, _training)
+	return Staffing.snapshot(_hired, _training, Chef.level(_chef_challenge))
 
 
 ## 영업 시작 시점에 세션에 복사해 두는 성장 요약(표시/검증용). 정산 금액에는 직원 구성만 쓰인다.
@@ -1074,7 +1103,7 @@ func hiring_preview(id: String) -> Dictionary:
 	candidates.append(id)
 	var qualifications: Dictionary = _training.duplicate(true)
 	qualifications[id] = Training.empty()
-	var after: Dictionary = MenuSales.simulate(selling, day, Staffing.snapshot(candidates, qualifications))
+	var after: Dictionary = MenuSales.simulate(selling, day, Staffing.snapshot(candidates, qualifications, Chef.level(_chef_challenge)))
 	if str(after["error"]) != "":
 		return {"error": str(after["error"])}
 	# Return fresh forecasts so editing a view model cannot mutate game records,
@@ -1587,6 +1616,7 @@ func to_dict() -> Dictionary:
 		"taste_achievements": _taste_achievements.duplicate(true),
 		"foraging": _foraging.duplicate(true),
 		"harbor_foraging": _harbor_foraging.duplicate(true),
+		"chef_challenge": _chef_challenge.duplicate(true),
 	}
 
 
@@ -1622,7 +1652,9 @@ func load_from_dict(raw: Variant) -> String:
 		expected_keys = TOP_KEYS_V10
 	elif version == 11 or version == 12:
 		expected_keys = TOP_KEYS_V11
-	elif version >= 13:
+	elif version == 13:
+		expected_keys = TOP_KEYS_V13
+	elif version == 14:
 		expected_keys = TOP_KEYS
 	var key_err: String = Check.keys_error(d, expected_keys, "저장")
 	if key_err != "":
@@ -1855,6 +1887,11 @@ func load_from_dict(raw: Variant) -> String:
 				return "판매 목록의 기록 번호가 올바르지 않아요."
 			menu_ids.append(int(id))
 			used[int(id)] = true
+	var chef_parsed: Dictionary = Chef.empty_state()
+	if version >= 14:
+		var chef_result: Dictionary = Chef.parse(d["chef_challenge"], int(d["day"]), n_record, growth_rank, slot_limit, discovered_now, parsed)
+		if str(chef_result["error"]) != "": return str(chef_result["error"])
+		chef_parsed = chef_result["state"]
 	if new_report:
 		if not expanded:
 			return "증축하지 않은 매장의 확장 영업 보고예요."
@@ -1864,7 +1901,7 @@ func load_from_dict(raw: Variant) -> String:
 		rep_result = MenuReport.parse(d["last_report"], int(d["day"]), n_record, retained, discovered_now, slot_limit, growth_rank)
 		if str(rep_result["error"]) != "":
 			return str(rep_result["error"])
-		var staff_error: String = _report_staff_error(rep_result["report"]["staffing"], growth_staff, training_parsed, int(rep_result["report"]["day"]))
+		var staff_error: String = _report_staff_error(rep_result["report"]["staffing"], growth_staff, training_parsed, int(rep_result["report"]["day"]), chef_parsed)
 		if staff_error != "":
 			return staff_error
 	var stories_parsed: Array = []
@@ -1897,6 +1934,7 @@ func load_from_dict(raw: Variant) -> String:
 	_facilities = growth_facilities
 	_hired = growth_staff
 	_training = training_parsed
+	_chef_challenge = chef_parsed
 	_exploration = exploration_parsed
 	_foraging = foraging_parsed
 	_harbor_foraging = harbor_parsed
@@ -2096,7 +2134,7 @@ static func _has_process(raw: Variant) -> bool:
 
 
 ## 보고일 뒤에 훈련을 받았더라도 당시 자격을 소급하지 않는다. 과거에 없었던 고용/자격을 주장하면 거부한다.
-static func _report_staff_error(staff: Dictionary, hired: Array, training: Dictionary, on_day: int) -> String:
+static func _report_staff_error(staff: Dictionary, hired: Array, training: Dictionary, on_day: int, chef: Dictionary = {}) -> String:
 	var historical: Dictionary = {}
 	for id in staff.get("hired", []):
 		if not hired.has(id):
@@ -2106,7 +2144,8 @@ static func _report_staff_error(staff: Dictionary, hired: Array, training: Dicti
 			if int(lesson["day"]) <= on_day:
 				e["lessons"].append(lesson.duplicate(true))
 		historical[id] = e
-	if MenuReport._json(Staffing.snapshot(staff.get("hired", []), historical)) != MenuReport._json(staff):
+	var chef_at_service: int = 1 if int(chef.get("completed_day",0)) > 0 and int(chef["completed_day"]) <= on_day else 0
+	if MenuReport._json(Staffing.snapshot(staff.get("hired", []), historical, chef_at_service)) != MenuReport._json(staff):
 		return "영업 보고의 자격이 당시 훈련과 달라요."
 	return ""
 
