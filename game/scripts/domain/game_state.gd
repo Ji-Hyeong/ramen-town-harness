@@ -29,6 +29,7 @@ const MenuReport = preload("res://scripts/domain/menu_report.gd")
 const ProcessRules = preload("res://scripts/domain/recipe_process.gd")
 const Broth = preload("res://scripts/domain/broth_workshop.gd")
 const Noodle = preload("res://scripts/domain/noodle_workshop.gd")
+const Comparison = preload("res://scripts/domain/component_comparison.gd")
 const StoryCatalog = preload("res://scripts/domain/regular_story_catalog.gd")
 const Stories = preload("res://scripts/domain/regular_stories.gd")
 
@@ -309,6 +310,35 @@ func use_broth(index: int) -> Dictionary:
 	next["process"]=methods
 	draft_config=Catalog.normalize_config(next)
 	return _ok("직접 개발한 육수를 그릇에 담았어요.")
+
+
+## Read-only review of a finished component against the one in the bowl. Allowed
+## while work is running: it grants nothing and copies everything it returns.
+## Keys are always: ok,message,kind,recipe,current_component,selected_component,
+## current_ramen,candidate_ramen,applied (see component_comparison.gd).
+func component_comparison(kind: String, index: int) -> Dictionary:
+	return Comparison.compare(kind,index,draft_config.duplicate(true),{"broth":_broth_workshop.duplicate(true),"noodle":_noodle_workshop.duplicate(true)},_rank,_discovered_list())
+
+
+## Explicitly copy a finished formula back into ITS OWN workshop draft for further
+## experiments. The bowl, notebook, wallet, day, samples and history stay as they
+## are, no work starts and nothing is completed. Validation matches the draft edits
+## (busy, rank, discovered source) but not sample stock, so an already earned
+## formula can be reloaded at zero stock; later production/tasting enforces stock.
+func load_component_recipe(kind: String, index: int) -> Dictionary:
+	if _busy(): return _locked_fail()
+	if not Comparison.valid_kind(kind): return _fail("불러올 항목은 육수와 면만 고를 수 있어요.")
+	var recipes: Array=(_broth_workshop if kind=="broth" else _noodle_workshop)["recipes"]
+	if index<0 or index>=recipes.size(): return _fail("불러올 개발한 %s를 골라 주세요." % Comparison.label(kind))
+	var recipe: Dictionary=recipes[index]["recipe"].duplicate(true)
+	var err: String=Comparison.recipe_error(kind,recipe,_rank,_discovered_list())
+	if err!="": return _fail(err)
+	if kind=="broth":
+		_broth_workshop["ingredients"]=recipe["ingredients"].duplicate()
+		_broth_workshop["method"]=recipe["method"]
+	else:
+		_noodle_workshop["formula"]=recipe
+	return _ok("개발한 %s의 배합을 개발실에 불러왔어요. 바꿔서 새로 실험해 보세요." % Comparison.label(kind))
 
 
 ## Check nested recipes in retained/deleted witnesses too. Only an unfinished

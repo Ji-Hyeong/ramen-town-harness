@@ -347,7 +347,8 @@ func _process(delta: float) -> void:
 				_taste_message.text=_unsaved_notice(str(result["message"]))
 			_refresh_all()
 			_sync_bowl_editor()
-			_bowl_editor._show_broth_workshop("library" if result["ok"] else "blend")
+			if result["ok"]: _bowl_editor._return_component_library("broth",true)
+			else: _bowl_editor._show_broth_workshop()
 		else:
 			_bowl_editor.update_broth_progress()
 	if state.noodle_active():
@@ -361,7 +362,8 @@ func _process(delta: float) -> void:
 				_taste_message.text=_unsaved_notice(str(result["message"]))
 			_refresh_all()
 			_sync_bowl_editor()
-			_bowl_editor._show_noodle_workshop("library" if result["ok"] else "formula")
+			if result["ok"]: _bowl_editor._return_component_library("noodle",true)
+			else: _bowl_editor._show_noodle_workshop()
 		else:
 			_bowl_editor.update_noodle_progress()
 	_sync_bowl_editor()
@@ -3005,6 +3007,18 @@ func _on_bowl_editor_action(kind: String, data: Dictionary) -> void:
 		_on_broth_action(kind,data)
 		return
 	match kind:
+		"component_reload":
+			if _work_blocked("개발 배합을 불러올"): return
+			var result: Dictionary=state.load_component_recipe(str(data["kind"]),int(data["index"]))
+			_taste_message.text=str(result["message"])
+			if result["ok"]:
+				_persist()
+				_taste_message.text=_unsaved_notice(str(result["message"]))
+				_audio.play("plate")
+			else: _flash(str(result["message"]))
+			_refresh_all()
+			_sync_bowl_editor()
+			if result["ok"]: _bowl_editor._show_component_workshop(str(data["kind"]))
 		"close": _on_close_pressed()
 		"taste": _on_taste()
 		"cancel": _on_work_cancel()
