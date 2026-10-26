@@ -1,119 +1,51 @@
-# Native service-result design and interaction review
+# Shop home workbench design QA
 
 final result: passed
 
-2026-10-25. Bounded internal acceptance for actual service-result summary,
-food/customer/cost details and history handoff. The human explicitly requested
-more design elements aligned to chosen option3. Whole-game UI, physical iPhone,
-accessibility certification and human fun acceptance are outside this slice.
+Date:2026-10-26. Bounded native shop-home extension/interaction acceptance only.
 
-## Source and comparison evidence
+## Visual truth and normalization
 
-Visual truth: [chosen option3](game/docs/uiux-reset/refinements/concept-03-categories-v1.png)
-and the accepted native editor/exploration design. The853x1844 reference alone is
-normalized to390x844 with Lanczos; actual portrait390x844 and desktop1280x800
-PNGs are unframed, unretouched native pixels. This is Godot, not CSS/browser
-content, and no browser/device chrome is included. The chosen source depicts
-menu editing. A service report is an intentional extension of its original food,
-wood, frames, fonts and navy/cream/teal/gold palette, not an exact missing mock.
+- Selected source:`game/docs/uiux-reset/refinements/concept-03-categories-v1.png`,853x1844; normalized to390x844 with Lanczos only inside compositions. The source is an editor screen. There is no selected home-specific mock. Carrying its supplied frames, coin, bowl layers, icons, palette and Pretendard into the existing home is intentional; this does not claim an exact home clone.
+- Current implementation:`game/docs/uiux-reset/shop-home-workbench-v1/portrait_home_02_selling.png`,390x844; `desktop_home_06_expanded.png`,1280x800. Native SubViewport pixels equal their logical viewport1:1; no browser/device chrome or CSS density applies.
+- Fresh baseline: same directory `baseline/`; previous-main377513e frozen289-file pack,116/0/exit0,8 captures before runtime edits. Empty, single selling and expanded idle use the same public-state transactions, recipes, prices, wallet and day. Current subsequent draft edits are not substituted for the selling roster. Baseline60s/current300s active scenes are not claimed as same-state comparisons.
+- Full combined inputs: `comparisons/portrait-design-system.png`, `portrait-empty-before-after.png`, `portrait-selling-before-after.png`, `portrait-expanded-before-after.png`, `desktop-expanded-before-after.png`. They contain actual source/baseline/current images together. Desktop comparison may be scaled by the chat viewer; original1280x800 images were also opened.
+- Focused combined inputs: `comparisons/focused-header.png` compares genuine source/current crops at2x; `focused-summary-v1-v5.png` shows the actual first broken summary versus current at2x nearest. No raw screenshot was retouched.
 
-[Numbered actual flow, full comparisons and focused food-card crop](game/docs/uiux-reset/service-result-v1/),
-[exact hashes and manual scope](game/docs/uiux-reset/service-result-v1/review.json).
-Fresh285-file previous-main97dd063 baseline108/0/exit0 supplies matched single
-and pair receipts. Same recipe/day/orders/revenue/cost/wallet are compared; the
-baseline history capture shows the old service tab initially, not the actual old
-receipt at a matched scroll position. Source/current editor/report are combined
-in one comparison. The focused food card uses actual crops(22,360,369,495),2x
-nearest enlargement only in evidence, to inspect the detail affordance and insets.
-Desktop v1/v2 compares the same actual pair receipt at1280x800 without rescaling.
+## Findings resolved and post-fix evidence
 
-## Findings, iterations and fixes
+- [P1 resolved] First compact header expanded to232px because a shrinking, wrapped date column had almost zero width. Give date/rank their real unwrapped text minimum, reserve52px header/64px scene inset and center its column. Current raw and compact geometry retain the original2x portrait/4x desktop shop with no overlap.
+- [P1 resolved] V1 clock wrapped vertically and displaced the actual dish/title outside the summary despite the overall card geometry passing. Disable clock wrapping; enforce text and dish containment inside real frame padding. Actual V5 originals and focused V1/V5 composition show a complete one-line phase, dish, name/price and teal chevron. No early screenshot-only pass is used.
+- [P2 resolved] The warning icon initially squeezed its caption away. Give the warning affordance86px and unwrapped text, and put an explicit failure line in the selling summary. Raw `portrait_home_08_save_warning.png` and `10_protected_home.png` show both actual states; the full original banner/reset is reachable in09/11.
+- [P2 resolved] A manual-save refusal was initially below the scroll fold. Move the actual response above the fixed save button and clear it on reopening/reset. Raw05 shows truthful active-service refusal without scrolling; tests cover real write failure/retry/recovery and corrupt-file archive byte preservation.
+- [P2 resolved] Live details could remain behind an automatically opened settlement. Dismiss them on the existing report route so the result's home action returns to the shop. Actual pointer/settlement QA covers the transition and once-only net/day mutation.
+- [P3 resolved] Disabled route icons inherited near-white tint on cream. Apply a scoped muted disabled-icon token. V5 live detail shows visible muted icons beside disabled text.
+- No remaining P0/P1/P2 findings within the stated home scope. Other old staff/growth/story pages are separate future work, not included in this pass.
 
-1. P2 buried results: the baseline mixes full finance, two menu rows, customer
-   sources and saving into a narrow long label. Show actual net/units/revenue
-   first; clickable food cards lead to per-menu details; customers/cost/complete
-   receipt have explicit depths. Fixed54px return/develop actions stay reachable.
-2. P2 sparse visual hierarchy: respond to human feedback with original coin,
-   actual sold dish thumbnails/large detail dish, wood context and actual customer
-   portraits, licensed font hierarchy and supplied frame/CTA textures. Do not
-   paint substitute art or add dashboard decoration unrelated to the game.
-3. P1 reopened input: a visually higher result initially still sat before the
-   drawer in sibling input order. Actual pointer regression reproduced a missed
-   menu tap and wrong handoff. Move the result to the last sibling on open; final
-   pointer tests cover reopening above the visible service drawer and detail taps.
-4. P2 handoff: paused deterministic QA exposed reliance on the next process frame
-   to show the editor. Explicitly synchronize the existing native editor after
-   the development route. Preserve the whole draft/ledger; do not load a sold
-   recipe automatically.
-5. P2 v1 affordance/density: nativev1 showed a pale white detail arrow and two
-   stretched desktop rows. Finalv2 uses a teal arrow/hover icon tint, real wood
-   food context and side-by-side desktop cards. Focused/full same-state v1/v2
-   comparisons verify the visible correction; portrait remains a scrolling list.
-6. P2 misleading empty reaction: no completed orders means no satisfaction
-   aggregate, not a bad0.0/5 review. Final loss screenshot shows0bowls/-3000 and
-   no aggregate. Actual zero/negative amounts remain in the ledger unchanged.
-7. P2 unavailable history: a stored old single receipt lacks full recipe/live
-   reaction fields. Use the exact matching just-finished sold snapshot only;
-   after restart omit missing dishes/stars explicitly. Stored expanded snapshots
-   retain the real dish/wait. Current draft never substitutes historical food.
-8. QA setup corrections: reject wrong baseline clock API and nil dish-property
-   engine errors despite exit0/success counts. Use the existing advance helper
-   and actual config property. Preserve all failed diagnostics separately. The
-   product input/handoff failures above were fixed rather than weakening checks.
+## Required fidelity surfaces
 
-## Final verification and provenance
+1. Fonts/typography: original supplied Pretendard Regular/Bold, no new fonts/fallbacks. Day/wallet18 bold, selling title16 bold, phase/metadata14, detail16 and heading22. Rank12 remains secondary to the readable enlarged detail. Same selected-source hierarchy carries to fixed gold CTA and navy headings. Intentional one-line selling-name ellipsis opens a full wrapping name in detail. Actual font measurement guards day/wallet/clock height and summary containment; originals and focus crops show no text touching frame borders.
+2. Spacing/layout:6px outer home gap,12px header side insets,10px/6px summary padding,14px detail frame padding, fixed44px+ targets. Compact stacked summary/nav reserve158px; desktop uses one84px row side by side, preserving the actual isometric world. Detail is scrollable within a centered720px maximum and has fixed close/save.390x750 live resize tests preserve scene scale and reachable actions. Full/focused combined comparisons confirm the change from a dense two-line brown strip to food-led summary.
+3. Colors/tokens: byte-identical original blue/cream/gold/teal frame textures; navy18354f body/headings, teal087e80 actionable status, redaa3828 failure, white-on-blue primary metadata. Scoped disabled grey/cream is intentional. Contrast remains based on the established native design, not a full accessibility certification.
+4. Image quality/assets: original coin, noodle empty-state icon, actual layered selling bowls, Material rounded icon resources and unchanged integer-scale shop pixel art. No generated additions, placeholders, handcrafted icons or code-drawn replacement art. Summary60x38/paired48x38 dish is intentionally a thumbnail; full detail is84x60. New preview data always belongs to the selling records, never a current draft. Side-by-side composition preserves the original shop size/art.
+5. Copy/content: real day/rank/seats/staff/capacity/wallet, roster/version/price and session stats. Actual anticipated units are clearly labeled as forecasts in detail. Empty menus have an explicit first-menu path; active service preserves double-confirm stop and exact settlement. Full actual save warnings/protection and manual outcome are accessible; no invented successful saves or historical dish guesses. Technical recipe suffixes in the two-menu fixture are actual prior test recipe names, not new product copy.
 
-Final frozen packv2 only. Actual OpenGL4.1 Metal Apple M3 Pro: service466/0/exit0,
-22PNGs; existing native editor524/0/exit0,30PNGs, run20261024T164353Z-24348.
-Same packed390x750 service202/0 and ingredient payoff226/0 are explicitly
-layout-only, both exit0; no compact rendering claim.13 final preparation/native/
-baseline logs have no engine/script errors. No full-domain rerun or CI pass.
+## Interaction and evidence
 
-Real pointer coverage: summary/detail/back/receipt; card swipe cancellation;
-fixed controls; reopen over drawer; current-draft independence; development
-handoff; saved restart; actual two menus; live compact resize; zero-sale loss;
-abort; actual isolated save failure, unchanged disk and successful recovery.
-Settlement changes day/wallet once; a duplicate settlement is refused. Sum of
-actual menu contributions minus common overhead equals the net once. All page
-browsing/handoffs preserve the state. Existing editor/payoff regressions retain
-prior tasting, sample, replacement, canceled input and save-failure coverage.
+- Same final293-source V5 pack:`637eb1d970d6da293ed4ff15dbf49854d81283955e4c1682363db85ad073369e`; export equals embedded PCK; post-run official strict engine signature exit0.
+- Actual native home780/0, editor524/0, service-result466/0; all actual exits0 and engine errors0.10 runtime logs checked. No CI inference: these are local runs.
+- Same packed390x750 home356/0 and service202/0, layout-only/exit0. Rendering explicitly not claimed for these runs.
+- Actual pointer checks: home/info/summary/close, press acknowledgement, canceled card swipe, first-menu editor, selling/growth/exploration/report routes, live speed/progress, protected roster, double-confirm abort, exact settlement, automatic result replacing details, resumed travel, save failure/retry/recovery and explicit corrupt-byte archive/reset.
+- Opened final home16 originals, current editor4, current service2, baseline4 and all7 combined comparisons; exact names/hashes in `evidence/shop-home-workbench-v1.json` and gallery `review.json`. Final generated76 originals; public home24+regression6, baseline8. All raw isolated outputs retained privately. Not every generated original was manually opened.
 
-All289 runtime sources match the snapshot; exported and embedded pack
-`8c7f0562733a38540bf6878882fa7a685d61aac9dc531523f65675603dcf9669` matches.
-Official copied engine hash and post-run strict vendor signature pass. Whole
-baseline/current/editor directories6/22/42files and18isolated data files are
-privately preserved byte-equal, with source/pack/logs and rejected diagnostics.
-Publish26current originals,6baseline originals and6comparisons.17/22result,
-4/30editor,4/6baseline originals and6comparisons were opened. All52 current
-originals satisfy actual fixture dimensions/nonblank guards; not all were read
-manually. Two-menu fixture research names are actual QA-created records, not new
-fixed product labels or evidence of first-time player progression.
+## Implementation checklist
 
-## Five fidelity surfaces and residual limits
+- [x] Preserve selected-source assets, existing shop and domain/save/financial rules.
+- [x] Render fresh native baseline and final states, compare combined full/focused inputs and resolve listed findings.
+- [x] Verify actual pointer transitions, compact geometry, isolated failure/protection and current editor/service regressions.
+- [x] Verify source/PCK equality, post-run signature and precise evidence/manual scope.
+- [x] Prepare ready publication under existing human authorization; actual remote/local merge outcome is recorded separately after completion.
 
-Typography: original licensed Pretendard Regular/Bold,32px net,22-24px heading/
-figures,18px menu titles,14-16px supporting copy. Menu summary titles truncate
-only after2lines; full titles are available in detail. Spacing:14px outer paper
-insets,12px card content insets,10-12px gaps,126px full food-card targets and48px+
-actions. Main body scrolls below fixed header/footer; desktop max860px and two
-columns, compact margins14px. Colors: supplied navy/cream/teal/gold textures,
-red losses/warnings; teal icon fix is inspected. No formal contrast certification.
-Images: exact existing food/wood/coin/frame/portrait/font bytes, nearest food
-sampling and no invented historic dish. Coarse older portraits/region art remain.
-Copy: actual completed orders, per-menu contribution vs common operating cost,
-net vs historic wallet, taste vs live stars, missing history and save failure
-are distinguished. No invented reactions, forecast-as-actual or duplicate grant.
+## Limits
 
-No actionable P0/P1/P2 observed in these bounded surfaces. P3 follow-ups include
-coarser older character art, idle single-card space in the desktop grid and the
-separate gray cooking progress styling. Surrounding shop/staff/story drawers
-retain their older design and need a separate scope; this is not whole-game UI
-completion. VoiceOver, keyboard-only, text scaling, reduced motion, real phone
-safe areas/touch and human fun remain untested. No Claude, phone, normal save,
-domain/service/schema/balance/asset/font or unfinished-stash changes.
-
-Completed checklist: fresh baseline; bounded implementation; pointer/handoff and
-visual fixes; final native/compact/regression checks; full/focused comparisons;
-source/signature verification and exact preservation. Ready PR/verified-head
-squash merge use standing human authorization. Earlier work remains in the
-[ingredient payoff gallery](game/docs/uiux-reset/ingredient-payoff-v1/).
+No physical iPhone work, Claude delegation, ordinary saves, domain/services/schema/balance/assets/fonts changes or unfinished stash restoration. This is bounded internal UI acceptance, not whole-game aesthetic/fun completion or a general accessibility/physical-touch certification. The native artifact is not a web prototype; no fake browser preview URL is provided.

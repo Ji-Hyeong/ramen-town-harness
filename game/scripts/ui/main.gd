@@ -52,6 +52,8 @@ var _service_result_context: Dictionary = {}
 var _service_result_key: String = ""
 var _service_sold_snapshot: Array = []
 var _last_report_button: Button
+const ShopHomeScript = preload("res://scripts/ui/shop_home_view.gd")
+var _home: ShopHomeScript
 
 const INK: Color = Color(0.17, 0.12, 0.08)
 const PAPER: Color = Color(0.96, 0.92, 0.82)
@@ -578,49 +580,52 @@ func _build_ui() -> void:
 	_shop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(_shop)
 
-	_build_hud()
+	_build_home()
 	_build_banner()
-	_build_status()
-	_build_nav()
+	_home.attach_warning(_banner)
 	_build_result()
 	_build_overlay()
 
 
-func _build_hud() -> void:
-	_hud = _card("Hud")
-	_hud.add_theme_stylebox_override("panel", _box(WOOD, WOOD_D, 3, 0, 10.0, 4.0))
-	_anchor(_hud, 0.0, 0.0, 1.0, 0.0, GAP, GAP, -GAP, GAP + HUD_H)
-	var row: HBoxContainer = HBoxContainer.new()
-	row.add_theme_constant_override("separation", 8)
-	_hud.add_child(row)
-	_day_label = _plain_label("DayLabel", 19, CREAM)
-	row.add_child(_day_label)
-	var coin: TextureRect = TextureRect.new()
-	coin.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	coin.name = "CoinIcon"
-	coin.texture = _icon("coin", 2)
-	coin.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
-	coin.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	coin.custom_minimum_size = Vector2(24.0, 24.0)
-	row.add_child(coin)
-	_wallet_label = _plain_label("WalletLabel", 17, CREAM)
-	row.add_child(_wallet_label)
-	var spacer: Control = Control.new()
-	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	row.add_child(spacer)
-	_clock_label = _plain_label("ClockLabel", 16, CREAM)
-	row.add_child(_clock_label)
-	_progress = ProgressBar.new()
-	_progress.name = "ServiceProgress"
-	_progress.show_percentage = false
-	_progress.min_value = 0.0
-	_progress.max_value = 100.0
-	_progress.custom_minimum_size = Vector2(76.0, 14.0)
-	_progress.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	_progress.add_theme_stylebox_override("background", _box(WOOD_D, INK, 2, 0, 0.0, 0.0))
-	_progress.add_theme_stylebox_override("fill", _box(VERMILION, VERMILION, 0, 0, 0.0, 0.0))
-	row.add_child(_progress)
-	add_child(_hud)
+func _build_home() -> void:
+	_home = ShopHomeScript.new()
+	add_child(_home)
+	_hud = _home.hud
+	_status = _home.status
+	_nav = _home.nav
+	_day_label = _home.day_label
+	_wallet_label = _home.wallet_label
+	_clock_label = _home.clock_label
+	_progress = _home.progress
+	_status_label = _home.status_label
+	_note_label = _home.note_label
+	_dev_button = _home.dev_button
+	_start_button = _home.start_button
+	_speed_button = _home.speed_button
+	_dev_button.pressed.connect(_on_dev_pressed)
+	_start_button.pressed.connect(_on_start_pressed)
+	_speed_button.pressed.connect(_on_speed_pressed)
+	_home.action_requested.connect(_on_home_action)
+
+
+## Home routes call the same guarded controller as existing tabs. A detail page
+## never starts service, settles money, changes a recipe or edits a save itself.
+func _on_home_action(kind: String) -> void:
+	if kind == "save":
+		var result: Dictionary = manual_save()
+		_home.set_save_result(str(result["message"]))
+		_refresh_home()
+		return
+	if state.service_active() or _work.is_running() or _contest_left > 0.0 or _training_left > 0.0:
+		return
+	_home.hide_details()
+	match kind:
+		"menus": _open_overlay(TAB_SERVE)
+		"explore": _open_overlay(TAB_EXPLORATION)
+		"growth": _open_overlay(TAB_GROWTH)
+		"report": _show_service_report()
+		_: push_error("알 수 없는 가게 화면 동작: " + kind)
+	_sync_bowl_editor()
 
 
 func _build_banner() -> void:
@@ -637,50 +642,6 @@ func _build_banner() -> void:
 	bb.add_child(_reset_button)
 	_banner.visible = false
 	add_child(_banner)
-
-
-func _build_status() -> void:
-	_status = _card("StatusStrip")
-	_status.add_theme_stylebox_override("panel", _box(Color(0.14, 0.09, 0.06, 0.92), WOOD_D, 3, 0, 10.0, 3.0))
-	var col: VBoxContainer = _vbox(0)
-	_status.add_child(col)
-	_status_label = _label("", 14, CREAM)
-	_status_label.name = "ServiceStatusLabel"
-	col.add_child(_status_label)
-	_note_label = _label("", 12, Color(0.86, 0.78, 0.62))
-	_note_label.name = "ServiceNoteLabel"
-	col.add_child(_note_label)
-	add_child(_status)
-
-
-func _build_nav() -> void:
-	_nav = _card("NavBar")
-	_nav.add_theme_stylebox_override("panel", _box(WOOD, WOOD_D, 3, 0, 6.0, 3.0))
-	_anchor(_nav, 0.0, 1.0, 1.0, 1.0, GAP, -(GAP + NAV_H), -GAP, -GAP)
-	var row: HBoxContainer = HBoxContainer.new()
-	row.add_theme_constant_override("separation", 6)
-	_nav.add_child(row)
-	_dev_button = _button("메뉴 개발", "DevButton")
-	_wood_button(_dev_button)
-	_dev_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_dev_button.size_flags_stretch_ratio = 1.0
-	_dev_button.pressed.connect(_on_dev_pressed)
-	row.add_child(_dev_button)
-	_start_button = _button("영업 시작", "StartServiceButton")
-	_primary(_start_button)
-	_start_button.custom_minimum_size = Vector2(0.0, 52.0)
-	_start_button.add_theme_font_size_override("font_size", 18)
-	_start_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_start_button.size_flags_stretch_ratio = 1.6
-	_start_button.pressed.connect(_on_start_pressed)
-	row.add_child(_start_button)
-	_speed_button = _button("속도 ×1", "SpeedButton")
-	_wood_button(_speed_button)
-	_speed_button.custom_minimum_size = Vector2(84.0, 52.0)
-	_speed_button.pressed.connect(_on_speed_pressed)
-	_speed_button.visible = false
-	row.add_child(_speed_button)
-	add_child(_nav)
 
 
 func _build_result() -> void:
@@ -1332,38 +1293,14 @@ func _is_portrait() -> bool:
 	return size.x < WIDE_BREAKPOINT
 
 
-## 줄바꿈된 글의 실제 높이: 글꼴이 주는 여러 줄 크기에 줄 간격을 더한다(고정값을 베끼지 않고 현재 글/폭으로 계산).
-func _wrapped_text_height(label: Label, width: float, headroom: bool) -> float:
-	if label.text == "":
-		return 0.0
-	var fs: int = label.get_theme_font_size("font_size")
-	var font: Font = label.get_theme_font("font")
-	var h: float = font.get_multiline_string_size(label.text, HORIZONTAL_ALIGNMENT_LEFT, maxf(8.0, width), fs).y
-	var lines: int = maxi(1, int(roundf(h / font.get_height(fs))))
-	# headroom: 글자 높이의 절반을 더한다(단어 경계 줄바꿈이 계산과 한 줄 다르게 나뉠 때 대비). 세로 화면은 장면 아래 여유가 커서 쓰고,
-	# 가로 데스크톱은 장면(320x152 배율 4 = 608)이 들어갈 높이가 빠듯해 쓰지 않는다(글이 한두 줄로 넓게 펴지므로 줄바꿈 차이 위험이 작다).
-	var extra: float = float(fs) * 0.5 if headroom else 0.0
-	return h + float(lines - 1) * float(label.get_theme_constant("line_spacing")) + extra
-
-
-## 상태 띠 높이 = 현재 상태 글 + 안내 글이 띠 폭에서 줄바꿈된 높이 + 위아래 여백(최소는 이전 고정 높이). 하단 바 위에 통째로 놓는다.
-func _status_height() -> float:
-	var portrait: bool = _is_portrait()
-	if size.x < 200.0:
-		return 76.0 if portrait else 52.0
-	# 데스크톱 폭에서는 두 글이 각 한 줄이라 필요 높이가 이전 고정 높이(52) 이하로 나와 장면(1280x608)이 그대로 들어간다.
-	var inner_w: float = size.x - 2.0 * GAP - 2.0 * 10.0
-	var needed: float = _wrapped_text_height(_status_label, inner_w, portrait) + _wrapped_text_height(_note_label, inner_w, portrait) + 2.0 * 3.0 + (4.0 if portrait else 0.0)
-	return maxf(76.0 if portrait else 52.0, ceilf(needed))
-
-
+## The shop keeps its original integer-scale scene; home chrome occupies a
+## bounded bottom row on desktop or two short rows on portrait/compact screens.
 func _place_status() -> void:
-	if _status == null or _shop == null:
+	if _home == null or _shop == null:
 		return
-	var status_h: float = _status_height()
-	_anchor(_status, 0.0, 1.0, 1.0, 1.0, GAP, -(GAP + NAV_H + 4.0 + status_h), -GAP, -(GAP + NAV_H + 4.0))
-	_shop.inset_top = GAP + HUD_H + 4.0
-	_shop.inset_bottom = GAP + NAV_H + 4.0 + status_h + 4.0
+	_home.layout_home()
+	_shop.inset_top = _home.top_inset
+	_shop.inset_bottom = _home.bottom_inset
 
 
 func _apply_layout() -> void:
@@ -1410,6 +1347,7 @@ func _show_banner(message: String, can_reset: bool) -> void:
 	_banner.visible = true
 	_banner_label.text = message
 	_reset_button.visible = can_reset
+	_refresh_home()
 
 
 ## 저장하고 실제 결과를 돌려준다(true = 파일에 기록됨). 실패/저장 꺼짐이면 서랍이 닫혀 있어도 보이는
@@ -1428,6 +1366,7 @@ func _persist(source: String = "자동") -> bool:
 		if _save_error_shown:
 			_save_error_shown = false
 			_banner.visible = false
+		_refresh_home()
 		return true
 	_last_save_message = str(res["message"])
 	_save_label.text = "저장 실패: " + _last_save_message
@@ -1471,6 +1410,7 @@ func _on_reset_save() -> void:
 		_banner_label.text = str(res["message"])
 		return
 	save_locked = false
+	_home.set_save_result("")
 	state = GameStateScript.new()
 	_shop.set_session(null)
 	_banner.visible = false
@@ -1545,6 +1485,7 @@ func _open_overlay(tab: int) -> void:
 		tabs.current_tab = tab
 	_refresh_guide()
 	_sync_guide_visibility()
+	_sync_bowl_editor()
 
 
 func _close_overlay() -> void:
@@ -1662,6 +1603,7 @@ func _finish_service() -> void:
 func _show_service_report() -> void:
 	if state.last_report.is_empty() or state.service_active() or _development_busy():
 		return
+	_home.hide_details()
 	var context: Dictionary=_service_result_context.duplicate(true) if _service_result_key==JSON.stringify(state.last_report,"",true) else {}
 	context["saved"]=_last_save_message=="" and not save_locked
 	context["save_note"]="영업 정산을 저장했어요." if bool(context["saved"]) else "저장하지 못했어요: %s\n정산은 지금 실행 중인 게임에만 반영돼 있고, 지금 닫으면 이 영업은 사라질 수 있어요." % _last_save_message
@@ -3094,6 +3036,24 @@ func _refresh_status() -> void:
 		_status_label.text = text
 		_note_label.text = note
 		_place_status()
+	_refresh_home()
+
+
+func _refresh_home() -> void:
+	if _home == null or _banner == null:
+		return
+	var phase: String = "영업 준비 · %d종 판매" % state.selling_records().size()
+	if state.service_active():
+		var stats: Dictionary = state.active_session().stats()
+		phase = "완료 %d/%d · 대기 %d명" % [stats["completed"],stats["planned"],stats["queue"]]
+	elif state.exploration_active():
+		phase = str(state.expedition()["region_name"]) + " 탐색 중"
+	elif _flash_text != "":
+		phase = "알림 · 눌러서 확인"
+	_home.set_context({"rank":state.rank(),"seats":state.seat_count(),"staff":state.hired_staff().size(),"staff_limit":state.staff_capacity(),
+		"phase":phase,"menus":state.selling_records(),"no_records":state.record_count()==0,"warning":_banner.visible or save_locked,
+		"busy":state.service_active() or _work.is_running() or _contest_left>0.0 or _training_left>0.0,
+		"has_report":not state.last_report.is_empty(),"save":_banner_label.text if _banner.visible else _save_label.text})
 
 
 func _idle_status_text() -> String:
