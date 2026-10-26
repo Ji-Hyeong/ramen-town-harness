@@ -54,6 +54,9 @@ var _service_sold_snapshot: Array = []
 var _last_report_button: Button
 const ShopHomeScript = preload("res://scripts/ui/shop_home_view.gd")
 var _home: ShopHomeScript
+const StaffGrowthScript = preload("res://scripts/ui/staff_growth_workbench.gd")
+var _growth_view: StaffGrowthScript
+var _growth_revision: int = 0
 
 const INK: Color = Color(0.17, 0.12, 0.08)
 const PAPER: Color = Color(0.96, 0.92, 0.82)
@@ -291,6 +294,10 @@ func _ready() -> void:
 	_exploration_view.visible = false
 	_exploration_view.action_requested.connect(_on_exploration_view_action)
 	add_child(_exploration_view)
+	_growth_view = StaffGrowthScript.new()
+	_growth_view.visible = false
+	_growth_view.action_requested.connect(_on_growth_view_action)
+	add_child(_growth_view)
 	# 재개 시 이동 그림만 다시 보여 준다. 비용·경로·발견은 이미 불러온 도메인 상태를 사용한다.
 	if state.exploration_active():
 		_travel.start(str(state.expedition()["region"]))
@@ -1494,6 +1501,9 @@ func _close_overlay() -> void:
 	_persist()
 	_refresh_status()
 	_refresh_nav()
+	# Native feature views are root siblings of the legacy drawer. Closing must
+	# release their GUI input immediately, including paused/deterministic flows.
+	_sync_bowl_editor()
 
 
 func _on_close_pressed() -> void:
@@ -2772,7 +2782,20 @@ func _sync_bowl_editor() -> void:
 	var exploring: bool = _overlay.visible and tabs.current_tab == TAB_EXPLORATION
 	_bowl_editor.visible = active
 	_exploration_view.visible = exploring
-	_drawer_margin.visible = not active and not exploring
+	var growing: bool = _overlay.visible and tabs.current_tab == TAB_GROWTH
+	_drawer_margin.visible = not active and not exploring and not growing
+	if is_instance_valid(_growth_view):
+		_growth_view.visible = growing
+		if growing:
+			_growth_view.present(state,{"revision":_growth_revision,"busy":_development_busy(),
+				"closing_blocked":_work.is_running() or _training_left>0.0 or _contest_left>0.0,
+				"notice":_growth_message.text,"notice_error":_growth_message.get_theme_color("font_color")==VERMILION,
+				"save_status":_save_label.text,
+				"warning":_banner_label.text if _banner.visible else "",
+				"promote_armed":_promote_armed_until!=0 and Time.get_ticks_msec()<=_promote_armed_until,
+				"expand_armed":_expansion_armed_until!=0 and Time.get_ticks_msec()<=_expansion_armed_until,
+				"training_armed":_training_armed if Time.get_ticks_msec()<=_training_armed_until else "",
+				"training_left":_training_left})
 	if exploring:
 		var save_warning: String = _last_save_message if _last_save_message!="" else (_banner_label.text if _banner.visible else "")
 		_exploration_view.present(state,{
@@ -2791,6 +2814,27 @@ func _sync_bowl_editor() -> void:
 		"notice": _taste_message.text, "warning": warning, "muted": _audio.muted,
 		"new_directions":_direction_new_titles if _direction_new_record==state.last_feedback_record_id else [],
 		"new_themes":_journal_new_titles if _journal_new_record_id==state.last_feedback_record_id else []})
+
+
+## The native growth screen uses established handlers and their domain guards.
+## Cancel only clears temporary confirmations; no business state is reverted.
+func _on_growth_view_action(kind: String, id: String, style: String) -> void:
+	match kind:
+		"close": _on_close_pressed()
+		"develop":
+			if not _work_blocked("메뉴 개발로 이동할"): _open_overlay(TAB_LAB)
+		"hire": _on_staff_hire(id)
+		"facility": _on_facility_buy(id)
+		"expand": _on_expand_shop()
+		"promote": _on_promote_pressed()
+		"train": _on_staff_train(id,style)
+		"cancel":
+			_promote_armed_until = 0
+			_expansion_armed_until = 0
+			_training_armed = ""
+			_training_armed_until = 0
+		_: push_error("알 수 없는 성장 화면 동작: " + kind)
+	_sync_bowl_editor()
 
 
 func _on_bowl_editor_action(kind: String, data: Dictionary) -> void:
@@ -3050,7 +3094,7 @@ func _refresh_home() -> void:
 		phase = str(state.expedition()["region_name"]) + " 탐색 중"
 	elif _flash_text != "":
 		phase = "알림 · 눌러서 확인"
-	_home.set_context({"rank":state.rank(),"seats":state.seat_count(),"staff":state.hired_staff().size(),"staff_limit":state.staff_capacity(),
+	_home.set_context({"rank":state.rank(),"seats":state.seat_count(),"staff":Staffing.BASE_STAFF+state.hired_staff().size(),"staff_limit":state.staff_capacity(),
 		"phase":phase,"menus":state.selling_records(),"no_records":state.record_count()==0,"warning":_banner.visible or save_locked,
 		"busy":state.service_active() or _work.is_running() or _contest_left>0.0 or _training_left>0.0,
 		"has_report":not state.last_report.is_empty(),"save":_banner_label.text if _banner.visible else _save_label.text})
@@ -3931,6 +3975,7 @@ func _staff_portrait_tex(staff_id: String) -> ImageTexture:
 
 ## 성장 탭 갱신: 요약/용량은 라벨을 고쳐 쓰고, 등급/확장/직원 카드는 매번 다시 만든다. 읽기만 하며 상태를 바꾸지 않는다.
 func _refresh_growth() -> void:
+	_growth_revision += 1
 	if _growth_box == null:
 		return
 	var staffing: Dictionary = state.current_staffing()
