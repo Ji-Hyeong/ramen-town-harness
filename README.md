@@ -1,5 +1,15 @@
 # Ramen Town — Codex × Claude 개발 하네스
 
+## 산골 채집에서 새로운 한 그릇으로
+
+랭크 3의 산골 공급처를 찾으면 산메밀면과 구운 산표고를 반복 채집합니다.
+수량·추가 비용을 직접 고르고, 재료를 비교해 반영한 뒤 시제품이 완성될 때만
+샘플을 씁니다. 산향 메밀탕·산표고 진국 연구 방향에는 여러 조합으로 도전합니다.
+
+![산골 채집과 새 메뉴](game/docs/uiux-reset/mountain-foraging-v1/comparisons/portrait-journey.png)
+
+[재료·비용·저장 규칙](game/docs/MOUNTAIN_FORAGING_V1.md) · [실제 화면](game/docs/uiux-reset/mountain-foraging-v1/)
+
 ## 팔린 라멘과 영업 결과
 
 시안의 음식·목재·프레임·글꼴을 영업 결과까지 이어 씁니다. 남긴 돈과 완료 주문을

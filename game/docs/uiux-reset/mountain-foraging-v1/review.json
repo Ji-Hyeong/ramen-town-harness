@@ -1,0 +1,451 @@
+{
+  "source": "../refinements/concept-03-categories-v1.png",
+  "pack_sha256": "39dde0af732965dd5e47a58cb669f8b3f8c2aaf6dba90e075039521fafd42e37",
+  "original_current_count": 30,
+  "regression_count": 6,
+  "all_final_native_pngs": 88,
+  "images": [
+    {
+      "file": "before/desktop_explore_04_detail.png",
+      "size": [
+        1280,
+        800
+      ],
+      "sha256": "759f9fc7e3f0004f47d322c0f178c7171347b1787c8ce618de4589a58e3302d9"
+    },
+    {
+      "file": "before/desktop_explore_11_harbor.png",
+      "size": [
+        1280,
+        800
+      ],
+      "sha256": "48311cf3676beb10759a11549f222987fb4120821947306adee541ab3669816d"
+    },
+    {
+      "file": "before/portrait_explore_04_detail.png",
+      "size": [
+        390,
+        844
+      ],
+      "sha256": "4d0ff6e80a51a625bf39b725e1d32645d5f264ab6584eb0908a0f8196768a69c"
+    },
+    {
+      "file": "before/portrait_explore_11_harbor.png",
+      "size": [
+        390,
+        844
+      ],
+      "sha256": "1050a7f458992d6db4405cf99f49a56bcf3de5108827bedd2861949033415e75"
+    },
+    {
+      "file": "comparisons/bowl-focused.png",
+      "size": [
+        1200,
+        584
+      ],
+      "sha256": "9658fe402b5033a31412be38454d67ce91bd417030c2e681de22285609cbb015"
+    },
+    {
+      "file": "comparisons/cooking-before-after.png",
+      "size": [
+        1300,
+        444
+      ],
+      "sha256": "5ad2330759c56bfd51554237dd4cf96b6d6429338dc09c0423977f9c9c7fec3e"
+    },
+    {
+      "file": "comparisons/desktop-flow-1.png",
+      "size": [
+        1968,
+        896
+      ],
+      "sha256": "2af479332bbc61817be18a1f823c2372b953d6bd19f08cb475a96004f3d65d7d"
+    },
+    {
+      "file": "comparisons/desktop-flow-2.png",
+      "size": [
+        1968,
+        896
+      ],
+      "sha256": "788d7cbb38856b9dd9b41a32f8184af314f33537846d1bd1e3a0c1367677ad03"
+    },
+    {
+      "file": "comparisons/desktop-flow-3.png",
+      "size": [
+        1968,
+        896
+      ],
+      "sha256": "307a31da0b4352f7c5405a52a91196d6d3bdecce5cc9b1d1c49fc0031bf31d39"
+    },
+    {
+      "file": "comparisons/noodle-refinement.png",
+      "size": [
+        1200,
+        888
+      ],
+      "sha256": "74fb1fecc93833c6e2332c8fa50bd81ad6161545e08d955028e62abc78ba0f7a"
+    },
+    {
+      "file": "comparisons/portrait-flow-1.png",
+      "size": [
+        2022,
+        898
+      ],
+      "sha256": "de6bf442568008d600f1d541e121b280d5f1a25a6fe090189979b75db9ffb565"
+    },
+    {
+      "file": "comparisons/portrait-flow-2.png",
+      "size": [
+        2022,
+        898
+      ],
+      "sha256": "9b14ea51812eafe444e386dc374766676726b7cf7e19def583fc864df3140503"
+    },
+    {
+      "file": "comparisons/portrait-flow-3.png",
+      "size": [
+        2022,
+        898
+      ],
+      "sha256": "38db85ec6d6265531594c1b31608c9ffe78ee22dca725a23bf1a8023bfe6d9b6"
+    },
+    {
+      "file": "comparisons/portrait-journey.png",
+      "size": [
+        2000,
+        888
+      ],
+      "sha256": "b406f370f601cadfd6132bd0c6109b81f2163773420916a90f3c71aacc81a310"
+    },
+    {
+      "file": "comparisons/source-and-new-dishes.png",
+      "size": [
+        1200,
+        888
+      ],
+      "sha256": "2b1e383b0dd8707a1e4b9a58d6a8daddc86f399492846c5d4a2476d3a9d137f8"
+    },
+    {
+      "file": "comparisons/source-before-current.png",
+      "size": [
+        1200,
+        888
+      ],
+      "sha256": "9c85e779a586b256121bc0e44988b4e6833ba937e2faae95b66458890218cf27"
+    },
+    {
+      "file": "current/desktop_mountain_01_locked.png",
+      "size": [
+        1280,
+        800
+      ],
+      "sha256": "b3ac6de2d699f5d552ed082c7bddecf00a9d3576fb308eb0372f489921a4ae59"
+    },
+    {
+      "file": "current/desktop_mountain_02_preview.png",
+      "size": [
+        1280,
+        800
+      ],
+      "sha256": "45cd5c2dcd5085b1aa1a6821a20cc9c2a7dcb37b1876f10810d0c8f78d9d14d1"
+    },
+    {
+      "file": "current/desktop_mountain_03_material.png",
+      "size": [
+        1280,
+        800
+      ],
+      "sha256": "04d52ac2de8c57c7f326ba12db99ff59ce08eec761f24cde57dedcf6b55ad976"
+    },
+    {
+      "file": "current/desktop_mountain_04_travel.png",
+      "size": [
+        1280,
+        800
+      ],
+      "sha256": "7aa1758253f5f53052121271d1ec4dbf3342d54280b16254c5e94d7aa0225bde"
+    },
+    {
+      "file": "current/desktop_mountain_05_quantity.png",
+      "size": [
+        1280,
+        800
+      ],
+      "sha256": "791544f0c2225e4533718e1bc7a7f19a615bbd2dfbe8617d66f3f664f5a513f9"
+    },
+    {
+      "file": "current/desktop_mountain_06_pending.png",
+      "size": [
+        1280,
+        800
+      ],
+      "sha256": "9653bb18fb9300da550fbd211a4655bf08d6de539eeba4c5788679be06dffabe"
+    },
+    {
+      "file": "current/desktop_mountain_07_received.png",
+      "size": [
+        1280,
+        800
+      ],
+      "sha256": "fb17f89f22c13410af84b244f210f26432023fddfbda9a5113020c0646a9a1ac"
+    },
+    {
+      "file": "current/desktop_mountain_08_noodle_detail.png",
+      "size": [
+        1280,
+        800
+      ],
+      "sha256": "f7e8ac1ba615cd9a0c6480d6cf4ff91d85c1e040d0ca540a93a4cb3b2c4d7e9f"
+    },
+    {
+      "file": "current/desktop_mountain_09_buckwheat_bowl.png",
+      "size": [
+        1280,
+        800
+      ],
+      "sha256": "524cb2b117fc41f45f796eac397f3499078ab149f9b135a2be61290a5c027587"
+    },
+    {
+      "file": "current/desktop_mountain_10_cooking.png",
+      "size": [
+        1280,
+        800
+      ],
+      "sha256": "92e1c8133c477fffd6138a31644566ed241a1752eaef19bd10df14c194d67c28"
+    },
+    {
+      "file": "current/desktop_mountain_11_noodle_result.png",
+      "size": [
+        1280,
+        800
+      ],
+      "sha256": "1a0a2695fb38a9efb6a6c1a7e7a5ec7ac4fd666f148853df77745d95c7248fdf"
+    },
+    {
+      "file": "current/desktop_mountain_12_shiitake_received.png",
+      "size": [
+        1280,
+        800
+      ],
+      "sha256": "ea243c17b837a3306c0965efff9fba21e73f11eed1b1c904883af4d3d912f53b"
+    },
+    {
+      "file": "current/desktop_mountain_13_shiitake_detail.png",
+      "size": [
+        1280,
+        800
+      ],
+      "sha256": "3234b9e921fdbd9eaab1fc56c4f94e5eddcb1327a8da5b807551657666b5a806"
+    },
+    {
+      "file": "current/desktop_mountain_14_shiitake_bowl.png",
+      "size": [
+        1280,
+        800
+      ],
+      "sha256": "0d808d8764c04bd88c6397ee38ff502090d7b04c479a3d5e1391c28b6cce14de"
+    },
+    {
+      "file": "current/desktop_mountain_15_source.png",
+      "size": [
+        1280,
+        800
+      ],
+      "sha256": "128986fede4e71623b6d67a0cbadc758bc302c93fc2c7c605b1cc68f97a25635"
+    },
+    {
+      "file": "current/portrait_mountain_01_locked.png",
+      "size": [
+        390,
+        844
+      ],
+      "sha256": "63820433a1ab5286dc82abc1b3300edb02a07b82ab9c54fb55b8fd4f57aef687"
+    },
+    {
+      "file": "current/portrait_mountain_02_preview.png",
+      "size": [
+        390,
+        844
+      ],
+      "sha256": "fd33667ac0a85b1ca852537a0781a3589e88999ebe9441afdec41f7a7c12d0ee"
+    },
+    {
+      "file": "current/portrait_mountain_03_material.png",
+      "size": [
+        390,
+        844
+      ],
+      "sha256": "ebb7c3552905c9a5c8c5f8d01600e083b10731c101136bd217262f6cced6051f"
+    },
+    {
+      "file": "current/portrait_mountain_04_travel.png",
+      "size": [
+        390,
+        844
+      ],
+      "sha256": "0c8885e1215c5618b691485bd4c4bd223d7a25b84f90e306c4a7ff7a44394e10"
+    },
+    {
+      "file": "current/portrait_mountain_05_quantity.png",
+      "size": [
+        390,
+        844
+      ],
+      "sha256": "10d41450238d79cdc91a06674556ef0e82b1550dc7d4f391475e19bbd5e3ef67"
+    },
+    {
+      "file": "current/portrait_mountain_06_pending.png",
+      "size": [
+        390,
+        844
+      ],
+      "sha256": "2a7f924388df4c78306609571c7e55de39b72a1d4b2b152aada593365fdd3729"
+    },
+    {
+      "file": "current/portrait_mountain_07_received.png",
+      "size": [
+        390,
+        844
+      ],
+      "sha256": "8718a754aa0fa69b724777643de9279f0d419f34a34a98c88105158c93ffad0e"
+    },
+    {
+      "file": "current/portrait_mountain_08_noodle_detail.png",
+      "size": [
+        390,
+        844
+      ],
+      "sha256": "ddeef094c88b1061a9fce7dee69618f2d19bf7ca2169ec8ffcd223936b421685"
+    },
+    {
+      "file": "current/portrait_mountain_09_buckwheat_bowl.png",
+      "size": [
+        390,
+        844
+      ],
+      "sha256": "0251063ea7b2bc50ada29dc9a071ffd13a83a405776537a123dcc0ee19d25dd5"
+    },
+    {
+      "file": "current/portrait_mountain_10_cooking.png",
+      "size": [
+        390,
+        844
+      ],
+      "sha256": "28de8115727021dd180853bf3d82a9d8e2dd1e99b5a56737adfe0fc051e670b9"
+    },
+    {
+      "file": "current/portrait_mountain_11_noodle_result.png",
+      "size": [
+        390,
+        844
+      ],
+      "sha256": "fe88466447881b45d0aa1c8b8311a7c2a74fe3522c6e4f2b9494593d3d76f0fb"
+    },
+    {
+      "file": "current/portrait_mountain_12_shiitake_received.png",
+      "size": [
+        390,
+        844
+      ],
+      "sha256": "2aa05f364cdecadf2182cad4bef8ec480647f1673d87e9c8474b3858db14a4fb"
+    },
+    {
+      "file": "current/portrait_mountain_13_shiitake_detail.png",
+      "size": [
+        390,
+        844
+      ],
+      "sha256": "823635c8828cb3447f503123265ac624e995e54371e5880b828063fff6f5ffe9"
+    },
+    {
+      "file": "current/portrait_mountain_14_shiitake_bowl.png",
+      "size": [
+        390,
+        844
+      ],
+      "sha256": "b2f22037d45649b170d4086527f3fa6bbd158f117c5ced1bb779cb461d24db83"
+    },
+    {
+      "file": "current/portrait_mountain_15_source.png",
+      "size": [
+        390,
+        844
+      ],
+      "sha256": "244a558fbe677098cc57f598174bade94bf4861ca7a39766fd0e65554ba2c96a"
+    },
+    {
+      "file": "iterations/desktop_cooking_before.png",
+      "size": [
+        1280,
+        800
+      ],
+      "sha256": "884f3d4f7560dd48b138eaf5f54030c449103d501614a37a58c71d6c32137ca3"
+    },
+    {
+      "file": "iterations/portrait_mountain_03_material.png",
+      "size": [
+        390,
+        844
+      ],
+      "sha256": "29459e8cbdab033320da51e589837e9f8bf6c29cad4349b88a5ad4f5492b1254"
+    },
+    {
+      "file": "iterations/portrait_mountain_08_noodle_detail.png",
+      "size": [
+        390,
+        844
+      ],
+      "sha256": "383a1a75df077789aa2d3b2e7989638b5117975cbf754432c9c499ee863ed761"
+    },
+    {
+      "file": "regression/desktop_editor_01_initial.png",
+      "size": [
+        1280,
+        800
+      ],
+      "sha256": "1b6d9e8a5d57917d678373388db1c65f5868f2d719c119af901202f1817a222e"
+    },
+    {
+      "file": "regression/desktop_editor_03_details.png",
+      "size": [
+        1280,
+        800
+      ],
+      "sha256": "2fa3faf7ec47a41a17d528934f757d5e81488352abc6d735c4f9a531cae68de5"
+    },
+    {
+      "file": "regression/desktop_editor_08_result.png",
+      "size": [
+        1280,
+        800
+      ],
+      "sha256": "852ab3f58db0478d1c7e24fda4f3012e20c5c57541b351dc584c9c2473dfbc4f"
+    },
+    {
+      "file": "regression/portrait_editor_01_initial.png",
+      "size": [
+        390,
+        844
+      ],
+      "sha256": "4f61e47d65c4814871b9746517fb4841b33d159100c2b3fcb1dd1b3026d64071"
+    },
+    {
+      "file": "regression/portrait_editor_03_details.png",
+      "size": [
+        390,
+        844
+      ],
+      "sha256": "f18d47512b98f95f2bbde29fc3fd442ba5b9252e48a45f15f8ff9623b0aeb4b0"
+    },
+    {
+      "file": "regression/portrait_editor_08_result.png",
+      "size": [
+        390,
+        844
+      ],
+      "sha256": "b51ce3a7df00967e0bf003c759d24872fdc9751bea49bad7246d250122e1c6b2"
+    }
+  ],
+  "manual_review": "All30 final mountain states in six boards, source comparison + focused crop, three raw final states and six prior-feature regression captures; details in root design-qa.md",
+  "normalization": "source853x1844 to390x844 Lanczos; originals native390x844/1280x800 unchanged; desktop contact sheets half size"
+}

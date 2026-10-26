@@ -28,6 +28,16 @@ static func witness(id: String, variant: int = 0) -> Dictionary:
 			if variant == 1:
 				config["tare"] = "tare_shoyu"
 				config["toppings"] = ["topping_scallop", "topping_egg"]
+		"mountain_clear":
+			config.merge({"broth":"broth_chicken","tare":"tare_shio","oil":"oil_scallion","noodle":"noodle_buckwheat","toppings":["topping_nori"]},true)
+			if variant==1:
+				config["broth"]="broth_dashi"
+				config["toppings"]=["topping_sprouts"]
+		"shiitake_depth":
+			config.merge({"broth":"broth_tonkotsu","tare":"tare_miso","oil":"oil_garlic","noodle":"noodle_thin","toppings":["topping_grilled_shiitake"]},true)
+			if variant==1:
+				config["noodle"]="noodle_medium"
+				config["toppings"]=["topping_grilled_shiitake","topping_grilled_shiitake"]
 	return config
 
 
@@ -38,7 +48,8 @@ func run(check: Callable) -> void:
 	var definitions: Array = Directions.catalog()
 	definitions[0]["requires"].clear()
 	check.call(Directions.find("citrus_clear")["requires"].size() == 1, "definitions are independent deep copies")
-	for id in ["citrus_clear", "sesame_depth", "harbor_sea"]:
+	for definition in Directions.catalog():
+		var id: String=definition["id"]
 		for variant in 2:
 			var config: Dictionary = witness(id, variant)
 			var original: String = JSON.stringify(config)
@@ -62,7 +73,7 @@ func run(check: Callable) -> void:
 		if str(Directions.find(id)["slot"]) == "topping":
 			wrong["toppings"] = ["topping_nori"]
 		else:
-			wrong[Directions.find(id)["slot"]] = "oil_garlic" if material.begins_with("oil") else "broth_dashi"
+			wrong[Directions.find(id)["slot"]] = "oil_garlic" if material.begins_with("oil") else ("noodle_thin" if material.begins_with("noodle") else "broth_dashi")
 		check.call(not Directions.assess(id, wrong)["matched"], "numeric similarity without required farmed material earns nothing")
 		var unbalanced: Dictionary = witness(id)
 		match id:
@@ -75,10 +86,16 @@ func run(check: Callable) -> void:
 			"harbor_sea":
 				unbalanced["tare"] = "tare_shoyu"
 				unbalanced["toppings"] = ["topping_scallop", "topping_nori", "topping_nori", "topping_nori"]
+			"mountain_clear":
+				unbalanced["broth"]="broth_tonkotsu"
+				unbalanced["toppings"]=["topping_chashu","topping_chashu"]
+			"shiitake_depth":
+				unbalanced["broth"]="broth_chicken"
+				unbalanced["tare"]="tare_shio"
 		check.call(not Directions.assess(id, unbalanced)["matched"], "required material alone cannot bypass actual flavor conditions")
-	check.call(Directions.tested_ids(recipes).size() == 3, "three real directions from three witnesses")
-	for i in 3:
-		for j in range(i + 1, 3):
-			check.call(signatures[i] != signatures[j] and dishes[i] != dishes[j], "three different actual flavor profiles and dish pixels")
+	check.call(Directions.tested_ids(recipes).size() == 5, "five real directions from actual witnesses")
+	for i in signatures.size():
+		for j in range(i + 1, signatures.size()):
+			check.call(signatures[i] != signatures[j] and dishes[i] != dishes[j], "different actual flavor profiles and dish pixels")
 	check.call(Directions.assess("unknown", Catalog.default_config())["error"] != "", "unknown direction is an explicit error")
 	check.call(Directions.assess("citrus_clear", {})["error"] != "", "invalid composition is not a discovery")

@@ -3,7 +3,7 @@ extends RefCounted
 const GROUPS: Array[String] = ["전체", "고기·달걀", "채소·과일", "해산물"]
 const MEMBERS: Dictionary = {
 	"고기·달걀": ["topping_chashu", "topping_egg"],
-	"채소·과일": ["topping_sprouts", "topping_pickle", "topping_mushroom", "topping_citrus_peel"],
+	"채소·과일": ["topping_sprouts", "topping_pickle", "topping_mushroom", "topping_citrus_peel", "topping_grilled_shiitake"],
 	"해산물": ["topping_nori", "topping_scallop"],
 }
 

@@ -242,6 +242,7 @@ func _legacy(data_dir: String) -> void:
 	old.erase("foraging")
 	old.erase("harbor_foraging")
 	old.erase("chef_challenge")
+	old.erase("mountain_foraging")
 	old["schema_version"] = 10
 	var store: Save = Save.new(data_dir.path_join("legacy10"))
 	DirAccess.make_dir_recursive_absolute(store.dir)
@@ -258,6 +259,7 @@ func _legacy(data_dir: String) -> void:
 	migrated.erase("foraging")
 	migrated.erase("harbor_foraging")
 	migrated.erase("chef_challenge")
+	migrated.erase("mountain_foraging")
 	migrated["schema_version"] = 10
 	check.call(migrated == old, "all existing v10 values preserved")
 	check.call(store.save_state(restored)["ok"] and FileAccess.get_file_as_string(store.legacy_bak_path(10)) == text, "first v11 save preserves exact v10 original")

@@ -38,6 +38,7 @@ const WorkViewScript = preload("res://scripts/ui/tasting_work_view.gd")
 const Exploration = preload("res://scripts/domain/ingredient_exploration.gd")
 const Foraging = preload("res://scripts/domain/market_foraging.gd")
 const Harbor = preload("res://scripts/domain/harbor_foraging.gd")
+const Mountain = preload("res://scripts/domain/mountain_foraging.gd")
 const TravelScript = preload("res://scripts/ui/expedition_travel.gd")
 const Contest = preload("res://scripts/domain/ramen_contest.gd")
 const BowlWorkbenchScript = preload("res://scripts/ui/bowl_workbench.gd")
@@ -1063,7 +1064,7 @@ func _refresh_directions() -> void:
 		_direction_tested = Directions.tested_ids(records)
 		_direction_records_key = key
 	var selected: Dictionary = Directions.find(_direction_target)
-	_direction_board.configure("파밍으로 여는 세 가지 맛", "%d/3 시식 · %s" % [_direction_tested.size(), "방향 고르기" if selected.is_empty() else selected["title"]], _icon("topping_citrus_peel", 2))
+	_direction_board.configure("파밍으로 여는 맛", "%d/%d 시식 · %s" % [_direction_tested.size(), Directions.catalog().size(), "방향 고르기" if selected.is_empty() else selected["title"]], _icon("topping_citrus_peel", 2))
 	_direction_actions.visible = not selected.is_empty()
 	_direction_badge.text = "재료를 골라 나만의 맛을 만들어요."
 	for definition in Directions.catalog():
@@ -2972,6 +2973,15 @@ func _on_bowl_editor_action(kind: String, data: Dictionary) -> void:
 		"new": _on_new_recipe()
 		"audio": _toggle_audio()
 		"direction": _select_direction(str(data["id"]))
+		"direction_source":
+			if _work_blocked("재료 출처를 볼"): return
+			var definition: Dictionary=Directions.find(str(data["id"]))
+			if definition.is_empty():
+				_flash("알려진 실험 방향을 골라 주세요.")
+				return
+			# Browsing a source must never select ingredients or buy a trip.
+			_exploration_view.open_samples(str(Catalog.find(definition["ingredient"]).get("region","market")))
+			_open_overlay(6)
 		"comparison":
 			var record: Dictionary = state.get_record(state.last_feedback_record_id)
 			var body: VBoxContainer = data["body"] as VBoxContainer
@@ -2994,6 +3004,9 @@ func _on_exploration_view_action(kind: String, data: Dictionary) -> void:
 				_on_exploration_depart(str(data["region"]))
 			elif str(data["mode"])=="sample" and str(data["region"])=="market":
 				_on_foraging_depart()
+			elif str(data["mode"])=="sample" and str(data["region"])=="mountain":
+				if not _work_blocked("산골 채집을 시작할"):
+					_finish_exploration_action(state.start_mountain_foraging(),true)
 			elif str(data["mode"])=="sample" and str(data["region"])=="harbor":
 				_on_harbor_foraging_depart()
 			else:

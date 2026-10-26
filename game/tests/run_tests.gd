@@ -117,6 +117,7 @@ func _initialize() -> void:
 		test_market_foraging,
 		test_harbor_foraging,
 		test_chef_challenge,
+		test_mountain_foraging,
 	]
 	var ran: int = 0
 	for t in tests:
@@ -899,6 +900,7 @@ func test_training_legacy_v5() -> void:
 	raw.erase("foraging")
 	raw.erase("harbor_foraging")
 	raw.erase("chef_challenge")
+	raw.erase("mountain_foraging")
 	var old: String = JSON.stringify(raw, "\t", true)
 	var dir: String = _case_dir("training_v5")
 	var saver: SaveServiceScript = SaveServiceScript.new(dir)
@@ -1165,6 +1167,7 @@ func test_contest_migration_v4() -> void:
 	v4.erase("foraging")
 	v4.erase("harbor_foraging")
 	v4.erase("chef_challenge")
+	v4.erase("mountain_foraging")
 	var dir: String = _case_dir("contest_v4")
 	var saver: SaveServiceScript = SaveServiceScript.new(dir)
 	saver.remove_known_files()
@@ -3372,6 +3375,7 @@ func _as_legacy(src: Dictionary, version: int) -> Dictionary:
 	d.erase("foraging")
 	d.erase("harbor_foraging")
 	d.erase("chef_challenge")
+	d.erase("mountain_foraging")
 	if version == 1:
 		d.erase("research")
 	for r in d["records"]:
@@ -3581,6 +3585,7 @@ func test_repeated_portions() -> void:
 	forged["schema_version"] = 11
 	forged.erase("harbor_foraging")
 	forged.erase("chef_challenge")
+	forged.erase("mountain_foraging")
 	_check(GameStateScript.new().load_from_dict(forged) != "", "옛v11 중복 주입 거부")
 	var farm := ForagingTests.new()
 	farm.check = _check
@@ -4139,6 +4144,7 @@ func test_schema_migration_v1_v2() -> void:
 	v2_new_cfg.erase("foraging")
 	v2_new_cfg.erase("harbor_foraging")
 	v2_new_cfg.erase("chef_challenge")
+	v2_new_cfg.erase("mountain_foraging")
 	_check(GameStateScript.new().load_from_dict(v2_new_cfg) != "", "toppings 배열을 쓴 v2 거부")
 	var v3_old_cfg: Dictionary = _as_legacy(_populated_state().to_dict(), 3)
 	v3_old_cfg["growth"] = v3["growth"]
@@ -4201,6 +4207,7 @@ func test_growth_load_rejections() -> void:
 				copy["schema_version"] = 11  # Historical bench gating remains strict.
 				copy.erase("harbor_foraging")
 				copy.erase("chef_challenge")
+				copy.erase("mountain_foraging")
 				cgrowth["facilities"] = ["bench_1", "staff_1", "staff_2"]
 			"growth 누락":
 				copy.erase("growth")
@@ -4406,6 +4413,7 @@ func _as_v3(src: Dictionary) -> Dictionary:
 	d.erase("foraging")
 	d.erase("harbor_foraging")
 	d.erase("chef_challenge")
+	d.erase("mountain_foraging")
 	return d
 
 
@@ -5852,6 +5860,7 @@ func test_notebook_version_limits() -> void:
 		d.erase("foraging")
 		d.erase("harbor_foraging")
 		d.erase("chef_challenge")
+		d.erase("mountain_foraging")
 		d["schema_version"] = version
 		for pair in [["stories",9],["shop",7],["training",6],["contests",5],["exploration",4]]:
 			if version < pair[1]: d.erase(pair[0])
@@ -5954,4 +5963,11 @@ func test_chef_challenge() -> void:
 	var fixture = preload("res://tests/chef_challenge_tests.gd").new()
 	fixture.run(_check, _base_dir.path_join("chef"))
 	_check(fixture.finished,"chef acceptance fixture reaches its final assertion")
+	_end()
+
+
+func test_mountain_foraging() -> void:
+	var fixture = preload("res://tests/mountain_foraging_tests.gd").new()
+	fixture.run(_check, _base_dir.path_join("mountain"))
+	_check(fixture.finished,"mountain acceptance reaches final assertion")
 	_end()

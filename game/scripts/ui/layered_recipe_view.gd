@@ -42,6 +42,7 @@ func set_config(value: Dictionary) -> void:
 	_base.texture = MockArt.bowl(noodle)
 	var palette := ShaderMaterial.new()
 	palette.shader = BrothShader
+	palette.set_shader_parameter("sprite_alpha_cutoff",0.94 if noodle=="noodle_buckwheat" else 0.0)
 	var atlas: AtlasTexture = _base.texture as AtlasTexture
 	if atlas != null:
 		var source_size: Vector2 = atlas.atlas.get_size()

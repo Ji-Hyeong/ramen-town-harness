@@ -50,6 +50,8 @@ static func style(id: String, padding: Vector2 = Vector2(10,8)) -> StyleBoxTextu
 
 
 static func bowl(noodle: String) -> AtlasTexture:
+	if noodle=="noodle_buckwheat":
+		return preload("res://scripts/ui/bowl_editor_art.gd").food("base-bowl-buckwheat") as AtlasTexture
 	var key: String = "bowl_" + noodle
 	if _textures.has(key):
 		return _textures[key]

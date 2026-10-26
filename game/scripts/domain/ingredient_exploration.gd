@@ -280,10 +280,10 @@ static func lock_info(id: String, discovered: Array) -> Dictionary:
 	if unlocked(id, discovered):
 		return {"locked": false, "id": id}
 	if Catalog.is_farmed(id):
-		var harbor: bool = str(item.get("region", "market")) == "harbor"
-		var place: String = "항구" if harbor else "새벽 장터"
-		return {"locked": true, "id": id, "region": "harbor" if harbor else "market", "region_name": place + " 연구 재료 채집", "min_rank": 2 if harbor else 1, "fee": 1200 if harbor else 1000,
-			"hint": "%s의 기존 공급처 두 곳을 찾은 뒤 [탐색]의 연구 재료 채집에서 구하세요. 시제품에 넣은 분량만큼 쓰고 판매는 영업 원가로 공급돼요." % place}
+		var region: String=str(item.get("region","market"))
+		var place: String={"market":"새벽 장터","harbor":"항구","mountain":"산골"}[region]
+		return {"locked":true,"id":id,"region":region,"region_name":place+" 연구 재료 채집","min_rank":{"market":1,"harbor":2,"mountain":3}[region],"fee":{"market":1000,"harbor":1200,"mountain":1600}[region],
+			"hint":"%s의 기존 공급처 두 곳을 찾은 뒤 [탐색]의 연구 재료 채집에서 구하세요. 시제품에 넣은 분량만큼 쓰고 판매는 영업 원가로 공급돼요." % place}
 	var reg: Dictionary = find_region(region_of(id))
 	return {
 		"locked": true,

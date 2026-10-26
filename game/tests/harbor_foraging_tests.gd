@@ -124,7 +124,6 @@ func _corruptions(state: State) -> void:
 		var farm: Dictionary = raw["harbor_foraging"]
 		match kind:
 			"missing": raw.erase("harbor_foraging")
-			"missing": raw.erase("chef_challenge")
 			"extra_key": farm["fake"] = 1
 			"stock": farm["stock"][Harbor.IDS[0]] += 1
 			"used":
@@ -143,6 +142,7 @@ func _corruptions(state: State) -> void:
 				raw["schema_version"] = 12
 				raw.erase("harbor_foraging")
 				raw.erase("chef_challenge")
+				raw.erase("mountain_foraging")
 		var target := State.new()
 		var before: String = json(target)
 		check.call(target.load_from_dict(raw) != "" and json(target) == before, "forgery rejected atomically: " + kind)
@@ -168,6 +168,7 @@ func _legacy(data_dir: String) -> void:
 	var raw: Dictionary = state.to_dict()
 	raw.erase("harbor_foraging")
 	raw.erase("chef_challenge")
+	raw.erase("mountain_foraging")
 	raw["schema_version"] = 12
 	var text: String = JSON.stringify(raw, "\t", true) + "\n"
 	var store := Save.new(data_dir.path_join("legacy12"))
@@ -183,6 +184,7 @@ func _legacy(data_dir: String) -> void:
 	var compared: Dictionary = migrated.to_dict()
 	compared.erase("harbor_foraging")
 	compared.erase("chef_challenge")
+	compared.erase("mountain_foraging")
 	compared["schema_version"] = 12
 	check.call(compared == raw, "all old values preserved exactly")
 	ok(store.save_state(migrated), "first v13 write")
