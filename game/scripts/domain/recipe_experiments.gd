@@ -4,6 +4,7 @@ extends RefCounted
 ## are reused verbatim. The caller owns real stock/busy checks and navigation.
 
 const Catalog = preload("res://scripts/domain/ingredient_catalog.gd")
+const Noodle=preload("res://scripts/domain/noodle_workshop.gd")
 const Check = preload("res://scripts/domain/data_check.gd")
 const Evaluator = preload("res://scripts/domain/recipe_evaluator.gd")
 const ProcessRules = preload("res://scripts/domain/recipe_process.gd")
@@ -20,6 +21,9 @@ static func clues(config: Dictionary, available: Array[String], rank: int) -> Di
 	base["toppings"] = Catalog.canonical_toppings(Catalog.toppings_of(config))
 	var candidates: Array = []
 	for slot in Catalog.SLOTS:
+		# A crafted component cannot be replaced by a catalog product while its
+		# immutable formula still claims the old ingredients. Use raw variants.
+		if base.has(slot+"_recipe"): continue
 		for item in Catalog.all_items(slot):
 			var id: String = str(item["id"])
 			if not available.has(id):
@@ -35,6 +39,16 @@ static func clues(config: Dictionary, available: Array[String], rank: int) -> Di
 				var next: Dictionary = base.duplicate(true)
 				next[slot] = id
 				_add(candidates, base, next, slot, "%s → %s" % [Catalog.find(str(base[slot]))["name"], item["name"]])
+	if base.has("noodle_recipe"):
+		for field in ["flour","water","cut"]:
+			for option in Noodle.options(field):
+				if option["id"]==base["noodle_recipe"][field]: continue
+				if option["id"]=="buckwheat" and not available.has("noodle_buckwheat"): continue
+				var next: Dictionary=base.duplicate(true)
+				next["noodle_recipe"][field]=option["id"]
+				if Noodle.error(next["noodle_recipe"],rank,available,true)!="": continue
+				next["noodle"]=Noodle.base_id(next["noodle_recipe"])
+				_add(candidates,base,next,"noodle",str(Noodle.option(field,base["noodle_recipe"][field])["name"])+" → "+str(option["name"]))
 	for slot in ProcessRules.SLOTS:
 		var process: Dictionary = base.get("process", {})
 		for id in ProcessRules.ids(slot):
@@ -44,6 +58,7 @@ static func clues(config: Dictionary, available: Array[String], rank: int) -> Di
 			var next: Dictionary = base.duplicate(true)
 			next["process"] = {"broth": ProcessRules.selected(process, "broth"), "noodle": ProcessRules.selected(process, "noodle")}
 			next["process"][slot] = id
+			if next.has(slot+"_recipe"): next[slot+"_recipe"]["method"]=id
 			_add(candidates, base, next, slot, "%s → %s" % [ProcessRules.method(slot, ProcessRules.selected(process, slot))["name"], method["name"]])
 	var picked: Array = []
 	var used: Dictionary = {}
@@ -68,6 +83,11 @@ static func clues(config: Dictionary, available: Array[String], rank: int) -> Di
 
 
 static func _add(out: Array, base: Dictionary, next: Dictionary, slot: String, change: String) -> void:
+	next=Catalog.normalize_config(next)
+	var err: String=Check.config_error(next)
+	if err!="":
+		push_error("Invalid experiment candidate: "+err)
+		return
 	var before: Dictionary = Evaluator.build_profile(base)
 	var after: Dictionary = Evaluator.build_profile(next)
 	var delta: Dictionary = {}

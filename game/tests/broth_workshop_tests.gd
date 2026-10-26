@@ -1,5 +1,5 @@
 extends SceneTree
-## Current new-game acceptance, deliberately independent of the v15 fixtures
+## Current new-game acceptance, historical v16 behavior, independent of the v15 fixtures
 ## used by historical regression suites. Only isolated paths are written.
 const State=preload("res://scripts/domain/game_state.gd")
 const Broth=preload("res://scripts/domain/broth_workshop.gd")
@@ -12,6 +12,17 @@ const Research=preload("res://scripts/domain/ramen_research.gd")
 var checks: int=0
 var failures: Array[String]=[]
 var data_dir: String=""
+
+## This is the historical v16 broth-only gate. Current v17 first-game acceptance
+## lives in noodle_workshop_tests and requires both real products.
+func broth_state() -> State:
+	var st:=State.new()
+	var previous: Dictionary=st.to_dict()
+	previous.erase("noodle_workshop")
+	previous["schema_version"]=16
+	var err: String=st.load_from_dict(previous)
+	if err!="": push_error(err)
+	return st
 
 func verify(value: bool, message: String) -> void:
 	checks+=1
@@ -52,7 +63,7 @@ func candidate(request: String) -> Dictionary:
 	return {}
 
 func new_game_progression() -> void:
-	var st:=State.new()
+	var st:=broth_state()
 	var requests: Array=["dohyun_basic","hayoung_basic","maru_basic","dohyun_advanced","hayoung_advanced","maru_advanced"]
 	for request in requests:
 		var cfg: Dictionary=candidate(request)
@@ -76,7 +87,7 @@ func new_game_progression() -> void:
 			verify(st.apply_promotion(2)["ok"] and st.rank()==2,"fresh raw-only game earns rank2 and fourth blend position")
 	while st.completed_service_days()<10: verify(st.serve()["ok"],"real late promotion service")
 	verify(st.apply_promotion(3)["ok"] and st.rank()==3,"fresh raw-only game earns rank3 and fifth position")
-	verify(State.new().load_from_dict(st.to_dict())=="","complete raw-only research/rank3 progression remains a valid save")
+	verify(broth_state().load_from_dict(st.to_dict())=="","complete raw-only research/rank3 progression remains a valid save")
 
 func _initialize() -> void:
 	for arg in OS.get_cmdline_user_args():
@@ -85,7 +96,7 @@ func _initialize() -> void:
 		printerr("Use an explicit isolated /private/tmp/ --test-data-dir")
 		quit(2); return
 	verify(DirAccess.make_dir_recursive_absolute(data_dir)==OK,"isolated test directory")
-	var st:=State.new()
+	var st:=broth_state()
 	verify(not st.broth_ready() and st.broth_review()["recipes"].is_empty(),"new player is given no completed broth")
 	var before: String=json(st)
 	verify(not st.taste()["ok"] and json(st)==before,"direct tasting cannot bypass first broth")
@@ -104,7 +115,7 @@ func _initialize() -> void:
 	before=json(st)
 	for result in [st.begin_broth(),st.taste(),st.use_broth(0),st.set_draft_choice("noodle","noodle_thin"),st.start_expedition("market"),st.begin_service(),st.set_broth_blend(["chicken_bone"],"standard")]:
 		verify(not result["ok"] and json(st)==before,"brewing blocks conflicting/duplicate transactions")
-	var resumed:=State.new()
+	var resumed:=broth_state()
 	verify(resumed.load_from_dict(st.to_dict())=="" and not resumed.broth_active() and resumed.broth_review()["recipes"].is_empty(),"restart preserves blend, cancels incomplete work without a product")
 	verify(st.cancel_broth()["ok"] and st.wallet==money and st.broth_review()["recipes"].is_empty(),"cancel has no fee or recipe")
 	brew(st,["pork_bone","chicken_bone","garlic"])
@@ -136,7 +147,7 @@ func _initialize() -> void:
 	verify(st.taste()["ok"],"third materially distinct menu accepted")
 	var store:=Save.new(data_dir.path_join("current"))
 	verify(DirAccess.make_dir_recursive_absolute(store.dir)==OK and store.save_state(st)["ok"],"save all completed recipes and active ramen")
-	var loaded:=State.new()
+	var loaded:=broth_state()
 	var load_result: Dictionary=store.load_into(loaded)
 	print("CURRENT DISK LOAD ",load_result)
 	verify(load_result["status"]=="ok" and json(loaded)==json(st),"exact current schema16 disk round trip")
@@ -152,7 +163,7 @@ func _initialize() -> void:
 			"capacity": bad["broth_workshop"]["ingredients"]=["pork_bone","pork_bone","pork_bone","pork_bone"]
 			"duplicate": bad["broth_workshop"]["recipes"].append(bad["broth_workshop"]["recipes"][0].duplicate(true))
 			"future_day": bad["broth_workshop"]["recipes"][0]["day"]=9999
-			"legacy_version": bad["schema_version"]=15; bad.erase("broth_workshop")
+			"legacy_version": bad["schema_version"]=15; bad.erase("broth_workshop"); bad.erase("noodle_workshop")
 		verify(st.load_from_dict(bad)!="" and json(st)==before,"corrupt craft rejected atomically: "+kind)
 	# This fixture was emitted by frozen, unmodified main/v15, not by editing a
 	# schema16 save until it looked old. Keep the original bytes as migration proof.
@@ -162,10 +173,10 @@ func _initialize() -> void:
 	verify(DirAccess.make_dir_recursive_absolute(old_store.dir)==OK,"legacy save directory")
 	var file:=FileAccess.open(old_store.main_path(),FileAccess.WRITE)
 	file.store_string(original); file.close()
-	var migrated:=State.new()
+	var migrated:=broth_state()
 	verify(old_store.load_into(migrated)["status"]=="ok","frozen real v15 save migrates")
 	var compared: Dictionary=migrated.to_dict()
-	compared.erase("broth_workshop"); compared["schema_version"]=15
+	compared.erase("broth_workshop"); compared.erase("noodle_workshop"); compared["schema_version"]=15
 	verify(JSON.parse_string(JSON.stringify(compared))==old_raw,"every v15 wallet/day/config/score/report value is preserved")
 	verify(migrated.broth_review()["recipes"].is_empty(),"migration fabricates no brewed recipes")
 	verify(old_store.save_state(migrated)["ok"] and FileAccess.get_file_as_string(old_store.legacy_bak_path(15))==original,"first v16 save retains byte-identical old backup")
@@ -194,7 +205,7 @@ func _initialize() -> void:
 	verify(advanced.use_broth(1)["ok"],"use actual sardine blend")
 	advanced.start_new_recipe()
 	verify(advanced.taste()["ok"] and advanced.sample_stock("broth_roasted_sardine")==samples-1,"successful crafted ramen consumes one real sample exactly once")
-	var advanced_copy:=State.new()
+	var advanced_copy:=broth_state()
 	verify(advanced_copy.load_from_dict(advanced.to_dict())=="","crafted farming provenance agrees with sample conservation and stored tasting witnesses")
 	new_game_progression()
 	print("RAW BROTH checks=%d failures=%d" % [checks,failures.size()])

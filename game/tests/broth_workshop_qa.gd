@@ -1,7 +1,7 @@
 extends "res://tests/bowl_editor_qa.gd"
-## A genuine schema16 new player, unlike the historical workbench fixtures.
+## A historical schema16 broth-only new player, unlike the historical workbench fixtures.
 ## Use actual input, real elapsed brewing, isolated saves and rendered captures.
-const CurrentState=preload("res://scripts/domain/game_state.gd")
+const CurrentState=preload("res://tests/broth_game_fixture.gd")
 const BrothRules=preload("res://scripts/domain/broth_workshop.gd")
 var profiles_done: int=0
 

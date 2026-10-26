@@ -28,6 +28,7 @@ const MenuSales = preload("res://scripts/domain/menu_sales.gd")
 const MenuReport = preload("res://scripts/domain/menu_report.gd")
 const ProcessRules = preload("res://scripts/domain/recipe_process.gd")
 const Broth = preload("res://scripts/domain/broth_workshop.gd")
+const Noodle = preload("res://scripts/domain/noodle_workshop.gd")
 const StoryCatalog = preload("res://scripts/domain/regular_story_catalog.gd")
 const Stories = preload("res://scripts/domain/regular_stories.gd")
 
@@ -54,7 +55,8 @@ const Stories = preload("res://scripts/domain/regular_stories.gd")
 ## v13 adds harbor research samples with a shared calendar and strict old-version validation.
 ## v14 records explicit base-chef challenge acceptance and actual service proof.
 ## v15 adds mountain sampling without retroactive materials or challenge changes.
-const SCHEMA_VERSION: int = 16
+## v17 adds explicit flour/water/cut formulas; old products keep their original values.
+const SCHEMA_VERSION: int = 17
 const EXPANSION_PRICE: int = 60000
 const MIN_SCHEMA_VERSION: int = 1
 const LEGACY_MAX_RECORDS: int = 30
@@ -82,7 +84,8 @@ const TOP_KEYS_V11: Array = TOP_KEYS_V10 + ["foraging"]
 const TOP_KEYS_V13: Array = TOP_KEYS_V11 + ["harbor_foraging"]
 const TOP_KEYS_V14: Array = TOP_KEYS_V13 + ["chef_challenge"]
 const TOP_KEYS_V15: Array = TOP_KEYS_V14 + ["mountain_foraging"]
-const TOP_KEYS: Array = TOP_KEYS_V15 + ["broth_workshop"]
+const TOP_KEYS_V16: Array = TOP_KEYS_V15 + ["broth_workshop"]
+const TOP_KEYS: Array = TOP_KEYS_V16 + ["noodle_workshop"]
 const RECORD_KEYS: Array = ["record_id", "lineage_id", "name", "version", "tasted_day", "config", "scores", "comparison"]
 const COMPARISON_KEYS: Array = ["prev_record_id", "prev_version", "prev_scores", "prev_config"]
 const DRAFT_KEYS: Array = ["config", "name", "lineage_id"]
@@ -123,6 +126,8 @@ var _broth_workshop: Dictionary = Broth.empty_state()
 ## Brewing is transient. Restart restores the saved blend, without charging or
 ## creating a completed product for work which did not finish.
 var _broth_active: Dictionary = {}
+var _noodle_workshop: Dictionary = Noodle.empty_state()
+var _noodle_active: Dictionary = {}
 var _contests: Dictionary = ContestProgress.empty_state()
 var _stories: Array = []
 ## 진행 중인 영업 런타임. 저장하지 않는다(재시작하면 영업 전 상태로 돌아온다). 있는 동안은 레시피/초안/일차를 잠근다.
@@ -132,6 +137,91 @@ var _active_session: Session = null
 func _init() -> void:
 	draft_config = Catalog.default_config()
 	draft_name = _suggest_name()
+
+
+func craft_active() -> bool:
+	return broth_active() or noodle_active()
+
+
+func noodle_active() -> bool:
+	return not _noodle_active.is_empty()
+
+
+func noodle_ready() -> bool:
+	return bool(_noodle_workshop["legacy"]) or (draft_config.has("noodle_recipe") and Noodle.contains(_noodle_workshop["recipes"],draft_config["noodle_recipe"]))
+
+
+func noodle_review() -> Dictionary:
+	var formula: Dictionary=_noodle_workshop["formula"].duplicate(true)
+	var item: Dictionary=Noodle.product(formula)
+	var method: Dictionary=ProcessRules.method("noodle",formula["method"])
+	var fee: int=int(item["cost"])+int(method["cost"])
+	var reason: String=Noodle.error(formula,_rank,_discovered_list(),true)
+	if reason=="" and formula["flour"]=="buckwheat" and sample_stock("noodle_buckwheat")<1: reason="산골에서 메밀 연구 샘플을 먼저 구해 주세요."
+	if reason=="" and Noodle.contains(_noodle_workshop["recipes"],formula): reason="이미 개발한 배합이에요. 완성한 면에서 골라 주세요."
+	if reason=="" and _noodle_workshop["recipes"].size()>=Noodle.MAX_RECIPES: reason="제면 개발 기록이 가득 찼어요."
+	if reason=="" and wallet<fee: reason="제면 개발비가 부족해요."
+	return {"formula":formula,"product":item,"cost":fee,"reason":reason,"recipes":_noodle_workshop["recipes"].duplicate(true),
+		"active":noodle_active(),"progress":float(_noodle_active.get("elapsed",0.0))/float(_noodle_active.get("duration",1.0)),
+		"duration":5.0+float(method["work_extra"]),"ready":noodle_ready()}
+
+
+func set_noodle_formula(field: String, id: String) -> Dictionary:
+	if _busy(): return _locked_fail()
+	if not Noodle.FIELDS.has(field): return _fail("바꿀 제면 항목을 확인해 주세요.")
+	var next: Dictionary=_noodle_workshop["formula"].duplicate(true)
+	next[field]=id
+	var err: String=Noodle.error(next,_rank,_discovered_list(),true)
+	if err!="": return _fail(err)
+	_noodle_workshop["formula"]=next
+	return _ok("제면 배합을 바꿨어요.")
+
+
+func begin_noodle() -> Dictionary:
+	if _busy(): return _locked_fail()
+	var review: Dictionary=noodle_review()
+	if review["reason"]!="": return _fail(review["reason"])
+	_noodle_active={"formula":review["formula"],"elapsed":0.0,"duration":review["duration"],"fee":review["cost"],"wallet":wallet,"day":day}
+	return _ok("반죽을 치대고 면을 뽑기 시작했어요.")
+
+
+func cancel_noodle() -> Dictionary:
+	if not noodle_active(): return _fail("진행 중인 제면이 없어요.")
+	_noodle_active={}
+	return _ok("제면을 취소했어요. 개발비는 쓰지 않았어요.")
+
+
+## Elapsed frames are transient; one final transaction creates one immutable
+## formula. Samples are reserved by existing successful tasting, not twice here.
+func advance_noodle(seconds: float) -> Dictionary:
+	if not noodle_active(): return {"ok":false,"finished":false,"message":"진행 중인 제면이 없어요."}
+	if not is_finite(seconds) or seconds<=0.0: return {"ok":false,"finished":false,"message":"제면 시간이 올바르지 않아요."}
+	_noodle_active["elapsed"]=minf(float(_noodle_active["duration"]),float(_noodle_active["elapsed"])+seconds)
+	if _noodle_active["elapsed"]<_noodle_active["duration"]: return {"ok":true,"finished":false,"message":""}
+	var job: Dictionary=_noodle_active
+	_noodle_active={}
+	if job["formula"]!=_noodle_workshop["formula"] or wallet!=job["wallet"] or day!=job["day"]:
+		return {"ok":false,"finished":true,"message":"제면 중 상태가 달라져 개발비를 쓰지 않고 중단했어요."}
+	var err: String=Noodle.error(job["formula"],_rank,_discovered_list(),true)
+	if err!="" or Noodle.contains(_noodle_workshop["recipes"],job["formula"]): return {"ok":false,"finished":true,"message":err if err!="" else "이미 개발한 면이에요."}
+	wallet-=int(job["fee"])
+	_noodle_workshop["recipes"].append({"recipe":job["formula"].duplicate(true),"day":day})
+	return {"ok":true,"finished":true,"message":"면이 완성됐어요. 이 면으로 라멘을 만들어 보세요."}
+
+
+func use_noodle(index: int) -> Dictionary:
+	if _busy(): return _locked_fail()
+	var recipes: Array=_noodle_workshop["recipes"]
+	if index<0 or index>=recipes.size(): return _fail("개발한 면을 골라 주세요.")
+	var recipe: Dictionary=recipes[index]["recipe"]
+	var next: Dictionary=draft_config.duplicate(true)
+	next["noodle"]=Noodle.base_id(recipe)
+	next["noodle_recipe"]=recipe.duplicate(true)
+	var methods: Dictionary=next.get("process",{"broth":"standard","noodle":"standard"}).duplicate(true)
+	methods["noodle"]=recipe["method"]
+	next["process"]=methods
+	draft_config=Catalog.normalize_config(next)
+	return _ok("직접 뽑은 면을 그릇에 담았어요.")
 
 
 func broth_active() -> bool:
@@ -241,6 +331,24 @@ static func _broth_config_error(raw: Variant, workshop: Dictionary, rank: int, d
 	return ""
 
 
+static func _noodle_config_error(raw: Variant, workshop: Dictionary, rank: int, discovered: Array, allow_draft: bool=false) -> String:
+	if typeof(raw)==TYPE_DICTIONARY:
+		if raw.has("broth") and raw.has("noodle") and raw.has("price"):
+			if not raw.has("noodle_recipe"):
+				return "" if workshop["legacy"] or allow_draft else "완성한 면이 없는 라멘 기록이에요."
+			var err: String=Noodle.error(raw["noodle_recipe"],rank,discovered,true)
+			if err!="": return err
+			if not Noodle.contains(workshop["recipes"],raw["noodle_recipe"]): return "개발 기록에 없는 면을 사용했어요."
+		for value in raw.values():
+			var err: String=_noodle_config_error(value,workshop,rank,discovered)
+			if err!="": return err
+	elif typeof(raw)==TYPE_ARRAY:
+		for value in raw:
+			var err: String=_noodle_config_error(value,workshop,rank,discovered)
+			if err!="": return err
+	return ""
+
+
 # ---------- 조회 (항상 deep copy) ----------
 
 func record_count() -> int:
@@ -305,6 +413,8 @@ func _suggest_name() -> String:
 func set_draft_process(slot: String, id: String) -> Dictionary:
 	if _busy():
 		return _locked_fail()
+	if slot=="noodle" and draft_config.has("noodle_recipe"):
+		return _fail("반죽·숙성 방식은 제면 개발실에서 새로 실험해 주세요.")
 	if slot=="broth" and draft_config.has("broth_recipe"):
 		return _fail("육수 우림 방식은 육수 개발실에서 새로 실험해 주세요.")
 	var definition: Dictionary = ProcessRules.method(slot, id)
@@ -331,6 +441,8 @@ static func _process_error(config: Dictionary, rank: int) -> String:
 func set_draft_choice(slot: String, id: String) -> Dictionary:
 	if _busy():
 		return _locked_fail()
+	if slot=="noodle" and (not bool(_noodle_workshop["legacy"]) or draft_config.has("noodle_recipe")):
+		return _fail("완제품 대신 직접 개발한 면을 골라 주세요.")
 	if slot=="broth" and (not bool(_broth_workshop["legacy"]) or draft_config.has("broth_recipe")):
 		return _fail("완제품 대신 직접 개발한 육수를 골라 주세요.")
 	if not Catalog.SLOTS.has(slot) or not Catalog.is_valid(slot, id):
@@ -460,6 +572,9 @@ func taste() -> Dictionary:
 	if _busy():
 		return _locked_fail()
 	if not broth_ready(): return _fail("원재료를 골라 첫 육수를 개발한 뒤 그릇에 담아 주세요.")
+	if not noodle_ready(): return _fail("밀가루와 배합수로 첫 면을 개발한 뒤 그릇에 담아 주세요.")
+	var noodle_error: String=_noodle_config_error(draft_config,_noodle_workshop,_rank,_discovered_list())
+	if noodle_error!="": return _fail(noodle_error)
 	var broth_error: String=_broth_config_error(draft_config,_broth_workshop,_rank,_discovered_list())
 	if broth_error!="": return _fail(broth_error)
 	var cfg_err: String = Check.config_error(draft_config)
@@ -575,7 +690,7 @@ func forecast() -> Dictionary:
 ## 즉시 정산하는 계산 경로이며 화면은 쓰지 않는다. 실제 플레이는 begin_service()/settle_service()를 거친다
 ## (회귀 테스트와 "런타임 결과 == 예측" 대조용으로만 남겨 둔다).
 func serve() -> Dictionary:
-	if broth_active(): return _locked_fail()
+	if craft_active(): return _locked_fail()
 	if _busy():
 		return _locked_fail()
 	if _expanded:
@@ -647,7 +762,7 @@ func active_session() -> Session:
 
 
 func begin_service() -> Dictionary:
-	if broth_active(): return _locked_fail()
+	if craft_active(): return _locked_fail()
 	if _active_session != null:
 		return _fail("이미 영업 중이에요.")
 	if exploration_active():
@@ -691,7 +806,7 @@ func cancel_service() -> void:
 ## 끝난 세션의 완료 주문으로 하루를 정산한다. 검증을 모두 마친 뒤에만 상태를 바꾸므로 실패하면 아무 변화가 없다.
 ## 성공하면 세션이 비워지고 일차가 올라가 같은 세션/같은 날의 두 번째 정산은 구조적으로 불가능하다.
 func settle_service() -> Dictionary:
-	if broth_active(): return _locked_fail()
+	if craft_active(): return _locked_fail()
 	var s: Session = _active_session
 	if s == null:
 		return _fail("정산할 영업이 없어요.")
@@ -885,10 +1000,11 @@ func _settle_menu_session(s: Session) -> Dictionary:
 ## 영업 중이거나 탐험 중이면 레시피/일차/성장/연구를 건드리는 행동은 도메인이 거부한다(화면 잠금과 별개의 마지막 방어선).
 ## 두 잠금은 서로 배타적이다: 영업 중에는 탐험을 시작/진행할 수 없고, 탐험 중에는 영업을 시작할 수 없다.
 func _busy() -> bool:
-	return service_active() or exploration_active() or broth_active()
+	return service_active() or exploration_active() or craft_active()
 
 
 func _locked_fail() -> Dictionary:
+	if noodle_active(): return _fail("면을 만드는 중이에요. 완료를 기다리거나 제면을 취소해 주세요.")
 	if broth_active(): return _fail("육수를 우리는 중이에요. 완료를 기다리거나 우림을 취소해 주세요.")
 	if service_active():
 		return {"ok": false, "message": "영업 중에는 레시피와 일차를 바꿀 수 없어요. 영업을 끝내거나 중단한 뒤 다시 해 보세요."}
@@ -955,7 +1071,7 @@ func research_check(request_id: String, record_id: int) -> Dictionary:
 ## 성공하면 영수증 추가와 자금 가산이 같은 호출 안에서 함께 일어나 한쪽만 반영되는 상태가 없다.
 ## 이미 완료한 의뢰는 거부되므로 같은 의뢰의 보상은 구조적으로 두 번 받을 수 없다(저장/불러오기 후에도 같다).
 func submit_research(request_id: String, record_id: int) -> Dictionary:
-	if broth_active(): return _locked_fail()
+	if craft_active(): return _locked_fail()
 	if service_active():
 		return _fail("영업 중에는 연구를 제출할 수 없어요. 영업을 끝내거나 중단한 뒤 다시 해 보세요.")
 	if exploration_active():
@@ -1110,6 +1226,7 @@ func chef_challenge_review() -> Dictionary:
 
 func start_chef_challenge() -> Dictionary:
 	if _busy(): return _locked_fail()
+	if not noodle_ready(): return _fail("첫 면을 개발해 그릇에 담은 뒤 요리사 도전을 시작해 주세요.")
 	if not broth_ready(): return _fail("첫 육수를 개발해 그릇에 담은 뒤 요리사 도전을 시작해 주세요.")
 	if not _chef_challenge["start"].is_empty(): return _fail("이미 수락한 도전이에요.")
 	_chef_challenge = {"start": {"day":day, "min_record_id":next_record_id, "config":draft_config.duplicate(true)}, "attempt":{}, "completed_day":0}
@@ -1153,7 +1270,7 @@ func promotion_review() -> Dictionary:
 ## 등급 심사 신청(명시적 행동). 다음 단계 하나만 신청할 수 있다. 보상은 없고 등급만 오른다.
 ## 거부(상태 불변): 영업 중, 알 수 없는 등급, 이미 최고 등급, 다음 단계가 아님, 조건 부족.
 func apply_promotion(target_rank: int) -> Dictionary:
-	if broth_active(): return _locked_fail()
+	if craft_active(): return _locked_fail()
 	if service_active():
 		return _fail("영업 중에는 등급 심사를 신청할 수 없어요. 영업을 끝내거나 중단한 뒤 다시 해 보세요.")
 	if exploration_active():
@@ -1186,7 +1303,7 @@ func facility_reviews() -> Array:
 ## 유료 확장 구매(명시적 행동). 자금 차감과 목록 추가가 한 번에 일어난다. 거부(상태 불변): 영업 중, 알 수 없음, 이미 보유,
 ## 등급 부족, 앞 단계 없음, 자금 부족(자금은 음수가 되지 않는다). 환불은 없다.
 func purchase_facility(id: String) -> Dictionary:
-	if broth_active(): return _locked_fail()
+	if craft_active(): return _locked_fail()
 	if service_active():
 		return _fail("영업 중에는 확장을 살 수 없어요. 영업을 끝내거나 중단한 뒤 다시 해 보세요.")
 	if exploration_active():
@@ -1250,7 +1367,7 @@ func hiring_preview(id: String) -> Dictionary:
 ## 보조 직원 고용(명시적 행동). 직원 공간 확장은 자동 고용을 하지 않는다. 고용비는 지금 한 번, 하루 운영비는 영업 정산마다 한 번씩 든다.
 ## 거부(상태 불변): 영업 중, 알 수 없음, 이미 고용, 자리 없음, 자금 부족. 해고는 없다.
 func hire_staff(id: String) -> Dictionary:
-	if broth_active(): return _locked_fail()
+	if craft_active(): return _locked_fail()
 	if service_active():
 		return _fail("영업 중에는 직원을 고용할 수 없어요. 영업을 끝내거나 중단한 뒤 다시 해 보세요.")
 	if exploration_active():
@@ -1471,7 +1588,7 @@ func mountain_foraging_review() -> Dictionary:
 
 
 func start_mountain_foraging() -> Dictionary:
-	if broth_active(): return _locked_fail()
+	if craft_active(): return _locked_fail()
 	var view: Dictionary = mountain_foraging_review()
 	if not view["can_start"]:
 		return _fail(str(view["reason"]))
@@ -1506,7 +1623,7 @@ func harbor_foraging_review() -> Dictionary:
 
 
 func start_harbor_foraging() -> Dictionary:
-	if broth_active(): return _locked_fail()
+	if craft_active(): return _locked_fail()
 	var view: Dictionary = harbor_foraging_review()
 	if not view["can_start"]:
 		return _fail(str(view["reason"]))
@@ -1539,7 +1656,7 @@ func foraging_review() -> Dictionary:
 
 
 func start_foraging() -> Dictionary:
-	if broth_active(): return _locked_fail()
+	if craft_active(): return _locked_fail()
 	var view: Dictionary = foraging_review()
 	if not bool(view["can_start"]):
 		return _fail(str(view["reason"]))
@@ -1574,7 +1691,7 @@ static func _service_blocks_trip() -> Dictionary:
 
 ## 출발. 거부(상태/자금 불변): 영업 중, 알 수 없는 지역, 이미 탐험 중, 등급 부족, 지역 완료, 오늘 이미 출발, 출발 비용 부족.
 func start_expedition(region_id: String) -> Dictionary:
-	if broth_active(): return _locked_fail()
+	if craft_active(): return _locked_fail()
 	if service_active():
 		return _service_blocks_trip()
 	if not _mountain_foraging["active"].is_empty() or not _foraging["active"].is_empty() or int(_foraging["last_departure_day"]) == day or not _harbor_foraging["active"].is_empty() or int(_harbor_foraging["last_departure_day"]) == day or int(_mountain_foraging["last_departure_day"]) == day:
@@ -1594,7 +1711,7 @@ func start_expedition(region_id: String) -> Dictionary:
 
 ## 선택 하나. 추가 비용이 있으면 이 호출에서 한 번 낸다. 거부(상태/자금 불변): 영업 중, 탐험 없음, 결과 단계, 없는 선택, 추가 비용 부족.
 func advance_expedition(choice_id: String) -> Dictionary:
-	if broth_active(): return _locked_fail()
+	if craft_active(): return _locked_fail()
 	if service_active():
 		return _service_blocks_trip()
 	if not _mountain_foraging["active"].is_empty():
@@ -1640,7 +1757,7 @@ func advance_expedition(choice_id: String) -> Dictionary:
 
 ## 결과 수령(보상 지급). 결과 단계에서만 가능하고 성공하면 탐험이 끝나 되풀이해도 보상이 없다. 재료는 영구 개방된다.
 func finish_expedition() -> Dictionary:
-	if broth_active(): return _locked_fail()
+	if craft_active(): return _locked_fail()
 	if service_active():
 		return _service_blocks_trip()
 	if not _mountain_foraging["active"].is_empty():
@@ -1670,7 +1787,7 @@ func finish_expedition() -> Dictionary:
 
 ## 포기. 만남 단계에서만 가능하다. 낸 비용과 오늘의 출발권은 돌아오지 않고 보상은 없다.
 func retire_expedition() -> Dictionary:
-	if broth_active(): return _locked_fail()
+	if craft_active(): return _locked_fail()
 	if service_active():
 		return _service_blocks_trip()
 	if not _mountain_foraging["active"].is_empty():
@@ -1799,6 +1916,7 @@ func to_dict() -> Dictionary:
 	return {
 		"schema_version": SCHEMA_VERSION,
 		"broth_workshop":_broth_workshop.duplicate(true),
+		"noodle_workshop":_noodle_workshop.duplicate(true),
 		"day": day,
 		"wallet": wallet,
 		"next_record_id": next_record_id,
@@ -1867,10 +1985,14 @@ func load_from_dict(raw: Variant) -> String:
 	elif version == 15:
 		expected_keys = TOP_KEYS_V15
 	elif version == 16:
+		expected_keys = TOP_KEYS_V16
+	elif version == 17:
 		expected_keys = TOP_KEYS
 	var key_err: String = Check.keys_error(d, expected_keys, "저장")
 	if key_err != "":
 		return key_err
+	if version<17 and _has_key_recursive(d,"noodle_recipe"):
+		return "이전 저장 버전에 제면 배합이 들어 있어요."
 	if version<16 and _has_key_recursive(d,"broth_recipe"):
 		return "이전 저장 버전에 육수 원재료 배합이 들어 있어요."
 	if version < 8 and _has_process(d):
@@ -2061,6 +2183,18 @@ func load_from_dict(raw: Variant) -> String:
 			if broth_err!="": return broth_err
 		broth_err=_broth_config_error(dcfg["config"],broth_parsed,growth_rank,discovered_now,true)
 		if broth_err!="": return broth_err
+	var noodle_parsed: Dictionary=Noodle.empty_state(true)
+	if version>=17:
+		var noodle_err: String=Noodle.state_error(d["noodle_workshop"],growth_rank,discovered_now,int(d["day"]))
+		if noodle_err!="": return noodle_err
+		noodle_parsed=d["noodle_workshop"].duplicate(true)
+		for recipe in noodle_parsed["recipes"]: recipe["day"]=int(recipe["day"])
+		for key in d:
+			if key in ["draft","noodle_workshop","broth_workshop"]: continue
+			noodle_err=_noodle_config_error(d[key],noodle_parsed,growth_rank,discovered_now)
+			if noodle_err!="": return noodle_err
+		noodle_err=_noodle_config_error(dcfg["config"],noodle_parsed,growth_rank,discovered_now,true)
+		if noodle_err!="": return noodle_err
 	for pe0 in parsed:
 		var pcfg: Dictionary = (pe0 as Dictionary)["config"]
 		var process_error: String = _process_error(pcfg, growth_rank)
@@ -2177,6 +2311,8 @@ func load_from_dict(raw: Variant) -> String:
 	_foraging = foraging_parsed
 	_harbor_foraging = harbor_parsed
 	_mountain_foraging = mountain_parsed
+	_noodle_workshop = noodle_parsed
+	_noodle_active = {}
 	_broth_workshop = broth_parsed
 	_broth_active = {}
 	_contests = contests_parsed

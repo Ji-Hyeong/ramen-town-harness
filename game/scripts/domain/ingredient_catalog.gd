@@ -6,6 +6,7 @@ extends RefCounted
 ## 각 재료는 축에 정수 기여값을 더한다. 합산 결과는 평가기에서 0~10으로 제한한다.
 ## id는 슬롯 접두사를 포함해 전체에서 유일하다(예: broth_tonkotsu).
 
+const Noodle = preload("res://scripts/domain/noodle_workshop.gd")
 const Broth = preload("res://scripts/domain/broth_workshop.gd")
 const AXES: Array[String] = ["rich", "salt", "aroma", "chew", "spice"]
 
@@ -293,6 +294,8 @@ static func canonical_toppings(ids: Array) -> Array:
 ## 옛 모양/정규 모양 어느 쪽이든 정규 구성(깊은 복사, 토핑 정렬)으로 바꾼다. 검증은 하지 않는다(Check.config_error 몫).
 static func normalize_config(config: Dictionary) -> Dictionary:
 	var out: Dictionary = {}
+	if config.has("noodle_recipe"):
+		out["noodle_recipe"] = Noodle.canonical(config["noodle_recipe"])
 	if config.has("broth_recipe"):
 		out["broth_recipe"] = Broth.canonical(config["broth_recipe"])
 	for slot in SLOTS:
@@ -318,7 +321,13 @@ static func normalize_config(config: Dictionary) -> Dictionary:
 static func recipe_item(config: Dictionary, id: String) -> Dictionary:
 	if config.has("broth_recipe") and id == str(config["broth"]):
 		return Broth.product(config["broth_recipe"])
+	if config.has("noodle_recipe") and id == str(config["noodle"]):
+		return Noodle.product(config["noodle_recipe"])
 	return find(id)
+
+
+static func noodle_name(config: Dictionary) -> String:
+	return str(recipe_item(config,str(config["noodle"]))["name"])
 
 
 static func broth_name(config: Dictionary) -> String:

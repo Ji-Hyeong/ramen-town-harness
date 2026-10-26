@@ -5,7 +5,7 @@ extends "res://scripts/domain/game_state.gd"
 func _init() -> void:
 	super()
 	var previous: Dictionary=to_dict()
-	previous.erase("broth_workshop")
+	previous.erase("broth_workshop"); previous.erase("noodle_workshop")
 	previous["schema_version"]=15
 	var err: String=load_from_dict(previous)
 	if err!="": push_error("Historical v15 fixture migration failed: "+err)

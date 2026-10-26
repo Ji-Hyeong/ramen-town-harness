@@ -1,0 +1,302 @@
+{
+	"broth_workshop": {
+		"ingredients": [
+			"chicken_bone",
+			"onion"
+		],
+		"legacy": false,
+		"method": "standard",
+		"recipes": [
+			{
+				"day": 1,
+				"recipe": {
+					"ingredients": [
+						"chicken_bone",
+						"onion"
+					],
+					"method": "standard"
+				}
+			}
+		]
+	},
+	"chef_challenge": {
+		"attempt": {},
+		"completed_day": 0,
+		"start": {}
+	},
+	"contests": {
+		"articles": [],
+		"attempts": 0,
+		"bests": [],
+		"history": [],
+		"last_entry_day": 0
+	},
+	"day": 2,
+	"draft": {
+		"config": {
+			"broth": "broth_chicken",
+			"broth_recipe": {
+				"ingredients": [
+					"chicken_bone",
+					"onion"
+				],
+				"method": "standard"
+			},
+			"cook": "cook_firm",
+			"noodle": "noodle_thin",
+			"oil": "oil_garlic",
+			"price": 9000,
+			"tare": "tare_shoyu",
+			"toppings": [
+				"topping_chashu"
+			]
+		},
+		"lineage_id": 1,
+		"name": "시제품 1"
+	},
+	"exploration": {
+		"active": {},
+		"completed": 0,
+		"discovered": [],
+		"history": [],
+		"last_departure_day": 0,
+		"retired": 0
+	},
+	"foraging": {
+		"active": {},
+		"completed": 0,
+		"first_day": {
+			"oil_roasted_sesame": 0,
+			"topping_citrus_peel": 0
+		},
+		"history": [],
+		"last_departure_day": 0,
+		"obtained": {
+			"oil_roasted_sesame": 0,
+			"topping_citrus_peel": 0
+		},
+		"retired": 0,
+		"stock": {
+			"oil_roasted_sesame": 0,
+			"topping_citrus_peel": 0
+		},
+		"used": {
+			"oil_roasted_sesame": 0,
+			"topping_citrus_peel": 0
+		}
+	},
+	"growth": {
+		"facilities": [],
+		"rank": 1,
+		"staff": []
+	},
+	"harbor_foraging": {
+		"active": {},
+		"completed": 0,
+		"first_day": {
+			"broth_roasted_sardine": 0,
+			"topping_scallop": 0
+		},
+		"history": [],
+		"last_departure_day": 0,
+		"obtained": {
+			"broth_roasted_sardine": 0,
+			"topping_scallop": 0
+		},
+		"retired": 0,
+		"stock": {
+			"broth_roasted_sardine": 0,
+			"topping_scallop": 0
+		},
+		"used": {
+			"broth_roasted_sardine": 0,
+			"topping_scallop": 0
+		}
+	},
+	"last_feedback_record_id": 1,
+	"last_report": {
+		"by_source": {
+			"dohyun": 2,
+			"hayoung": 2,
+			"maru": 1,
+			"walkin": 3
+		},
+		"day": 1,
+		"ingredient_cost": 13680,
+		"net": 55320,
+		"overhead": 3000,
+		"price": 9000,
+		"recipe_name": "시제품 1",
+		"revenue": 72000,
+		"units": 8,
+		"version": 1,
+		"wallet_after": 83200
+	},
+	"mountain_foraging": {
+		"active": {},
+		"completed": 0,
+		"first_day": {
+			"noodle_buckwheat": 0,
+			"topping_grilled_shiitake": 0
+		},
+		"history": [],
+		"last_departure_day": 0,
+		"obtained": {
+			"noodle_buckwheat": 0,
+			"topping_grilled_shiitake": 0
+		},
+		"retired": 0,
+		"stock": {
+			"noodle_buckwheat": 0,
+			"topping_grilled_shiitake": 0
+		},
+		"used": {
+			"noodle_buckwheat": 0,
+			"topping_grilled_shiitake": 0
+		}
+	},
+	"next_lineage_id": 2,
+	"next_record_id": 2,
+	"records": [
+		{
+			"comparison": {},
+			"config": {
+				"broth": "broth_chicken",
+				"broth_recipe": {
+					"ingredients": [
+						"chicken_bone",
+						"onion"
+					],
+					"method": "standard"
+				},
+				"cook": "cook_firm",
+				"noodle": "noodle_thin",
+				"oil": "oil_garlic",
+				"price": 9000,
+				"tare": "tare_shoyu",
+				"toppings": [
+					"topping_chashu"
+				]
+			},
+			"lineage_id": 1,
+			"name": "시제품 1",
+			"record_id": 1,
+			"scores": {
+				"dohyun": 73,
+				"hayoung": 93,
+				"maru": 63
+			},
+			"tasted_day": 1,
+			"version": 1
+		}
+	],
+	"research": {
+		"completed": []
+	},
+	"schema_version": 16,
+	"selected_record_id": 1,
+	"shop": {
+		"expanded": false,
+		"menu_ids": []
+	},
+	"stories": {
+		"arcs": []
+	},
+	"taste_achievements": {
+		"dohyun": {
+			"comparison": {},
+			"config": {
+				"broth": "broth_chicken",
+				"broth_recipe": {
+					"ingredients": [
+						"chicken_bone",
+						"onion"
+					],
+					"method": "standard"
+				},
+				"cook": "cook_firm",
+				"noodle": "noodle_thin",
+				"oil": "oil_garlic",
+				"price": 9000,
+				"tare": "tare_shoyu",
+				"toppings": [
+					"topping_chashu"
+				]
+			},
+			"lineage_id": 1,
+			"name": "시제품 1",
+			"record_id": 1,
+			"scores": {
+				"dohyun": 73,
+				"hayoung": 93,
+				"maru": 63
+			},
+			"tasted_day": 1,
+			"version": 1
+		},
+		"hayoung": {
+			"comparison": {},
+			"config": {
+				"broth": "broth_chicken",
+				"broth_recipe": {
+					"ingredients": [
+						"chicken_bone",
+						"onion"
+					],
+					"method": "standard"
+				},
+				"cook": "cook_firm",
+				"noodle": "noodle_thin",
+				"oil": "oil_garlic",
+				"price": 9000,
+				"tare": "tare_shoyu",
+				"toppings": [
+					"topping_chashu"
+				]
+			},
+			"lineage_id": 1,
+			"name": "시제품 1",
+			"record_id": 1,
+			"scores": {
+				"dohyun": 73,
+				"hayoung": 93,
+				"maru": 63
+			},
+			"tasted_day": 1,
+			"version": 1
+		},
+		"maru": {
+			"comparison": {},
+			"config": {
+				"broth": "broth_chicken",
+				"broth_recipe": {
+					"ingredients": [
+						"chicken_bone",
+						"onion"
+					],
+					"method": "standard"
+				},
+				"cook": "cook_firm",
+				"noodle": "noodle_thin",
+				"oil": "oil_garlic",
+				"price": 9000,
+				"tare": "tare_shoyu",
+				"toppings": [
+					"topping_chashu"
+				]
+			},
+			"lineage_id": 1,
+			"name": "시제품 1",
+			"record_id": 1,
+			"scores": {
+				"dohyun": 73,
+				"hayoung": 93,
+				"maru": 63
+			},
+			"tasted_day": 1,
+			"version": 1
+		}
+	},
+	"training": {},
+	"wallet": 83200
+}

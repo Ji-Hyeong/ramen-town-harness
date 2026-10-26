@@ -14,6 +14,8 @@ static func candidates(state: Game, id: String, selected: int = -1) -> Dictionar
 	var error: String=Check.config_error(base)
 	if item.is_empty() or error!="":
 		return {"error":"실험할 재료와 올바른 초안이 필요해요." if error=="" else error,"rows":[]}
+	if base.has(slot_key(id)+"_recipe"):
+		return {"error":"이 재료는 개발실에서 원재료를 바꿔 실험해 주세요.","rows":[]}
 	var rows: Array=[]
 	var slot: String=id.get_slice("_",0)
 	if slot=="topping":
@@ -73,3 +75,8 @@ static func _row(state: Game, base: Dictionary, id: String, replacement: int) ->
 		"before_seconds":Evaluator.prep_seconds(base),"after_seconds":Evaluator.prep_seconds(next),
 		"compat":Evaluator.applied_compat(next),"samples":samples,"directions":directions,
 		"sample_error":state.sample_check(next)["error"],"changed":not Check.same_config(base,next)}
+
+
+## Component IDs have stable slot prefixes, including sampled ingredients.
+static func slot_key(id: String) -> String:
+	return id.get_slice("_",0)

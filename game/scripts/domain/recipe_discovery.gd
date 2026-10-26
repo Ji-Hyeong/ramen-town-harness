@@ -131,7 +131,7 @@ static func describe(config: Dictionary) -> Dictionary:
 	var process: Dictionary = {}
 	if config.has("process"):
 		process = config["process"]
-	var noodle: Dictionary = Catalog.find(str(config["noodle"]))
+	var noodle: Dictionary = Catalog.recipe_item(config,str(config["noodle"]))
 	var cook: Dictionary = Catalog.find(str(config["cook"]))
 	var subtitle: String = "%s · %s · %s" % [str(noodle["name"]), str(cook["name"]), ProcessRules.summary(process)]
 	var tags: Array[String] = []

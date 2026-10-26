@@ -290,7 +290,7 @@ func test_story_persistence() -> void:
 			"snapshot": e["name"]="다른 이름"
 			"unmet": e["config"]["price"]=9000
 			"extra": arc["extra"]=0
-			"oldversion": d["schema_version"]=8; d.erase("broth_workshop")
+			"oldversion": d["schema_version"]=8; d.erase("broth_workshop"); d.erase("noodle_workshop")
 			"orphan": d["last_report"]={}
 			"older_report": d["last_report"]["day"]=1
 			"late_claim":
@@ -471,7 +471,7 @@ func test_process_save_validation() -> void:
 		var d: Dictionary = raw.duplicate(true)
 		var last: Dictionary = d["records"][-1]
 		match kind:
-			"v7": d["schema_version"] = 7; d.erase("broth_workshop")
+			"v7": d["schema_version"] = 7; d.erase("broth_workshop"); d.erase("noodle_workshop")
 			"missing": last["config"]["process"].erase("noodle")
 			"unknown": last["config"]["process"]["broth"] = "unknown"
 			"type": last["config"]["process"] = []
@@ -892,7 +892,7 @@ func test_training_persistence() -> void:
 func test_training_legacy_v5() -> void:
 	var s: GameStateScript = _training_staffed()
 	var raw: Dictionary = s.to_dict()
-	raw["schema_version"] = 5; raw.erase("broth_workshop")
+	raw["schema_version"] = 5; raw.erase("broth_workshop"); raw.erase("noodle_workshop")
 	raw.erase("training")
 	raw.erase("shop")
 	raw.erase("stories")
@@ -946,7 +946,7 @@ func test_training_invalid_saves() -> void:
 				e["last_work_day"] = int(e["lessons"][1]["day"]) - 1
 		_check(target.load_from_dict(d) != "" and _json(target) == before, "육성 불가능 저장 원자적 거부 " + kind)
 	var legacy: Dictionary = raw.duplicate(true)
-	legacy["schema_version"] = 5; legacy.erase("broth_workshop")
+	legacy["schema_version"] = 5; legacy.erase("broth_workshop"); legacy.erase("noodle_workshop")
 	legacy.erase("taste_achievements")
 	_check(target.load_from_dict(legacy) != "", "training 포함한 위장v5 거부")
 	_end()
@@ -1158,7 +1158,7 @@ func test_contest_migration_v4() -> void:
 	var s: GameStateScript = _explorer_state()
 	_trip(s, "market", "m_ask", "m_buy_pickle")
 	var v4: Dictionary = s.to_dict()
-	v4["schema_version"] = 4; v4.erase("broth_workshop")
+	v4["schema_version"] = 4; v4.erase("broth_workshop"); v4.erase("noodle_workshop")
 	v4.erase("contests")
 	v4.erase("training")
 	v4.erase("shop")
@@ -1862,7 +1862,7 @@ func test_missing_corrupt_future_saves() -> void:
 	_check(str(fr["status"]) == "unsupported", "미래 버전은 unsupported")
 	_check(FileAccess.get_file_as_string(saver.main_path()) == future_text, "미지원 저장은 보존돼야 해요")
 	var old: Dictionary = future.duplicate(true)
-	old["schema_version"] = 0; old.erase("broth_workshop")
+	old["schema_version"] = 0; old.erase("broth_workshop"); old.erase("noodle_workshop")
 	_write_text(saver.main_path(), JSON.stringify(old, "\t", true))
 	_check(str(saver.load_into(GameStateScript.new())["status"]) == "unsupported", "구버전도 unsupported")
 
@@ -3362,7 +3362,7 @@ func _to_legacy_cfg(cfg: Variant) -> Dictionary:
 ## 토핑이 모두 하나인 상태에서만 쓴다.
 func _as_legacy(src: Dictionary, version: int) -> Dictionary:
 	var d: Dictionary = JSON.parse_string(JSON.stringify(src))
-	d["schema_version"] = version; d.erase("broth_workshop")
+	d["schema_version"] = version; d.erase("broth_workshop"); d.erase("noodle_workshop")
 	d.erase("growth")
 	# 탐험(스키마 v4)이 생기기 전 파일에는 "exploration" 키가 없다. 이 변환은 v4 키를 항상 지워 v1~v3 모양을 만든다
 	# (v3 진짜 파일은 _as_v3()가 growth 를 남기는 쪽을 따로 만든다).
@@ -3582,7 +3582,7 @@ func test_repeated_portions() -> void:
 	state.set_draft_toppings(two["toppings"])
 	var before := _json(state)
 	var forged := state.to_dict()
-	forged["schema_version"] = 11; forged.erase("broth_workshop")
+	forged["schema_version"] = 11; forged.erase("broth_workshop"); forged.erase("noodle_workshop")
 	forged.erase("harbor_foraging")
 	forged.erase("chef_challenge")
 	forged.erase("mountain_foraging")
@@ -4133,7 +4133,7 @@ func test_schema_migration_v1_v2() -> void:
 	v2_with_growth["growth"] = v3["growth"]
 	_check(GameStateScript.new().load_from_dict(v2_with_growth) != "", "growth 가 있는 v2 거부")
 	var v2_new_cfg: Dictionary = JSON.parse_string(JSON.stringify(_populated_state().to_dict()))
-	v2_new_cfg["schema_version"] = 2; v2_new_cfg.erase("broth_workshop")
+	v2_new_cfg["schema_version"] = 2; v2_new_cfg.erase("broth_workshop"); v2_new_cfg.erase("noodle_workshop")
 	v2_new_cfg.erase("growth")
 	v2_new_cfg.erase("exploration")
 	v2_new_cfg.erase("contests")
@@ -4204,7 +4204,7 @@ func test_growth_load_rejections() -> void:
 				cgrowth["facilities"] = []
 				cgrowth["staff"] = []
 			"슬롯 초과(조리대 I 만)":
-				copy["schema_version"] = 11; copy.erase("broth_workshop")  # Historical bench gating remains strict.
+				copy["schema_version"] = 11; copy.erase("broth_workshop"); copy.erase("noodle_workshop")  # Historical bench gating remains strict.
 				copy.erase("harbor_foraging")
 				copy.erase("chef_challenge")
 				copy.erase("mountain_foraging")
@@ -4403,7 +4403,7 @@ func _unchanged(s: GameStateScript, before: String, label: String) -> void:
 
 func _as_v3(src: Dictionary) -> Dictionary:
 	var d: Dictionary = JSON.parse_string(JSON.stringify(src))
-	d["schema_version"] = 3; d.erase("broth_workshop")
+	d["schema_version"] = 3; d.erase("broth_workshop"); d.erase("noodle_workshop")
 	d.erase("exploration")
 	d.erase("contests")
 	d.erase("training")
@@ -5861,7 +5861,7 @@ func test_notebook_version_limits() -> void:
 		d.erase("harbor_foraging")
 		d.erase("chef_challenge")
 		d.erase("mountain_foraging")
-		d["schema_version"] = version; d.erase("broth_workshop")
+		d["schema_version"] = version; d.erase("broth_workshop"); d.erase("noodle_workshop")
 		for pair in [["stories",9],["shop",7],["training",6],["contests",5],["exploration",4]]:
 			if version < pair[1]: d.erase(pair[0])
 		var target: GameStateScript = GameStateScript.new()
