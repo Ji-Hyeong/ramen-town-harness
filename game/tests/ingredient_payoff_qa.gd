@@ -128,7 +128,20 @@ func _payoff(tag: String, vp: Vector2i) -> void:
 	# The player deliberately edits broth/oil too; the preview never invents or
 	# auto-loads a complete optimal recipe to satisfy the direction.
 	await _tap(holder,editor,"EditorBroth")
-	await _tap(holder,editor,"EditorAdd_broth_chicken")
+	# Temporarily restore the real frame loop for the mandatory broth task;
+	# the rest of this fixture explicitly controls tasting time for capture.
+	app.set_process(true)
+	await _tap(holder,editor,"BrothAdd_chicken_bone")
+	await _tap(holder,editor,"BrothAdd_onion")
+	await _tap(holder,editor,"EditorDetailApply")
+	var broth_deadline: int=Time.get_ticks_msec()+10000
+	while state.call("broth_active") and Time.get_ticks_msec()<broth_deadline: await process_frame
+	_check(not state.call("broth_active"),tag+": raw ingredient broth completes before editing ramen")
+	await _settle()
+	await _tap(holder,editor,"BrothUse_0")
+	await _tap(holder,editor,"EditorBroth")
+	await _tap(holder,editor,"BrothTab_seasoning")
+	app.set_process(false)
 	await _tap(holder,editor,"EditorGroupTab_oil")
 	await _tap(holder,editor,"EditorAdd_oil_scallion")
 	await _tap(holder,editor,"EditorDetailApply")

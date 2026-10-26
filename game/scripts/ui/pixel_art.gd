@@ -610,6 +610,9 @@ static func exploration_image(region: String, progress: float = 1.0, moving: boo
 
 static func broth_color(config: Dictionary) -> Color:
 	var base: Color = _base_broth_color(config)
+	if config.has("broth_recipe"):
+		var product: Dictionary=Catalog.Broth.product(config["broth_recipe"])
+		base=Color("e7bf70").lerp(Color("d4a17b"),float(product["axes"]["rich"])/10.0)
 	var process: Dictionary = config.get("process", {})
 	# 제조한 육수의 맑기 차이만 표현한다. 기본 공법은 이전 픽셀/색을 그대로 돌려준다.
 	if process.get("broth", "standard") == "gentle":

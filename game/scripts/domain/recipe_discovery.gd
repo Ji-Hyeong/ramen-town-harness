@@ -124,7 +124,7 @@ static func describe(config: Dictionary) -> Dictionary:
 	var err: String = Check.config_error(config)
 	if err != "":
 		return {"error": err, "title": "", "subtitle": "", "tags": []}
-	var broth: String = _word(_BROTH_WORD, str(config["broth"]))
+	var broth: String = Catalog.broth_name(config) if config.has("broth_recipe") else _word(_BROTH_WORD, str(config["broth"]))
 	var tare: String = _word(_TARE_WORD, str(config["tare"]))
 	var oil: String = _word(_OIL_WORD, str(config["oil"]))
 	var title: String = "%s %s타레 %s 라멘 · %s" % [broth, tare, oil, Catalog.topping_names(config)]

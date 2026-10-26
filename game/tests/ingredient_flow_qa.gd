@@ -133,6 +133,7 @@ func _flow(tag: String, vp: Vector2i) -> void:
 	_sheet(editor,holder,tag+" broth")
 	await _resize_sheet(editor,holder,tag+" broth")
 	await _shot(holder,tag+"_flow_05_broth.png")
+	await _tap(holder,editor,"BrothTab_seasoning")
 	await _tap(holder,editor,"EditorGroupTab_tare")
 	_check(editor.find_child("EditorAdd_broth_chicken",true,false)==null,tag+": tare tab does not mix unrelated broth rows")
 	await _tap(holder,editor,"EditorGroupTab_oil")

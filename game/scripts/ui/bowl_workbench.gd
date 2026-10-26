@@ -18,6 +18,9 @@ const BodyFont = preload("res://assets/fonts/Pretendard-Regular.otf")
 const DisplayFont = preload("res://assets/fonts/Pretendard-Bold.otf")
 const MockArt = preload("res://scripts/ui/mock_fidelity_art.gd")
 const TrialPreview = preload("res://scripts/ui/ingredient_trial_preview.gd")
+const Broth = preload("res://scripts/domain/broth_workshop.gd")
+const PantryArt = preload("res://scripts/ui/broth_material_art.gd")
+const WorkView = preload("res://scripts/ui/tasting_work_view.gd")
 const INK := Color("18354f")
 const NAVY := Color("193e65")
 const CREAM := Color("fff6e4")
@@ -74,6 +77,9 @@ var _work_scroll: ScrollContainer
 var _result_customer: int = 0
 var _group_scroll: Dictionary = {}
 var _group_tab: Dictionary = {}
+var _broth_category: String="전체"
+var _broth_page: String="blend"
+var _broth_scroll: Dictionary={}
 
 
 func _ready() -> void:
@@ -512,8 +518,9 @@ func present(new_state: Game, mode: int, information: Dictionary) -> void:
 	if result and not record.is_empty():
 		config = record["config"]
 	_dish.set_config(config)
-	_broth_text.text = "%s·%s·%s" % [str(Catalog.find(str(config["broth"]))["name"]).replace(" 진국", "").replace(" 육수", ""), str(Catalog.find(str(config["tare"]))["name"]).replace(" 타레", ""), Catalog.find(str(config["oil"]))["name"]]
-	_broth.tooltip_text = "%s · %s · %s" % [Catalog.find(str(config["broth"]))["name"], Catalog.find(str(config["tare"]))["name"], Catalog.find(str(config["oil"]))["name"]]
+	_dish.visible=result or state.broth_ready()
+	_broth_text.text = "%s·%s·%s" % [Catalog.broth_name(config).replace(" 진국", "").replace(" 육수", ""), str(Catalog.find(str(config["tare"]))["name"]).replace(" 타레", ""), Catalog.find(str(config["oil"]))["name"]] if result or state.broth_ready() else "첫 육수를 개발해 주세요"
+	_broth.tooltip_text = "%s · %s · %s" % [Catalog.broth_name(config), Catalog.find(str(config["tare"]))["name"], Catalog.find(str(config["oil"]))["name"]]
 	_noodle_text.text = str(Catalog.find(str(config["noodle"]))["name"]) + "·" + str(Catalog.find(str(config["cook"]))["name"]).replace("하게", "")
 	_noodle.tooltip_text = str(Catalog.find(str(config["cook"]))["name"])
 	var noodle_art: TextureRect=_noodle.find_child("SummaryHeadingRow",true,false).get_child(0)
@@ -523,6 +530,9 @@ func present(new_state: Game, mode: int, information: Dictionary) -> void:
 	_noodle.disabled = _broth.disabled
 	_cost.text = won(Evaluator.unit_cost(config))
 	_taste.text = "영업 시작" if result else ("준비 중" if bool(_info["working"]) else "시식하기")
+	if not result and not state.broth_ready():
+		_taste.text="육수 개발하기"
+		_cost.text="육수 미개발"
 	_taste.disabled = bool(_info["busy"]) and not result
 	_render_slots(config, result)
 	_render_content()
@@ -883,6 +893,9 @@ func reveal_ingredient(id: String) -> void:
 	if item.is_empty():
 		push_error("개발에서 열 재료가 없어요: "+id)
 		return
+	if id.begins_with("broth_"):
+		_show_raw_broth_source(id)
+		return
 	if id.begins_with("topping_"):
 		category=Categories.category(id)
 		_last_key=""
@@ -893,6 +906,9 @@ func reveal_ingredient(id: String) -> void:
 
 
 func _show_item(item: Dictionary) -> void:
+	if str(item["id"]).begins_with("broth_"):
+		_show_raw_broth_source(item["id"])
+		return
 	_save_group_scroll()
 	var id: String = str(item["id"])
 	var slot: String = id.get_slice("_",0)
@@ -1098,6 +1114,9 @@ func _switch_group_tab(group: String, tab: String) -> void:
 
 func _show_group(group: String) -> void:
 	var tab: String = str(_group_tab.get(group,group))
+	if group=="broth" and tab=="broth":
+		_show_broth_workshop()
+		return
 	var body := _modal_body("국물 만들기" if group == "broth" else "면 고르기")
 	_modal.set_meta("view_kind","group")
 	_modal.set_meta("group",group)
@@ -1111,6 +1130,8 @@ func _show_group(group: String) -> void:
 	var column: VBoxContainer = _modal.find_child("DetailsColumn",true,false) as VBoxContainer
 	column.add_child(tabs)
 	column.move_child(tabs,1)
+	if str(_info.get("warning",""))!="":
+		body.add_child(_label(str(_info["warning"]),15,RED))
 	var definitions: Array = [["broth","육수"],["tare","타레"],["oil","향미유"],["method","공법"]] if group == "broth" else [["noodle","면"],["cook","익힘"],["method","반죽"]]
 	for definition in definitions:
 		var button := _button(str(definition[1]),"EditorGroupTab_"+str(definition[0]))
@@ -1124,6 +1145,13 @@ func _show_group(group: String) -> void:
 	current.name = "GroupCurrentChoice"
 	body.add_child(current)
 	if tab == "method":
+		if group=="broth":
+			body.add_child(_label("우림 방식은 원재료를 배합할 때 정해요. 다른 방식은 새 육수로 개발해 보세요.",17))
+			var develop:=_button("육수 개발실 열기","BrothOpenWorkshop","chevron_right",GOLD)
+			develop.pressed.connect(_show_broth_workshop)
+			body.add_child(develop)
+			_modal_footer("육수를 바꾸지 않고 돌아가요.","그릇으로 돌아가기",_exit_group)
+			return
 		body.add_child(_label("시식할 때 반영되는 공법이에요.",14,MUTED))
 		for id in ProcessRules.ids(group):
 			var method: Dictionary = ProcessRules.method(group,id)
@@ -1138,6 +1166,210 @@ func _show_group(group: String) -> void:
 	_refresh_modal_selections()
 	_modal_footer("선택은 바로 반영돼요. 시식 전까지 바꿀 수 있어요.","그릇으로 돌아가기",_exit_group)
 	(body.get_parent() as ScrollContainer).set_deferred("scroll_vertical",int(_group_scroll.get(group+":"+tab,0)))
+
+
+## Broth has its own focused task depth; the accepted ramen composition stays
+## behind this sheet. Mixing never silently replaces the currently used broth.
+func _show_broth_workshop(page: String="blend") -> void:
+	if _modal!=null and _modal.get_meta("view_kind","")=="broth":
+		var previous_scroll: ScrollContainer=_modal.find_child("DetailsScroll",true,false)
+		_broth_scroll[str(_modal.get_meta("scroll_key",""))]=previous_scroll.scroll_vertical
+	_broth_page=page
+	var review: Dictionary=state.broth_review()
+	var active: bool=bool(review["active"])
+	var body:=_modal_body("육수 개발실")
+	_modal.set_meta("view_kind","broth")
+	var scroll_key: String=page+":"+_broth_category
+	_modal.set_meta("scroll_key",scroll_key)
+	var back: Button=_modal.find_child("EditorDetailsBack",true,false)
+	back.disabled=active
+	var tabs:=HBoxContainer.new()
+	tabs.add_theme_constant_override("separation",4)
+	var column: VBoxContainer=_modal.find_child("DetailsColumn",true,false)
+	column.add_child(tabs)
+	column.move_child(tabs,1)
+	if str(_info.get("warning",""))!="": body.add_child(_label(str(_info["warning"]),15,RED))
+	for definition in [["blend","배합"],["library","육수 %d" % review["recipes"].size()],["seasoning","간·향미"]]:
+		var button:=_button(definition[1],"BrothTab_"+definition[0])
+		button.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+		button.toggle_mode=true
+		button.set_pressed_no_signal(page==definition[0])
+		button.disabled=active
+		if definition[0]=="seasoning":
+			button.pressed.connect(func(): _group_tab["broth"]="tare"; _show_group("broth"))
+		else: button.pressed.connect(_show_broth_workshop.bind(definition[0]))
+		tabs.add_child(button)
+	if page=="library" and not active:
+		body.add_child(_label("직접 우려낸 육수",22))
+		if review["recipes"].is_empty(): body.add_child(_label("아직 완성한 육수가 없어요. 배합에서 주재료를 골라 첫 육수를 만들어 보세요.",17,MUTED))
+		for index in review["recipes"].size():
+			var recipe: Dictionary=review["recipes"][index]["recipe"]
+			var item: Dictionary=Broth.product(recipe)
+			var panel:=PanelContainer.new()
+			panel.add_theme_stylebox_override("panel",_style(WHITE,TEAL))
+			var card:=VBoxContainer.new()
+			card.add_theme_constant_override("separation",10)
+			panel.add_child(card)
+			card.add_child(_label(item["name"],21))
+			card.add_child(_label(item["desc"],16,MUTED))
+			var method: Dictionary=ProcessRules.method("broth",recipe["method"])
+			card.add_child(_label("한 그릇 %s · 준비 %d초" % [won(int(item["cost"])+int(method["cost"])),int(item["seconds"])+int(method["seconds"])],16,TEAL))
+			var use:=_button("이 육수로 라멘 만들기","BrothUse_"+str(index),"check",GOLD)
+			use.disabled=bool(_info["busy"])
+			use.pressed.connect(func(): _emit("broth_use",{"index":index}); _close_modal())
+			card.add_child(use)
+			body.add_child(panel)
+		_modal_footer("배합을 바꿔 다른 맛의 육수도 개발할 수 있어요.","새 육수 배합",_show_broth_workshop.bind("blend"))
+		_compact_detail(minf(650,270+180*maxi(1,review["recipes"].size())))
+		return
+	var hero:=HBoxContainer.new()
+	hero.add_theme_constant_override("separation",14)
+	var pot:=WorkView.new()
+	pot.name="BrothPot"
+	pot.custom_minimum_size=Vector2(100,112)
+	pot.mouse_filter=Control.MOUSE_FILTER_IGNORE
+	hero.add_child(pot)
+	var description:=VBoxContainer.new()
+	description.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+	hero.add_child(description)
+	var item: Dictionary=review["product"]
+	description.add_child(_label("원재료 배합" if item.is_empty() else item["name"],22))
+	description.add_child(_label("주재료에 향채를 더해 나만의 육수를 만들어요." if item.is_empty() else item["desc"],15,MUTED))
+	if not item.is_empty():
+		var extraction: Dictionary=ProcessRules.method("broth",review["blend"]["method"])
+		var richness: int=clampi(int(item["axes"]["rich"])+int(extraction["axes"]["rich"]),0,10)
+		var aroma: int=clampi(int(item["axes"]["aroma"])+int(extraction["axes"]["aroma"]),0,10)
+		description.add_child(_label("육수 예상 · 진함 %d / 향 %d" % [richness,aroma],15,TEAL))
+		if item["combo"]!="": description.add_child(_label(item["combo"],14,TEAL))
+	body.add_child(hero)
+	var progress:=ProgressBar.new()
+	progress.name="BrothProgress"
+	progress.custom_minimum_size.y=22
+	progress.visible=active
+	body.add_child(progress)
+	var phase:=_label("",17,TEAL)
+	phase.name="BrothPhase"
+	phase.visible=active
+	body.add_child(phase)
+	if active:
+		body.add_child(_label("선택한 원재료의 맛과 향을 우려내고 있어요.",16,MUTED))
+		_modal_footer("완료할 때 개발비 %s · 취소하면 비용 없이 배합으로 돌아가요." % won(review["cost"]),"우림 취소",func(): _emit("broth_cancel"))
+		_compact_detail(440)
+		update_broth_progress()
+		return
+	var ids: Array=review["blend"]["ingredients"]
+	body.add_child(_label("배합 %d / %d칸 · 랭크가 오르면 한 칸씩 추가" % [ids.size(),review["capacity"]],16))
+	var portions:=GridContainer.new()
+	portions.columns=2
+	portions.add_theme_constant_override("h_separation",6)
+	portions.add_theme_constant_override("v_separation",6)
+	body.add_child(portions)
+	for index in int(review["capacity"]):
+		var filled: bool=index<ids.size()
+		var button:=_button(str(Broth.material(ids[index])["name"])+"  −" if filled else "빈 배합 칸","BrothPortion_"+str(index))
+		button.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+		button.disabled=active or not filled
+		button.tooltip_text="이 원재료 한 분량 빼기" if filled else "아래 원재료 목록에서 추가"
+		if filled:
+			button.icon=PantryArt.texture(ids[index])
+			button.expand_icon=true
+			button.add_theme_color_override("icon_normal_color",Color.WHITE)
+			button.add_theme_color_override("icon_hover_color",Color.WHITE)
+			button.pressed.connect(func(): _emit("broth_remove",{"index":index}))
+		portions.add_child(button)
+	var filters:=HBoxContainer.new()
+	filters.add_theme_constant_override("separation",4)
+	body.add_child(filters)
+	for category_name in ["전체","뼈","해산물","향채"]:
+		var filter:=_button(category_name,"BrothCategory_"+category_name)
+		filter.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+		filter.toggle_mode=true
+		filter.set_pressed_no_signal(category_name==_broth_category)
+		filter.disabled=active
+		filter.pressed.connect(func(): _broth_category=category_name; _show_broth_workshop())
+		filters.add_child(filter)
+	for material in Broth.DATA:
+		if _broth_category!="전체" and material["category"]!=_broth_category: continue
+		var row:=HBoxContainer.new()
+		row.add_theme_constant_override("separation",10)
+		row.add_child(_picture(PantryArt.texture(material["id"]),Vector2(40,44)))
+		var content:=VBoxContainer.new()
+		content.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+		content.add_child(_label(material["name"],18))
+		var unlocked: bool=not material.has("source") or state.ingredient_unlocked(material["source"])
+		content.add_child(_label("%s · %d초" % [won(material["cost"]),material["seconds"]] if unlocked else material["source_name"],14,TEAL if unlocked else MUTED))
+		if material["id"]=="sardine" and unlocked: content.add_child(_label("연구 샘플 %d개" % state.sample_stock("broth_roasted_sardine"),14,MUTED))
+		row.add_child(content)
+		var add:=_button("","BrothAdd_"+material["id"],"add",GOLD)
+		add.tooltip_text=material["name"]+" 한 분량 추가"
+		add.disabled=active or not unlocked or ids.size()>=int(review["capacity"]) or (material["id"]=="sardine" and ids.has("sardine"))
+		add.pressed.connect(func(): _emit("broth_add",{"id":material["id"]}))
+		var detail:=_button("","BrothDetail_"+material["id"],"info")
+		detail.tooltip_text=material["name"]+" 성질과 구입처"
+		detail.disabled=active
+		detail.pressed.connect(_show_broth_material.bind(material))
+		row.add_child(detail)
+		row.add_child(add)
+		body.add_child(row)
+	body.add_child(_label("우림 방식",19))
+	for method_id in ProcessRules.ids("broth"):
+		var method: Dictionary=ProcessRules.method("broth",method_id)
+		var button:=_button(method["name"],"BrothMethod_"+method_id)
+		button.toggle_mode=true
+		button.set_pressed_no_signal(review["blend"]["method"]==method_id)
+		button.disabled=active or state.rank()<int(method["rank"])
+		button.pressed.connect(func(): _emit("broth_method",{"method":method_id}))
+		body.add_child(button)
+		body.add_child(_label(method["desc"]+(" · 랭크%d부터" % method["rank"] if state.rank()<int(method["rank"]) else ""),14,MUTED))
+	var hint: String="완료할 때 개발비 %s · 우림 약 %.1f초" % [won(review["cost"]),review["duration"]]
+	if review["reason"]!="": hint=review["reason"]
+	if ids.has("sardine"): hint+="\n정어리 샘플은 라멘 시제품 완성 때 1개 사용해요."
+	_modal_footer(hint,"우림 취소" if active else "육수 우리기",func(): _emit("broth_cancel" if active else "broth_begin"),not active and (review["reason"]!="" or bool(_info["busy"])))
+	(body.get_parent() as ScrollContainer).set_deferred("scroll_vertical",int(_broth_scroll.get(scroll_key,0)))
+	update_broth_progress()
+
+
+func _show_broth_material(material: Dictionary) -> void:
+	var previous: ScrollContainer=_modal.find_child("DetailsScroll",true,false)
+	_broth_scroll[str(_modal.get_meta("scroll_key",""))]=previous.scroll_vertical
+	var body:=_modal_body(material["name"])
+	_modal.set_meta("raw_material",material["id"])
+	var back: Button=_modal.find_child("EditorDetailsBack",true,false)
+	back.pressed.disconnect(_close_modal)
+	back.pressed.connect(_show_broth_workshop)
+	body.add_child(_picture(PantryArt.texture(material["id"]),Vector2(96,96)))
+	body.add_child(_label("주재료 · 육수의 바탕이 돼요." if material["base"] else "향채 · 주재료에 맛과 향을 더해요.",18))
+	body.add_child(_label(Catalog.axes_text(material),17,TEAL))
+	body.add_child(_label("한 분량 %s · 준비 %d초" % [won(material["cost"]),material["seconds"]],17))
+	body.add_child(_label(material.get("source_name","가게 기본 공급처 · 개발 후 통상 원가로 공급"),16,MUTED))
+	if material["id"]=="sardine": body.add_child(_label("라멘 시제품이 완성될 때 연구 샘플을 1개 써요. 한 배합에는 한 분량까지 넣어요.",16))
+	_modal_footer("한 분량마다 배합 한 칸을 사용해요.","배합으로 돌아가기",_show_broth_workshop)
+
+
+func _show_raw_broth_source(id: String) -> void:
+	var material: Dictionary=Broth.material_for_broth(id)
+	if material.is_empty():
+		push_error("육수 원재료 연결이 없어요: "+id)
+		return
+	_broth_category=material["category"]
+	_show_broth_workshop()
+	_show_broth_material(material)
+
+
+func update_broth_progress() -> void:
+	if _modal==null or _modal.get_meta("view_kind","")!="broth": return
+	var review: Dictionary=state.broth_review()
+	var progress: ProgressBar=_modal.find_child("BrothProgress",true,false)
+	if progress==null: return
+	progress.value=float(review["progress"])*100.0
+	var phase: Label=_modal.find_child("BrothPhase",true,false)
+	phase.text=["재료 넣기","향을 우려내는 중","완성 육수 정리"][mini(2,int(float(review["progress"])*3.0))]+" · %d%%" % int(round(progress.value))
+	var pot: WorkView=_modal.find_child("BrothPot",true,false)
+	var cfg: Dictionary=state.draft_config.duplicate(true)
+	if not review["product"].is_empty(): cfg["broth"]=review["product"]["id"]
+	# Hold the existing pot illustration in its soup phase throughout brewing;
+	# the later noodle/plating phases belong to ramen, not raw broth production.
+	pot.set_state(float(review["progress"])*0.44,cfg)
 
 
 func _show_menu() -> void:
@@ -1355,6 +1587,9 @@ func _show_clues() -> void:
 
 
 func _primary_action() -> void:
+	if _mode==0 and not state.broth_ready():
+		_show_broth_workshop()
+		return
 	_close_modal()
 	_emit("serve" if _mode == 1 else "taste")
 

@@ -2,7 +2,7 @@ extends "res://tests/qa_capture.gd"
 ## Dedicated current-screen QA. Legacy hidden controls are never visual proof.
 ## Capture uses the real renderer; --layout-only omits images explicitly.
 const CategoryRules = preload("res://scripts/ui/topping_categories.gd")
-const GameProjection = preload("res://scripts/domain/game_state.gd")
+const GameProjection = preload("res://tests/legacy_game_fixture.gd")
 const DetailsEvaluation = preload("res://scripts/domain/recipe_evaluator.gd")
 
 
@@ -178,19 +178,19 @@ func _run_profile(tag: String, vp: Vector2i, _scale: int) -> void:
 	await _tap(holder, editor, "EditorRemove_0")
 	_check(JSON.stringify(state.call("to_dict")) == before, tag + ": minimum one portion is enforced by real controller")
 	await _tap(holder, editor, "EditorBroth")
-	var group_scroll: ScrollContainer = (editor.get("_modal") as Control).find_child("DetailsScroll", true, false) as ScrollContainer
-	var chicken: Control = (editor.get("_modal") as Control).find_child("EditorAdd_broth_chicken", true, false) as Control
-	group_scroll.ensure_control_visible(chicken)
+	# Broth now comes from the real raw-material flow. Keep the surrounding
+	# topping/price/tasting regressions, replacing only the retired premade UI.
+	await _tap(holder,editor,"BrothAdd_chicken_bone")
+	await _tap(holder,editor,"BrothAdd_onion")
+	await _tap(holder,editor,"EditorDetailApply")
+	var broth_deadline: int=Time.get_ticks_msec()+10000
+	while state.call("broth_active") and Time.get_ticks_msec()<broth_deadline: await process_frame
+	_check(not state.call("broth_active") and state.call("broth_review")["recipes"].size()==1,tag+": real raw chicken broth completes")
 	await _settle()
-	await _tap(holder, editor, "EditorAdd_broth_chicken")
-	_check(str((state.get("draft_config") as Dictionary)["broth"]) == "broth_chicken", tag + ": broth editor uses existing guarded choice")
-	var current_modal: Control = editor.get("_modal") as Control
-	_check((current_modal.find_child("EditorAdd_broth_chicken", true, false) as Button).button_pressed, tag + ": chosen broth marked inside open dialog")
-	_check(not (current_modal.find_child("EditorAdd_broth_tonkotsu", true, false) as Button).button_pressed, tag + ": old broth marker clears immediately")
-	await _tap(holder, editor, "EditorAdd_broth_chicken")
-	_check((current_modal.find_child("EditorAdd_broth_chicken", true, false) as Button).button_pressed, tag + ": repeated selection cannot visually deselect actual broth")
-	await _shot(holder, tag + "_editor_06_broth_edit.png")
-	await _tap(holder, editor, "EditorDetailsBack")
+	await _shot(holder,tag+"_editor_06_broth_edit.png")
+	await _tap(holder,editor,"BrothUse_0")
+	_check(str((state.get("draft_config") as Dictionary)["broth"])=="broth_chicken",tag+": explicitly selected raw broth is used")
+	_check((state.get("draft_config") as Dictionary).has("broth_recipe"),tag+": current broth retains actual raw provenance")
 	# Freeze frame-time advancement only in QA so each genuine cooking state can
 	# be photographed deterministically; production uses the unchanged time loop.
 	app.set_process(false)

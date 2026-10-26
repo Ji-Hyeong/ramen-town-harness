@@ -1,7 +1,7 @@
 extends RefCounted
 ## Acceptance uses earned public state and actual runtime orders. No XP, rank,
 ## wallet or challenge success is injected to manufacture an achievable target.
-const State = preload("res://scripts/domain/game_state.gd")
+const State = preload("res://tests/legacy_game_fixture.gd")
 const Chef = preload("res://scripts/domain/chef_challenge.gd")
 const Staff = preload("res://scripts/domain/shop_staffing.gd")
 const Catalog = preload("res://scripts/domain/ingredient_catalog.gd")
@@ -102,7 +102,7 @@ func run(callback: Callable, data_dir: String) -> void:
 		elif version<=12: keys=State.TOP_KEYS_V11
 		for key in raw.keys():
 			if not keys.has(key): raw.erase(key)
-		raw["schema_version"]=version
+		raw["schema_version"]=version; raw.erase("broth_workshop")
 		if version<=2:
 			raw["draft"]["config"]["topping"]=raw["draft"]["config"]["toppings"][0]
 			raw["draft"]["config"].erase("toppings")
@@ -119,7 +119,7 @@ func run(callback: Callable, data_dir: String) -> void:
 			"bad_wait": bad["chef_challenge"]["attempt"]["wait_total"]=-1
 			"bad_record": bad["chef_challenge"]["attempt"]["record_id"]=bad["next_record_id"]
 			"unearned": bad["chef_challenge"]["attempt"]["units"]=0; bad["chef_challenge"]["attempt"]["wait_total"]=0; bad["chef_challenge"]["attempt"]["star_sum"]=0
-			"old_root": bad["schema_version"]=13
+			"old_root": bad["schema_version"]=13; bad.erase("broth_workshop")
 			"boolean": bad["chef_challenge"]["completed_day"]=true
 		before=json(restored)
 		check.call(restored.load_from_dict(bad)!="" and json(restored)==before,"malformed chef load atomic: "+kind)
@@ -147,7 +147,7 @@ func run(callback: Callable, data_dir: String) -> void:
 	var fake_old: Dictionary=grown.to_dict()
 	fake_old.erase("chef_challenge")
 	fake_old.erase("mountain_foraging")
-	fake_old["schema_version"]=13
+	fake_old["schema_version"]=13; fake_old.erase("broth_workshop")
 	check.call(historical.load_from_dict(fake_old)!="","old schema rejects nested mastery snapshot")
 
 	var preview: Dictionary=grown.hiring_preview("prep_assistant")
@@ -168,7 +168,7 @@ func run(callback: Callable, data_dir: String) -> void:
 	var raw13: Dictionary=multi.to_dict()
 	raw13.erase("chef_challenge")
 	raw13.erase("mountain_foraging")
-	raw13["schema_version"]=13
+	raw13["schema_version"]=13; raw13.erase("broth_workshop")
 	var old_text: String=JSON.stringify(raw13,"\t",true)
 	var old_store=Save.new(old_dir)
 	var old_file:=FileAccess.open(old_store.main_path(),FileAccess.WRITE)
@@ -181,7 +181,7 @@ func run(callback: Callable, data_dir: String) -> void:
 	var projected: Dictionary=migrated.to_dict()
 	projected.erase("chef_challenge")
 	projected.erase("mountain_foraging")
-	projected["schema_version"]=13
+	projected["schema_version"]=13; projected.erase("broth_workshop")
 	check.call(JSON.stringify(projected,"",true)==JSON.stringify(raw13,"",true),"all v13 progression/report/records/wallet remain exact")
 	check.call(old_store.save_state(migrated)["ok"] and FileAccess.get_file_as_string(old_store.legacy_bak_path(13))==old_text,"first schema14 save preserves exact v13 original")
 	finished=true
