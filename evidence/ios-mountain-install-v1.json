@@ -1,0 +1,40 @@
+{
+  "installed": true,
+  "launched": true,
+  "running_process_observed": true,
+  "version": "0.15",
+  "build": "15.0.1",
+  "prior_matching_app_present": false,
+  "uninstalled": false,
+  "save_backup": "not applicable: matching installed app absent",
+  "launch_exit": 0,
+  "install_exit": 0,
+  "trust_confirmed_by_human": true,
+  "profile_expiry_utc": "2026-10-27T14:45:57Z",
+  "source_count": 325,
+  "base_commit": "59c084579841ba9c6d72cfe89073916f913b11e9",
+  "template_version": "4.7.2.stable",
+  "xcode": "26.6",
+  "signed_build_exit": 0,
+  "build_seconds": 16.2,
+  "signature_exit": 0,
+  "durable_signature_exit": 0,
+  "copied_app_files_identical": 14,
+  "source_preserved": true,
+  "staged_settings_changed": [
+    "project.godot"
+  ],
+  "exported_pack_startup": "pass; no engine/script errors",
+  "profile_device_team_bundle_valid": true,
+  "same_bundle_identity": true,
+  "global_developer_selection_unchanged": true,
+  "first_launch_security_rejected": true,
+  "launch_after_user_trust": "success and running process observed",
+  "device": "iPhone15Pro/iOS26.6.2",
+  "claude_invocation": false,
+  "limits": [
+    "No physical gameplay/input/audio/IME/lifecycle acceptance inferred",
+    "No before/after save preservation claim: matching app absent before installation"
+  ],
+  "private_artifacts": "Application Support/Codex/ramen-ios/mountain-20261026-v1"
+}
