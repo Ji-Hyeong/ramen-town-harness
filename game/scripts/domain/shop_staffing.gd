@@ -53,7 +53,7 @@ static func find(id: String) -> Dictionary:
 
 ## 고용 목록(고용 순서)에서 영업 스냅샷을 만든다. 순서와 무관하게 카탈로그 순서로 정렬해 같은 구성은 같은 스냅샷이 된다.
 ## 알 수 없는 id는 무시하지 않고 호출자(GameState)가 이미 검증한 목록만 받는다.
-static func snapshot(hired: Array, training: Dictionary = {}) -> Dictionary:
+static func snapshot(hired: Array, training: Dictionary = {}, chef_level: int = 0) -> Dictionary:
 	var ordered: Array = []
 	var wage: int = 0
 	var prep_pct: int = 100
@@ -81,6 +81,8 @@ static func snapshot(hired: Array, training: Dictionary = {}) -> Dictionary:
 	# 훈련 전에는 예전 스냅샷의 키/값을 그대로 유지한다. 자격이 있을 때만 효과의 근거를 추가한다.
 	if not qualifications.is_empty():
 		out["training"] = qualifications
+	if chef_level == 1:
+		out["chef"] = 1
 	return out
 
 
@@ -123,7 +125,9 @@ static func snapshot_error(staffing: Dictionary) -> String:
 	for k in ["prep_percent", "serve_percent", "wage"]:
 		if not Check.in_range(staffing[k], 0, 1000000):
 			return "직원 효과는 유효한 정수여야 해요."
-	var expected: Dictionary = snapshot(staffing["hired"] as Array, entries)
+	if staffing.has("chef") and not Check.in_range(staffing["chef"],1,1):
+		return "요리사 자격이 올바르지 않아요."
+	var expected: Dictionary = snapshot(staffing["hired"] as Array, entries, int(staffing.get("chef",0)))
 	if JSON.stringify(expected, "", true) != JSON.stringify(staffing, "", true):
 		return "직원 구성 값이 직원 목록과 맞지 않아요."
 	return ""
@@ -134,7 +138,7 @@ static func _keys(d: Dictionary) -> String:
 		if not d.has(k):
 			return "직원 구성: 항목 누락 (%s)" % str(k)
 	for k in d.keys():
-		if not SNAPSHOT_KEYS.has(k) and k != "training":
+		if not SNAPSHOT_KEYS.has(k) and k not in ["training","chef"]:
 			return "직원 구성: 알 수 없는 항목 (%s)" % str(k)
 	return ""
 
@@ -148,7 +152,10 @@ static func _pct(staffing: Dictionary, key: String) -> int:
 ## 영업 중 한 그릇 조리 시간(초). 보조가 없으면(퍼센트 100) 기준 시간과 정확히 같다.
 static func effective_prep(base_prep: int, staffing: Dictionary) -> int:
 	var pct: int = _pct(staffing, "prep_percent")
-	return maxi(1, (base_prep * pct + 99) / 100)
+	var after_assistant: int = maxi(1, (base_prep * pct + 99) / 100)
+	# Mastery is applied after the assistant's independently rounded effect.
+	# Snapshots without mastery retain every historical timing/economic value.
+	return maxi(1, (after_assistant * 95 + 99) / 100) if int(staffing.get("chef",0)) == 1 else after_assistant
 
 
 ## 서버가 음식을 들고 자리까지 가는 시간(초).
