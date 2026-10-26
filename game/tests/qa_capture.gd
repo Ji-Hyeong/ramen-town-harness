@@ -291,6 +291,16 @@ func _check_status_text(app: Node, tag: String) -> void:
 	var nav: Control = _find(app, "NavBar") as Control
 	if strip == null or nav == null:
 		return
+	# The home workbench intentionally moves the full operating text into a
+	# reachable detail page. Check its real visible summary here; do not treat
+	# hidden detail labels or the old stacked desktop geometry as visual proof.
+	if _find(app, "ShopHome") != null:
+		for name in ["ClockLabel", "HomeMenuName", "HomeMenuNote"]:
+			var current: Label = _find(app, name) as Label
+			_check(current != null and current.is_visible_in_tree(), tag + ": actual home summary visible: " + name)
+			if current != null:
+				_check(strip.get_global_rect().grow(-5).encloses(current.get_global_rect()) and _text_height_fits(current), tag + ": actual summary text within padded frame: " + name)
+		return
 	var sr: Rect2 = strip.get_global_rect()
 	_check(sr.end.y <= nav.get_global_rect().position.y + 0.5, "%s: 상태 띠가 하단 바와 겹쳐요 %s vs %s" % [tag, str(sr), str(nav.get_global_rect())])
 	for name in ["ServiceStatusLabel", "ServiceNoteLabel"]:
