@@ -20,6 +20,7 @@ const MockArt = preload("res://scripts/ui/mock_fidelity_art.gd")
 const TrialPreview = preload("res://scripts/ui/ingredient_trial_preview.gd")
 const Noodle=preload("res://scripts/domain/noodle_workshop.gd")
 const NoodleView=preload("res://scripts/ui/noodle_work_view.gd")
+const Comparison=preload("res://scripts/domain/component_comparison.gd")
 const Broth = preload("res://scripts/domain/broth_workshop.gd")
 const PantryArt = preload("res://scripts/ui/broth_material_art.gd")
 const WorkView = preload("res://scripts/ui/tasting_work_view.gd")
@@ -82,6 +83,7 @@ var _group_tab: Dictionary = {}
 var _broth_category: String="전체"
 var _broth_page: String="blend"
 var _broth_scroll: Dictionary={}
+var _component_pages: Dictionary={"broth":0,"noodle":0}
 
 
 func _ready() -> void:
@@ -1213,30 +1215,7 @@ func _show_noodle_workshop(page: String="formula") -> void:
 		tabs.add_child(button)
 	if str(_info.get("warning",""))!="": body.add_child(_label(str(_info["warning"]),15,RED))
 	if page=="library" and not active:
-		body.add_child(_label("직접 반죽해 뽑은 면",22))
-		if review["recipes"].is_empty(): body.add_child(_label("아직 완성한 면이 없어요. 밀가루와 배합수를 골라 첫 면을 만들어 보세요.",17,MUTED))
-		for index in review["recipes"].size():
-			var recipe: Dictionary=review["recipes"][index]["recipe"]
-			var product: Dictionary=Noodle.product(recipe)
-			var process: Dictionary=ProcessRules.method("noodle",recipe["method"])
-			var panel:=PanelContainer.new()
-			panel.mouse_filter=Control.MOUSE_FILTER_PASS
-			panel.add_theme_stylebox_override("panel",_style(WHITE,TEAL))
-			var card:=VBoxContainer.new()
-			card.mouse_filter=Control.MOUSE_FILTER_PASS
-			card.add_theme_constant_override("separation",10)
-			panel.add_child(card)
-			card.add_child(_picture(_ingredient_texture(product["id"]),Vector2(72,48)))
-			card.add_child(_label(product["name"],21))
-			card.add_child(_label(product["desc"],16,MUTED))
-			card.add_child(_label("한 그릇 %s · 삶기 %d초" % [won(int(product["cost"])+int(process["cost"])),int(product["seconds"])+int(process["seconds"])],16,TEAL))
-			var use:=_button("이 면으로 라멘 만들기","NoodleUse_"+str(index),"check",GOLD)
-			use.disabled=bool(_info["busy"])
-			use.pressed.connect(func(): _emit("noodle_use",{"index":index}); _close_modal())
-			card.add_child(use)
-			body.add_child(panel)
-		_modal_footer("새로운 가루·배합수·굵기·숙성을 조합해 보세요.","다른 면 개발",_show_noodle_workshop)
-		_compact_detail(minf(650,290+220*maxi(1,review["recipes"].size())))
+		_render_component_library("noodle",review,body)
 		return
 	if page in Noodle.FIELDS and not active:
 		back.pressed.disconnect(_close_modal)
@@ -1358,27 +1337,7 @@ func _show_broth_workshop(page: String="blend") -> void:
 		else: button.pressed.connect(_show_broth_workshop.bind(definition[0]))
 		tabs.add_child(button)
 	if page=="library" and not active:
-		body.add_child(_label("직접 우려낸 육수",22))
-		if review["recipes"].is_empty(): body.add_child(_label("아직 완성한 육수가 없어요. 배합에서 주재료를 골라 첫 육수를 만들어 보세요.",17,MUTED))
-		for index in review["recipes"].size():
-			var recipe: Dictionary=review["recipes"][index]["recipe"]
-			var item: Dictionary=Broth.product(recipe)
-			var panel:=PanelContainer.new()
-			panel.add_theme_stylebox_override("panel",_style(WHITE,TEAL))
-			var card:=VBoxContainer.new()
-			card.add_theme_constant_override("separation",10)
-			panel.add_child(card)
-			card.add_child(_label(item["name"],21))
-			card.add_child(_label(item["desc"],16,MUTED))
-			var method: Dictionary=ProcessRules.method("broth",recipe["method"])
-			card.add_child(_label("한 그릇 %s · 준비 %d초" % [won(int(item["cost"])+int(method["cost"])),int(item["seconds"])+int(method["seconds"])],16,TEAL))
-			var use:=_button("이 육수로 라멘 만들기","BrothUse_"+str(index),"check",GOLD)
-			use.disabled=bool(_info["busy"])
-			use.pressed.connect(func(): _emit("broth_use",{"index":index}); _close_modal())
-			card.add_child(use)
-			body.add_child(panel)
-		_modal_footer("배합을 바꿔 다른 맛의 육수도 개발할 수 있어요.","새 육수 배합",_show_broth_workshop.bind("blend"))
-		_compact_detail(minf(650,270+180*maxi(1,review["recipes"].size())))
+		_render_component_library("broth",review,body)
 		return
 	var hero:=HBoxContainer.new()
 	hero.add_theme_constant_override("separation",14)
@@ -1810,3 +1769,223 @@ func _arrange_stage() -> void:
 	_pointer_left.size = Vector2(40,58)
 	_pointer_right.position = Vector2(dimensions.x*0.67,82)
 	_pointer_right.size = Vector2(40,58)
+
+
+## UI-only paging preserves immutable archive indices; newest results stay first.
+## Both workshops use the same read-only comparison and explicit transaction UI.
+func _render_component_library(kind: String, review: Dictionary, body: VBoxContainer) -> void:
+	var title: String="육수" if kind=="broth" else "면"
+	var count: int=review["recipes"].size()
+	var pages: int=maxi(1,ceili(float(count)/6.0))
+	var page: int=clampi(int(_component_pages[kind]),0,pages-1)
+	_component_pages[kind]=page
+	body.add_child(_label("직접 개발한 "+title,22))
+	var pager:=HBoxContainer.new()
+	pager.name="ComponentPager"
+	pager.add_theme_constant_override("separation",8)
+	var column: VBoxContainer=_modal.find_child("DetailsColumn",true,false)
+	column.add_child(pager)
+	column.move_child(pager,2)
+	var previous:=_button("","ComponentPrevious","arrow_back")
+	previous.tooltip_text="앞쪽 개발 목록"
+	previous.disabled=page==0
+	previous.pressed.connect(_change_component_page.bind(kind,-1))
+	pager.add_child(previous)
+	var page_label:=_label("%d / %d · 전체 %d개" % [page+1,pages,count],16,TEAL)
+	page_label.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
+	page_label.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+	pager.add_child(page_label)
+	var next:=_button("","ComponentNext","chevron_right")
+	next.tooltip_text="다음 개발 목록"
+	next.disabled=page>=pages-1
+	next.pressed.connect(_change_component_page.bind(kind,1))
+	pager.add_child(next)
+	if count==0: body.add_child(_label("아직 개발 기록이 없어요. 배합에서 처음 만들어 보세요.",17,MUTED))
+	var first: int=count-1-page*6
+	for index in range(first,maxi(-1,first-6),-1):
+		var result: Dictionary=state.component_comparison(kind,index)
+		if not result["ok"]:
+			body.add_child(_label(result["message"],16,RED))
+			continue
+		var item: Dictionary=result["selected_component"]
+		var panel:=PanelContainer.new()
+		panel.mouse_filter=Control.MOUSE_FILTER_PASS
+		panel.add_theme_stylebox_override("panel",_style(WHITE,TEAL if result["applied"] else MUTED))
+		var card:=VBoxContainer.new()
+		card.mouse_filter=Control.MOUSE_FILTER_PASS
+		card.add_theme_constant_override("separation",10)
+		panel.add_child(card)
+		var hero:=HBoxContainer.new()
+		hero.mouse_filter=Control.MOUSE_FILTER_PASS
+		hero.add_theme_constant_override("separation",10)
+		var id: String=Broth.base_id(result["recipe"]) if kind=="broth" else Noodle.base_id(result["recipe"])
+		hero.add_child(_picture(_ingredient_texture(id),Vector2(52,48)))
+		var names:=VBoxContainer.new()
+		names.mouse_filter=Control.MOUSE_FILTER_PASS
+		names.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+		names.add_child(_label(item["name"],20))
+		names.add_child(_label("그릇에 사용 중" if result["applied"] else "%d번째 개발 · %d일차" % [index+1,review["recipes"][index]["day"]],14,TEAL))
+		hero.add_child(names)
+		card.add_child(hero)
+		var detail:=_label(item["desc"],15,MUTED)
+		detail.max_lines_visible=2
+		detail.text_overrun_behavior=TextServer.OVERRUN_TRIM_ELLIPSIS
+		detail.tooltip_text=item["desc"]
+		card.add_child(detail)
+		card.add_child(_label("한 그릇 %s · 준비 %d초" % [won(item["cost"]),item["seconds"]],16,TEAL))
+		var compare:=_button("비교·개량 보기","ComponentCompare_"+kind+"_"+str(index),"chevron_right")
+		compare.pressed.connect(_show_component_comparison.bind(kind,index))
+		card.add_child(compare)
+		var use:=_button("이 %s로 라멘 만들기" % title,("BrothUse_" if kind=="broth" else "NoodleUse_")+str(index),"check",GOLD)
+		use.disabled=bool(_info["busy"])
+		use.pressed.connect(func(): _emit(kind+"_use",{"index":index}); _close_modal())
+		card.add_child(use)
+		body.add_child(panel)
+	_modal_footer("위 목록은 최근 개발 순이에요. 비교해도 그릇·돈·재료가 바뀌지 않아요.","새 %s 배합" % title,_show_component_workshop.bind(kind))
+	_compact_detail(minf(700,330+230*mini(2,maxi(1,count))))
+
+
+func _change_component_page(kind: String, delta: int) -> void:
+	_component_pages[kind]=int(_component_pages[kind])+delta
+	_return_component_library(kind)
+
+
+func _return_component_library(kind: String, newest: bool=false) -> void:
+	# Completing a new experiment must reveal its new card even when the player
+	# started from an older archive page. Back navigation preserves the page.
+	if newest: _component_pages[kind]=0
+	if kind=="broth": _show_broth_workshop("library")
+	else: _show_noodle_workshop("library")
+
+
+func _show_component_workshop(kind: String) -> void:
+	if kind=="broth": _show_broth_workshop()
+	else: _show_noodle_workshop()
+
+
+func _component_panel(parent: Control) -> VBoxContainer:
+	var panel:=PanelContainer.new()
+	panel.mouse_filter=Control.MOUSE_FILTER_PASS
+	panel.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+	panel.add_theme_stylebox_override("panel",_style(WHITE,TEAL))
+	var column:=VBoxContainer.new()
+	column.mouse_filter=Control.MOUSE_FILTER_PASS
+	column.add_theme_constant_override("separation",10)
+	panel.add_child(column)
+	parent.add_child(panel)
+	return column
+
+
+func _comparison_number(parent: Control, caption: String, before: int, after: int, unit: String="") -> void:
+	var row:=HBoxContainer.new()
+	row.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+	row.mouse_filter=Control.MOUSE_FILTER_PASS
+	row.add_theme_constant_override("separation",8)
+	parent.add_child(row)
+	var label:=_label(caption,16)
+	label.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+	row.add_child(label)
+	var values:=_label("%d → %d%s (%+d)" % [before,after,unit,after-before],16,TEAL)
+	values.name="ComponentValue_"+caption.replace(" ","_")
+	values.autowrap_mode=TextServer.AUTOWRAP_OFF
+	values.size_flags_horizontal=Control.SIZE_SHRINK_END
+	values.horizontal_alignment=HORIZONTAL_ALIGNMENT_RIGHT
+	row.add_child(values)
+
+
+## Separate component facts from whole-ramen forecasts. A new player's missing
+## component never becomes an invented "before" dish or a scored tasting record.
+func _show_component_comparison(kind: String, index: int, whole: bool=false) -> void:
+	var result: Dictionary=state.component_comparison(kind,index)
+	var title: String="육수" if kind=="broth" else "면"
+	var body:=_modal_body("한 그릇의 변화" if whole else title+" 비교·개량")
+	_modal.set_meta("view_kind","component_comparison")
+	_modal.set_meta("component_kind",kind)
+	_modal.set_meta("component_index",index)
+	var back: Button=_modal.find_child("EditorDetailsBack",true,false)
+	back.pressed.disconnect(_close_modal)
+	if whole: back.pressed.connect(_show_component_comparison.bind(kind,index,false))
+	else: back.pressed.connect(_return_component_library.bind(kind))
+	if not result["ok"]:
+		body.add_child(_label(result["message"],18,RED))
+		_modal_footer("현재 상태는 바꾸지 않았어요.","완성 목록으로",_return_component_library.bind(kind))
+		return
+	var current: Dictionary=result["current_component"]
+	var selected: Dictionary=result["selected_component"]
+	if str(_info.get("warning",""))!="": body.add_child(_label(str(_info["warning"]),15,RED))
+	var intro: String="지금 쓰는 %s와 비교해요. 바꾸기 전 맛과 준비의 차이를 살펴보세요." % title
+	if current.is_empty(): intro="첫 %s를 개발했어요. 그릇에 담기 전 성질을 살펴보세요." % title
+	elif result["applied"]: intro="지금 쓰는 %s예요. 배합을 불러와 다른 방식으로 개량할 수 있어요." % title
+	var introduction:=_label(intro,16,MUTED)
+	introduction.name="ComponentIntro"
+	body.add_child(introduction)
+	if not whole:
+		var cards:=GridContainer.new()
+		cards.columns=2 if size.x>=720 else 1
+		cards.add_theme_constant_override("h_separation",12)
+		cards.add_theme_constant_override("v_separation",10)
+		body.add_child(cards)
+		for side in ["현재 사용", "고른 "+title]:
+			var card:=_component_panel(cards)
+			var item: Dictionary=current if side=="현재 사용" else selected
+			card.add_child(_label(side,15,TEAL))
+			if item.is_empty():
+				card.add_child(_label("아직 완성품을 담지 않았어요.",18,MUTED))
+				continue
+			card.add_child(_label(item["name"],20))
+			card.add_child(_label(item["desc"],16,MUTED))
+			card.add_child(_label("%s · 준비 %d초" % [won(item["cost"]),item["seconds"]],16,TEAL))
+		if not current.is_empty():
+			var changes:=_component_panel(body)
+			changes.add_child(_label(title+"의 변화",19))
+			_comparison_number(changes,"원가",current["cost"],selected["cost"],"원")
+			_comparison_number(changes,"준비",current["seconds"],selected["seconds"],"초")
+			for axis in Catalog.AXES:
+				if current["axes"][axis]!=0 or selected["axes"][axis]!=0:
+					_comparison_number(changes,Catalog.AXIS_NAMES[axis],current["axes"][axis],selected["axes"][axis])
+		var forecast:=_button("이 라멘에 바꾸면?","ComponentWholeRamen","ramen_dining")
+		forecast.disabled=result["current_ramen"].is_empty()
+		forecast.pressed.connect(_show_component_comparison.bind(kind,index,true))
+		body.add_child(forecast)
+		if result["current_ramen"].is_empty(): body.add_child(_label(result["message"],15,MUTED))
+	else:
+		var before: Dictionary=result["current_ramen"]
+		var after: Dictionary=result["candidate_ramen"]
+		if before.is_empty() or after.is_empty():
+			body.add_child(_label(result["message"],17,MUTED))
+		else:
+			var dishes:=HBoxContainer.new()
+			dishes.name="ComponentDishes"
+			dishes.mouse_filter=Control.MOUSE_FILTER_PASS
+			body.add_child(dishes)
+			for config in [state.draft_config,Comparison.apply_recipe(state.draft_config,kind,result["recipe"])]:
+				var column:=VBoxContainer.new()
+				column.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+				column.mouse_filter=Control.MOUSE_FILTER_PASS
+				var dish:=Dish.new()
+				dish.custom_minimum_size=Vector2(0,120)
+				dish.mouse_filter=Control.MOUSE_FILTER_IGNORE
+				dish.set_config(config)
+				column.add_child(dish)
+				column.add_child(_label("현재 그릇" if dishes.get_child_count()==0 else "교체 예상",16,TEAL))
+				dishes.add_child(column)
+			var facts:=_component_panel(body)
+			_comparison_number(facts,"한 그릇 원가",before["unit_cost"],after["unit_cost"],"원")
+			_comparison_number(facts,"기본 준비",before["prep_seconds"],after["prep_seconds"],"초")
+			for axis in Catalog.AXES: _comparison_number(facts,Catalog.AXIS_NAMES[axis],before["profile"][axis],after["profile"][axis])
+			var ratings:=_component_panel(body)
+			ratings.add_child(_label("단골 시식 예상",19))
+			for i in before["customers"].size():
+				var customer: Dictionary=before["customers"][i]
+				var row:=HBoxContainer.new()
+				row.mouse_filter=Control.MOUSE_FILTER_PASS
+				ratings.add_child(row)
+				row.add_child(_picture(PixelArt.scaled_tex(PixelArt.portrait_image(customer["id"]),2),Vector2(32,32)))
+				_comparison_number(row,customer["name"],customer["score"],after["customers"][i]["score"],"점")
+			body.add_child(_label("같은 판매가·토핑·익힘에서 이 %s만 바꾼 예상이에요. 실제 시식 기록과 영업 결과는 별도예요." % title,15,MUTED))
+	var reload:=_button("배합 불러와 개량하기","ComponentReload","settings")
+	reload.disabled=bool(_info["busy"])
+	reload.pressed.connect(func(): _emit("component_reload",{"kind":kind,"index":index}))
+	body.add_child(reload)
+	body.add_child(_label("개발실에서 작성 중인 배합을 이 배합으로 바꿔요. 지금 그릇과 완성 기록은 그대로예요.",15,MUTED))
+	_modal_footer("선택만으로 비용·샘플을 쓰지 않아요. 새 시제품은 시식할 때 비용이 들어요.","이미 사용하는 "+title if result["applied"] else "이 %s를 그릇에 담기" % title,func(): _emit(kind+"_use",{"index":index}); _close_modal(),bool(_info["busy"]) or bool(result["applied"]))
