@@ -21,6 +21,7 @@ const TrialPreview = preload("res://scripts/ui/ingredient_trial_preview.gd")
 const Noodle=preload("res://scripts/domain/noodle_workshop.gd")
 const NoodleView=preload("res://scripts/ui/noodle_work_view.gd")
 const Comparison=preload("res://scripts/domain/component_comparison.gd")
+const Disclosure=preload("res://scripts/ui/disclosure_card.gd")
 const Broth = preload("res://scripts/domain/broth_workshop.gd")
 const PantryArt = preload("res://scripts/ui/broth_material_art.gd")
 const WorkView = preload("res://scripts/ui/tasting_work_view.gd")
@@ -65,6 +66,7 @@ var _pointer_right: TextureRect
 var _picker: VBoxContainer
 var _heading: Label
 var _heading_hint: Label
+var _compatibility: Button
 var _filters: HBoxContainer
 var _scroll: ScrollContainer
 var _rows: VBoxContainer
@@ -192,6 +194,115 @@ func _clear(node: Node) -> void:
 	for child in node.get_children():
 		node.remove_child(child)
 		child.queue_free()
+
+
+## Reuse the established disclosure behavior, with the selected native skin.
+## Opening a detail never confirms a recipe or writes player state.
+func _details(parent: Control, title: String, id: String) -> VBoxContainer:
+	var card:=Disclosure.new()
+	card.name=id
+	parent.add_child(card)
+	card.configure(title,"",Art.icon("info"))
+	card.icon_rect.modulate=INK
+	card.set_accent(TEAL)
+	card.chevron.visible=false
+	var arrow:=_picture(Art.icon("chevron_right"),Vector2(24,24))
+	arrow.modulate=INK
+	card.title_label.get_parent().get_parent().add_child(arrow)
+	var skin:=func(_expanded: bool=false):
+		card.header_button.add_theme_stylebox_override("normal",MockArt.style("summary",Vector2(12,8)))
+		card.header_button.add_theme_stylebox_override("pressed",MockArt.style("teal",Vector2(12,8)))
+		card.header_button.add_theme_stylebox_override("hover",MockArt.style("summary",Vector2(12,8)))
+		card.title_label.add_theme_color_override("font_color",INK)
+		card.title_label.add_theme_font_override("font",DisplayFont)
+		card.summary_label.add_theme_font_override("font",BodyFont)
+		arrow.rotation=PI*0.5 if card.expanded else 0.0
+		arrow.pivot_offset=Vector2(12,12)
+	card.toggled.connect(skin)
+	card.header_button.button_down.connect(func():
+		card.title_label.add_theme_color_override("font_color",Color.WHITE)
+		card.icon_rect.modulate=Color.WHITE
+		arrow.modulate=Color.WHITE)
+	card.header_button.button_up.connect(func():
+		card.title_label.add_theme_color_override("font_color",INK)
+		card.icon_rect.modulate=INK
+		arrow.modulate=INK)
+	skin.call()
+	return card.body
+
+
+## Small labeled facts replace repeated explanatory sentences. The labels remain
+## real UI text; food and icon assets keep the selected original art direction.
+func _facts(parent: Control, values: Array) -> void:
+	var grid:=GridContainer.new()
+	grid.name="RecipeFacts"
+	grid.columns=mini(values.size(),3)
+	grid.add_theme_constant_override("h_separation",8)
+	grid.add_theme_constant_override("v_separation",8)
+	grid.mouse_filter=Control.MOUSE_FILTER_PASS
+	parent.add_child(grid)
+	for fact in values:
+		var panel:=PanelContainer.new()
+		panel.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+		panel.mouse_filter=Control.MOUSE_FILTER_PASS
+		var style:=_style(Color("f1e7ce"),Color("d5c6ab"))
+		style.set_border_width_all(1)
+		style.content_margin_left=10
+		style.content_margin_right=10
+		panel.add_theme_stylebox_override("panel",style)
+		grid.add_child(panel)
+		var column:=VBoxContainer.new()
+		column.mouse_filter=Control.MOUSE_FILTER_PASS
+		column.add_theme_constant_override("separation",4)
+		panel.add_child(column)
+		column.add_child(_label(str(fact[0]),13,MUTED))
+		column.add_child(_label(str(fact[1]),18,TEAL))
+
+
+## Unknown means no signs, rule counts or notes. Only the guarded domain ledger
+## may decide whether this exact formula was actually put into the bowl before.
+func _knowledge_rows(parent: Control, config: Dictionary, id: String, folded: bool=true) -> void:
+	var knowledge: Dictionary=state.recipe_knowledge(config)
+	var holder:=VBoxContainer.new()
+	holder.name=id
+	holder.set_meta("known",knowledge["known"])
+	holder.mouse_filter=Control.MOUSE_FILTER_PASS
+	parent.add_child(holder)
+	if not knowledge["known"]:
+		holder.add_child(_label("궁합 미확인",18,MUTED))
+		holder.add_child(_label("그릇에 담아 확인",14,MUTED))
+		return
+	var positive: int=0
+	var negative: int=0
+	for rule in knowledge["compat"]:
+		if int(rule["score"])>0: positive+=1
+		elif int(rule["score"])<0: negative+=1
+	var title: String="잘 어울림 %d · 아쉬움 %d" % [positive,negative]
+	if positive+negative==0: title="특별한 궁합 효과 없음"
+	var body: Control=_details(holder,title,id+"Reasons") if folded and positive+negative>0 else holder
+	if body==holder: body.add_child(_label(title,18,TEAL))
+	for rule in knowledge["compat"]:
+		body.add_child(_label(str(rule["note"]),16,TEAL if int(rule["score"])>0 else RED))
+
+
+func _show_bowl_knowledge() -> void:
+	var config: Dictionary=state.draft_config
+	if _mode==1:
+		var record: Dictionary=state.get_record(state.last_feedback_record_id)
+		if not record.is_empty(): config=record["config"]
+	var body:=_modal_body("이 그릇의 궁합")
+	_knowledge_rows(body,config,"BowlKnowledge",false)
+	_modal_footer("","그릇으로",_close_modal)
+	var knowledge: Dictionary=state.recipe_knowledge(config)
+	_compact_detail(clampf(220+(knowledge["compat"] as Array).size()*32,280,560))
+
+
+## A warning in an already-open sheet must clear when a real save retry succeeds.
+func _live_warning(parent: Control) -> void:
+	var warning:=_label(str(_info.get("warning","")),15,RED)
+	warning.name="DevelopmentSaveWarning"
+	warning.visible=warning.text!=""
+	parent.add_child(warning)
 
 
 func _build() -> void:
@@ -396,7 +507,13 @@ func _build_picker() -> void:
 	_heading_hint = _label("같은 재료도 가능", 13, MUTED)
 	_heading_hint.autowrap_mode = TextServer.AUTOWRAP_OFF
 	_heading_hint.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_heading_hint.visible=false
 	heading_row.add_child(_heading_hint)
+	_compatibility=_button("궁합 미확인","EditorCompatibility","info")
+	_compatibility.custom_minimum_size=Vector2(126,44)
+	_compatibility.add_theme_font_size_override("font_size",14)
+	_compatibility.pressed.connect(_show_bowl_knowledge)
+	heading_row.add_child(_compatibility)
 	_filters = HBoxContainer.new()
 	_filters.name = "ToppingCategories"
 	_filters.add_theme_constant_override("separation", 3)
@@ -497,6 +614,11 @@ func present(new_state: Game, mode: int, information: Dictionary) -> void:
 	_back.disabled = bool(_info["working"])
 	_notice.text = str(_info["warning"]) if str(_info["warning"]) != "" else str(_info["notice"])
 	_notice.visible = _notice.text != ""
+	if _modal!=null:
+		var warning: Label=_modal.find_child("DevelopmentSaveWarning",true,false)
+		if warning!=null:
+			warning.text=str(_info.get("warning",""))
+			warning.visible=warning.text!=""
 	# A long actionable failure remains available in a dedicated detail dialog;
 	# do not silently discard it or replace it with a success message.
 	_notice.max_lines_visible = 2
@@ -508,6 +630,7 @@ func present(new_state: Game, mode: int, information: Dictionary) -> void:
 		state.rank(), state.topping_slots(), state.last_feedback_record_id, mode,
 		_info["busy"], _info["working"], _selected, state.discovered_ingredients(),
 		state.sample_stock("topping_citrus_peel"), state.sample_stock("topping_scallop"),
+		state.recipe_known(state.draft_config),
 		_info.get("new_directions",[]),_info.get("new_themes",[])])
 	if key == _last_key:
 		return
@@ -644,7 +767,13 @@ func _render_content() -> void:
 	_scroll.visible = not working
 	_work_scroll.visible = working
 	_heading.text = "한 그릇 완성" if result else ("조리 중" if working else "토핑 추가")
-	_heading_hint.visible = not result and not working
+	_heading_hint.visible = false
+	_compatibility.visible=not working
+	var config: Dictionary=state.draft_config
+	if result:
+		var record: Dictionary=state.get_record(state.last_feedback_record_id)
+		if not record.is_empty(): config=record["config"]
+	_compatibility.text="궁합 확인" if state.recipe_known(config) else "궁합 미확인"
 	var portion_count: int = Catalog.toppings_of(state.draft_config).size()
 	_heading_hint.text = ("선택한 칸에 교체" if _selected < portion_count else "선택한 칸에 추가") if _selected >= 0 else ("칸을 눌러 교체" if portion_count >= state.topping_slots() else "같은 재료도 가능")
 	for group in category_buttons:
@@ -734,12 +863,13 @@ func _choose_ingredient(slot: String, id: String, point: Vector2) -> bool:
 	# Row and detail actions share the same guarded controller. Only accepted
 	# recipe changes animate the food; browsing and rejected actions never do.
 	var before: String = JSON.stringify(state.draft_config)
+	var was_known: bool=state.recipe_known(state.draft_config)
 	_emit("ingredient", {"slot": slot, "id": id, "point": point})
 	_refresh_modal_selections()
 	var changed: bool = JSON.stringify(state.draft_config) != before
 	if changed:
 		_dish.play_addition()
-	return changed
+	return changed or (not was_known and state.recipe_known(state.draft_config))
 
 
 func _refresh_modal_selections() -> void:
@@ -869,6 +999,7 @@ func _modal_footer(hint: String, title: String, action: Callable, disabled: bool
 	column.add_child(footer)
 	var message := _label(hint,14,MUTED)
 	message.name = "DetailsActionHint"
+	message.visible=hint!=""
 	footer.add_child(message)
 	var button := _button(title,"EditorDetailApply","",GOLD)
 	button.custom_minimum_size.y = 52
@@ -924,137 +1055,127 @@ func _show_item(item: Dictionary) -> void:
 		_show_raw_broth_source(item["id"])
 		return
 	_save_group_scroll()
-	var id: String = str(item["id"])
-	var slot: String = id.get_slice("_",0)
-	var group: String = "" if slot == "topping" else ("noodle" if slot in ["noodle","cook"] else "broth")
-	var body := _modal_body(str(item["name"]))
+	var id: String=str(item["id"])
+	var slot: String=id.get_slice("_",0)
+	var group: String="" if slot=="topping" else ("noodle" if slot in ["noodle","cook"] else "broth")
+	var body:=_modal_body(str(item["name"]))
 	_modal.set_meta("view_kind","ingredient")
-	if group != "":
-		var back: Button = _modal.find_child("EditorDetailsBack",true,false) as Button
+	if group!="":
+		var back: Button=_modal.find_child("EditorDetailsBack",true,false)
 		back.pressed.disconnect(_close_modal)
 		back.pressed.connect(_show_group.bind(group))
-	var hero := HBoxContainer.new()
-	hero.add_theme_constant_override("separation",12)
+	var hero:=HBoxContainer.new()
+	hero.mouse_filter=Control.MOUSE_FILTER_PASS
+	hero.add_theme_constant_override("separation",16)
 	body.add_child(hero)
-	var texture: Texture2D = _ingredient_texture(id)
-	hero.add_child(_picture(texture,Vector2(112,112)))
-	var stats := VBoxContainer.new()
-	stats.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	stats.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	stats.add_theme_constant_override("separation",6)
+	hero.add_child(_picture(_ingredient_texture(id),Vector2(128,128)))
+	var stats:=VBoxContainer.new()
+	stats.mouse_filter=Control.MOUSE_FILTER_PASS
+	stats.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+	stats.size_flags_vertical=Control.SIZE_SHRINK_CENTER
+	stats.add_theme_constant_override("separation",8)
 	hero.add_child(stats)
-	stats.add_child(_label(("설정" if slot == "cook" else "1분량")+" · "+str(Catalog.SLOT_NAMES[slot]),14,MUTED))
-	stats.add_child(_label(won(int(item["cost"])),24))
-	stats.add_child(_label("준비 +%d초" % int(item["seconds"]),16))
-	body.add_child(_label(str(item["desc"]),18))
-	body.add_child(_label(Catalog.axes_text(item),16,TEAL))
-	if Catalog.is_farmed(id):
-		body.add_child(_label("시제품용 샘플 %d개 · 완성할 때 분량만큼 사용해요." % state.sample_stock(id),16))
-	var preview := _button("넣기 전후 비교","EditorIngredientExperiment","ramen_dining")
+	stats.add_child(_label(won(item["cost"]),26))
+	stats.add_child(_label("준비 %d초" % item["seconds"],16))
+	stats.add_child(_label(Catalog.axes_text(item),15,TEAL))
+	var more:=_details(body,"재료 특성","IngredientProperties")
+	more.add_child(_label(str(item["desc"]),17))
+	var preview:=_button("그릇 비교","EditorIngredientExperiment","ramen_dining")
 	preview.pressed.connect(_show_ingredient_experiment.bind(item))
 	body.add_child(preview)
-	var unlocked: bool = state.ingredient_unlocked(id)
+	if Catalog.is_farmed(id):
+		body.add_child(_label("샘플 %d개 · 시식 완료 때 사용" % state.sample_stock(id),15,TEAL))
+	var unlocked: bool=state.ingredient_unlocked(id)
 	if not unlocked:
 		for locked in state.locked_items(slot):
-			if str(locked["id"]) == id:
-				body.add_child(_label(str(locked["lock"]["hint"]),16,RED))
-	var full: bool = Catalog.toppings_of(state.draft_config).size() >= state.topping_slots()
-	var selected: bool = slot != "topping" and str(state.draft_config[slot]) == id
-	var title: String = "선택 중" if selected else ("이 익힘으로 선택" if slot == "cook" else "이 재료 선택")
-	var hint: String = "시식이 완료될 때 재료비가 나가요."
-	if slot == "topping":
-		title = ("선택한 칸에 교체" if _selected < Catalog.toppings_of(state.draft_config).size() else "선택한 칸에 추가") if _selected >= 0 else ("교체할 칸 고르기" if full else "이 토핑 추가")
-		if full and _selected < 0:
-			hint = "가득 찼어요. 어떤 토핑을 바꿀지 골라요."
+			if str(locked["id"])==id: body.add_child(_label(str(locked["lock"]["hint"]),16,RED))
+	var full: bool=Catalog.toppings_of(state.draft_config).size()>=state.topping_slots()
+	var selected: bool=slot!="topping" and str(state.draft_config[slot])==id
+	var title: String="선택 중" if selected and state.recipe_known(state.draft_config) else "그릇에 담기"
+	var hint: String=""
+	if slot=="topping":
+		title=("이 칸에 담기" if _selected>=0 else ("교체할 칸 선택" if full else "토핑 담기"))
 	if not unlocked:
-		title = "아직 발견하지 못했어요"
-		hint = "발견 조건을 먼저 확인해 주세요."
-	var apply := _modal_footer(hint,title,func():
-		if slot == "topping" and full and _selected < 0:
-			_show_replacement(item)
-		else:
-			_apply_detail(item,group),not unlocked or selected or bool(_info["busy"]))
-	apply.tooltip_text = str(item["name"])+" 선택 · 시식 전에는 결제하지 않아요."
-	_compact_detail(560 if Catalog.is_farmed(id) else 440)
+		title="발견 필요"
+	var apply:=_modal_footer(hint,title,func():
+		if slot=="topping" and full and _selected<0: _show_replacement(item)
+		else: _apply_detail(item,group),not unlocked or (selected and state.recipe_known(state.draft_config)) or bool(_info["busy"]))
+	apply.tooltip_text=str(item["name"])+" 선택 · 비용은 시식 완료 때 반영"
+	_compact_detail(460 if Catalog.is_farmed(id) else 400)
 
 
-func _show_ingredient_experiment(item: Dictionary, chosen: int = -1) -> void:
+func _show_ingredient_experiment(item: Dictionary, chosen: int=-1) -> void:
 	var projection: Dictionary=TrialPreview.candidates(state,str(item["id"]),_selected)
-	var body := _modal_body("한 재료 실험")
+	var body:=_modal_body("그릇 비교")
 	_modal.set_meta("view_kind","experiment")
-	var back: Button=_modal.find_child("EditorDetailsBack",true,false) as Button
+	var back: Button=_modal.find_child("EditorDetailsBack",true,false)
 	back.pressed.disconnect(_close_modal)
 	back.pressed.connect(_show_item.bind(item))
 	if str(projection["error"])!="":
 		body.add_child(_label(str(projection["error"]),17,RED))
 		return
-	body.add_child(_label(str(item["name"])+" · 넣기 전후 비교",20))
 	var rows: Array=projection["rows"]
 	if rows.size()==1: chosen=0
 	if rows.size()>1:
-		body.add_child(_label("가득 찬 토핑 중 바꿀 한 칸을 골라요. 아직 초안은 바뀌지 않아요.",15,MUTED))
 		for index in rows.size():
-			var button := _button(str(rows[index]["title"]),"EditorExperimentSlot_"+str(index),"check" if index==chosen else "",TEAL if index==chosen else CREAM)
-			if index==chosen: button.add_theme_color_override("font_color",Color.WHITE)
+			var button:=_button(str(rows[index]["title"]),"EditorExperimentSlot_"+str(index),"check" if index==chosen else "",TEAL if index==chosen else CREAM)
 			button.pressed.connect(_show_ingredient_experiment.bind(item,index))
 			body.add_child(button)
 	if chosen<0:
-		_modal_footer("비교할 칸을 골라도 결제하지 않아요.","교체할 칸을 골라 주세요",func(): pass,true)
-		_compact_detail(640)
+		_modal_footer("","교체할 칸 선택",func(): pass,true)
+		_compact_detail(540)
 		return
 	var row: Dictionary=rows[chosen]
-	var pair := HBoxContainer.new()
+	var pair:=HBoxContainer.new()
+	pair.mouse_filter=Control.MOUSE_FILTER_PASS
 	pair.add_theme_constant_override("separation",12)
 	body.add_child(pair)
-	for data in [["지금 그릇",projection["base"]],["바꾸면",row["config"]]]:
-		var column := VBoxContainer.new()
+	for data in [["현재",projection["base"]],["선택하면",row["config"]]]:
+		var column:=VBoxContainer.new()
+		column.mouse_filter=Control.MOUSE_FILTER_PASS
 		column.size_flags_horizontal=Control.SIZE_EXPAND_FILL
 		pair.add_child(column)
-		column.add_child(_label(str(data[0]),15,TEAL))
-		var dish := Dish.new()
-		dish.name="ExperimentDishBefore" if data[0]=="지금 그릇" else "ExperimentDishAfter"
-		dish.custom_minimum_size=Vector2(100,100)
+		column.add_child(_label(str(data[0]),14,MUTED))
+		var dish:=Dish.new()
+		dish.name="ExperimentDishBefore" if data[0]=="현재" else "ExperimentDishAfter"
+		dish.custom_minimum_size=Vector2(100,120)
+		dish.mouse_filter=Control.MOUSE_FILTER_IGNORE
 		column.add_child(dish)
 		dish.set_config(data[1])
-	var flavor := _label(str(row["flavor"]),18,TEAL)
+	_facts(body,[["원가 변화","%+d원" % (int(row["after_cost"])-int(row["before_cost"]))],["준비 변화","%+d초" % (int(row["after_seconds"])-int(row["before_seconds"]))]])
+	var flavor:=_label(str(row["flavor"]),15,TEAL)
 	flavor.name="ExperimentFlavor"
 	body.add_child(flavor)
-	body.add_child(_label("원가 %s → %s (%+d원)" % [won(row["before_cost"]),won(row["after_cost"]),int(row["after_cost"])-int(row["before_cost"])],16))
-	body.add_child(_label("기본 준비 %d초 → %d초 (%+d초)" % [row["before_seconds"],row["after_seconds"],int(row["after_seconds"])-int(row["before_seconds"])],16))
-	var facts := _button("풍미·샘플·실험 목표", "EditorExperimentFacts", "info")
+	_knowledge_rows(body,row["config"],"ExperimentKnowledge")
+	var facts:=_button("수치·샘플 상세","EditorExperimentFacts","info")
 	facts.pressed.connect(_show_experiment_facts.bind(item,chosen,row))
 	body.add_child(facts)
-	var hint: String="초안에만 반영해요. 유료 시식이 끝나야 샘플을 쓰고 기록돼요."
-	if str(row["sample_error"])!="":
-		body.add_child(_label(str(row["sample_error"]),15,RED))
-		hint="초안 편집은 가능해요. 시식 전에 부족한 샘플을 구하세요."
 	var unavailable: bool=not state.ingredient_unlocked(str(item["id"]))
-	var title: String="아직 발견하지 못했어요" if unavailable else ("초안에 반영" if bool(row["changed"]) else "현재와 같은 구성")
-	_modal_footer(hint,title,_apply_experiment.bind(item,projection["base"],row),unavailable or not bool(row["changed"]) or bool(_info["busy"]))
-	_compact_detail(640)
+	var hint: String=str(row["sample_error"])
+	if unavailable: hint=str(state.ingredient_lock_info(str(item["id"]))["hint"])
+	_modal_footer(hint,"그릇에 담기",_apply_experiment.bind(item,projection["base"],row),unavailable or not bool(row["changed"]) or bool(_info["busy"]))
+	_compact_detail(500)
 
 
 func _show_experiment_facts(item: Dictionary, chosen: int, row: Dictionary) -> void:
-	var body := _modal_body("실험의 자세한 변화")
+	var body:=_modal_body("수치·샘플")
 	_modal.set_meta("view_kind","experiment_facts")
-	var back: Button=_modal.find_child("EditorDetailsBack",true,false) as Button
+	var back: Button=_modal.find_child("EditorDetailsBack",true,false)
 	back.pressed.disconnect(_close_modal)
 	back.pressed.connect(_show_ingredient_experiment.bind(item,chosen))
 	for axis in row["axes"]:
-		body.add_child(_label("%s %d → %d (%+d)" % [axis["name"],axis["before"],axis["after"],axis["delta"]],16))
-	body.add_child(_label("시식에 필요한 샘플",20))
-	if (row["samples"] as Array).is_empty(): body.add_child(_label("연구 샘플이 필요한 재료가 없어요.",16))
-	for sample in row["samples"]:
-		body.add_child(_label("%s · 필요 %d / 보관 %d개" % [Catalog.find(str(sample["id"]))["name"],sample["needed"],sample["stock"]],16))
-	body.add_child(_label("이 조합의 궁합",20))
-	if (row["compat"] as Array).is_empty(): body.add_child(_label("현재 조합에 별도 궁합 규칙이 없어요.",16))
-	for rule in row["compat"]: body.add_child(_label(str(rule["note"]),16))
+		_comparison_number(body,str(axis["name"]),int(axis["before"]),int(axis["after"]))
+	_knowledge_rows(body,row["config"],"ExperimentFactsKnowledge",false)
+	if not (row["samples"] as Array).is_empty():
+		body.add_child(_label("필요 샘플",18))
+		for sample in row["samples"]:
+			body.add_child(_label("%s · %d / 보관 %d" % [Catalog.find(str(sample["id"]))["name"],sample["needed"],sample["stock"]],16))
 	for direction in row["directions"]:
-		body.add_child(_label("실험 목표 · "+str(direction["title"]),20,TEAL))
+		var details:=_details(body,str(direction["title"]),"ExperimentDirection_"+str(direction["id"]))
 		for condition in direction["assessment"]["checks"]:
-			body.add_child(_label(("충족 · " if bool(condition["met"]) else "남은 조건 · ")+str(condition["text"]),16))
-	body.add_child(_label("조합의 예상 변화예요. 손님 취향에 따라 반응이 달라져요.",15,MUTED))
-	_modal_footer("아직 구성·돈·샘플·기록을 바꾸지 않았어요.","비교로 돌아가기",_show_ingredient_experiment.bind(item,chosen))
+			details.add_child(_label(("충족 · " if bool(condition["met"]) else "목표 · ")+str(condition["text"]),16))
+	_modal_footer("","비교로",_show_ingredient_experiment.bind(item,chosen))
+	_compact_detail(590)
 
 
 func _apply_experiment(item: Dictionary, base: Dictionary, row: Dictionary) -> void:
@@ -1063,6 +1184,7 @@ func _apply_experiment(item: Dictionary, base: Dictionary, row: Dictionary) -> v
 	if not Check.same_config(state.draft_config,base):
 		_show_ingredient_experiment(item)
 		(_modal.find_child("DetailsActionHint",true,false) as Label).text="초안이 바뀌었어요. 새 비교를 확인하고 다시 골라 주세요."
+		(_modal.find_child("DetailsActionHint",true,false) as Label).visible=true
 		return
 	var slot: String=str(item["id"]).get_slice("_",0)
 	var group: String="" if slot=="topping" else ("noodle" if slot in ["noodle","cook"] else "broth")
@@ -1094,6 +1216,7 @@ func _apply_detail(item: Dictionary, group: String, replacement: int = -1) -> vo
 	else:
 		var hint: Label = _modal.find_child("DetailsActionHint",true,false) as Label
 		hint.text = str(_info["warning"]) if str(_info["warning"]) != "" else str(_info["notice"])
+		hint.visible=hint.text!=""
 		hint.add_theme_color_override("font_color",RED)
 
 
@@ -1147,8 +1270,7 @@ func _show_group(group: String) -> void:
 	var column: VBoxContainer = _modal.find_child("DetailsColumn",true,false) as VBoxContainer
 	column.add_child(tabs)
 	column.move_child(tabs,1)
-	if str(_info.get("warning",""))!="":
-		body.add_child(_label(str(_info["warning"]),15,RED))
+	_live_warning(body)
 	var definitions: Array = [["broth","육수"],["tare","타레"],["oil","향미유"],["method","공법"]] if group == "broth" else [["noodle","면"],["cook","익힘"],["method","반죽"]]
 	for definition in definitions:
 		var button := _button(str(definition[1]),"EditorGroupTab_"+str(definition[0]))
@@ -1163,11 +1285,11 @@ func _show_group(group: String) -> void:
 	body.add_child(current)
 	if tab == "method":
 		if group=="broth":
-			body.add_child(_label("우림 방식은 원재료를 배합할 때 정해요. 다른 방식은 새 육수로 개발해 보세요.",17))
+			body.add_child(_label("우림은 육수 개발실에서 선택해요.",17))
 			var develop:=_button("육수 개발실 열기","BrothOpenWorkshop","chevron_right",GOLD)
 			develop.pressed.connect(_show_broth_workshop)
 			body.add_child(develop)
-			_modal_footer("육수를 바꾸지 않고 돌아가요.","그릇으로 돌아가기",_exit_group)
+			_modal_footer("","그릇으로",_exit_group)
 			return
 		body.add_child(_label("시식할 때 반영되는 공법이에요.",14,MUTED))
 		for id in ProcessRules.ids(group):
@@ -1181,7 +1303,7 @@ func _show_group(group: String) -> void:
 		for item in Catalog.all_items(tab):
 			body.add_child(_ingredient_row(item,tab))
 	_refresh_modal_selections()
-	_modal_footer("선택은 바로 반영돼요. 시식 전까지 바꿀 수 있어요.","그릇으로 돌아가기",_exit_group)
+	_modal_footer("","그릇으로",_exit_group)
 	(body.get_parent() as ScrollContainer).set_deferred("scroll_vertical",int(_group_scroll.get(group+":"+tab,0)))
 
 
@@ -1213,7 +1335,7 @@ func _show_noodle_workshop(page: String="formula") -> void:
 		if definition[0]=="cook": button.pressed.connect(func(): _switch_group_tab("noodle","cook"))
 		else: button.pressed.connect(_show_noodle_workshop.bind(definition[0]))
 		tabs.add_child(button)
-	if str(_info.get("warning",""))!="": body.add_child(_label(str(_info["warning"]),15,RED))
+	_live_warning(body)
 	if page=="library" and not active:
 		_render_component_library("noodle",review,body)
 		return
@@ -1226,29 +1348,40 @@ func _show_noodle_workshop(page: String="formula") -> void:
 		for option in definitions:
 			var panel:=PanelContainer.new()
 			panel.mouse_filter=Control.MOUSE_FILTER_PASS
-			panel.add_theme_stylebox_override("panel",_style(WHITE,TEAL if formula[page]==option["id"] else MUTED))
-			var card:=VBoxContainer.new()
-			card.mouse_filter=Control.MOUSE_FILTER_PASS
-			card.add_theme_constant_override("separation",12)
-			panel.add_child(card)
-			if page in ["flour","water"]: card.add_child(_picture(PantryArt.texture(option["id"]),Vector2(64,64)))
-			card.add_child(_label(option["name"],21))
-			var desc: String=option.get("desc","식감 %d · 삶기 %d초" % [option.get("chew",0),option.get("seconds",0)])
-			card.add_child(_label(desc,16,MUTED))
-			card.add_child(_label("한 그릇 재료비 %s" % won(option["cost"]),16,TEAL))
+			panel.add_theme_stylebox_override("panel",_style(WHITE,TEAL if formula[page]==option["id"] else Color("d5c6ab")))
+			var option_column:=VBoxContainer.new()
+			option_column.mouse_filter=Control.MOUSE_FILTER_PASS
+			panel.add_child(option_column)
+			var row:=HBoxContainer.new()
+			row.mouse_filter=Control.MOUSE_FILTER_PASS
+			row.add_theme_constant_override("separation",10)
+			option_column.add_child(row)
+			if page in ["flour","water"]: row.add_child(_picture(PantryArt.texture(option["id"]),Vector2(52,52)))
+			var text:=VBoxContainer.new()
+			text.mouse_filter=Control.MOUSE_FILTER_PASS
+			text.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+			row.add_child(text)
+			text.add_child(_label(option["name"],18))
+			text.add_child(_label(won(option["cost"]),15,TEAL))
 			var next: Dictionary=formula.duplicate(true)
 			next[page]=option["id"]
 			var reason: String=Noodle.error(next,state.rank(),state.discovered_ingredients(),true)
 			if option["id"]=="buckwheat":
-				card.add_child(_label("산골 채집 · 라멘 시식 완료 때 연구 샘플 1개 사용",15,MUTED))
+				text.add_child(_label("산골 샘플 %d개" % state.sample_stock("noodle_buckwheat"),14,MUTED))
 				_modal.set_meta("raw_material","buckwheat")
-			var choose:=_button("선택됨" if formula[page]==option["id"] else "이 배합으로", "NoodleChoose_"+str(option["id"]),"check",GOLD)
+			var choose:=_button("","NoodleChoose_"+str(option["id"]),"check" if formula[page]==option["id"] else "add",TEAL if formula[page]==option["id"] else GOLD)
+			choose.tooltip_text=str(option["name"])+" 선택"
 			choose.disabled=bool(_info["busy"]) or reason!=""
 			choose.pressed.connect(func(): _emit("noodle_set",{"field":page,"id":option["id"]}))
-			card.add_child(choose)
-			if reason!="": card.add_child(_label(reason,15,RED))
+			row.add_child(choose)
+			if reason!="": option_column.add_child(_label(reason,15,RED))
 			body.add_child(panel)
-		_modal_footer("선택해도 아직 면이 완성되거나 비용이 들지 않아요.","배합으로 돌아가기",_show_noodle_workshop)
+		var notes:=_details(body,"선택지 특징","NoodleOptionNotes")
+		for option in definitions:
+			var desc: String=option.get("desc","식감 %d · 삶기 %d초" % [option.get("chew",0),option.get("seconds",0)])
+			notes.add_child(_label(str(option["name"])+" · "+desc,16))
+		_modal_footer("","배합으로",_show_noodle_workshop)
+		_compact_detail(610)
 		return
 	var hero:=HBoxContainer.new()
 	hero.add_theme_constant_override("separation",14)
@@ -1277,7 +1410,7 @@ func _show_noodle_workshop(page: String="formula") -> void:
 		progress.custom_minimum_size.y=24
 		body.add_child(progress)
 		body.add_child(_label("반죽 → 밀기·숙성 → 면 뽑기",16,MUTED))
-		_modal_footer("완료할 때 개발비 %s · 취소하면 비용이 들지 않아요." % won(review["cost"]),"제면 취소",func(): _emit("noodle_cancel"))
+		_modal_footer("개발비 %s · 완료 때 결제" % won(review["cost"]),"제면 취소",func(): _emit("noodle_cancel"))
 		_compact_detail(450)
 		update_noodle_progress()
 		return
@@ -1286,9 +1419,9 @@ func _show_noodle_workshop(page: String="formula") -> void:
 		var row:=_button(definition[1]+" · "+str(selected["name"]),"NoodleField_"+definition[0],"chevron_right")
 		row.pressed.connect(_show_noodle_workshop.bind(definition[0]))
 		body.add_child(row)
-	body.add_child(_label("배합수 비율 · "+("고가수 40%" if formula["method"]=="moist" else ("저가수 30% · 숙성" if formula["method"]=="rested" else "기본 35%")),16,MUTED))
-	_modal_footer(review["reason"] if review["reason"]!="" else "개발비 %s · 약 %d초 · 완성 후 직접 그릇에 넣어요." % [won(review["cost"]),int(ceil(review["duration"]))],"반죽하고 면 뽑기",func(): _emit("noodle_begin"),review["reason"]!="" or bool(_info["busy"]))
-	_compact_detail(680)
+
+	_modal_footer(review["reason"] if review["reason"]!="" else "개발비 %s · %d초" % [won(review["cost"]),int(ceil(review["duration"]))],"반죽하고 면 뽑기",func(): _emit("noodle_begin"),review["reason"]!="" or bool(_info["busy"]))
+	_compact_detail(620)
 
 
 func _show_noodle_source(id: String) -> void:
@@ -1325,7 +1458,7 @@ func _show_broth_workshop(page: String="blend") -> void:
 	var column: VBoxContainer=_modal.find_child("DetailsColumn",true,false)
 	column.add_child(tabs)
 	column.move_child(tabs,1)
-	if str(_info.get("warning",""))!="": body.add_child(_label(str(_info["warning"]),15,RED))
+	_live_warning(body)
 	for definition in [["blend","배합"],["library","육수 %d" % review["recipes"].size()],["seasoning","간·향미"]]:
 		var button:=_button(definition[1],"BrothTab_"+definition[0])
 		button.size_flags_horizontal=Control.SIZE_EXPAND_FILL
@@ -1351,13 +1484,11 @@ func _show_broth_workshop(page: String="blend") -> void:
 	hero.add_child(description)
 	var item: Dictionary=review["product"]
 	description.add_child(_label("원재료 배합" if item.is_empty() else item["name"],22))
-	description.add_child(_label("주재료에 향채를 더해 나만의 육수를 만들어요." if item.is_empty() else item["desc"],15,MUTED))
 	if not item.is_empty():
 		var extraction: Dictionary=ProcessRules.method("broth",review["blend"]["method"])
 		var richness: int=clampi(int(item["axes"]["rich"])+int(extraction["axes"]["rich"]),0,10)
 		var aroma: int=clampi(int(item["axes"]["aroma"])+int(extraction["axes"]["aroma"]),0,10)
 		description.add_child(_label("육수 예상 · 진함 %d / 향 %d" % [richness,aroma],15,TEAL))
-		if item["combo"]!="": description.add_child(_label(item["combo"],14,TEAL))
 	body.add_child(hero)
 	var progress:=ProgressBar.new()
 	progress.name="BrothProgress"
@@ -1370,12 +1501,12 @@ func _show_broth_workshop(page: String="blend") -> void:
 	body.add_child(phase)
 	if active:
 		body.add_child(_label("선택한 원재료의 맛과 향을 우려내고 있어요.",16,MUTED))
-		_modal_footer("완료할 때 개발비 %s · 취소하면 비용 없이 배합으로 돌아가요." % won(review["cost"]),"우림 취소",func(): _emit("broth_cancel"))
+		_modal_footer("개발비 %s · 완료 때 결제" % won(review["cost"]),"우림 취소",func(): _emit("broth_cancel"))
 		_compact_detail(440)
 		update_broth_progress()
 		return
 	var ids: Array=review["blend"]["ingredients"]
-	body.add_child(_label("배합 %d / %d칸 · 랭크가 오르면 한 칸씩 추가" % [ids.size(),review["capacity"]],16))
+	body.add_child(_label("배합 %d / %d칸" % [ids.size(),review["capacity"]],16))
 	var portions:=GridContainer.new()
 	portions.columns=2
 	portions.add_theme_constant_override("h_separation",6)
@@ -1428,19 +1559,26 @@ func _show_broth_workshop(page: String="blend") -> void:
 		row.add_child(detail)
 		row.add_child(add)
 		body.add_child(row)
-	body.add_child(_label("우림 방식",19))
+	var methods:=HBoxContainer.new()
+	methods.mouse_filter=Control.MOUSE_FILTER_PASS
+	methods.add_theme_constant_override("separation",6)
+	body.add_child(methods)
 	for method_id in ProcessRules.ids("broth"):
 		var method: Dictionary=ProcessRules.method("broth",method_id)
-		var button:=_button(method["name"],"BrothMethod_"+method_id)
+		var button:=_button(str(method["name"]).replace(" 우림",""),"BrothMethod_"+method_id)
+		button.size_flags_horizontal=Control.SIZE_EXPAND_FILL
 		button.toggle_mode=true
 		button.set_pressed_no_signal(review["blend"]["method"]==method_id)
 		button.disabled=active or state.rank()<int(method["rank"])
 		button.pressed.connect(func(): _emit("broth_method",{"method":method_id}))
-		body.add_child(button)
-		body.add_child(_label(method["desc"]+(" · 랭크%d부터" % method["rank"] if state.rank()<int(method["rank"]) else ""),14,MUTED))
-	var hint: String="완료할 때 개발비 %s · 우림 약 %.1f초" % [won(review["cost"]),review["duration"]]
+		methods.add_child(button)
+	var method_notes:=_details(body,"우림 공법 안내","BrothMethodNotes")
+	for method_id in ProcessRules.ids("broth"):
+		var method: Dictionary=ProcessRules.method("broth",method_id)
+		method_notes.add_child(_label(str(method["name"])+" · "+str(method["desc"])+(" · 랭크%d" % method["rank"] if state.rank()<int(method["rank"]) else ""),15,MUTED))
+	var hint: String="개발비 %s · %.1f초" % [won(review["cost"]),review["duration"]]
 	if review["reason"]!="": hint=review["reason"]
-	if ids.has("sardine"): hint+="\n정어리 샘플은 라멘 시제품 완성 때 1개 사용해요."
+	if ids.has("sardine"): hint+=" · 시식 때 정어리 샘플1개"
 	_modal_footer(hint,"우림 취소" if active else "육수 우리기",func(): _emit("broth_cancel" if active else "broth_begin"),not active and (review["reason"]!="" or bool(_info["busy"])))
 	(body.get_parent() as ScrollContainer).set_deferred("scroll_vertical",int(_broth_scroll.get(scroll_key,0)))
 	update_broth_progress()
@@ -1572,7 +1710,6 @@ func _render_result() -> void:
 		customers.add_child(button)
 	var selected: Dictionary = evaluation["customers"][_result_customer]
 	_rows.add_child(_label(str(selected["headline"]), 19, TEAL))
-	_rows.add_child(_label(str(selected["reasons"][0]), 16))
 	var details := _button("시식평 자세히", "EditorResultDetails", "info")
 	details.pressed.connect(func():
 		var body := _modal_body(str(selected["name"]) + "의 시식평")
@@ -1585,7 +1722,7 @@ func _render_result() -> void:
 		customer_row.add_child(customer_title)
 		body.add_child(customer_row)
 		body.add_child(_label(str(selected["headline"]), 19, TEAL))
-		# The summary shows one reason, but none of the evaluator's remaining
+		# The summary shows one headline, but none of the evaluator's remaining
 		# reasons or price feedback may be lost when replacing the old screen.
 		for reason in selected["reasons"]:
 			body.add_child(_label(str(reason), 17))
@@ -1779,7 +1916,7 @@ func _render_component_library(kind: String, review: Dictionary, body: VBoxConta
 	var pages: int=maxi(1,ceili(float(count)/6.0))
 	var page: int=clampi(int(_component_pages[kind]),0,pages-1)
 	_component_pages[kind]=page
-	body.add_child(_label("직접 개발한 "+title,22))
+
 	var pager:=HBoxContainer.new()
 	pager.name="ComponentPager"
 	pager.add_theme_constant_override("separation",8)
@@ -1827,21 +1964,22 @@ func _render_component_library(kind: String, review: Dictionary, body: VBoxConta
 		names.add_child(_label("그릇에 사용 중" if result["applied"] else "%d번째 개발 · %d일차" % [index+1,review["recipes"][index]["day"]],14,TEAL))
 		hero.add_child(names)
 		card.add_child(hero)
-		var detail:=_label(item["desc"],15,MUTED)
-		detail.max_lines_visible=2
-		detail.text_overrun_behavior=TextServer.OVERRUN_TRIM_ELLIPSIS
-		detail.tooltip_text=item["desc"]
-		card.add_child(detail)
 		card.add_child(_label("한 그릇 %s · 준비 %d초" % [won(item["cost"]),item["seconds"]],16,TEAL))
-		var compare:=_button("비교·개량 보기","ComponentCompare_"+kind+"_"+str(index),"chevron_right")
+		var actions:=HBoxContainer.new()
+		actions.mouse_filter=Control.MOUSE_FILTER_PASS
+		actions.add_theme_constant_override("separation",8)
+		card.add_child(actions)
+		var compare:=_button("비교·개량","ComponentCompare_"+kind+"_"+str(index),"chevron_right")
+		compare.size_flags_horizontal=Control.SIZE_EXPAND_FILL
 		compare.pressed.connect(_show_component_comparison.bind(kind,index))
-		card.add_child(compare)
-		var use:=_button("이 %s로 라멘 만들기" % title,("BrothUse_" if kind=="broth" else "NoodleUse_")+str(index),"check",GOLD)
+		actions.add_child(compare)
+		var use:=_button("담기",("BrothUse_" if kind=="broth" else "NoodleUse_")+str(index),"check",GOLD)
+		use.size_flags_horizontal=Control.SIZE_EXPAND_FILL
 		use.disabled=bool(_info["busy"])
 		use.pressed.connect(func(): _emit(kind+"_use",{"index":index}); _close_modal())
-		card.add_child(use)
+		actions.add_child(use)
 		body.add_child(panel)
-	_modal_footer("위 목록은 최근 개발 순이에요. 비교해도 그릇·돈·재료가 바뀌지 않아요.","새 %s 배합" % title,_show_component_workshop.bind(kind))
+	_modal_footer("","새 %s 배합" % title,_show_component_workshop.bind(kind))
 	_compact_detail(minf(700,330+230*mini(2,maxi(1,count))))
 
 
@@ -1898,7 +2036,7 @@ func _comparison_number(parent: Control, caption: String, before: int, after: in
 func _show_component_comparison(kind: String, index: int, whole: bool=false) -> void:
 	var result: Dictionary=state.component_comparison(kind,index)
 	var title: String="육수" if kind=="broth" else "면"
-	var body:=_modal_body("한 그릇의 변화" if whole else title+" 비교·개량")
+	var body:=_modal_body("그릇 비교" if whole else title+" 비교·개량")
 	_modal.set_meta("view_kind","component_comparison")
 	_modal.set_meta("component_kind",kind)
 	_modal.set_meta("component_index",index)
@@ -1908,46 +2046,48 @@ func _show_component_comparison(kind: String, index: int, whole: bool=false) -> 
 	else: back.pressed.connect(_return_component_library.bind(kind))
 	if not result["ok"]:
 		body.add_child(_label(result["message"],18,RED))
-		_modal_footer("현재 상태는 바꾸지 않았어요.","완성 목록으로",_return_component_library.bind(kind))
+		_modal_footer("","완성 목록",_return_component_library.bind(kind))
 		return
 	var current: Dictionary=result["current_component"]
 	var selected: Dictionary=result["selected_component"]
-	if str(_info.get("warning",""))!="": body.add_child(_label(str(_info["warning"]),15,RED))
-	var intro: String="지금 쓰는 %s와 비교해요. 바꾸기 전 맛과 준비의 차이를 살펴보세요." % title
-	if current.is_empty(): intro="첫 %s를 개발했어요. 그릇에 담기 전 성질을 살펴보세요." % title
-	elif result["applied"]: intro="지금 쓰는 %s예요. 배합을 불러와 다른 방식으로 개량할 수 있어요." % title
-	var introduction:=_label(intro,16,MUTED)
+	var candidate: Dictionary=Comparison.apply_recipe(state.draft_config,kind,result["recipe"])
+	_live_warning(body)
+	var introduction:=_label("지금 쓰는 "+title if result["applied"] else ("첫 "+title if current.is_empty() else ""),15,TEAL)
 	introduction.name="ComponentIntro"
+	introduction.visible=introduction.text!=""
 	body.add_child(introduction)
 	if not whole:
 		var cards:=GridContainer.new()
-		cards.columns=2 if size.x>=720 else 1
-		cards.add_theme_constant_override("h_separation",12)
-		cards.add_theme_constant_override("v_separation",10)
+		cards.columns=2
+		cards.add_theme_constant_override("h_separation",10)
 		body.add_child(cards)
-		for side in ["현재 사용", "고른 "+title]:
+		for side in ["현재", "선택하면"]:
 			var card:=_component_panel(cards)
-			var item: Dictionary=current if side=="현재 사용" else selected
-			card.add_child(_label(side,15,TEAL))
+			var item: Dictionary=current if side=="현재" else selected
+			card.add_child(_label(side,14,MUTED))
 			if item.is_empty():
-				card.add_child(_label("아직 완성품을 담지 않았어요.",18,MUTED))
+				card.add_child(_label("미개발",18,MUTED))
 				continue
-			card.add_child(_label(item["name"],20))
-			card.add_child(_label(item["desc"],16,MUTED))
-			card.add_child(_label("%s · 준비 %d초" % [won(item["cost"]),item["seconds"]],16,TEAL))
+			var config: Dictionary=state.draft_config if side=="현재" else candidate
+			card.add_child(_picture(_ingredient_texture(str(config[kind])),Vector2(52,56)))
+			card.add_child(_label(item["name"],18))
+			card.add_child(_label("%s · %d초" % [won(item["cost"]),item["seconds"]],15,TEAL))
 		if not current.is_empty():
-			var changes:=_component_panel(body)
-			changes.add_child(_label(title+"의 변화",19))
-			_comparison_number(changes,"원가",current["cost"],selected["cost"],"원")
-			_comparison_number(changes,"준비",current["seconds"],selected["seconds"],"초")
+			_facts(body,[["원가 변화","%+d원" % (int(selected["cost"])-int(current["cost"]))],["준비 변화","%+d초" % (int(selected["seconds"])-int(current["seconds"]))]])
+		var values:=_details(body,"배합·수치","ComponentValues")
+		if not current.is_empty():
+			_comparison_number(values,"원가",current["cost"],selected["cost"],"원")
+			_comparison_number(values,"준비",current["seconds"],selected["seconds"],"초")
 			for axis in Catalog.AXES:
 				if current["axes"][axis]!=0 or selected["axes"][axis]!=0:
-					_comparison_number(changes,Catalog.AXIS_NAMES[axis],current["axes"][axis],selected["axes"][axis])
-		var forecast:=_button("이 라멘에 바꾸면?","ComponentWholeRamen","ramen_dining")
+					_comparison_number(values,Catalog.AXIS_NAMES[axis],current["axes"][axis],selected["axes"][axis])
+			values.add_child(_label("현재 · "+str(current["desc"]),15,MUTED))
+		values.add_child(_label("선택 · "+str(selected["desc"]),15,MUTED))
+		var forecast:=_button("그릇 비교","ComponentWholeRamen","ramen_dining")
 		forecast.disabled=result["current_ramen"].is_empty()
 		forecast.pressed.connect(_show_component_comparison.bind(kind,index,true))
 		body.add_child(forecast)
-		if result["current_ramen"].is_empty(): body.add_child(_label(result["message"],15,MUTED))
+		if result["current_ramen"].is_empty(): body.add_child(_label("육수와 면을 먼저 담아 주세요.",15,MUTED))
 	else:
 		var before: Dictionary=result["current_ramen"]
 		var after: Dictionary=result["candidate_ramen"]
@@ -1958,7 +2098,7 @@ func _show_component_comparison(kind: String, index: int, whole: bool=false) -> 
 			dishes.name="ComponentDishes"
 			dishes.mouse_filter=Control.MOUSE_FILTER_PASS
 			body.add_child(dishes)
-			for config in [state.draft_config,Comparison.apply_recipe(state.draft_config,kind,result["recipe"])]:
+			for config in [state.draft_config,candidate]:
 				var column:=VBoxContainer.new()
 				column.size_flags_horizontal=Control.SIZE_EXPAND_FILL
 				column.mouse_filter=Control.MOUSE_FILTER_PASS
@@ -1967,25 +2107,30 @@ func _show_component_comparison(kind: String, index: int, whole: bool=false) -> 
 				dish.mouse_filter=Control.MOUSE_FILTER_IGNORE
 				dish.set_config(config)
 				column.add_child(dish)
-				column.add_child(_label("현재 그릇" if dishes.get_child_count()==0 else "교체 예상",16,TEAL))
+				column.add_child(_label("현재" if dishes.get_child_count()==0 else "선택하면",14,MUTED))
 				dishes.add_child(column)
 			var facts:=_component_panel(body)
 			_comparison_number(facts,"한 그릇 원가",before["unit_cost"],after["unit_cost"],"원")
 			_comparison_number(facts,"기본 준비",before["prep_seconds"],after["prep_seconds"],"초")
-			for axis in Catalog.AXES: _comparison_number(facts,Catalog.AXIS_NAMES[axis],before["profile"][axis],after["profile"][axis])
-			var ratings:=_component_panel(body)
-			ratings.add_child(_label("단골 시식 예상",19))
-			for i in before["customers"].size():
-				var customer: Dictionary=before["customers"][i]
-				var row:=HBoxContainer.new()
-				row.mouse_filter=Control.MOUSE_FILTER_PASS
-				ratings.add_child(row)
-				row.add_child(_picture(PixelArt.scaled_tex(PixelArt.portrait_image(customer["id"]),2),Vector2(32,32)))
-				_comparison_number(row,customer["name"],customer["score"],after["customers"][i]["score"],"점")
-			body.add_child(_label("같은 판매가·토핑·익힘에서 이 %s만 바꾼 예상이에요. 실제 시식 기록과 영업 결과는 별도예요." % title,15,MUTED))
-	var reload:=_button("배합 불러와 개량하기","ComponentReload","settings")
+			var values:=_details(body,"풍미 수치","ComponentFlavor")
+			for axis in Catalog.AXES: _comparison_number(values,Catalog.AXIS_NAMES[axis],before["profile"][axis],after["profile"][axis])
+			_knowledge_rows(body,candidate,"ComponentKnowledge")
+			# Customer scores encode compatibility too. Never show the untried
+			# candidate's score, even in a deeper comparison or a hidden label.
+			if state.recipe_known(candidate) and state.recipe_known(state.draft_config):
+				var ratings:=_details(body,"단골 예상 평가","ComponentRatings")
+				for i in before["customers"].size():
+					var customer: Dictionary=before["customers"][i]
+					var row:=HBoxContainer.new()
+					row.mouse_filter=Control.MOUSE_FILTER_PASS
+					ratings.add_child(row)
+					row.add_child(_picture(PixelArt.scaled_tex(PixelArt.portrait_image(customer["id"]),2),Vector2(32,32)))
+					_comparison_number(row,customer["name"],customer["score"],after["customers"][i]["score"],"점")
+	var reload:=_button("이 배합으로 개량","ComponentReload","settings")
 	reload.disabled=bool(_info["busy"])
 	reload.pressed.connect(func(): _emit("component_reload",{"kind":kind,"index":index}))
 	body.add_child(reload)
-	body.add_child(_label("개발실에서 작성 중인 배합을 이 배합으로 바꿔요. 지금 그릇과 완성 기록은 그대로예요.",15,MUTED))
-	_modal_footer("선택만으로 비용·샘플을 쓰지 않아요. 새 시제품은 시식할 때 비용이 들어요.","이미 사용하는 "+title if result["applied"] else "이 %s를 그릇에 담기" % title,func(): _emit(kind+"_use",{"index":index}); _close_modal(),bool(_info["busy"]) or bool(result["applied"]))
+	body.add_child(_label("개발실의 작성 중 배합을 바꿉니다.",14,MUTED))
+	var already_confirmed: bool=result["applied"] and state.recipe_known(candidate)
+	_modal_footer("","사용 중" if already_confirmed else "그릇에 담기",func(): _emit(kind+"_use",{"index":index}); _close_modal(),bool(_info["busy"]) or already_confirmed)
+	_compact_detail(580 if whole else 640)

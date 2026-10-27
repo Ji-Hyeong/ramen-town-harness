@@ -16,6 +16,7 @@ func _capture_comparison(holder: SubViewport, editor: Control, tag: String, kind
 	var st: ActualState=editor.get("state")
 	var before: Dictionary=st.to_dict()
 	await _tap(holder,editor,"ComponentCompare_"+kind+"_"+str(index))
+	await _tap(holder,editor,"ComponentValuesToggle")
 	_fixed_action(editor,holder.size,tag+" compare")
 	_check(st.to_dict()==before,tag+": opening comparison changes nothing")
 	var result: Dictionary=st.component_comparison(kind,index)
@@ -37,8 +38,11 @@ func _capture_comparison(holder: SubViewport, editor: Control, tag: String, kind
 	if scroll.get_v_scroll_bar().max_value-scroll.get_v_scroll_bar().page>20:
 		_check(scroll.scroll_vertical>original_scroll,tag+": swipe from actual bowl artwork scrolls forecast")
 	var last: Label=editor.find_child("ComponentValue_윤마루",true,false)
-	_check(last!=null,tag+": customer forecast includes named portrait rows")
+	var candidate: Dictionary=ComponentRules.apply_recipe(st.draft_config,kind,result["recipe"])
+	var known: bool=st.recipe_known(candidate) and st.recipe_known(st.draft_config)
+	_check((last!=null)==known,tag+": only tried recipes expose customer-score forecasts")
 	if last!=null:
+		await _tap(holder,editor,"ComponentRatingsToggle")
 		scroll.ensure_control_visible(last)
 		await _settle()
 		var customer: Dictionary=result["candidate_ramen"]["customers"][2]
@@ -68,7 +72,10 @@ func _component_profile(tag: String, vp: Vector2i) -> void:
 	await _shot(holder,tag+"_component_00_partial.png")
 	var raw: Dictionary=JSON.parse_string(FileAccess.get_file_as_string("res://tests/fixtures/component-v17-save.json"))
 	var st:=ActualState.new()
-	_check(st.load_from_dict(raw)=="" and JSON.parse_string(JSON.stringify(st.to_dict()))==raw,tag+": genuine pre-feature v17 values load exactly")
+	_check(st.load_from_dict(raw)=="",tag+": genuine pre-feature v17 loads")
+	var migrated: Dictionary=st.to_dict()
+	migrated.erase("recipe_knowledge"); migrated["schema_version"]=17
+	_check(JSON.parse_string(JSON.stringify(migrated))==raw,tag+": every genuine v17 gameplay field is preserved")
 	app.set("state",st)
 	_check(st.set_broth_blend(["kelp"],"gentle")["ok"] and st.set_noodle_formula("cut","thick")["ok"],tag+": unfinished drafts differ from archived formulas")
 	app.call("_refresh_all")

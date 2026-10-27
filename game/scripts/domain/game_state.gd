@@ -30,6 +30,7 @@ const ProcessRules = preload("res://scripts/domain/recipe_process.gd")
 const Broth = preload("res://scripts/domain/broth_workshop.gd")
 const Noodle = preload("res://scripts/domain/noodle_workshop.gd")
 const Comparison = preload("res://scripts/domain/component_comparison.gd")
+const Knowledge = preload("res://scripts/domain/recipe_knowledge.gd")
 const StoryCatalog = preload("res://scripts/domain/regular_story_catalog.gd")
 const Stories = preload("res://scripts/domain/regular_stories.gd")
 
@@ -57,7 +58,9 @@ const Stories = preload("res://scripts/domain/regular_stories.gd")
 ## v14 records explicit base-chef challenge acceptance and actual service proof.
 ## v15 adds mountain sampling without retroactive materials or challenge changes.
 ## v17 adds explicit flour/water/cut formulas; old products keep their original values.
-const SCHEMA_VERSION: int = 17
+## v18 remembers which exact recipes were really selected/tasted (recipe_knowledge.gd). v1..17 are seeded
+## only from actual tasting witnesses; money, day, formulas, records and scores are never touched.
+const SCHEMA_VERSION: int = 18
 const EXPANSION_PRICE: int = 60000
 const MIN_SCHEMA_VERSION: int = 1
 const LEGACY_MAX_RECORDS: int = 30
@@ -86,7 +89,8 @@ const TOP_KEYS_V13: Array = TOP_KEYS_V11 + ["harbor_foraging"]
 const TOP_KEYS_V14: Array = TOP_KEYS_V13 + ["chef_challenge"]
 const TOP_KEYS_V15: Array = TOP_KEYS_V14 + ["mountain_foraging"]
 const TOP_KEYS_V16: Array = TOP_KEYS_V15 + ["broth_workshop"]
-const TOP_KEYS: Array = TOP_KEYS_V16 + ["noodle_workshop"]
+const TOP_KEYS_V17: Array = TOP_KEYS_V16 + ["noodle_workshop"]
+const TOP_KEYS: Array = TOP_KEYS_V17 + ["recipe_knowledge"]
 const RECORD_KEYS: Array = ["record_id", "lineage_id", "name", "version", "tasted_day", "config", "scores", "comparison"]
 const COMPARISON_KEYS: Array = ["prev_record_id", "prev_version", "prev_scores", "prev_config"]
 const DRAFT_KEYS: Array = ["config", "name", "lineage_id"]
@@ -129,6 +133,10 @@ var _broth_workshop: Dictionary = Broth.empty_state()
 var _broth_active: Dictionary = {}
 var _noodle_workshop: Dictionary = Noodle.empty_state()
 var _noodle_active: Dictionary = {}
+## Recipes confirmed by a real explicit selection or tasting (saved, independent of the notebook).
+## _knowledge_index is derived from it and never saved.
+var _recipe_knowledge: Dictionary = Knowledge.empty_state()
+var _knowledge_index: Dictionary = {}
 var _contests: Dictionary = ContestProgress.empty_state()
 var _stories: Array = []
 ## 진행 중인 영업 런타임. 저장하지 않는다(재시작하면 영업 전 상태로 돌아온다). 있는 동안은 레시피/초안/일차를 잠근다.
@@ -222,7 +230,7 @@ func use_noodle(index: int) -> Dictionary:
 	methods["noodle"]=recipe["method"]
 	next["process"]=methods
 	draft_config=Catalog.normalize_config(next)
-	return _ok("직접 뽑은 면을 그릇에 담았어요.")
+	return _confirm_bowl(_ok("직접 뽑은 면을 그릇에 담았어요."))
 
 
 func broth_active() -> bool:
@@ -309,7 +317,50 @@ func use_broth(index: int) -> Dictionary:
 	methods["broth"]=recipe["method"]
 	next["process"]=methods
 	draft_config=Catalog.normalize_config(next)
-	return _ok("직접 개발한 육수를 그릇에 담았어요.")
+	return _confirm_bowl(_ok("직접 개발한 육수를 그릇에 담았어요."))
+
+
+# ---------- 레시피 지식 ----------
+##
+## A recipe becomes known only when the player really commits to it: a successful explicit bowl
+## selection (ingredient/topping/cooking/process, applying a finished broth/noodle, picking a retained
+## tasting record) or a paid tasting, and only while BOTH components are genuinely ready. Reading,
+## previews, comparison, reloading a workshop formula, crafting, repricing/renaming and save/load never
+## call _confirm_bowl. Nothing is granted: no money, stock, work or record.
+
+func recipe_known(config: Dictionary) -> bool:
+	return bool(Knowledge.view(_knowledge_index, config)["known"])
+
+
+## {"known": bool, "compat": [{"score","note"}]}. Unknown/malformed -> known=false and compat=[] (no counts or sums).
+## Always a fresh copy; the caller's config is never retained or modified.
+func recipe_knowledge(config: Dictionary) -> Dictionary:
+	return Knowledge.view(_knowledge_index, config)
+
+
+func _bowl_ready() -> bool:
+	if not broth_ready() or not noodle_ready():
+		return false
+	if _broth_config_error(draft_config, _broth_workshop, _rank, _discovered_list()) != "":
+		return false
+	if _noodle_config_error(draft_config, _noodle_workshop, _rank, _discovered_list()) != "":
+		return false
+	if Check.config_error(draft_config) != "" or _process_error(draft_config, _rank) != "":
+		return false
+	return Exploration.locked_in(draft_config, _discovered_list()) == ""
+
+
+## Adds "discovered": true to a successful result when this selection newly confirmed the bowl's recipe.
+## A failed action, an unready bowl or an already known recipe returns the result unchanged.
+func _confirm_bowl(res: Dictionary) -> Dictionary:
+	if not bool(res.get("ok", false)) or not _bowl_ready():
+		return res
+	var added: Dictionary = Knowledge.with_recipe(_recipe_knowledge, _knowledge_index, draft_config)
+	if bool(added["added"]):
+		_recipe_knowledge = added["state"]
+		_knowledge_index = added["index"]
+		res["discovered"] = true
+	return res
 
 
 ## Read-only review of a finished component against the one in the bowl. Allowed
@@ -457,7 +508,7 @@ func set_draft_process(slot: String, id: String) -> Dictionary:
 	var next: Dictionary = draft_config.duplicate(true)
 	next["process"] = selected
 	draft_config = Catalog.normalize_config(next)
-	return _ok("제조 공법을 바꿨어요. 시식하면 새 구성으로 기록돼요.")
+	return _confirm_bowl(_ok("제조 공법을 바꿨어요. 시식하면 새 구성으로 기록돼요."))
 
 
 static func _process_error(config: Dictionary, rank: int) -> String:
@@ -483,9 +534,9 @@ func set_draft_choice(slot: String, id: String) -> Dictionary:
 	if slot == Catalog.TOPPING_SLOT:
 		# 예전 호출 모양(토핑 하나 고르기) 호환: 토핑을 그 하나로 바꾼다. 여러 개는 set_draft_toppings/toggle_draft_topping 으로 고른다.
 		draft_config["toppings"] = [id]
-		return _ok("")
+		return _confirm_bowl(_ok(""))
 	draft_config[slot] = id
-	return _ok("")
+	return _confirm_bowl(_ok(""))
 
 
 ## 토핑 한 번에 지정(여러 개). 검증을 모두 마친 뒤에만 초안을 바꾼다: 최소 1개, 지금 열린 슬롯 수 이하, 모르는 id 없음. 중복은 별도 분량이다.
@@ -505,7 +556,7 @@ func set_draft_toppings(ids: Array) -> Dictionary:
 		var hint: String = Growth.topping_unlock_hint(_rank, _facilities)
 		return _fail("토핑은 지금 %d개까지 올릴 수 있어요. %s" % [slots, hint])
 	draft_config["toppings"] = Catalog.canonical_toppings(ids)
-	return _ok("")
+	return _confirm_bowl(_ok(""))
 
 
 ## 토핑 하나를 넣거나 뺀다(이미 있으면 빼고, 없으면 넣는다). 마지막 하나는 뺄 수 없고, 열린 슬롯 수를 넘겨 넣을 수 없다.
@@ -569,7 +620,7 @@ func select_record(id: int) -> Dictionary:
 	draft_lineage_id = int(r["lineage_id"])
 	selected_record_id = id
 	last_feedback_record_id = id
-	return _ok("")
+	return _confirm_bowl(_ok(""))
 
 
 func delete_record(id: int) -> Dictionary:
@@ -701,7 +752,7 @@ func taste() -> Dictionary:
 	last_feedback_record_id = int(record["record_id"])
 	var res: Dictionary = _ok("'%s v%d' 시식 완료 (재료비 %d원)" % [clean_name, version, cost])
 	res["record_id"] = int(record["record_id"])
-	return res
+	return _confirm_bowl(res)
 
 
 # ---------- 영업(하루) ----------
@@ -1947,6 +1998,7 @@ func to_dict() -> Dictionary:
 		"schema_version": SCHEMA_VERSION,
 		"broth_workshop":_broth_workshop.duplicate(true),
 		"noodle_workshop":_noodle_workshop.duplicate(true),
+		"recipe_knowledge": _recipe_knowledge.duplicate(true),
 		"day": day,
 		"wallet": wallet,
 		"next_record_id": next_record_id,
@@ -2017,6 +2069,8 @@ func load_from_dict(raw: Variant) -> String:
 	elif version == 16:
 		expected_keys = TOP_KEYS_V16
 	elif version == 17:
+		expected_keys = TOP_KEYS_V17
+	elif version == 18:
 		expected_keys = TOP_KEYS
 	var key_err: String = Check.keys_error(d, expected_keys, "저장")
 	if key_err != "":
@@ -2327,7 +2381,34 @@ func load_from_dict(raw: Variant) -> String:
 		return harbor_witness_error
 	var mountain_witness_error: String = _sample_witness_error(d, mountain_parsed, Mountain.IDS)
 	if mountain_witness_error != "": return mountain_witness_error
+	# Recipe knowledge. v18 stores only SHA-256 identity hashes, which grant nothing, so the strict parse
+	# checks format and duplicates only. Older saves are seeded ONLY from real tasting witnesses: retained
+	# rows, their predecessor configs and best-taste witnesses (all already validated above). The draft and
+	# untested defaults are never evidence.
+	var knowledge_parsed: Dictionary = Knowledge.empty_state()
+	var knowledge_index: Dictionary = {}
+	if version >= 18:
+		var known: Dictionary = Knowledge.parse_state(d["recipe_knowledge"])
+		if str(known["error"]) != "":
+			return str(known["error"])
+		knowledge_parsed = known["state"]
+		knowledge_index = known["index"]
+	else:
+		var witnesses: Array = []
+		for pe3 in parsed:
+			witnesses.append((pe3 as Dictionary)["config"])
+			var cmp3: Dictionary = (pe3 as Dictionary)["comparison"]
+			if not cmp3.is_empty():
+				witnesses.append(cmp3["prev_config"])
+		for cid in Customers.ids():
+			if not achievements[cid].is_empty():
+				witnesses.append(achievements[cid]["config"])
+		var seeded: Dictionary = Knowledge.seed(witnesses)
+		knowledge_parsed = seeded["state"]
+		knowledge_index = seeded["index"]
 	# 모든 검증 통과 후 반영
+	_recipe_knowledge = knowledge_parsed
+	_knowledge_index = knowledge_index
 	_taste_achievements = achievements
 	_stories = stories_parsed
 	_expanded = expanded

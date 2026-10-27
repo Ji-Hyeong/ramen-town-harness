@@ -189,7 +189,10 @@ func _shot(holder: SubViewport, file_name: String) -> void:
 	await _settle()
 	if _layout_only:
 		return
-	await RenderingServer.frame_post_draw
+	# An occluded macOS window can stop emitting scheduled frame_post_draw.
+	# Draw the actual offscreen viewport explicitly; this still reads real GPU
+	# pixels and the nonblank guard below must accept every saved capture.
+	RenderingServer.force_draw()
 	var img: Image = holder.get_texture().get_image()
 	# A correctly sized all-black/unrendered viewport is not visual evidence.
 	# Inspect actual pixels until four colors are found. The old8x8 grid could

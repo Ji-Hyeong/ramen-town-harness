@@ -50,8 +50,8 @@ func _scroll_moved(scroll: ScrollContainer, start: int, tag: String) -> void:
 	print("NATIVE TOUCH SCROLL ",tag," available=",available," before=",start," after=",scroll.scroll_vertical)
 	# The wide desktop renders all rows at once. It must remain stationary when
 	# there is no overflow; the portrait must exercise actual scroll movement.
-	if available>20:
-		_check(scroll.scroll_vertical>start+20,tag+": finger scroll moves overflowing current content")
+	if available>0:
+		_check(scroll.scroll_vertical>start+minf(20,available*0.5),tag+": finger scroll moves actual overflowing current content")
 	else:
 		_check(available<=0 and scroll.scroll_vertical==0,tag+": fitting current content has no fake scrolling")
 

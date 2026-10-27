@@ -69,11 +69,12 @@ static func _row(state: Game, base: Dictionary, id: String, replacement: int) ->
 	for definition in Directions.catalog():
 		if id in definition["requires"]:
 			directions.append({"id":definition["id"],"title":definition["title"],"assessment":Directions.assess(str(definition["id"]),next)})
+	var knowledge: Dictionary=state.recipe_knowledge(next)
 	return {"config":next,"title":title,"replacement":replacement,"axes":axes,
 		"flavor":" · ".join(changes) if not changes.is_empty() else "맛 축 변화 없음",
 		"before_cost":Evaluator.unit_cost(base),"after_cost":Evaluator.unit_cost(next),
 		"before_seconds":Evaluator.prep_seconds(base),"after_seconds":Evaluator.prep_seconds(next),
-		"compat":Evaluator.applied_compat(next),"samples":samples,"directions":directions,
+		"known":knowledge["known"],"compat":knowledge["compat"],"samples":samples,"directions":directions,
 		"sample_error":state.sample_check(next)["error"],"changed":not Check.same_config(base,next)}
 
 

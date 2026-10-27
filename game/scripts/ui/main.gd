@@ -1424,6 +1424,7 @@ func _persist(source: String = "자동") -> bool:
 ## 수동 저장. 영업 중이거나 시식 준비 중이면 거부한다(끝나지 않은 일은 저장하지 않는다는 기존 정책과 같다).
 ## 저장 꺼짐(손상 파일 보호 중)이면 파일을 건드리지 않고 이유를 알린다. 결과는 실제 저장 결과 그대로이며 거짓 성공을 말하지 않는다.
 func manual_save() -> Dictionary:
+	var recovering: bool=_last_save_message!="" or _save_error_shown
 	var ok: bool = false
 	var message: String = ""
 	if state.service_active():
@@ -1444,6 +1445,10 @@ func manual_save() -> Dictionary:
 		message = "저장하지 못했어요: %s" % _last_save_message
 	_manual_save_result.text = message
 	_manual_save_result.add_theme_color_override("font_color", TEAL if ok else VERMILION)
+	if ok and recovering:
+		_taste_message.text="저장 완료"
+		_taste_message.add_theme_color_override("font_color",TEAL)
+		_sync_bowl_editor()
 	return {"ok": ok, "message": message}
 
 
@@ -1726,6 +1731,10 @@ func _on_process_choice(slot: String, id: String) -> void:
 	var result: Dictionary = state.set_draft_process(slot, id)
 	_taste_message.text = str(result["message"])
 	_taste_message.add_theme_color_override("font_color", TEAL if bool(result["ok"]) else VERMILION)
+	if result["ok"]:
+		_acknowledge_recipe_discovery(result)
+		_persist()
+		_taste_message.text=_unsaved_notice(_taste_message.text)
 	_refresh_lab()
 
 
@@ -1815,6 +1824,9 @@ func _on_option_pressed(slot: String, id: String, source_point: Vector2 = Vector
 		_juice.burst(point, VERMILION, str(result["message"]).left(22))
 	else:
 		_ingredient_reaction(previous, id, point)
+		_acknowledge_recipe_discovery(result,point)
+		_persist()
+		_taste_message.text=_unsaved_notice(_taste_message.text)
 	_refresh_lab()
 
 
@@ -1836,6 +1848,11 @@ func _remove_topping_position(index: int) -> void:
 	if not result["ok"]:
 		_taste_message.text = result["message"]
 		_juice.burst(get_viewport_rect().size * Vector2(0.5, 0.65), VERMILION, "토핑은 최소 1개")
+	else:
+		_taste_message.text="토핑 한 분량 빼기"
+		_acknowledge_recipe_discovery(result)
+		_persist()
+		_taste_message.text=_unsaved_notice(_taste_message.text)
 	_selected_topping_position = -1
 	_refresh_lab()
 
@@ -1851,14 +1868,22 @@ func _ingredient_reaction(previous: Dictionary, id: String, point: Vector2) -> v
 		if absi(delta) > absi(largest):
 			largest = delta
 			change = "%s %+d" % [Catalog.AXIS_NAMES[axis], delta]
-	var before: Array = Evaluator.applied_compat(previous)
-	for rule in Evaluator.applied_compat(state.draft_config):
-		if not before.has(rule):
-			change = "궁합 발견!" if int(rule["score"]) > 0 else "엇갈리는 맛!"
-			break
 	_juice.burst(point, TEAL, change, _icon(id, 2), true)
-	_taste_message.text = "%s · %s · 원가 %+d원" % [Catalog.find(id)["name"], change, Evaluator.unit_cost(state.draft_config) - Evaluator.unit_cost(previous)]
+	_taste_message.text = "%s · %s" % [Catalog.find(id)["name"], change]
 	_taste_message.add_theme_color_override("font_color", TEAL)
+
+
+## Acknowledgement follows a successful domain selection, never a preview.
+## The exact explanation is available from the bowl's compatibility button.
+func _acknowledge_recipe_discovery(result: Dictionary, point: Vector2=Vector2.INF) -> void:
+	if not bool(result.get("discovered",false)): return
+	var known: Dictionary=state.recipe_knowledge(state.draft_config)
+	if not known["known"]: return
+	var sum: int=Evaluator.compat_total(known["compat"])
+	var text: String="궁합 발견" if sum>0 else ("아쉬운 조합 발견" if sum<0 else "궁합 확인")
+	var location: Vector2=get_viewport_rect().size*Vector2(0.5,0.5) if point==Vector2.INF else point
+	_juice.burst(location,VERMILION if sum<0 else TEAL,text)
+	_taste_message.text=text
 
 
 func _on_price_step(delta: int) -> void:
@@ -3069,8 +3094,9 @@ func _on_noodle_action(kind: String, data: Dictionary) -> void:
 	_taste_message.text=str(result["message"])
 	if result["ok"]:
 		if kind!="noodle_begin":
+			_acknowledge_recipe_discovery(result)
 			_persist()
-			_taste_message.text=_unsaved_notice(str(result["message"]))
+			_taste_message.text=_unsaved_notice(_taste_message.text)
 		_audio.play("noodle" if kind=="noodle_begin" else "plate")
 	else: _flash(str(result["message"]))
 	_refresh_all()
@@ -3105,8 +3131,9 @@ func _on_broth_action(kind: String, data: Dictionary) -> void:
 	_taste_message.text=str(result["message"])
 	if result["ok"]:
 		if kind!="broth_begin":
+			_acknowledge_recipe_discovery(result)
 			_persist()
-			_taste_message.text=_unsaved_notice(str(result["message"]))
+			_taste_message.text=_unsaved_notice(_taste_message.text)
 		_audio.play("broth" if kind=="broth_begin" else "plate")
 	else: _flash(str(result["message"]))
 	_refresh_all()
@@ -3402,7 +3429,10 @@ func _refresh_recipe_target() -> void:
 	var sample_check: Dictionary = state.sample_check(state.draft_config)
 	_journal_target.present(_recipe_pages(), _journal_target_id, _development_busy(), str(sample_check["error"]))
 	var identity: Dictionary = Discovery.describe(state.draft_config)
-	_bowl_traits.text = " · ".join((identity["tags"] as Array).slice(0, 3))
+	var tags: Array=(identity["tags"] as Array).duplicate()
+	if not state.recipe_known(state.draft_config):
+		tags.erase("궁합 좋음"); tags.erase("궁합 아쉬움")
+	_bowl_traits.text = " · ".join(tags.slice(0,3))
 	_bowl_caption.text = str(identity["title"]) + "\n원가 %s · 준비 %d초" % [_won(state.trial_cost()), Evaluator.prep_seconds(state.draft_config)]
 	var previous: Dictionary = state.get_record(state.selected_record_id)
 	if previous.is_empty():
@@ -3541,7 +3571,8 @@ func _refresh_lab() -> void:
 	for axis in Catalog.AXES:
 		(_flavor_bars[axis] as ProgressBar).value = profile[axis]
 		(_flavor_labels[axis] as Label).text = "%s %d/10" % [Catalog.AXIS_NAMES[axis], profile[axis]]
-	var combinations := Evaluator.applied_compat(state.draft_config)
+	var known: Dictionary=state.recipe_knowledge(state.draft_config)
+	var combinations: Array=known["compat"]
 	_experiment_note.text = "재료를 바꿔 맛의 균형을 찾아보세요. 많이 넣는다고 모두 좋아하진 않아요." if combinations.is_empty() else str(combinations[-1]["note"])
 	var parts: Array[String] = []
 	for axis in Catalog.AXES:
@@ -3553,12 +3584,15 @@ func _refresh_lab() -> void:
 		_profile_label.text += "\n공법: " + ProcessRules.summary(state.draft_config["process"]) + "\n제조·시식 연출 약 %.1f초 (영업 조리시간과 별개)" % float(ProcessRules.effects(state.draft_config["process"])["work_seconds"])
 	if staffed_prep != prep:
 		_profile_label.text += "\n영업 중 실제 준비 %d초 (조리 보조 효과, 맛 점수는 그대로)" % staffed_prep
-	var applied: Array = Evaluator.applied_compat(state.draft_config)
+	var applied: Array=known["compat"]
 	var lines: Array[String] = []
 	for a in applied:
 		var ad: Dictionary = a
 		lines.append("%s %s" % ["+%d" % int(ad["score"]) if int(ad["score"]) > 0 else str(int(ad["score"])), str(ad["note"])])
 	_compat_label.text = "재료 궁합 메모\n" + "\n".join(lines) if not lines.is_empty() else "재료 궁합 메모: 특별히 눈에 띄는 조합은 없어요."
+	if not known["known"]:
+		_compat_label.text="궁합 미확인 · 그릇에 담아 확인"
+		_experiment_note.text="궁합 미확인 · 그릇에 담아 확인"
 	# 시식 버튼 글/이름 입력/재료 버튼의 켜짐은 시식 준비 상태에 따라 한곳에서 정한다.
 	_apply_work_lock()
 
