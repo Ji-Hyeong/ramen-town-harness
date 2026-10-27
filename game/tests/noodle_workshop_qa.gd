@@ -47,7 +47,8 @@ func _noodle_profile(tag: String, vp: Vector2i) -> void:
 	var acknowledgements: int=feedback.call("acknowledgement_count")
 	await _drag_list(holder,choose.get_global_rect().get_center())
 	_check(st.to_dict()==before and feedback.call("acknowledgement_count")==acknowledgements,tag+": scrolling from selection cancels click and committed effect")
-	_check(scroll.scroll_vertical>old_scroll,tag+": flour selector scrolls from the card/button")
+	var overflow: float=scroll.get_v_scroll_bar().max_value-scroll.get_v_scroll_bar().page
+	_check(scroll.scroll_vertical>old_scroll if overflow>0 else scroll.scroll_vertical==0,tag+": flour cards scroll only when their real content overflows")
 	await _tap(holder,editor,"NoodleChoose_strong")
 	_check(st.noodle_review()["formula"]["flour"]=="strong",tag+": actual flour input")
 	_check(feedback.call("acknowledgement_count")>acknowledgements,tag+": committed raw selection receives visible click feedback")

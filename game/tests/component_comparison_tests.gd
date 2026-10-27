@@ -255,7 +255,7 @@ func persistence(st: State) -> void:
 	keys.sort()
 	var expected: Array=State.TOP_KEYS.duplicate()
 	expected.sort()
-	verify(State.SCHEMA_VERSION==17 and keys==expected and st.to_dict()["schema_version"]==17,"schema17 and persisted keys are unchanged")
+	verify(State.SCHEMA_VERSION==18 and keys==expected and st.to_dict()["schema_version"]==18,"schema18 adds knowledge while comparison leaves persisted keys intact")
 	var store:=Save.new(data_dir.path_join("current"))
 	verify(DirAccess.make_dir_recursive_absolute(store.dir)==OK and store.save_state(st)["ok"],"save reloaded and crafted formulas")
 	var restart:=State.new()
@@ -263,19 +263,19 @@ func persistence(st: State) -> void:
 	for kind in ["broth","noodle"]:
 		var size: int=st.broth_review()["recipes"].size() if kind=="broth" else st.noodle_review()["recipes"].size()
 		for i in size: verify(json(st.component_comparison(kind,i))==json(restart.component_comparison(kind,i)),"same comparison after restart: "+kind+str(i))
-	# A save written before this feature is just the current v17 bytes: comparisons never add a key.
+	# Current-schema round trip; genuine frozen17 migration lives in recipe_knowledge_tests.gd.
 	verify(st.load_component_recipe("broth",0)["ok"],"draft reload before saving")
 	var raw: String=JSON.stringify(st.to_dict(),"\t",true)
-	var old:=Save.new(data_dir.path_join("v17"))
-	verify(DirAccess.make_dir_recursive_absolute(old.dir)==OK,"v17 directory")
+	var old:=Save.new(data_dir.path_join("v18"))
+	verify(DirAccess.make_dir_recursive_absolute(old.dir)==OK,"v18 directory")
 	var file:=FileAccess.open(old.main_path(),FileAccess.WRITE)
 	file.store_string(raw); file.close()
 	var loaded:=State.new()
-	verify(old.load_into(loaded)["status"]=="ok" and json(loaded)==json(st),"v17 bytes load unchanged")
+	verify(old.load_into(loaded)["status"]=="ok" and json(loaded)==json(st),"current bytes load unchanged")
 	verify(loaded.broth_review()["blend"]["ingredients"]==Broth.canonical(loaded.broth_review()["recipes"][0]["recipe"])["ingredients"],"reloaded draft survives disk")
 	var snapshot: String=json(loaded)
 	for i in loaded.broth_review()["recipes"].size(): loaded.component_comparison("broth",i)
-	verify(snapshot==json(loaded) and FileAccess.get_file_as_string(old.main_path())==raw,"old v17 file and state untouched by review")
+	verify(snapshot==json(loaded) and FileAccess.get_file_as_string(old.main_path())==raw,"saved file and state untouched by review")
 
 func old_save() -> void:
 	var original: String=FileAccess.get_file_as_string("res://tests/fixtures/noodle-v16-save.json")

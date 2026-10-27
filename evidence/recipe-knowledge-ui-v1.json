@@ -1,0 +1,209 @@
+{
+  "task": "recipe-knowledge-ui-v1",
+  "date_kst": "2026-10-27",
+  "base_commit": "45de9e768dfe5f6401d1ae692398bf5ff18c3a08",
+  "schema": 18,
+  "pack_sha256": "18c3fee83ed7880a923d3a3a1f7da38a6ddbae2e5fb8203487b7a3d036134cf2",
+  "bundled_source_files": 359,
+  "all_bundled_sources_match_checkout": true,
+  "vendor_signature_verified_before_and_after_run": true,
+  "launch": "Official copied Godot binary loads the fixed QA scripts from the exact PCK; native OpenGL rendering, not a wrapper launch or iPhone run. Explicit offscreen renderer frame prevents covered-window draw waits; every PNG passes real pixel nonblank and dimension checks.",
+  "domains": [
+    {
+      "tag": "knowledge-domain",
+      "exit": 0,
+      "summaries": [
+        "RECIPE KNOWLEDGE checks=4138 failures=0"
+      ],
+      "errors": []
+    },
+    {
+      "tag": "component-domain",
+      "exit": 0,
+      "summaries": [
+        "COMPONENT COMPARISON checks=373 failures=0"
+      ],
+      "errors": []
+    },
+    {
+      "tag": "noodle-domain",
+      "exit": 0,
+      "summaries": [
+        "RAW NOODLE checks=276 failures=0"
+      ],
+      "errors": []
+    },
+    {
+      "tag": "broth-domain",
+      "exit": 0,
+      "summaries": [
+        "RAW BROTH checks=226 failures=0"
+      ],
+      "errors": []
+    },
+    {
+      "tag": "historical-domain",
+      "exit": 0,
+      "summaries": [
+        "tests=129 checks=59458 failures=0"
+      ],
+      "errors": []
+    }
+  ],
+  "native": [
+    {
+      "tag": "knowledge",
+      "exit": 0,
+      "summaries": [
+        "RECIPE KNOWLEDGE UI checks=1123 failures=0 mode=capture"
+      ],
+      "engine_errors": 0,
+      "png": 34,
+      "failures": []
+    },
+    {
+      "tag": "noodle",
+      "exit": 0,
+      "summaries": [
+        "RAW NOODLE UI checks=291 failures=0 mode=capture"
+      ],
+      "engine_errors": 0,
+      "png": 28,
+      "failures": []
+    },
+    {
+      "tag": "broth",
+      "exit": 0,
+      "summaries": [
+        "RAW BROTH UI checks=235 failures=0 mode=capture"
+      ],
+      "engine_errors": 0,
+      "png": 22,
+      "failures": []
+    },
+    {
+      "tag": "editor",
+      "exit": 0,
+      "summaries": [
+        "QA mode=capture checks=528 failures=0 out=/private/tmp/ramen-knowledge-native-20261027-v4/editor-captures"
+      ],
+      "engine_errors": 0,
+      "png": 30,
+      "failures": []
+    },
+    {
+      "tag": "component",
+      "exit": 0,
+      "summaries": [
+        "COMPONENT UI checks=407 failures=0 mode=capture"
+      ],
+      "engine_errors": 0,
+      "png": 32,
+      "failures": []
+    },
+    {
+      "tag": "touch",
+      "exit": 0,
+      "summaries": [
+        "NATIVE WORKBENCH TOUCH checks=49 failures=0"
+      ],
+      "engine_errors": 0,
+      "png": 0,
+      "failures": []
+    }
+  ],
+  "native_png_total": 146,
+  "compact_layout": {
+    "size": [
+      390,
+      750
+    ],
+    "checks": 513,
+    "failures": 0,
+    "exit": 0,
+    "screenshots": false
+  },
+  "helper": {
+    "tests": 23,
+    "failures": 0,
+    "exit": 0,
+    "source_sha256": "14d108cd812a5b9e615b284237a4761ffad759605a37bbb3ef970f870d6faa15"
+  },
+  "baseline": {
+    "fresh_frozen_main": true,
+    "checks": 56,
+    "failures": 0,
+    "exit": 0,
+    "png": 12,
+    "runtime_sources_match_initial_clean_main": true
+  },
+  "claude": {
+    "ownership": [
+      "game/scripts/domain/recipe_knowledge.gd",
+      "game/scripts/domain/game_state.gd",
+      "game/scripts/services/save_service.gd",
+      "game/tests/recipe_knowledge_tests.gd"
+    ],
+    "owned_sources_unchanged_after_handoff": true,
+    "invocations": [
+      {
+        "phase": "initial",
+        "requested_max_turns": 30,
+        "reported_num_turns": 65,
+        "exit": 0,
+        "subtype": "success",
+        "is_error": false,
+        "permission_denials": [],
+        "tokens": {
+          "input_tokens": 46,
+          "cache_creation_input_tokens": 162733,
+          "cache_read_input_tokens": 1893427,
+          "output_tokens": 71951
+        }
+      },
+      {
+        "phase": "targeted_correction",
+        "requested_max_turns": 10,
+        "reported_num_turns": 28,
+        "exit": 0,
+        "subtype": "success",
+        "is_error": false,
+        "permission_denials": [],
+        "tokens": {
+          "input_tokens": 16,
+          "cache_creation_input_tokens": 29725,
+          "cache_read_input_tokens": 1442221,
+          "output_tokens": 18063
+        }
+      }
+    ],
+    "tests_executed_by": "Codex; Claude intentionally used file-only tools.",
+    "quota_share": "Unknown; token totals are not subscription quota ratios."
+  },
+  "coverage": [
+    "Untried ingredient/completed-component previews contain no compatibility notes or customer score labels, even folded.",
+    "Explicit successful selection confirms the exact canonical recipe without tasting costs or rewards; price/name do not create new experiments.",
+    "Good, negative and neutral knowledge covered by domain tests; the native flow captures a confirmed positive recipe and unknown candidates.",
+    "1863 distinct valid recipe combinations exercise the pure knowledge store and real disk round trip; this is not1863 complete gameplay sessions. Synthetic32000/20000 hashes exercise the save byte boundary only.",
+    "Actual pointer input covers pressed/released disclosure feedback, drag cancellation, component use, save refusal/retry/deletion/restart. Simulated finger input is a separate headless49-check test.",
+    "Frozen15/16/17 original save bytes backed up and original gameplay values preserved. Historical fixtures explicitly remove only newer schema keys; new knowledge migration is tested separately."
+  ],
+  "visual_review": {
+    "published_current_originals": 14,
+    "published_baseline_originals": 4,
+    "report": "game/docs/uiux-reset/recipe-knowledge-v1/README.md",
+    "native_pngs_captured_not_all_manually_opened": true
+  },
+  "limits": [
+    "No physical iPhone installation or new device gameplay acceptance.",
+    "No VoiceOver/full accessibility or6-10h fun/economy acceptance.",
+    "Very large knowledge can eventually exceed the existing2MiB save boundary; the failure is explicit and existing saves/backups are preserved."
+  ],
+  "private_archive": "outputs/ramen-recipe-knowledge-v1/final-v4",
+  "preserved": [
+    "Normal player saves",
+    "Previous folders",
+    "Existing stash9d2270c5e684b349f0ef62ef822ed41a9ce3dbbe"
+  ],
+  "publication": "Ready PR and matching-head squash under standing human authorization; actual merge recorded in private publication.json after success."
+}

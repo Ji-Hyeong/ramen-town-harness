@@ -107,6 +107,12 @@ func save_state(state: GameStateScript) -> Dictionary:
 	if dir == "":
 		return {"ok": false, "message": "저장 위치가 지정되지 않았어요."}
 	var text: String = JSON.stringify(state.to_dict(), "\t", true)
+	# load_into() refuses files over MAX_BYTES, so writing one would replace the last loadable save with an
+	# unloadable one and still report success. Check the UTF-8 byte length (not the character count) before
+	# opening tmp or touching main/backups; everything on disk stays exactly as it was.
+	var byte_count: int = text.to_utf8_buffer().size()
+	if byte_count > MAX_BYTES:
+		return {"ok": false, "message": "저장 크기(%d바이트)가 한도(%d바이트)를 넘어 저장하지 않았어요. 기존 저장은 그대로예요. 불필요한 시식 기록을 정리한 뒤 다시 저장해 주세요." % [byte_count, MAX_BYTES]}
 	var tmp: String = tmp_path()
 	var file: FileAccess = FileAccess.open(tmp, FileAccess.WRITE)
 	if file == null:
