@@ -1,0 +1,188 @@
+{
+  "renderer": "Actual Godot OpenGL; original SubViewport pixels, no device chrome or mock images",
+  "current_originals": 16,
+  "baseline_originals": 2,
+  "manual_scope": "These18 published originals were opened. The remaining captured regression images are not all manually reviewed.",
+  "images": [
+    {
+      "name": "before_portrait_noodle_01_formula.png",
+      "size": [
+        390,
+        844
+      ],
+      "sha256": "0c644ddbbadc31496fb9f7496eaf360988e43a4d6d9caca998a194194c3e0ce9",
+      "manually_opened_at_original_size": true,
+      "baseline": true
+    },
+    {
+      "name": "before_portrait_noodle_13_tasted.png",
+      "size": [
+        390,
+        844
+      ],
+      "sha256": "634c36902774e3c81d609fbd6ea1eb0ee45e133570e2a959c65d0169620e35ba",
+      "manually_opened_at_original_size": true,
+      "baseline": true
+    },
+    {
+      "name": "desktop_cycle_02_noodle_choices.png",
+      "size": [
+        1280,
+        800
+      ],
+      "sha256": "b7317557f94aec0fc1cb15546f4bb601aafdcd27d4b25a02d122b123bad4f60e",
+      "manually_opened_at_original_size": true,
+      "baseline": false
+    },
+    {
+      "name": "desktop_cycle_06_noodle_complete.png",
+      "size": [
+        1280,
+        800
+      ],
+      "sha256": "20247c63b6a4a99dfcf4c486d1eb450efb495a9a51b7983dcb055e8598d6630b",
+      "manually_opened_at_original_size": true,
+      "baseline": false
+    },
+    {
+      "name": "desktop_cycle_08_tasted.png",
+      "size": [
+        1280,
+        800
+      ],
+      "sha256": "ca09281d34c768b829cc5ccf762ec1c5ac5ff159056ecfdb8398277746cd1c1e",
+      "manually_opened_at_original_size": true,
+      "baseline": false
+    },
+    {
+      "name": "portrait_cycle_01_broth_complete.png",
+      "size": [
+        390,
+        844
+      ],
+      "sha256": "7abe1019df0c8b38ee76b82b3db275270001215af0fc1aac480b060e4b948811",
+      "manually_opened_at_original_size": true,
+      "baseline": false
+    },
+    {
+      "name": "portrait_cycle_02_noodle_choices.png",
+      "size": [
+        390,
+        844
+      ],
+      "sha256": "8a6166a462c1c62072e218b589f15cf2e23b1fa691045b7dc79a91a4dc7a869f",
+      "manually_opened_at_original_size": true,
+      "baseline": false
+    },
+    {
+      "name": "portrait_cycle_04_noodle_work.png",
+      "size": [
+        390,
+        844
+      ],
+      "sha256": "593fe79bda25b1cf775e3f96a48ce15746a60b0de63bc02ca108ae713fd995b7",
+      "manually_opened_at_original_size": true,
+      "baseline": false
+    },
+    {
+      "name": "portrait_cycle_05_unsaved_complete.png",
+      "size": [
+        390,
+        844
+      ],
+      "sha256": "60f38a3358167e3c598a6dfd3e7956a351106e0e51d228894cb510a601188af2",
+      "manually_opened_at_original_size": true,
+      "baseline": false
+    },
+    {
+      "name": "portrait_cycle_06_noodle_complete.png",
+      "size": [
+        390,
+        844
+      ],
+      "sha256": "c814defb405f430b4a4557c405bd484b2aee43bf0006209ca0f8ace68dd6b95d",
+      "manually_opened_at_original_size": true,
+      "baseline": false
+    },
+    {
+      "name": "portrait_cycle_07_bowl.png",
+      "size": [
+        390,
+        844
+      ],
+      "sha256": "ca4e48ec676c038405f52ba0b8aad44609328da3f61c528f6f0cc903c60f3be9",
+      "manually_opened_at_original_size": true,
+      "baseline": false
+    },
+    {
+      "name": "portrait_cycle_08_tasted.png",
+      "size": [
+        390,
+        844
+      ],
+      "sha256": "739bf33b8e95fa7d611ee3c0600ad7ab62d47efb7edf261f0b9443257fead448",
+      "manually_opened_at_original_size": true,
+      "baseline": false
+    },
+    {
+      "name": "portrait_cycle_09_customer.png",
+      "size": [
+        390,
+        844
+      ],
+      "sha256": "121a359d1666473b169e46459549ea986b4d4f520135a2d4d5da18ddd03df37d",
+      "manually_opened_at_original_size": true,
+      "baseline": false
+    },
+    {
+      "name": "portrait_cycle_09b_pressed.png",
+      "size": [
+        390,
+        844
+      ],
+      "sha256": "0e77ba001b4a0e6bfe5bfb32082c6f71b5802ce0326559463c7ddf85fc25f856",
+      "manually_opened_at_original_size": true,
+      "baseline": false
+    },
+    {
+      "name": "portrait_cycle_10_reaction_details.png",
+      "size": [
+        390,
+        844
+      ],
+      "sha256": "2870d9cbc09cf16294cffcf79abeba8ba68f8c66db7f795f41d4dca70d2d48a8",
+      "manually_opened_at_original_size": true,
+      "baseline": false
+    },
+    {
+      "name": "portrait_cycle_11_next_experiment.png",
+      "size": [
+        390,
+        844
+      ],
+      "sha256": "d8ce3a1cc08f2204b8cfad049ae453671be2d9498f270f9e364d07db4dbfa56a",
+      "manually_opened_at_original_size": true,
+      "baseline": false
+    },
+    {
+      "name": "short_noodle_01_formula.png",
+      "size": [
+        390,
+        750
+      ],
+      "sha256": "9798ad575bf8a4b0a2df4533259fe320cd8187f3654901712e7131c8fe56926f",
+      "manually_opened_at_original_size": true,
+      "baseline": false
+    },
+    {
+      "name": "short_noodle_05_ready.png",
+      "size": [
+        390,
+        750
+      ],
+      "sha256": "ade94ab0cc7b987cb0cf35b67911f92c737facdee5183eda4045a0f5485def5a",
+      "manually_opened_at_original_size": true,
+      "baseline": false
+    }
+  ]
+}

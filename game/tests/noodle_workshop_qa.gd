@@ -2,12 +2,13 @@ extends "res://tests/broth_workshop_qa.gd"
 ## Current v17 uses real input and elapsed production, with isolated autosaves.
 ## The parent supplies geometry/capture helpers only; replace its v16 state.
 const ActualState=preload("res://scripts/domain/game_state.gd")
+const Bowl=preload("res://scripts/ui/bowl_workbench.gd")
 var noodle_profiles: int=0
 
 func _run() -> void:
-	for profile in [{"tag":"portrait","size":Vector2i(390,844)},{"tag":"desktop","size":Vector2i(1280,800)}]:
+	for profile in [{"tag":"portrait","size":Vector2i(390,844)},{"tag":"short","size":Vector2i(390,750)},{"tag":"desktop","size":Vector2i(1280,800)}]:
 		await _noodle_profile(profile["tag"],profile["size"])
-	_check(noodle_profiles==2,"both current raw-noodle profiles complete")
+	_check(noodle_profiles==3,"all current raw-noodle profiles complete")
 	print("RAW NOODLE UI checks=%d failures=%d mode=%s" % [_checks,_failures.size(),"layout" if _layout_only else "capture"])
 	for failure in _failures: printerr("FAIL: "+failure)
 	quit(0 if _failures.is_empty() else 1)
@@ -34,10 +35,26 @@ func _noodle_profile(tag: String, vp: Vector2i) -> void:
 	await _tap(holder,editor,"EditorTaste")
 	_fixed_action(editor,vp,tag+" formula")
 	await _shot(holder,tag+"_noodle_01_formula.png")
-	await _tap(holder,editor,"NoodleField_flour")
-	_check((editor.find_child("NoodleChoose_buckwheat",true,false) as Button).disabled,tag+": unearned mountain flour remains locked")
-	await _shot(holder,tag+"_noodle_02_flours.png")
 	var scroll: ScrollContainer=editor.find_child("DetailsScroll",true,false)
+	var preview: Control=editor.find_child("NoodlePreview",true,false)
+	_check(preview!=null and not scroll.is_ancestor_of(preview),tag+": current food preview stays outside the scrolling choices")
+	_check(editor.find_child("NoodleField_flour",true,false)==null,tag+": no field-to-subpage navigation remains")
+	# Every field is a visible card on this one sheet; none is a hidden page.
+	for id in ["wheat","strong","buckwheat","clear","alkaline","thin","medium","thick","standard","moist","rested"]:
+		var card: Button=editor.find_child("NoodleChoose_"+id,true,false) as Button
+		_check(card!=null and card.is_visible_in_tree() and scroll.is_ancestor_of(card),tag+": choice card on the formula sheet: "+id)
+		if card==null: continue
+		_check(card.size.y>=44 and card.size.x>=44 and card.size.y<=90,tag+": compact 44px+ choice target: "+id)
+		for label in card.find_children("*","Label",true,false):
+			_check(card.get_global_rect().grow(-3).encloses(label.get_global_rect()),tag+": card text clear of its border: "+id)
+		_check(card.get_global_rect().position.x>=scroll.get_global_rect().position.x-1 and card.get_global_rect().end.x<=scroll.get_global_rect().end.x+1,tag+": no horizontal clipping: "+id)
+	for field in ["flour","water","cut","method"]:
+		var first: Control=editor.find_child("NoodleFieldSection_"+field,true,false)
+		_check(first!=null and first.get_child_count()==2,tag+": "+field+" is a heading plus one compact card row")
+	_check((editor.find_child("NoodleChoose_buckwheat",true,false) as Button).disabled,tag+": unearned mountain flour remains locked")
+	_check((editor.find_child("NoodleChoose_rested",true,false) as Button).disabled,tag+": rank2 aging unavailable at rank1")
+	_check(editor.find_child("NoodleChoose_wheat",true,false)!=null and (editor.find_child("NoodleChoose_wheat",true,false) as Button).get_theme_stylebox("normal").get("border_width_left")==4,tag+": current choice is visibly selected")
+	await _shot(holder,tag+"_noodle_02_flours.png")
 	var choose: Button=editor.find_child("NoodleChoose_wheat",true,false)
 	scroll.ensure_control_visible(choose)
 	await _settle()
@@ -48,17 +65,26 @@ func _noodle_profile(tag: String, vp: Vector2i) -> void:
 	await _drag_list(holder,choose.get_global_rect().get_center())
 	_check(st.to_dict()==before and feedback.call("acknowledgement_count")==acknowledgements,tag+": scrolling from selection cancels click and committed effect")
 	var overflow: float=scroll.get_v_scroll_bar().max_value-scroll.get_v_scroll_bar().page
-	_check(scroll.scroll_vertical>old_scroll if overflow>0 else scroll.scroll_vertical==0,tag+": flour cards scroll only when their real content overflows")
+	_check(scroll.scroll_vertical>old_scroll if overflow>0 else scroll.scroll_vertical==0,tag+": formula cards scroll only when their real content overflows")
+	var food_before: Texture2D=(editor.find_child("NoodlePreviewFood",true,false) as TextureRect).texture
 	await _tap(holder,editor,"NoodleChoose_strong")
 	_check(st.noodle_review()["formula"]["flour"]=="strong",tag+": actual flour input")
 	_check(feedback.call("acknowledgement_count")>acknowledgements,tag+": committed raw selection receives visible click feedback")
-	await _tap(holder,editor,"NoodleField_water")
+	_check((editor.find_child("NoodlePreviewName",true,false) as Label).text.contains("탄력"),tag+": preview follows flour in the same sheet")
+	_check(editor.find_child("NoodleChoose_alkaline",true,false)!=null,tag+": next field needs no page change")
 	await _shot(holder,tag+"_noodle_03_water.png")
+	# A successful choice rebuilds the sheet; the offset must survive it.
+	scroll=editor.find_child("DetailsScroll",true,false)
+	var alkaline: Button=editor.find_child("NoodleChoose_alkaline",true,false)
+	scroll.ensure_control_visible(alkaline)
+	await _settle()
+	var kept: int=scroll.scroll_vertical
 	await _tap(holder,editor,"NoodleChoose_alkaline")
-	await _tap(holder,editor,"NoodleField_cut")
+	scroll=editor.find_child("DetailsScroll",true,false)
+	_check(st.noodle_review()["formula"]["water"]=="alkaline" and scroll.scroll_vertical==kept,tag+": scroll position survives a successful choice rebuild")
 	await _tap(holder,editor,"NoodleChoose_medium")
-	await _tap(holder,editor,"NoodleField_method")
-	_check((editor.find_child("NoodleChoose_rested",true,false) as Button).disabled,tag+": rank2 aging unavailable at rank1")
+	_check(st.noodle_review()["formula"]["cut"]=="medium" and (editor.find_child("NoodlePreviewFood",true,false) as TextureRect).texture!=food_before,tag+": cut choice changes the existing food texture preview")
+	_check((editor.find_child("NoodlePreviewCost",true,false) as Label).text.contains(Bowl.won(int(st.noodle_review()["cost"]))),tag+": preview cost matches actual formula cost")
 	await _shot(holder,tag+"_noodle_04_methods.png")
 	await _tap(holder,editor,"NoodleChoose_moist")
 	_check(st.noodle_review()["formula"]["method"]=="moist",tag+": actual dough selection")
@@ -100,8 +126,11 @@ func _noodle_profile(tag: String, vp: Vector2i) -> void:
 	editor.call("reveal_ingredient","noodle_buckwheat")
 	await _settle()
 	_check((editor.get("_modal") as Control).get_meta("raw_material","")=="buckwheat" and st.to_dict()==before,tag+": mountain source points to flour without changing recipe/stock")
+	_check((editor.get("_modal") as Control).get_meta("noodle_focus","")=="flour" and editor.find_child("NoodleChoose_buckwheat",true,false)!=null,tag+": source shortcut highlights the visible flour field")
+	var source_scroll: ScrollContainer=editor.find_child("DetailsScroll",true,false)
+	var flour_top: float=(editor.find_child("NoodleFieldSection_flour",true,false) as Control).position.y
+	_check(source_scroll.scroll_vertical==int(flour_top) or source_scroll.scroll_vertical==int(source_scroll.get_v_scroll_bar().max_value),tag+": source shortcut scrolls to its field")
 	await _shot(holder,tag+"_noodle_12_source.png")
-	await _tap(holder,editor,"EditorDetailsBack")
 	await _tap(holder,editor,"NoodleTab_cook")
 	await _tap(holder,editor,"EditorAdd_cook_normal")
 	await _tap(holder,editor,"EditorDetailApply")

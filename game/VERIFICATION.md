@@ -1,5 +1,13 @@
 # 라멘 아틀리에 검증 기록
 
+## 한 그릇 개발 흐름 (2026-10-28)
+
+면 배합·실제 제조·명시적 담기·시식 반응·관련 배합 재개발을 검사했다. 같은 게임 코드로 실제 Mac 화면7흐름3,736확인/실패0/종료0/엔진 오류0,208장이다. 작은390×750 제면도 실제 캡처했다. CUA가 시작한 시험 앱도 별도24장/280확인/실패0/종료0이며, 도구의 실행 관찰 시간 초과와 실제 앱 종료 결과를 구분한다. 저장 실패·재시도·재시작, 선택 카드 스와이프 취소와 누르는 상태를 포함한다.
+
+최종365소스는 현재 체크아웃과 같고, v6/v7 패키지의 유일한 차이는 새 재개발 창에서 뒤로가기를 거치는 채집 시험 절차다. v6 채집 검사6실패는 보존하고 v7의515확인/실패0만 수용한다. 나머지 화면은 v6 검사이며 모든 게임 코드가 v7과 바이트 단위로 같다. 실행 뒤 두 공식 엔진의 엄격 서명 검사를 통과했다. 터치 이벤트49개(화면 없는 입력 검사), 도구23개도 통과한다. 기존 도메인/서비스66파일은 불변이고 관련 순수 검사4,138/373/276/226개와 기존129테스트59,458확인은 실패0이다.
+
+[화면·전후·검토 범위](docs/uiux-reset/development-cycle-v1/) · [동작과 한계](docs/DEVELOPMENT_CYCLE_V1.md) · [소스·실행·분담 증거](../evidence/development-cycle-v1.json). 공개한 현재16장과 이전2장 및 회귀7장을 직접 열었다. 전체 캡처 수동 검토, 물리 iPhone 조작, 장기 재미·경제·접근성 수용은 주장하지 않는다. 아래 수치는 각 이전 작업의 기록이다.
+
 ## Native bowl editor current checkpoint
 
 Final native457/0/exit0/engine0; actual pack367/0, compact185/0, builder34/0, licenses3/0. Bounded current detail review plus prior28-image reflow baseline; no whole-game/human/iPhone acceptance. See [scope and source comparison](../design-qa.md), [current originals](docs/uiux-reset/native-v5/) and [sanitized evidence](../evidence/bowl-editor-native-v1.json). Historical checks below are not current editor visual proof.

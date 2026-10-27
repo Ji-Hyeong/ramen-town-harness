@@ -185,16 +185,19 @@ class PreparedBundleScope(unittest.TestCase):
         return project, engine, out, runner
 
     def test_selected_native_fixture_reaches_launcher_and_manifest(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            project, engine, out, _ = self.prepare(Path(tmp))
-            fixture = "res://tests/bowl_editor_qa.gd"
-            (project / "tests/bowl_editor_qa.gd").write_text("extends SceneTree\n")
-            runner = FakeGodot(fixture="tests/bowl_editor_qa.gd")
-            result = qa.prepare(engine, project, out, runner=runner, platform="darwin", qa_script=fixture)
-            script = (result["app"] / "Contents/MacOS" / qa.LAUNCHER_NAME).read_text()
-            self.assertIn(fixture, script)
-            self.assertNotIn("--script res://tests/qa_capture.gd", script)
-            self.assertEqual(json.loads(result["manifest"].read_text())["qa_script"], fixture)
+        # Both the established editor and the new first-menu journey must reach
+        # the generated launcher/manifest without allowing arbitrary scripts.
+        for name in ("bowl_editor_qa.gd", "development_cycle_qa.gd"):
+            with self.subTest(fixture=name), tempfile.TemporaryDirectory() as tmp:
+                project, engine, out, _ = self.prepare(Path(tmp))
+                fixture = "res://tests/" + name
+                (project / "tests" / name).write_text("extends SceneTree\n")
+                runner = FakeGodot(fixture="tests/" + name)
+                result = qa.prepare(engine, project, out, runner=runner, platform="darwin", qa_script=fixture)
+                script = (result["app"] / "Contents/MacOS" / qa.LAUNCHER_NAME).read_text()
+                self.assertIn(fixture, script)
+                self.assertNotIn("--script res://tests/qa_capture.gd", script)
+                self.assertEqual(json.loads(result["manifest"].read_text())["qa_script"], fixture)
 
     def test_unreviewed_or_missing_fixture_creates_no_output(self):
         with tempfile.TemporaryDirectory() as tmp:

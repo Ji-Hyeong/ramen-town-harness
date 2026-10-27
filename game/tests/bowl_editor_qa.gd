@@ -188,7 +188,8 @@ func _run_profile(tag: String, vp: Vector2i, _scale: int) -> void:
 	_check(not state.call("broth_active") and state.call("broth_review")["recipes"].size()==1,tag+": real raw chicken broth completes")
 	await _settle()
 	await _shot(holder,tag+"_editor_06_broth_edit.png")
-	await _tap(holder,editor,"BrothUse_0")
+	_check((editor.get("_modal") as Control).get_meta("view_kind","")=="component_complete",tag+": finished broth has explicit result/apply action")
+	await _tap(holder,editor,"EditorDetailApply")
 	_check(str((state.get("draft_config") as Dictionary)["broth"])=="broth_chicken",tag+": explicitly selected raw broth is used")
 	_check((state.get("draft_config") as Dictionary).has("broth_recipe"),tag+": current broth retains actual raw provenance")
 	# Freeze frame-time advancement only in QA so each genuine cooking state can
@@ -256,6 +257,10 @@ func _run_profile(tag: String, vp: Vector2i, _scale: int) -> void:
 	await _shot(holder, tag + "_editor_09c_clues.png")
 	await _tap(holder, editor, "EditorDetailsBack")
 	await _tap(holder, editor, "EditorDevelopAgain")
+	_check(int(editor.get("_mode"))==0,tag+": reaction adjustment returns to actual development")
+	# The new contextual action may open its relevant real selector. Close that
+	# selector before the separate synthetic four-slot layout projection.
+	editor.call("_close_modal")
 	# Explicit synthetic VIEW projection: no claim that this fresh player earned
 	# rank3, no mutation of the real controller state and no fixture save to disk.
 	var projection := GameProjection.new()

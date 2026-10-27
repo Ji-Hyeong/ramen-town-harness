@@ -343,11 +343,13 @@ func _process(delta: float) -> void:
 			if result["ok"]:
 				_persist()
 				_audio.play("broth")
-				_juice.burst(get_viewport_rect().size*Vector2(0.5,0.42),TEAL,"육수 완성!")
+				# The completion sheet already names the result. Keep its sparks,
+				# without a second floating caption crossing the sheet's title.
+				_juice.burst(get_viewport_rect().size*Vector2(0.5,0.42),TEAL)
 				_taste_message.text=_unsaved_notice(str(result["message"]))
 			_refresh_all()
 			_sync_bowl_editor()
-			if result["ok"]: _bowl_editor._return_component_library("broth",true)
+			if result["ok"]: _bowl_editor._show_component_completion("broth",state.broth_review()["recipes"].size()-1)
 			else: _bowl_editor._show_broth_workshop()
 		else:
 			_bowl_editor.update_broth_progress()
@@ -358,11 +360,11 @@ func _process(delta: float) -> void:
 			if result["ok"]:
 				_persist()
 				_audio.play("noodle")
-				_juice.burst(get_viewport_rect().size*Vector2(0.5,0.42),TEAL,"자가제면 완성!")
+				_juice.burst(get_viewport_rect().size*Vector2(0.5,0.42),TEAL)
 				_taste_message.text=_unsaved_notice(str(result["message"]))
 			_refresh_all()
 			_sync_bowl_editor()
-			if result["ok"]: _bowl_editor._return_component_library("noodle",true)
+			if result["ok"]: _bowl_editor._show_component_completion("noodle",state.noodle_review()["recipes"].size()-1)
 			else: _bowl_editor._show_noodle_workshop()
 		else:
 			_bowl_editor.update_noodle_progress()
@@ -3102,6 +3104,11 @@ func _on_noodle_action(kind: String, data: Dictionary) -> void:
 	_refresh_all()
 	_sync_bowl_editor()
 	if kind!="noodle_use": _bowl_editor._show_noodle_workshop()
+	elif result["ok"] and bool(data.get("advance",false)):
+		# Only a successful explicit apply advances the view. Browsing/production
+		# never silently applies a component or starts another paid operation.
+		_bowl_editor._close_modal()
+		if not state.broth_ready(): _bowl_editor._show_broth_workshop()
 
 
 func _on_broth_action(kind: String, data: Dictionary) -> void:
@@ -3139,6 +3146,9 @@ func _on_broth_action(kind: String, data: Dictionary) -> void:
 	_refresh_all()
 	_sync_bowl_editor()
 	if kind!="broth_use": _bowl_editor._show_broth_workshop()
+	elif result["ok"] and bool(data.get("advance",false)):
+		_bowl_editor._close_modal()
+		if not state.noodle_ready(): _bowl_editor._show_noodle_workshop()
 
 
 func _on_exploration_view_action(kind: String, data: Dictionary) -> void:

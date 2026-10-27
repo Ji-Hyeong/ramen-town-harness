@@ -1,0 +1,274 @@
+{
+  "task": "development-cycle-v1",
+  "date_kst": "2026-10-28",
+  "status": "accepted_with_bounded_scope",
+  "base_commit": "11dc898fe6543276853516fabab6fda06fb879cd",
+  "schema": 18,
+  "packages": {
+    "v6": {
+      "pack_sha256": "783b07d550afa2ef5ffb73b5d8fbfaa1050814be176ce6dfcbe3d90203fe94f0",
+      "bundled_files": 365
+    },
+    "v7": {
+      "pack_sha256": "8c4315936b1fb6d1081422b670814c34f145c312701729a694ea2f605421d690",
+      "bundled_files": 365,
+      "matches_current_checkout": true
+    },
+    "only_bundled_difference": [
+      "tests/ingredient_payoff_qa.gd"
+    ],
+    "all_application_sources_identical": true
+  },
+  "domain_and_service_files_unchanged": 66,
+  "native_accepted": [
+    {
+      "flow": "development_cycle",
+      "exit": 0,
+      "pngs": 24,
+      "errors": [],
+      "summaries": [
+        "DEVELOPMENT CYCLE checks=280 failures=0 mode=capture"
+      ],
+      "package": "v6"
+    },
+    {
+      "flow": "noodle_workshop",
+      "exit": 0,
+      "pngs": 42,
+      "errors": [],
+      "summaries": [
+        "RAW NOODLE UI checks=596 failures=0 mode=capture"
+      ],
+      "package": "v6"
+    },
+    {
+      "flow": "recipe_knowledge",
+      "exit": 0,
+      "pngs": 34,
+      "errors": [],
+      "summaries": [
+        "RECIPE KNOWLEDGE UI checks=1167 failures=0 mode=capture"
+      ],
+      "package": "v6"
+    },
+    {
+      "flow": "component_comparison",
+      "exit": 0,
+      "pngs": 32,
+      "errors": [],
+      "summaries": [
+        "COMPONENT UI checks=411 failures=0 mode=capture"
+      ],
+      "package": "v6"
+    },
+    {
+      "flow": "bowl_editor",
+      "exit": 0,
+      "pngs": 30,
+      "errors": [],
+      "summaries": [
+        "QA mode=capture checks=532 failures=0"
+      ],
+      "package": "v6"
+    },
+    {
+      "flow": "broth_workshop",
+      "exit": 0,
+      "pngs": 22,
+      "errors": [],
+      "summaries": [
+        "RAW BROTH UI checks=235 failures=0 mode=capture"
+      ],
+      "package": "v6"
+    },
+    {
+      "flow": "ingredient_payoff",
+      "exit": 0,
+      "pngs": 24,
+      "errors": [],
+      "summaries": [
+        "INGREDIENT PAYOFF mode=capture checks=515 failures=0"
+      ],
+      "package": "v7"
+    }
+  ],
+  "native_checks_total": 3736,
+  "native_png_total": 208,
+  "native_failures_total": 0,
+  "supported_app_launch": {
+    "method": "CUA getApp at exact v6 QA app path",
+    "observer": "Timed out after launch; does not itself prove completion. Fresh own run files independently establish the result.",
+    "actual_exit": 0,
+    "checks": 280,
+    "failures": 0,
+    "engine_errors": 0,
+    "png": 24,
+    "pack_equals_v6": true,
+    "additional_to_core_suite": true
+  },
+  "direct_native_launch": "Unmodified copied official Godot loads reviewed fixed scripts from the exact frozen PCK; isolated data/output paths. Actual OpenGL rendering, not headless screenshots or iPhone.",
+  "vendor_signature": {
+    "before_pack_build": true,
+    "after_all_runs": {
+      "v6_exit": 0,
+      "v7_exit": 0
+    },
+    "command": "codesign --verify --deep --strict"
+  },
+  "touch": {
+    "exit": 0,
+    "errors": [],
+    "summary": [
+      "NATIVE WORKBENCH TOUCH checks=49 failures=0"
+    ]
+  },
+  "domain_regression": {
+    "source": "Same66 unchanged domain/service sources; executed before the final presentation polish.",
+    "suites": [
+      {
+        "name": "recipe_knowledge_tests",
+        "exit": 0,
+        "errors": [],
+        "tail": [
+          "Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org",
+          "",
+          "RECIPE KNOWLEDGE checks=4138 failures=0"
+        ]
+      },
+      {
+        "name": "component_comparison_tests",
+        "exit": 0,
+        "errors": [],
+        "tail": [
+          "Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org",
+          "",
+          "COMPONENT COMPARISON checks=373 failures=0"
+        ]
+      },
+      {
+        "name": "noodle_workshop_tests",
+        "exit": 0,
+        "errors": [],
+        "tail": [
+          "Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org",
+          "",
+          "RAW NOODLE checks=276 failures=0"
+        ]
+      },
+      {
+        "name": "broth_workshop_tests",
+        "exit": 0,
+        "errors": [],
+        "tail": [
+          "BLEND PROFILES rich={ \"rich\": 10, \"salt\": 5, \"aroma\": 8, \"chew\": 5, \"spice\": 1 } clear={ \"rich\": 2, \"salt\": 6, \"aroma\": 10, \"chew\": 5, \"spice\": 1 }",
+          "CURRENT DISK LOAD { \"status\": \"ok\", \"message\": \"저장을 불러왔어요.\" }",
+          "RAW BROTH checks=226 failures=0"
+        ]
+      }
+    ],
+    "historical_suite": {
+      "tests": 129,
+      "checks": 59458,
+      "failures": 0,
+      "exit": 0
+    }
+  },
+  "helper": {
+    "tests": 23,
+    "failures": 0,
+    "exit": 0,
+    "source_sha256": "88aafbd6c892e6a103e3ddbd9145fe658e3bbe558ed4503741c9dcfa6c7b6420"
+  },
+  "baseline": {
+    "commit": "11dc898fe6543276853516fabab6fda06fb879cd",
+    "frozen_pack_sha256": "18c3fee83ed7880a923d3a3a1f7da38a6ddbae2e5fb8203487b7a3d036134cf2",
+    "native_checks": 291,
+    "failures": 0,
+    "exit": 0,
+    "png": 28,
+    "source": "Fresh run of previously verified accepted-main pack; not reused old screenshots."
+  },
+  "claude": {
+    "role": "Same-sheet noodle controls, read-only food preview helper and current noodle QA; file-only execution.",
+    "invocations": [
+      {
+        "phase": "initial",
+        "requested_max_turns": 30,
+        "reported_num_turns": 34,
+        "exit": 0,
+        "subtype": "success",
+        "is_error": false,
+        "permission_denials": [],
+        "tokens": {
+          "input_tokens": 36,
+          "cache_creation_input_tokens": 70340,
+          "cache_read_input_tokens": 772677,
+          "output_tokens": 30643
+        }
+      },
+      {
+        "phase": "targeted_correction",
+        "requested_max_turns": 10,
+        "reported_num_turns": 14,
+        "exit": 0,
+        "subtype": "success",
+        "is_error": false,
+        "permission_denials": [],
+        "tokens": {
+          "input_tokens": 16,
+          "cache_creation_input_tokens": 15141,
+          "cache_read_input_tokens": 573962,
+          "output_tokens": 8563
+        }
+      }
+    ],
+    "unchanged_after_handoff": [
+      "game/scripts/ui/noodle_formula_choices.gd",
+      "game/tests/noodle_workshop_qa.gd"
+    ],
+    "codex_role": "Workbench layout/selection contrast refinement, actual completion/resume/next-stage integration, observed tasting/re-editing, adjacent QA and independent acceptance.",
+    "tests_executed_by": "Codex",
+    "subscription_quota_share": "Unknown; response token/turn fields do not prove quota ratio or strict cap enforcement."
+  },
+  "coverage": [
+    "Real elapsed raw broth/noodle production; no free prepared components.",
+    "Explicit apply and truthful resume; failed apply cannot advance. No browsing charge, state mutation or premature compatibility reveal.",
+    "Four actual choice rows; fixed food preview/footer, scroll restore, locked choices and pointer drag cancellation.390x844,390x750,1280x800.",
+    "Failed-save notice/retry without double charging; exact disk restart.",
+    "Actual paid tasting, three customer-specific observed profiles, held/released card feedback, contextual real selector with no automatic recipe change.",
+    "Repeated toppings, ingredient collection/repeat tasting, once-only direction labeling, sample shortage, stale/locked preview and existing comparison/knowledge behavior."
+  ],
+  "visual_review": {
+    "published_current_originals": 16,
+    "published_baseline_originals": 2,
+    "all_published_opened_at_original_size": true,
+    "additional_regression_originals_opened": 7,
+    "all_captured_images_manually_opened": false,
+    "gallery": "game/docs/uiux-reset/development-cycle-v1/",
+    "image_metadata": "game/docs/uiux-reset/development-cycle-v1/review.json"
+  },
+  "rejected_diagnostics": [
+    "Initial112px/two-column Claude layout rejected; targeted correction then Codex native spacing refinement.",
+    "Initial domain path refusal preserved, corrected to dedicated/private/tmp before successful tests.",
+    "Initial native bowl fixture used removed completion button/context assumptions; corrected actual visible paths without changing game transactions.",
+    "v5 completion-caption overlap fixed in main; completed v5 results are superseded, partial run was intentionally stopped.",
+    "v6 ingredient payoff499checks/6failures/exit1: old test clicked topping behind newly opened adjustment sheet. v7 changes only this fixture to use actual Back before repeated tasting;515checks/0failures/exit0."
+  ],
+  "limits": [
+    "No iPhone install or new physical touch/lifecycle/audio/accessibility acceptance.",
+    "No6-10hour human fun/economy acceptance or claim of Kairosoft-level completion.",
+    "Reuses existing cut-specific noodle art; not a unique image for every formula. Short/wide choice areas can require scrolling.",
+    "Existing high-wallet header ellipsis and broader shop/result diversity remain outside this bounded flow."
+  ],
+  "private_archive": [
+    "outputs/ramen-development-cycle-v1/final-v6",
+    "outputs/ramen-development-cycle-v1/final-v7"
+  ],
+  "preserved": [
+    "Live player saves",
+    "iPhone",
+    "Old folders",
+    "Stash9d2270c5e684b349f0ef62ef822ed41a9ce3dbbe"
+  ],
+  "publication": "Standing human authorization: ready PR, verified matching head squash merge and local main sync. Actual publication recorded privately after completion."
+}
