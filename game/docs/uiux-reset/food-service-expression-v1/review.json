@@ -1,0 +1,149 @@
+{
+  "renderer": "Actual Godot OpenGL SubViewport originals, no mock/device chrome",
+  "current_originals": 10,
+  "baseline_originals": 4,
+  "all_published_manually_opened": true,
+  "all122_native_captures_manually_reviewed": false,
+  "images": [
+    {
+      "name": "before_portrait_food_bone.png",
+      "size": [
+        390,
+        844
+      ],
+      "sha256": "c0cbc5a54057f4256554aa9f6ad341231773c127e806ac9dbaabae8314e15591",
+      "manually_opened": true,
+      "baseline": true
+    },
+    {
+      "name": "before_portrait_food_chili.png",
+      "size": [
+        390,
+        844
+      ],
+      "sha256": "8c6ea4bd7a089519ec59328656f9841811095c9add2fc04a491286a9935cc30a",
+      "manually_opened": true,
+      "baseline": true
+    },
+    {
+      "name": "before_portrait_food_clear.png",
+      "size": [
+        390,
+        844
+      ],
+      "sha256": "232367cb8cc8c1d9a27c8595dbdae82c1027a9721fd7b6f394e1c19b03a197c0",
+      "manually_opened": true,
+      "baseline": true
+    },
+    {
+      "name": "before_portrait_home_04_active.png",
+      "size": [
+        390,
+        844
+      ],
+      "sha256": "d92720a5d99b487da7ea127dba838c5c92aa463031e546e7eb9811952e5f84cf",
+      "manually_opened": true,
+      "baseline": true
+    },
+    {
+      "name": "desktop_food_chili.png",
+      "size": [
+        1280,
+        800
+      ],
+      "sha256": "6bbb10d5061f56a09673fe4d59755bee2d85fca674a9f5e616a091e342880424",
+      "manually_opened": true,
+      "baseline": false
+    },
+    {
+      "name": "desktop_service_reaction.png",
+      "size": [
+        1280,
+        800
+      ],
+      "sha256": "21c2bffb78febc435f88441f3f0ae9bf9d44babfcb5f4f25ab1e35039585c07f",
+      "manually_opened": true,
+      "baseline": false
+    },
+    {
+      "name": "portrait_food_bone.png",
+      "size": [
+        390,
+        844
+      ],
+      "sha256": "14971628016f8e4f83d1a19f41f2284eaef07536471acd12ad970d7572f1c868",
+      "manually_opened": true,
+      "baseline": false
+    },
+    {
+      "name": "portrait_food_chili.png",
+      "size": [
+        390,
+        844
+      ],
+      "sha256": "28b193a2eb1f13eaa0c9b9db8dcc1e697579ad2e937084c8e12ba054c567ec00",
+      "manually_opened": true,
+      "baseline": false
+    },
+    {
+      "name": "portrait_food_clear.png",
+      "size": [
+        390,
+        844
+      ],
+      "sha256": "a469092396d9d333d2ff114eebe6c55bb797285eb7df0b6a2ee6b3a4ad958b2a",
+      "manually_opened": true,
+      "baseline": false
+    },
+    {
+      "name": "portrait_food_herb.png",
+      "size": [
+        390,
+        844
+      ],
+      "sha256": "8f9f57dc58e5f15a471e73ad240ca5d04de5bf3e5f4955512296fda3a6c415be",
+      "manually_opened": true,
+      "baseline": false
+    },
+    {
+      "name": "portrait_service_close.png",
+      "size": [
+        390,
+        844
+      ],
+      "sha256": "538a292765716f143e2054fc354c91740765dac106664a364f68ba5d3e63d736",
+      "manually_opened": true,
+      "baseline": false
+    },
+    {
+      "name": "portrait_service_compact_close.png",
+      "size": [
+        390,
+        750
+      ],
+      "sha256": "e13e9c85fd0cac3f19b5c81ee2f074d78cff8ca491731fe57909d612f4d3adad",
+      "manually_opened": true,
+      "baseline": false
+    },
+    {
+      "name": "portrait_service_cook.png",
+      "size": [
+        390,
+        844
+      ],
+      "sha256": "03fc1719ecf572c07bcddbba9e1ff6b911c9424a4d179d9b722545c1d6c24f14",
+      "manually_opened": true,
+      "baseline": false
+    },
+    {
+      "name": "portrait_service_reaction.png",
+      "size": [
+        390,
+        844
+      ],
+      "sha256": "e57674cddd3f850746dade108c3ab65fc683b78e3ac9be8bffc8c175d7bd3600",
+      "manually_opened": true,
+      "baseline": false
+    }
+  ]
+}

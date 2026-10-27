@@ -1,0 +1,286 @@
+{
+  "task": "food-and-service-expression-v1",
+  "date_kst": "2026-10-28",
+  "base_commit": "b51733770adbadf4251a31a0824dfdaf0cd14658",
+  "status": "accepted_for_bounded_scope",
+  "schema": 18,
+  "pack_sha256": "a1596823dcdbb9229ca9d36748985fbe0a56c237706fc58eba8ce21897bb5aa5",
+  "bundled_source_files": 375,
+  "all_sources_match_checkout": true,
+  "domain_service_files_unchanged": 66,
+  "original_asset_files_unchanged": 125,
+  "native": [
+    {
+      "name": "food_expression",
+      "exit": 0,
+      "pngs": 22,
+      "errors": [],
+      "summaries": [
+        "FOOD PIXEL GUARDS ceramic=0 topping=0 opaque_samples=66 surface=25946 max_topping_delta=0.000000",
+        "FOOD AND SERVICE checks=326 failures=0"
+      ]
+    },
+    {
+      "name": "shop_home",
+      "exit": 0,
+      "pngs": 24,
+      "errors": [],
+      "summaries": [
+        "SHOP HOME mode=capture checks=780 failures=0"
+      ]
+    },
+    {
+      "name": "bowl_editor",
+      "exit": 0,
+      "pngs": 30,
+      "errors": [],
+      "summaries": [
+        "QA mode=capture checks=532 failures=0"
+      ]
+    },
+    {
+      "name": "development_cycle",
+      "exit": 0,
+      "pngs": 24,
+      "errors": [],
+      "summaries": [
+        "DEVELOPMENT CYCLE checks=280 failures=0 mode=capture"
+      ]
+    },
+    {
+      "name": "service_result",
+      "exit": 0,
+      "pngs": 22,
+      "errors": [],
+      "summaries": [
+        "SERVICE RESULT mode=capture checks=479 failures=0"
+      ]
+    }
+  ],
+  "native_checks": 2397,
+  "native_pngs": 122,
+  "unit_and_historical_regression": [
+    {
+      "name": "recipe_appearance_tests",
+      "exit": 0,
+      "errors": [],
+      "summary": [
+        "recipe_appearance_tests: 63 checks, 0 failures"
+      ]
+    },
+    {
+      "name": "service_expression_tests",
+      "exit": 0,
+      "errors": [],
+      "summary": [
+        "SERVICE EXPRESSION checks=14 failures=0 legacy_images=1080"
+      ]
+    },
+    {
+      "name": "run_tests",
+      "exit": 0,
+      "errors": [],
+      "summary": [
+        "tests=129 checks=59458 failures=0"
+      ]
+    },
+    {
+      "name": "native_workbench_touch_tests",
+      "exit": 0,
+      "errors": [],
+      "summary": [
+        "NATIVE WORKBENCH TOUCH checks=49 failures=0"
+      ]
+    }
+  ],
+  "helper": {
+    "tests": 23,
+    "failures": 0,
+    "exit": 0,
+    "source_sha256": "940cea718af2ce2a4aad237cd77b634c6650919240e6e18fa2c1de02f7599a16"
+  },
+  "supported_app_launch": {
+    "method": "CUA getApp of exact v4 app; observer timed out, actual fresh run independently verified",
+    "checks": 326,
+    "failures": 0,
+    "actual_exit": 0,
+    "engine_errors": 0,
+    "pngs": 22,
+    "additional_to_native_suite": true
+  },
+  "engine_strict_signature": {
+    "verified_before_preparation": true,
+    "post_run_exit": 0,
+    "command": "codesign --verify --deep --strict"
+  },
+  "pixel_guards": {
+    "rendered_test_view": [
+      512,
+      320
+    ],
+    "ceramic_changed_pixels": 0,
+    "opaque_topping_samples": 66,
+    "opaque_topping_changes": 0,
+    "maximum_topping_channel_delta": 0.0,
+    "allowed_compositing_tolerance": 0.00396078431372549,
+    "different_oil_surface_changed_pixels": 25946,
+    "note": "These are measured pixels, not gameplay tests or a fun score."
+  },
+  "legacy": {
+    "tiny_sprites": 1080,
+    "tiny_combined_sha256": "ab734daa26a75db40086ad65a8513873010d5cee06e3937054d22d3f4827bd98",
+    "tiny_sprites_identical": true,
+    "controlled_gpu": {
+      "identical": true,
+      "size": [
+        512,
+        320
+      ],
+      "differences": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          0
+        ]
+      ],
+      "controlled": "Wait until nodes are ready, freeze view clock, hide steam; original config/art matches. Earlier captures with a deferred initial ready retained moving steam and are not equality evidence."
+    },
+    "earlier_moving_steam_comparisons_are_not_equality_evidence": true
+  },
+  "baseline": {
+    "frozen_previous_main_pack_sha256": "8c4315936b1fb6d1081422b670814c34f145c312701729a694ea2f605421d690",
+    "fresh_food": {
+      "checks": 198,
+      "failures": 0,
+      "exit": 0,
+      "pngs": 12
+    },
+    "fresh_home": {
+      "checks": 780,
+      "failures": 0,
+      "exit": 0,
+      "pngs": 24
+    },
+    "food_comparison": "Same public-crafted formulas/toppings/viewport; animation phase can differ. Shop comparison is composition-only, with different recipe/time."
+  },
+  "claude": {
+    "invocations": [
+      {
+        "phase": "implementation",
+        "requested_max_turns": 30,
+        "reported_num_turns": 22,
+        "exit": 0,
+        "subtype": "success",
+        "is_error": false,
+        "permission_denial_count": 0,
+        "result_nonempty": true,
+        "usage": {
+          "input_tokens": 24,
+          "cache_creation_input_tokens": 40003,
+          "cache_read_input_tokens": 272439,
+          "output_tokens": 17545
+        }
+      },
+      {
+        "phase": "correction",
+        "requested_max_turns": 10,
+        "reported_num_turns": 10,
+        "exit": 0,
+        "subtype": "success",
+        "is_error": false,
+        "permission_denial_count": 0,
+        "result_nonempty": true,
+        "usage": {
+          "input_tokens": 14,
+          "cache_creation_input_tokens": 16971,
+          "cache_read_input_tokens": 300538,
+          "output_tokens": 13656
+        }
+      },
+      {
+        "phase": "visual-correction",
+        "requested_max_turns": 10,
+        "reported_num_turns": 8,
+        "exit": 0,
+        "subtype": "success",
+        "is_error": false,
+        "permission_denial_count": 2,
+        "result_nonempty": true,
+        "usage": {
+          "input_tokens": 10,
+          "cache_creation_input_tokens": 8132,
+          "cache_read_input_tokens": 319582,
+          "output_tokens": 5809
+        }
+      },
+      {
+        "phase": "closeout",
+        "requested_max_turns": 8,
+        "reported_num_turns": 4,
+        "exit": 0,
+        "subtype": "success",
+        "is_error": false,
+        "permission_denial_count": 0,
+        "result_nonempty": true,
+        "usage": {
+          "input_tokens": 4,
+          "cache_creation_input_tokens": 10115,
+          "cache_read_input_tokens": 138986,
+          "output_tokens": 3278
+        }
+      }
+    ],
+    "ownership": [
+      "recipe_appearance.gd",
+      "layered_recipe_view.gd",
+      "bowl_broth_tint.gdshader",
+      "recipe_appearance_tests.gd"
+    ],
+    "external_capture_reads": "Two optional Read calls outside the project were denied during visual correction. They were cancelled, never retried or permission-expanded. Codex performed the visual review. The subsequent project-only read-only closeout returned0 denials. Do not describe the denied call itself as clean.",
+    "code_review_finding": "Raw broth in recipe_bowl_image applied tare twice; Codex fixed it and added a pixel regression.",
+    "tests_run_by": "Codex; all Claude reports explicitly NOT RUN.",
+    "codex_refinement": "Shader source-color multiplication and pixel-mask verification, tiny dish integration, observer/camera/UI and independent QA. Codex also refines the food test to compare actual oil identity.",
+    "subscription_quota_ratio": "Unknown; usage fields do not establish quota or billing ratios."
+  },
+  "manual_review": {
+    "published_current": 10,
+    "published_before": 4,
+    "all_published_opened": true,
+    "additional_regression_originals_opened": 3,
+    "all122_images_manually_opened": false,
+    "gallery": "game/docs/uiux-reset/food-service-expression-v1/"
+  },
+  "rejected_diagnostics": [
+    "Initial test had Shader native-class shadowing: exit0 plus parser errors, no assertions; rejected.",
+    "First parameter test compared kelp/scallion broth body alone and ignored actual green surface oil; fixed without claiming phone readability.",
+    "V1 food behavior274/0 but visual differences too weak; rejected as final.",
+    "V2 food322/1: CPU reconstruction of atlas opaque pixels was invalid. V3/V4 measure actual GPU coverage and pass; original images are unchanged.",
+    "Double multiplication of original texture into authored colors retained orange. Root refinement preserves legacy branch and applies vertex tint once for authored regions.",
+    "Moving steam caused false legacy-image inequality until node readiness/clock/steam were explicitly controlled."
+  ],
+  "limits": [
+    "Optional close view is a kitchen/counter crop; use Full view for all outskirts/queue ends.",
+    "No new ingredients, facilities, economy, staff progression, rewards or save schema.",
+    "Reuses original cut-specific shapes and art; not unique art for every formula.",
+    "No iPhone installation/physical touch, audio, heat/lifecycle, full accessibility or6-10hour human fun/economy acceptance."
+  ],
+  "private_archive": "outputs/ramen-food-and-service-expression-v1/final-v4",
+  "preserved": [
+    "Live player saves",
+    "iPhone",
+    "Old folders",
+    "Stash9d2270c5e684b349f0ef62ef822ed41a9ce3dbbe"
+  ],
+  "publication": "Standing ready PR, matching-head squash and local main sync; actual publication recorded privately after completion."
+}

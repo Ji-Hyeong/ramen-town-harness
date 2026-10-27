@@ -5,6 +5,7 @@ extends RefCounted
 ## 사람은 14x18, 머리가 큰 2.5등신. 좌표 기준은 왼쪽 위이며 발바닥은 맨 아래 줄(y=17)이다.
 
 const Catalog = preload("res://scripts/domain/ingredient_catalog.gd")
+const Appearance = preload("res://scripts/ui/recipe_appearance.gd")
 const SCALLOP: Texture2D = preload("res://assets/ingredients/grilled-scallop-v1.png")
 static var _scallop_cache: Dictionary = {}
 const SHIITAKE: Texture2D = preload("res://assets/ui/bowl-editor/topping_grilled_shiitake-v1.png")
@@ -611,8 +612,14 @@ static func exploration_image(region: String, progress: float = 1.0, moving: boo
 static func broth_color(config: Dictionary) -> Color:
 	var base: Color = _base_broth_color(config)
 	if config.has("broth_recipe"):
-		var product: Dictionary=Catalog.Broth.product(config["broth_recipe"])
-		base=Color("e7bf70").lerp(Color("d4a17b"),float(product["axes"]["rich"])/10.0)
+		# Carry the actual crafted soup identity into ready/carried/eaten dishes.
+		# The appearance already includes its method; applying process again here
+		# would darken rolling broth twice. Historical recipes keep the old path.
+		var look: Dictionary=Appearance.profile(config)
+		if str(look["error"])!="":
+			push_error(str(look["error"]))
+			return Color.TRANSPARENT
+		return look["broth_color"]
 	var process: Dictionary = config.get("process", {})
 	# 제조한 육수의 맑기 차이만 표현한다. 기본 공법은 이전 픽셀/색을 그대로 돌려준다.
 	if process.get("broth", "standard") == "gentle":
@@ -726,6 +733,15 @@ static func bowl_image(config: Dictionary) -> Image:
 		noodle = noodle.lightened(0.12)
 	elif process.get("noodle", "standard") == "rested":
 		noodle = noodle.darkened(0.10)
+	if config.has("noodle_recipe"):
+		var look: Dictionary=Appearance.profile(config)
+		if str(look["error"])!="":
+			push_error(str(look["error"]))
+			return img
+		noodle=look["noodle_color"]
+		# Buckwheat shares a base ID across cuts; its real saved cut still governs
+		# the tiny strand spacing. No changes to the historical single-ID sprites.
+		n="noodle_"+str(config["noodle_recipe"]["cut"])
 	for x in range(3, 9, 1 if n == "noodle_thin" else 2):
 		px(img, x, 1, noodle)
 		px(img, x + 1 if n != "noodle_thin" else x, 2, noodle)
@@ -779,10 +795,13 @@ static func recipe_bowl_image(config: Dictionary) -> Image:
 	_dish_oval(img, 24, 14, 23, 8, RED_D)
 	_dish_oval(img, 24, 13, 21, 6, Color(0.99, 0.95, 0.83))
 	var soup: Color = broth_color(config)
-	match str(config.get("tare", "")):
-		"tare_shoyu": soup = soup.lerp(Color(0.48, 0.25, 0.09), 0.24)
-		"tare_miso": soup = soup.lerp(Color(0.67, 0.36, 0.10), 0.42)
-		"tare_plum": soup = soup.lerp(Color(0.72, 0.40, 0.31), 0.25)
+	# Crafted broth already includes its actual tare; historical illustrations
+	# keep their original second-stage palette operation byte-for-byte.
+	if not config.has("broth_recipe"):
+		match str(config.get("tare", "")):
+			"tare_shoyu": soup = soup.lerp(Color(0.48, 0.25, 0.09), 0.24)
+			"tare_miso": soup = soup.lerp(Color(0.67, 0.36, 0.10), 0.42)
+			"tare_plum": soup = soup.lerp(Color(0.72, 0.40, 0.31), 0.25)
 	_dish_oval(img, 24, 13, 20, 5, soup)
 	# Visible droplets/foam distinguish clear gentle extraction from rolling
 	# extraction, without inventing a new flavor or financial modifier.
