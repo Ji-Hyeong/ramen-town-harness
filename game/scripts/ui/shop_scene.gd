@@ -130,7 +130,7 @@ static func build(layout: Dictionary, ent: Dictionary, bowl_config: Dictionary, 
 	if ent.has("patrons"):
 		for p in ent["patrons"]:
 			n = _add_patron(layout, p, items, bubbles, p.get("config", bowl_config), anim, vis, cache, n)
-	return {"items": items, "bubbles": bubbles}
+	return {"items": items, "bubbles": bubbles,"server_pos":server_pos,"carrying":carrying}
 
 
 static func _add_patron(layout: Dictionary, p: Dictionary, items: Array, bubbles: Array, bowl_config: Dictionary, anim: float, vis: Dictionary, cache: Dictionary, n_in: int) -> int:
@@ -191,7 +191,7 @@ static func _add_patron(layout: Dictionary, p: Dictionary, items: Array, bubbles
 	n += 1
 	var bubble: String = str(p["bubble"])
 	if bubble != "":
-		bubbles.append({"kind": bubble, "pos": pos - Vector2(6.0, 29.0)})
+		bubbles.append({"id":id,"kind": bubble, "pos": pos - Vector2(6.0, 29.0)})
 	return n
 
 

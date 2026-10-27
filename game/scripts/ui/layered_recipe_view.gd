@@ -3,8 +3,11 @@ extends Control
 const Catalog = preload("res://scripts/domain/ingredient_catalog.gd")
 const Art = preload("res://scripts/ui/bowl_editor_art.gd")
 const MockArt = preload("res://scripts/ui/mock_fidelity_art.gd")
-const BrothShader = preload("res://scripts/ui/bowl_broth_tint.gdshader")
+const Appearance = preload("res://scripts/ui/recipe_appearance.gd")
+const BrothShader =preload("res://scripts/ui/bowl_broth_tint.gdshader")
 var config: Dictionary = {}
+## Non-empty when the applied config's raw recipe could not be expressed.
+var appearance_error: String = ""
 var _base: TextureRect
 var _portions: Array[TextureRect] = []
 var _steam: Array[TextureRect] = []
@@ -49,17 +52,34 @@ func set_config(value: Dictionary) -> void:
 		palette.set_shader_parameter("uv_region", Vector4(atlas.region.position.x / source_size.x, atlas.region.position.y / source_size.y, atlas.region.size.x / source_size.x, atlas.region.size.y / source_size.y))
 	var shifts: Dictionary = {"broth_tonkotsu": Vector3.ZERO, "broth_chicken": Vector3(0.0, -0.08, -0.15), "broth_dashi": Vector3(-0.08, -0.12, -0.15), "broth_clam": Vector3(-0.02, 0.0, 0.04), "broth_roasted_sardine": Vector3(-0.15, -0.17, -0.16)}
 	var shift: Vector3 = shifts.get(str(config.get("broth", "broth_tonkotsu")), Vector3.ZERO)
-	if config.has("broth_recipe"):
-		# Only new crafted soup pixels vary with actual blend richness. Preserve
-		# every historical bowl, ceramic rim and independent topping sprite.
-		var raw: Dictionary=Catalog.Broth.product(config["broth_recipe"])
-		var rich: float=float(raw["axes"]["rich"])/10.0
-		shift+=Vector3(0.03*rich,-0.10*rich,-0.16*rich)
-	if config.get("tare", "") == "tare_miso":
-		shift += Vector3(-0.03, -0.07, -0.10)
-	if config.get("oil", "") == "oil_chili":
-		shift += Vector3(0.06, -0.04, -0.06)
-	palette.set_shader_parameter("broth_shift", shift)
+	var look: Dictionary = Appearance.profile(config)
+	appearance_error = str(look["error"])
+	if appearance_error != "":
+		# Explicit failure: report it and draw the untouched original bowl. The
+		# caller can read appearance_error; no tinted success-shaped fallback.
+		push_error("Invalid recipe appearance: " + appearance_error)
+		palette.set_shader_parameter("broth_shift", Vector3.ZERO)
+	else:
+		# The soup keeps its historical shift unless a raw broth recipe replaces it;
+		# a raw noodle recipe only adds the noodle expression on top. With neither
+		# raw key the shader's appearance branch stays off (exact legacy path).
+		if not look["crafted"]:
+			if config.get("tare", "") == "tare_miso":
+				shift += Vector3(-0.03, -0.07, -0.10)
+			if config.get("oil", "") == "oil_chili":
+				shift += Vector3(0.06, -0.04, -0.06)
+			palette.set_shader_parameter("broth_shift", shift)
+		else:
+			palette.set_shader_parameter("broth_shift", Vector3.ZERO)
+		if look["crafted"] or look["noodle_crafted"]:
+			palette.set_shader_parameter("appearance", 1.0)
+			palette.set_shader_parameter("broth_color", look["broth_color"])
+			palette.set_shader_parameter("broth_strength", look["broth_strength"])
+			palette.set_shader_parameter("milk", look["milk"])
+			palette.set_shader_parameter("oil_color", look["oil_color"])
+			palette.set_shader_parameter("oil_amount", look["oil_amount"])
+			palette.set_shader_parameter("noodle_color", look["noodle_color"])
+			palette.set_shader_parameter("noodle_strength", look["noodle_strength"])
 	_base.material = palette
 	for old in _portions:
 		remove_child(old)

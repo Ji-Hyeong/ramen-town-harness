@@ -187,7 +187,7 @@ class PreparedBundleScope(unittest.TestCase):
     def test_selected_native_fixture_reaches_launcher_and_manifest(self):
         # Both the established editor and the new first-menu journey must reach
         # the generated launcher/manifest without allowing arbitrary scripts.
-        for name in ("bowl_editor_qa.gd", "development_cycle_qa.gd"):
+        for name in ("bowl_editor_qa.gd", "development_cycle_qa.gd", "food_expression_qa.gd"):
             with self.subTest(fixture=name), tempfile.TemporaryDirectory() as tmp:
                 project, engine, out, _ = self.prepare(Path(tmp))
                 fixture = "res://tests/" + name

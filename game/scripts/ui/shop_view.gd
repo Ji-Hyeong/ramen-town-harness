@@ -11,6 +11,8 @@ const Art = preload("res://scripts/ui/pixel_art.gd")
 const Painter = preload("res://scripts/ui/shop_painter.gd")
 const Scene = preload("res://scripts/ui/shop_scene.gd")
 const Session = preload("res://scripts/domain/service_session.gd")
+const ServiceExpression = preload("res://scripts/ui/service_expression.gd")
+const Ui=preload("res://scripts/ui/service_result_view.gd")
 
 const P_QUEUED: int = Session.P_QUEUED
 
@@ -39,12 +41,23 @@ var _origin: Vector2 = Vector2.ZERO
 var _vis: Dictionary = {}
 var _popups: Array = []
 var _seen_completed: int = 0
+var _activity=ServiceExpression.new()
+var focus_zoom: bool=false
+var _camera: Rect2
+var _camera_button: Button
 
 
 func _ready() -> void:
 	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	set_process(true)
+	# A normal UI control, not text painted on low-resolution scene art. Full
+	# view remains available for queues/street; close view makes work readable.
+	_camera_button=Ui.make_button("확대","ShopCamera","summary","soup_kitchen")
+	_camera_button.custom_minimum_size=Vector2(86,44)
+	_camera_button.tooltip_text="주방·카운터 확대 / 가게 전체 보기"
+	_camera_button.pressed.connect(func(): focus_zoom=not focus_zoom; _ensure_layout(); queue_redraw())
+	add_child(_camera_button)
 
 
 ## 영업 전(닫힌 가게)에 보여 줄 실제 고용 목록. 영업 중에는 이 값이 아니라 세션의 직원 스냅샷을 쓴다(영업 중 바뀌지 않는다).
@@ -80,20 +93,21 @@ func set_session(s: Session) -> void:
 	_seen_completed = 0
 	if s != null:
 		_seen_completed = s.completed.size()
+	_activity.reset({} if s==null else s.entities())
 	queue_redraw()
 
 
 ## 현재 배치와 배율(테스트/QA에서 장면이 영역 안에 들어오는지 확인할 때 쓴다).
 func scene_info() -> Dictionary:
 	_ensure_layout()
-	var world: Vector2i = _layout["size"]
 	return {
 		"variant": _variant,
 		"seat_count": (_layout["seats"] as Array).size(),
 		"room": _layout["room"],
 		"scale": _scale,
 		"origin": _origin,
-		"rect": Rect2(_origin, Vector2(world) * float(_scale)),
+		"rect": _camera_rect(),
+		"camera":_camera,"focus_zoom":focus_zoom,
 	}
 
 
@@ -107,6 +121,8 @@ func _process(delta: float) -> void:
 	if not is_visible_in_tree():
 		return
 	_anim += delta
+	_activity.advance(delta)
+	if session!=null: _activity.observe(session.entities())
 	_update_popups(delta)
 	_update_queue_smoothing(delta)
 	queue_redraw()
@@ -124,10 +140,21 @@ func _ensure_layout() -> void:
 		_vis.clear()
 	var world: Vector2i = _layout["size"]
 	var avail_h: float = maxf(1.0, size.y - inset_top - inset_bottom)
-	_scale = maxi(1, int(floor(minf(size.x / float(world.x), avail_h / float(world.y)))))
-	var ox: float = floor((size.x - float(world.x * _scale)) * 0.5)
-	var oy: float = floor(inset_top + (avail_h - float(world.y * _scale)) * 0.5)
-	_origin = Vector2(ox, maxf(0.0, oy))
+	_camera=Rect2(Vector2.ZERO,Vector2(world))
+	if focus_zoom and _variant==Layouts.PORTRAIT: _camera=Rect2(38,58,130,174)
+	_scale=maxi(1,int(floor(minf(size.x/_camera.size.x,avail_h/_camera.size.y))))
+	var ox: float=floor((size.x-_camera.size.x*float(_scale))*0.5)
+	var oy: float=floor(inset_top+(avail_h-_camera.size.y*float(_scale))*0.5)
+	_origin=Vector2(ox,maxf(0.0,oy))-_camera.position*float(_scale)
+	if _camera_button!=null:
+		_camera_button.visible=_variant==Layouts.PORTRAIT
+		_camera_button.text="전체" if focus_zoom else "확대"
+		_camera_button.position=Vector2(size.x-96,inset_top+8)
+		_camera_button.size=Vector2(86,44)
+
+
+func _camera_rect() -> Rect2:
+	return Rect2(_origin+_camera.position*float(_scale),_camera.size*float(_scale))
 
 
 func _update_popups(delta: float) -> void:
@@ -170,6 +197,14 @@ func _slot_pos(slots: Array, slot: int) -> Vector2:
 
 func _blit(texture: Texture2D, logical_top_left: Vector2, alpha: float = 1.0) -> void:
 	var tl: Vector2 = _origin + logical_top_left.floor() * float(_scale)
+	if focus_zoom and _variant==Layouts.PORTRAIT:
+		# Clip sprites to the visible camera without changing scene coordinates,
+		# routes/depth or stretching individual sprite pixels to fractional scales.
+		var target:=Rect2(tl,texture.get_size()*float(_scale))
+		var visible: Rect2=target.intersection(_camera_rect())
+		if visible.has_area():
+			draw_texture_rect_region(texture,visible,Rect2((visible.position-tl)/float(_scale),visible.size/float(_scale)),Color(1,1,1,alpha))
+		return
 	draw_texture_rect(texture, Rect2(tl, texture.get_size() * float(_scale)), false, Color(1, 1, 1, alpha))
 
 
@@ -180,22 +215,21 @@ func _tex_for(key: String, img: Image) -> ImageTexture:
 
 
 ## 장면 밖 남는 화면: 위는 이웃 지붕색, 아래는 차도색, 옆은 장면 가장자리 열을 늘려 세계가 이어지게 한다.
-func _draw_surround(world_rect: Rect2, world: Vector2i) -> void:
+func _draw_surround(world_rect: Rect2) -> void:
 	draw_rect(Rect2(0.0, 0.0, size.x, world_rect.position.y), FILL_TOP)
 	draw_rect(Rect2(0.0, world_rect.end.y, size.x, maxf(0.0, size.y - world_rect.end.y)), FILL_BOTTOM)
 	if world_rect.position.x > 0.0:
-		draw_texture_rect_region(_bg, Rect2(0.0, world_rect.position.y, world_rect.position.x, world_rect.size.y), Rect2(0.0, 0.0, 1.0, float(world.y)))
+		draw_texture_rect_region(_bg, Rect2(0.0, world_rect.position.y, world_rect.position.x, world_rect.size.y), Rect2(_camera.position,Vector2(1.0,_camera.size.y)))
 	if world_rect.end.x < size.x:
-		draw_texture_rect_region(_bg, Rect2(world_rect.end.x, world_rect.position.y, size.x - world_rect.end.x, world_rect.size.y), Rect2(float(world.x - 1), 0.0, 1.0, float(world.y)))
+		draw_texture_rect_region(_bg, Rect2(world_rect.end.x, world_rect.position.y, size.x - world_rect.end.x, world_rect.size.y), Rect2(_camera.end.x-1,_camera.position.y,1.0,_camera.size.y))
 
 
 func _draw() -> void:
 	draw_rect(Rect2(Vector2.ZERO, size), OUTSIDE)
 	_ensure_layout()
-	var world: Vector2i = _layout["size"]
-	var world_rect: Rect2 = Rect2(_origin, Vector2(world) * float(_scale))
-	_draw_surround(world_rect, world)
-	draw_texture_rect(_bg, world_rect, false)
+	var world_rect: Rect2 = _camera_rect()
+	_draw_surround(world_rect)
+	draw_texture_rect_region(_bg,world_rect,_camera)
 
 	var bowl_config: Dictionary = {}
 	var ent: Dictionary = {}
@@ -211,11 +245,19 @@ func _draw() -> void:
 		var key: String = str(d["key"]) if d.has("key") else "f|" + str(d["id"]) + "|" + str(item_pos)
 		_blit(_tex_for(key, d["img"]), item_pos)
 	_draw_steam(ent)
+	_draw_service_activity(ent,scene)
 	_draw_signs()
 	for b in scene["bubbles"]:
 		var bd: Dictionary = b
 		var bubble_pos: Vector2 = bd["pos"]
 		var kind: String = str(bd["kind"])
+		var age: float=_activity.age("reaction",int(bd["id"]))
+		if age>=0.0:
+			# Integer-pixel hop preserves the established nearest-neighbor sprites.
+			# The actual reaction kind comes from the session, never random praise.
+			bubble_pos.y-=floor(sin(age/ServiceExpression.DURATION*PI)*4.0)
+			if kind in ["heart","note"]:
+				_sparks(bubble_pos+Vector2(6,4),age,Color("f4c34c"))
 		_blit(_tex_for("bubble|" + kind, Scene.bubble_img(_img_cache, kind)), bubble_pos)
 	for pu in _popups:
 		var pd: Dictionary = pu
@@ -224,6 +266,46 @@ func _draw() -> void:
 		_blit(_tex_for("bubble|coin", Scene.bubble_img(_img_cache, "coin")), Vector2(pp.x - 6.0, pp.y - 30.0 - rise), clampf(1.0 - float(pd["t"]), 0.0, 1.0))
 	if session != null:
 		_draw_overflow(ent, _layout["queue_slots"])
+
+
+## Brief cues are tied to observed transitions. Continuous cooking gestures
+## exist only while the actual chef is busy; drawing cannot advance the ledger.
+func _draw_service_activity(ent: Dictionary, scene: Dictionary) -> void:
+	if session==null: return
+	for event in _activity.events():
+		var age: float=event["age"]
+		match str(event["kind"]):
+			"cook": _sparks((_layout["pots"] as Array)[0],age,Color("f4bb53"))
+			"ready":
+				var places: Array=_layout["ready_bowls"]
+				if not places.is_empty(): _sparks(places[0]+Vector2(6,0),age,Color("5ccebc"))
+			"carry":
+				if bool(scene["carrying"]): _sparks(scene["server_pos"]+Vector2(0,-10),age,Color("5ccebc"))
+			"served":
+				var seats: Array=_layout["seats"]
+				var seat: int=event["seat"]
+				if seat>=0 and seat<seats.size(): _sparks(seats[seat]["bowl"]+Vector2(6,-1),age,Color("f4c34c"))
+	if bool(ent.get("chef_cooking",false)):
+		var chef: Vector2=_layout["chef_pos"]
+		var stroke: int=int(_anim*8.0)%3
+		_pixel(chef+Vector2(4+stroke,-12-stroke),Vector2(3,1),Color("f5dfb5"))
+		_pixel(chef+Vector2(7,-7),Vector2(1,2),Color("db6938"))
+
+
+func _pixel(point: Vector2, extent: Vector2, tint: Color) -> void:
+	var at: Vector2=_origin+point.floor()*float(_scale)
+	var target:=Rect2(at,extent*float(_scale))
+	if focus_zoom and _variant==Layouts.PORTRAIT: target=target.intersection(_camera_rect())
+	if target.has_area(): draw_rect(target,tint)
+
+
+func _sparks(center: Vector2, age: float, tint: Color) -> void:
+	var progress: float=clampf(age/ServiceExpression.DURATION,0.0,1.0)
+	tint.a=1.0-progress
+	var radius: float=3.0+progress*7.0
+	for i in 4:
+		var offset:=Vector2(cos(float(i)*PI*0.5),sin(float(i)*PI*0.5))*radius
+		_pixel(center+offset,Vector2(1,2) if i%2==0 else Vector2(2,1),tint)
 
 
 ## 솥/면 삶는 통 위 김. 위치는 레이아웃의 pots(격자 투영 점)이고 조리 중이면 짙고 높다.
@@ -237,8 +319,7 @@ func _draw_steam(ent: Dictionary) -> void:
 			var y: float = base.y - 2.0 - phase * (12.0 if strong else 8.0)
 			var x: float = base.x + sin(phase * 6.0 + float(k)) * 1.6 + float(k - 1) * 2.0
 			var a: float = (0.85 if strong else 0.45) * (1.0 - phase)
-			var tl: Vector2 = _origin + Vector2(floor(x), floor(y)) * float(_scale)
-			draw_rect(Rect2(tl, Vector2(2.0, 1.0) * float(_scale)), Color(1.0, 1.0, 1.0, a))
+			_pixel(Vector2(x,y),Vector2(2,1),Color(1,1,1,a))
 
 
 ## 장면 안에는 글자를 그리지 않는다(저해상도 도트 위 글씨는 읽기 어렵다). 간판의 붉은 그릇 문양은 ShopPainter 가 바탕에 찍었고,
@@ -253,8 +334,7 @@ func _draw_signs() -> void:
 		var phase: float = fposmod(_anim * 0.55 + float(k) / 3.0, 1.0)
 		var wx: float = bowl_top.x - 3.0 + float(k) * 3.0 + sin(phase * 6.28 + float(k) * 1.7) * 0.8
 		var wy: float = bowl_top.y - phase * 7.0
-		var tl: Vector2 = _origin + Vector2(floor(wx), floor(wy)) * float(_scale)
-		draw_rect(Rect2(tl, Vector2(1.0, 2.0) * float(_scale)), Color(1.0, 1.0, 1.0, 0.8 * (1.0 - phase)))
+		_pixel(Vector2(wx,wy),Vector2(1,2),Color(1,1,1,0.8*(1.0-phase)))
 	var is_open: bool = session != null and session.is_running()
 	var lamp: Vector2 = _layout["open_sign"]["left"]
 	_blit(_tex_for("open_lamp|" + ("1" if is_open else "0"), Art.open_lamp_image(is_open)), lamp - Vector2(5.0, 4.0))
@@ -272,6 +352,6 @@ func _draw_overflow(ent: Dictionary, slots: Array) -> void:
 	var extra: int = mini(queued - slots.size(), 6)
 	var last: Vector2 = slots[slots.size() - 1]
 	for i in extra:
-		var tl: Vector2 = _origin + (last + Vector2(8.0 + float(i) * 3.0, -20.0)).floor() * float(_scale)
-		draw_rect(Rect2(tl - Vector2(float(_scale), float(_scale)), Vector2(3.0, 3.0) * float(_scale)), INK)
-		draw_rect(Rect2(tl, Vector2(1.0, 1.0) * float(_scale)), Color(1, 1, 1))
+		var point: Vector2=(last+Vector2(8.0+float(i)*3.0,-20.0)).floor()
+		_pixel(point-Vector2.ONE,Vector2(3,3),INK)
+		_pixel(point,Vector2.ONE,Color.WHITE)
