@@ -1,5 +1,7 @@
 # Ramen Town — Codex × Claude 개발 하네스
 
+>2026-10-28 한 그릇 개발 흐름: 면의 네 배합 항목을 같은 화면에서 고르고, 실제 제조가 끝나면 방금 만든 개발품을 담아 다음 작업으로 이어갑니다. 시식 반응에는 손님 얼굴과 관찰한 맛의 차이를 모으고 관련 재료를 고치는 화면으로 연결합니다. Claude는 제면 선택·미리보기, Codex는 완성·시식 연결과 독립 검증을 맡았습니다. [변경 범위](game/docs/DEVELOPMENT_CYCLE_V1.md) · [실제 화면](game/docs/uiux-reset/development-cycle-v1/).
+
 >2026-10-27 궁합 발견·개발 화면 정리: 처음 보는 조합은 직접 그릇에 담은 뒤 궁합을 확인합니다. 큰 음식 그림과 원가·시간을 먼저 보고, 긴 설명과 비교 수치는 눌러서 펼칩니다. Claude는 발견·저장 처리, Codex는 화면·연결·독립 검증을 담당합니다. [현재 동작과 범위](game/docs/RECIPE_KNOWLEDGE_V1.md).
 
 >2026-10-27 공동 구현 재개: 사용자가 Claude 작업을 다시 허용했습니다. 개발품 비교·배합 개량에서 Claude는 도메인·관련 시험, Codex는 화면·통합·독립 검증을 맡습니다. [작업 범위와 분담](game/docs/COMPONENT_COMPARISON_V1.md).

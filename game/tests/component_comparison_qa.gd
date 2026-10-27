@@ -121,7 +121,6 @@ func _component_profile(tag: String, vp: Vector2i) -> void:
 	await _shot(holder,tag+"_component_06_noodle_unsaved.png")
 	app.set("save_locked",false)
 	_check(app.call("manual_save")["ok"] and st.wallet==money,tag+": free save retry persists reloaded formula")
-	await _tap(holder,editor,"NoodleField_cut")
 	await _tap(holder,editor,"NoodleChoose_thick")
 	await _tap(holder,editor,"EditorDetailApply")
 	_check(st.noodle_active(),tag+": genuinely changed reloaded formula starts actual work")
@@ -129,6 +128,8 @@ func _component_profile(tag: String, vp: Vector2i) -> void:
 	var deadline: int=Time.get_ticks_msec()+10000
 	while st.noodle_active() and Time.get_ticks_msec()<deadline: await process_frame
 	_check(st.noodle_review()["recipes"].size()==3 and st.draft_config==original_bowl,tag+": real elapsed craft appends without auto-applying")
+	_check((editor.get("_modal") as Control).get_meta("view_kind","")=="component_complete",tag+": actual completion has a focused result")
+	await _tap(holder,editor,"ComponentCompletionLibrary")
 	await _tap(holder,editor,"ComponentCompare_noodle_2")
 	await _tap(holder,editor,"EditorDetailApply")
 	_check(st.draft_config["noodle_recipe"]==st.noodle_review()["recipes"][2]["recipe"] and st.draft_config["broth_recipe"]==original_bowl["broth_recipe"],tag+": explicit fixed action swaps only selected component")
@@ -161,13 +162,14 @@ func _component_profile(tag: String, vp: Vector2i) -> void:
 	await _tap(holder,editor,"ComponentNext")
 	await _tap(holder,editor,"ComponentCompare_noodle_0")
 	await _tap(holder,editor,"ComponentReload")
-	await _tap(holder,editor,"NoodleField_water")
 	await _tap(holder,editor,"NoodleChoose_alkaline")
 	await _tap(holder,editor,"EditorDetailApply")
 	deadline=Time.get_ticks_msec()+10000
 	while st.noodle_active() and Time.get_ticks_msec()<deadline: await process_frame
-	_check(st.noodle_review()["recipes"].size()==8 and editor.find_child("ComponentCompare_noodle_7",true,false)!=null and editor.find_child("ComponentCompare_noodle_0",true,false)==null,tag+": completion from old page resets to newest six and reveals new result")
+	_check(st.noodle_review()["recipes"].size()==8 and (editor.get("_modal") as Control).get_meta("component_index",-1)==7,tag+": completion from old page reveals exact newest result")
 	await _shot(holder,tag+"_component_11_newest_completion.png")
+	await _tap(holder,editor,"ComponentCompletionLibrary")
+	_check(editor.find_child("ComponentCompare_noodle_7",true,false)!=null and editor.find_child("ComponentCompare_noodle_0",true,false)==null,tag+": completion library shortcut resets to newest six")
 	_check(app.call("_persist"),tag+": save final completed experiment library")
 	var loaded:=ActualState.new()
 	_check(saver.load_into(loaded)["status"]=="ok" and loaded.to_dict()==st.to_dict(),tag+": exact final disk restart with raw formulas and revisions")

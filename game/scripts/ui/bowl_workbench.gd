@@ -20,6 +20,8 @@ const MockArt = preload("res://scripts/ui/mock_fidelity_art.gd")
 const TrialPreview = preload("res://scripts/ui/ingredient_trial_preview.gd")
 const Noodle=preload("res://scripts/domain/noodle_workshop.gd")
 const NoodleView=preload("res://scripts/ui/noodle_work_view.gd")
+const NoodleChoices=preload("res://scripts/ui/noodle_formula_choices.gd")
+const TastingFocus=preload("res://scripts/ui/tasting_focus.gd")
 const Comparison=preload("res://scripts/domain/component_comparison.gd")
 const Disclosure=preload("res://scripts/ui/disclosure_card.gd")
 const Broth = preload("res://scripts/domain/broth_workshop.gd")
@@ -659,11 +661,13 @@ func present(new_state: Game, mode: int, information: Dictionary) -> void:
 	_cost.text = won(Evaluator.unit_cost(config))
 	_taste.text = "영업 시작" if result else ("준비 중" if bool(_info["working"]) else "시식하기")
 	if not result and not state.broth_ready():
-		_taste.text="육수 개발하기"
-		_cost.text="육수 미개발"
+		var made: bool=not state.broth_review()["recipes"].is_empty()
+		_taste.text="만든 육수 담기" if made else "육수 개발하기"
+		_cost.text="육수 미적용" if made else "육수 미개발"
 	if not result and state.broth_ready() and not state.noodle_ready():
-		_taste.text="면 개발하기"
-		_cost.text="면 미개발"
+		var made: bool=not state.noodle_review()["recipes"].is_empty()
+		_taste.text="만든 면 담기" if made else "면 개발하기"
+		_cost.text="면 미적용" if made else "면 미개발"
 	_taste.disabled = bool(_info["busy"]) and not result
 	_render_slots(config, result)
 	_render_content()
@@ -1309,9 +1313,15 @@ func _show_group(group: String) -> void:
 
 ## Broth has its own focused task depth; the accepted ramen composition stays
 ## behind this sheet. Mixing never silently replaces the currently used broth.
-## Four focused selection depths keep the formula readable as the pantry grows.
-## The controller owns edits; browsing a source never applies a finished noodle.
+## The noodle formula is one compact sheet (a card row per field); lock details
+## and traits live in an optional disclosure. The controller owns edits; browsing a source never applies a finished noodle.
 func _show_noodle_workshop(page: String="formula") -> void:
+	# Read the old offset before _modal_body frees the sheet. Only a plain
+	# rebuild of the same formula sheet keeps it; a shortcut field overrides it.
+	var keep:=-1
+	if page=="formula" and _modal!=null and _modal.get_meta("view_kind","")=="noodle" and _modal.get_meta("noodle_page","")=="formula":
+		var previous: ScrollContainer=_modal.find_child("DetailsScroll",true,false)
+		if previous!=null: keep=previous.scroll_vertical
 	var review: Dictionary=state.noodle_review()
 	var active: bool=review["active"]
 	var formula: Dictionary=review["formula"]
@@ -1339,49 +1349,8 @@ func _show_noodle_workshop(page: String="formula") -> void:
 	if page=="library" and not active:
 		_render_component_library("noodle",review,body)
 		return
-	if page in Noodle.FIELDS and not active:
-		back.pressed.disconnect(_close_modal)
-		back.pressed.connect(_show_noodle_workshop)
-		var definitions: Array=Noodle.options(page) if page!="method" else []
-		if page=="method":
-			for id in ProcessRules.ids("noodle"): definitions.append(ProcessRules.method("noodle",id))
-		for option in definitions:
-			var panel:=PanelContainer.new()
-			panel.mouse_filter=Control.MOUSE_FILTER_PASS
-			panel.add_theme_stylebox_override("panel",_style(WHITE,TEAL if formula[page]==option["id"] else Color("d5c6ab")))
-			var option_column:=VBoxContainer.new()
-			option_column.mouse_filter=Control.MOUSE_FILTER_PASS
-			panel.add_child(option_column)
-			var row:=HBoxContainer.new()
-			row.mouse_filter=Control.MOUSE_FILTER_PASS
-			row.add_theme_constant_override("separation",10)
-			option_column.add_child(row)
-			if page in ["flour","water"]: row.add_child(_picture(PantryArt.texture(option["id"]),Vector2(52,52)))
-			var text:=VBoxContainer.new()
-			text.mouse_filter=Control.MOUSE_FILTER_PASS
-			text.size_flags_horizontal=Control.SIZE_EXPAND_FILL
-			row.add_child(text)
-			text.add_child(_label(option["name"],18))
-			text.add_child(_label(won(option["cost"]),15,TEAL))
-			var next: Dictionary=formula.duplicate(true)
-			next[page]=option["id"]
-			var reason: String=Noodle.error(next,state.rank(),state.discovered_ingredients(),true)
-			if option["id"]=="buckwheat":
-				text.add_child(_label("산골 샘플 %d개" % state.sample_stock("noodle_buckwheat"),14,MUTED))
-				_modal.set_meta("raw_material","buckwheat")
-			var choose:=_button("","NoodleChoose_"+str(option["id"]),"check" if formula[page]==option["id"] else "add",TEAL if formula[page]==option["id"] else GOLD)
-			choose.tooltip_text=str(option["name"])+" 선택"
-			choose.disabled=bool(_info["busy"]) or reason!=""
-			choose.pressed.connect(func(): _emit("noodle_set",{"field":page,"id":option["id"]}))
-			row.add_child(choose)
-			if reason!="": option_column.add_child(_label(reason,15,RED))
-			body.add_child(panel)
-		var notes:=_details(body,"선택지 특징","NoodleOptionNotes")
-		for option in definitions:
-			var desc: String=option.get("desc","식감 %d · 삶기 %d초" % [option.get("chew",0),option.get("seconds",0)])
-			notes.add_child(_label(str(option["name"])+" · "+desc,16))
-		_modal_footer("","배합으로",_show_noodle_workshop)
-		_compact_detail(610)
+	if not active:
+		_noodle_formula_sheet(body,review,page,keep)
 		return
 	var hero:=HBoxContainer.new()
 	hero.add_theme_constant_override("separation",14)
@@ -1401,27 +1370,175 @@ func _show_noodle_workshop(page: String="formula") -> void:
 	description.add_child(flavor)
 	description.add_child(_label("한 그릇 %s\n삶기 %d초" % [won(review["cost"]),int(item["seconds"])+int(method["seconds"])],16,MUTED))
 	body.add_child(hero)
-	if active:
-		var phase:=_label("",19,TEAL)
-		phase.name="NoodlePhase"
-		body.add_child(phase)
-		var progress:=ProgressBar.new()
-		progress.name="NoodleProgress"
-		progress.custom_minimum_size.y=24
-		body.add_child(progress)
-		body.add_child(_label("반죽 → 밀기·숙성 → 면 뽑기",16,MUTED))
-		_modal_footer("개발비 %s · 완료 때 결제" % won(review["cost"]),"제면 취소",func(): _emit("noodle_cancel"))
-		_compact_detail(450)
-		update_noodle_progress()
-		return
-	for definition in [["flour","밀가루"],["water","배합수"],["cut","면 굵기"],["method","반죽·숙성"]]:
-		var selected: Dictionary=method if definition[0]=="method" else Noodle.option(definition[0],formula[definition[0]])
-		var row:=_button(definition[1]+" · "+str(selected["name"]),"NoodleField_"+definition[0],"chevron_right")
-		row.pressed.connect(_show_noodle_workshop.bind(definition[0]))
-		body.add_child(row)
+	_modal.set_meta("noodle_page","active")
+	var phase:=_label("",19,TEAL)
+	phase.name="NoodlePhase"
+	body.add_child(phase)
+	var progress:=ProgressBar.new()
+	progress.name="NoodleProgress"
+	progress.custom_minimum_size.y=24
+	body.add_child(progress)
+	body.add_child(_label("반죽 → 밀기·숙성 → 면 뽑기",16,MUTED))
+	_modal_footer("개발비 %s · 완료 때 결제" % won(review["cost"]),"제면 취소",func(): _emit("noodle_cancel"))
+	_compact_detail(450)
+	update_noodle_progress()
 
+
+## All four formula fields stay on one sheet. The footer (paid action) and the
+## food preview live outside DetailsScroll; only the choice cards scroll.
+## `keep` is the previous scroll offset of this same sheet (-1 when none): the
+## controller rebuilds the whole sheet after every successful choice, so the
+## position must be restored or each tap would jump back to the top.
+func _noodle_formula_sheet(body: VBoxContainer, review: Dictionary, page: String, keep: int) -> void:
+	# Give frequent choices the available phone height, with optional prose
+	# below them. Compact devices still scroll the same stable sheet.
+	body.add_theme_constant_override("separation",8)
+	var formula: Dictionary=review["formula"]
+	var item: Dictionary=review["product"]
+	var method: Dictionary=ProcessRules.method("noodle",formula["method"])
+	_modal.set_meta("noodle_page","formula")
+	_modal.set_meta("noodle_focus",page if page in Noodle.FIELDS else "")
+	var preview:=PanelContainer.new()
+	preview.name="NoodlePreview"
+	preview.mouse_filter=Control.MOUSE_FILTER_IGNORE
+	preview.add_theme_stylebox_override("panel",_style(WHITE,Color("d5c6ab")))
+	var strip:=HBoxContainer.new()
+	strip.mouse_filter=Control.MOUSE_FILTER_IGNORE
+	strip.add_theme_constant_override("separation",12)
+	preview.add_child(strip)
+	var food:=_picture(NoodleChoices.preview(str(item["id"])),Vector2(96,60))
+	food.name="NoodlePreviewFood"
+	strip.add_child(food)
+	var facts:=VBoxContainer.new()
+	facts.mouse_filter=Control.MOUSE_FILTER_IGNORE
+	facts.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+	strip.add_child(facts)
+	var title:=_label(item["name"],20)
+	title.name="NoodlePreviewName"
+	facts.add_child(title)
+	# These are component contributions. Keep a negative aroma visible; the
+	# evaluator clamps only after adding the soup, seasoning and other parts.
+	var flavor:=_label("식감 %d · 향 %+d" % [int(item["axes"]["chew"])+int(method["axes"]["chew"]),int(item["axes"]["aroma"])+int(method["axes"]["aroma"])],16,TEAL)
+	flavor.name="NoodleExpectedFlavor"
+	facts.add_child(flavor)
+	var cost_line:=_label("한 그릇 %s · 삶기 %d초" % [won(review["cost"]),int(item["seconds"])+int(method["seconds"])],14,MUTED)
+	cost_line.name="NoodlePreviewCost"
+	facts.add_child(cost_line)
+	var column: VBoxContainer=_modal.find_child("DetailsColumn",true,false)
+	column.add_child(preview)
+	column.move_child(preview,2)
+	var rank: int=state.rank()
+	var discovered: Array=state.discovered_ingredients()
+	var focus_section: Control=null
+	for definition in NoodleChoices.SECTIONS:
+		var field: String=definition[0]
+		var section:=VBoxContainer.new()
+		section.name="NoodleFieldSection_"+field
+		section.add_theme_constant_override("separation",4)
+		body.add_child(section)
+		var heading:=_label(definition[1],18)
+		heading.name="NoodleFieldTitle_"+field
+		if page==field:
+			# A source/ingredient shortcut only points here; it selects nothing.
+			var mark:=PanelContainer.new()
+			mark.mouse_filter=Control.MOUSE_FILTER_IGNORE
+			mark.add_theme_stylebox_override("panel",_style(Color("fff0b8"),GOLD))
+			mark.add_child(heading)
+			section.add_child(mark)
+			focus_section=section
+		else: section.add_child(heading)
+		var grid:=GridContainer.new()
+		# One row per field: water has two options, the others three.
+		var options: Array=NoodleChoices.options(field)
+		grid.columns=options.size()
+		grid.add_theme_constant_override("h_separation",8)
+		grid.add_theme_constant_override("v_separation",8)
+		section.add_child(grid)
+		for option in options:
+			var next: Dictionary=formula.duplicate(true)
+			next[field]=option["id"]
+			var reason: String=Noodle.error(next,rank,discovered,true)
+			var lock: String=NoodleChoices.lock_caption(field,option,rank,discovered)
+			var card:=_noodle_card(field,option,formula[field]==option["id"],lock,reason!="")
+			if reason!="": card.tooltip_text=str(option["name"])+" · "+reason
+			grid.add_child(card)
+			# Truthful source marker for the ingredient shortcut; the stock count
+			# and full requirement are in the disclosure below.
+			if option["id"]=="buckwheat": _modal.set_meta("raw_material","buckwheat")
+	var details:=_details(body,"선택지 특징·조건","NoodleOptionNotes")
+	for definition in NoodleChoices.SECTIONS:
+		details.add_child(_label(definition[1],16,TEAL))
+		for option in NoodleChoices.options(definition[0]):
+			var desc: String=str(option.get("desc","식감 %d · 삶기 %d초" % [option.get("chew",0),option.get("seconds",0)]))
+			if definition[0]=="method": desc+=" (필요 랭크 %d)" % int(option["rank"])
+			details.add_child(_label(str(option["name"])+" · "+desc,15))
+			var next: Dictionary=formula.duplicate(true)
+			next[definition[0]]=option["id"]
+			var reason: String=Noodle.error(next,rank,discovered,true)
+			if reason!="": details.add_child(_label("잠김 · "+reason,15,RED))
+			if option["id"]=="buckwheat": details.add_child(_label("산골 샘플 %d개" % state.sample_stock("noodle_buckwheat"),15,MUTED))
 	_modal_footer(review["reason"] if review["reason"]!="" else "개발비 %s · %d초" % [won(review["cost"]),int(ceil(review["duration"]))],"반죽하고 면 뽑기",func(): _emit("noodle_begin"),review["reason"]!="" or bool(_info["busy"]))
-	_compact_detail(620)
+	_compact_detail(740)
+	_place_noodle_scroll(body.get_parent() as ScrollContainer,focus_section,keep)
+
+
+## One genuine Button per option. Children ignore the pointer so a drag that
+## starts on any part of a card can still become a scroll (which cancels the
+## press); nothing is emitted until a real release on the same card.
+func _noodle_card(field: String, option: Dictionary, selected: bool, lock: String, unavailable: bool) -> Button:
+	var choose:=_button("","NoodleChoose_"+str(option["id"]))
+	choose.custom_minimum_size=Vector2(0,72)
+	choose.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+	choose.tooltip_text=str(option["name"])+(" · 선택 중" if selected else " 선택")
+	var normal:=_style(Color("dff0ec") if selected else WHITE,TEAL if selected else Color("d5c6ab"))
+	if selected: normal.set_border_width_all(4)
+	choose.add_theme_stylebox_override("normal",normal)
+	choose.add_theme_stylebox_override("hover",normal)
+	choose.add_theme_stylebox_override("pressed",_style(Color("c9e4de"),TEAL))
+	choose.disabled=bool(_info["busy"]) or unavailable
+	choose.pressed.connect(func(): _emit("noodle_set",{"field":field,"id":option["id"]}))
+	var margin:=MarginContainer.new()
+	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	margin.mouse_filter=Control.MOUSE_FILTER_IGNORE
+	for side in ["left","right"]: margin.add_theme_constant_override("margin_"+side,6)
+	for side in ["top","bottom"]: margin.add_theme_constant_override("margin_"+side,4)
+	choose.add_child(margin)
+	# Stacked and centred so a 3-column card (~100px wide on a phone) never
+	# lets text touch its border: icon, short name, one price-or-lock line.
+	var content:=VBoxContainer.new()
+	content.mouse_filter=Control.MOUSE_FILTER_IGNORE
+	content.add_theme_constant_override("separation",1)
+	margin.add_child(content)
+	var icon:=_picture(NoodleChoices.texture(field,str(option["id"])),Vector2(24,24))
+	icon.size_flags_horizontal=Control.SIZE_SHRINK_CENTER
+	content.add_child(icon)
+	var row:=HBoxContainer.new()
+	row.mouse_filter=Control.MOUSE_FILTER_IGNORE
+	row.alignment=BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation",3)
+	content.add_child(row)
+	var caption:=_label(str(NoodleChoices.SHORT.get(option["id"],option["name"])),16)
+	caption.autowrap_mode=TextServer.AUTOWRAP_OFF
+	row.add_child(caption)
+	if selected:
+		var mark:=_picture(Art.icon("check"),Vector2(16,16))
+		mark.modulate=TEAL
+		row.add_child(mark)
+	var line:=_label(lock if lock!="" else NoodleChoices.cost_caption(field,option),14,RED if lock!="" else TEAL)
+	line.autowrap_mode=TextServer.AUTOWRAP_OFF
+	line.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
+	content.add_child(line)
+	return choose
+
+
+## The scroll range exists only after the rebuilt sheet is laid out, so wait a
+## frame before assigning. A shortcut field is scrolled to; a plain rebuild
+## keeps the previous offset; a first open starts at the top.
+func _place_noodle_scroll(scroll: ScrollContainer, focus: Control, keep: int) -> void:
+	await get_tree().process_frame
+	if not is_instance_valid(scroll) or not scroll.is_inside_tree(): return
+	if focus!=null and is_instance_valid(focus): scroll.scroll_vertical=int(focus.position.y)
+	elif keep>0: scroll.scroll_vertical=keep
 
 
 func _show_noodle_source(id: String) -> void:
@@ -1709,8 +1826,40 @@ func _render_result() -> void:
 		button.pressed.connect(func(): _result_customer = index; _render_content())
 		customers.add_child(button)
 	var selected: Dictionary = evaluation["customers"][_result_customer]
-	_rows.add_child(_label(str(selected["headline"]), 19, TEAL))
-	var details := _button("시식평 자세히", "EditorResultDetails", "info")
+	var focus: Dictionary=TastingFocus.describe(evaluation["profile"],str(selected["id"]))
+	if str(focus["error"])!="": push_error(str(focus["error"]))
+	var details := _button("", "EditorResultDetails")
+	details.tooltip_text=str(selected["name"])+"의 시식평 자세히"
+	details.custom_minimum_size.y=88
+	var reaction_margin:=MarginContainer.new()
+	reaction_margin.mouse_filter=Control.MOUSE_FILTER_IGNORE
+	reaction_margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	for edge in ["left","right"]: reaction_margin.add_theme_constant_override("margin_"+edge,10)
+	for edge in ["top","bottom"]: reaction_margin.add_theme_constant_override("margin_"+edge,8)
+	details.add_child(reaction_margin)
+	var reaction:=HBoxContainer.new()
+	reaction.mouse_filter=Control.MOUSE_FILTER_IGNORE
+	reaction.add_theme_constant_override("separation",10)
+	reaction_margin.add_child(reaction)
+	reaction.add_child(_picture(PixelArt.scaled_tex(PixelArt.portrait_image(str(selected["id"])),3),Vector2(52,56)))
+	var words:=VBoxContainer.new()
+	words.mouse_filter=Control.MOUSE_FILTER_IGNORE
+	words.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+	words.size_flags_vertical=Control.SIZE_SHRINK_CENTER
+	reaction.add_child(words)
+	var headline:=_label(str(selected["headline"]),18)
+	headline.name="TastingReactionHeadline"
+	words.add_child(headline)
+	var observed:=_label(str(focus.get("caption","")),16,TEAL)
+	observed.name="TastingObservedFocus"
+	words.add_child(observed)
+	var caret:=_picture(Art.icon("chevron_right"),Vector2(20,24))
+	caret.modulate=TEAL
+	reaction.add_child(caret)
+	# Button themes do not recolor child Labels. Keep the whole clickable
+	# reaction readable on the teal held state as well as the cream idle state.
+	details.button_down.connect(func(): headline.add_theme_color_override("font_color",Color.WHITE); observed.add_theme_color_override("font_color",Color.WHITE); caret.modulate=Color.WHITE)
+	details.button_up.connect(func(): headline.add_theme_color_override("font_color",INK); observed.add_theme_color_override("font_color",TEAL); caret.modulate=TEAL)
 	details.pressed.connect(func():
 		var body := _modal_body(str(selected["name"]) + "의 시식평")
 		var customer_row := HBoxContainer.new()
@@ -1735,10 +1884,21 @@ func _render_result() -> void:
 	var clues := _button("다음 실험의 단서", "EditorClues", "info")
 	clues.pressed.connect(_show_clues)
 	_rows.add_child(clues)
-	var again := _button("다시 개발", "EditorDevelopAgain", "ramen_dining")
-	again.pressed.connect(func(): _emit("route", {"index": 0}))
+	var again := _button(str(focus.get("action","다시 개발")), "EditorDevelopAgain", "ramen_dining",GOLD)
+	again.disabled=bool(_info["busy"])
+	again.pressed.connect(_open_tasting_adjustment.bind(focus))
 	_rows.add_child(again)
 	_scroll.set_deferred("scroll_vertical", 0)
+
+
+func _open_tasting_adjustment(focus: Dictionary) -> void:
+	if bool(_info["busy"]): return
+	_emit("route",{"index":0})
+	if _mode!=0 or bool(_info["busy"]): return
+	# Navigate to a relevant real control without applying a suggested recipe,
+	# restoring an old record, revealing a forecast or spending any resources.
+	if not bool(focus.get("matched",true)):
+		_switch_group_tab(str(focus["group"]),str(focus["tab"]))
 
 
 func _show_result_discoveries() -> void:
@@ -1842,10 +2002,14 @@ func _show_clues() -> void:
 
 func _primary_action() -> void:
 	if _mode==0 and state.broth_ready() and not state.noodle_ready():
-		_show_noodle_workshop()
+		var recipes: Array=state.noodle_review()["recipes"]
+		if recipes.is_empty(): _show_noodle_workshop()
+		else: _show_component_completion("noodle",recipes.size()-1)
 		return
 	if _mode==0 and not state.broth_ready():
-		_show_broth_workshop()
+		var recipes: Array=state.broth_review()["recipes"]
+		if recipes.is_empty(): _show_broth_workshop()
+		else: _show_component_completion("broth",recipes.size()-1)
 		return
 	_close_modal()
 	_emit("serve" if _mode == 1 else "taste")
@@ -1981,6 +2145,43 @@ func _render_component_library(kind: String, review: Dictionary, body: VBoxConta
 		body.add_child(panel)
 	_modal_footer("","새 %s 배합" % title,_show_component_workshop.bind(kind))
 	_compact_detail(minf(700,330+230*mini(2,maxi(1,count))))
+
+
+## Completion is its own truthful result, rather than dropping the player into
+## a collection list. Applying is still explicit and crosses the guarded API.
+func _show_component_completion(kind: String, index: int) -> void:
+	var result: Dictionary=state.component_comparison(kind,index)
+	if not result["ok"]:
+		push_error(str(result["message"]))
+		return
+	var title: String="육수" if kind=="broth" else "자가제면"
+	var body:=_modal_body(title+" 완성!")
+	_modal.set_meta("view_kind","component_complete")
+	_modal.set_meta("component_kind",kind)
+	_modal.set_meta("component_index",index)
+	_live_warning(body)
+	var item: Dictionary=result["selected_component"]
+	var id: String=Broth.base_id(result["recipe"]) if kind=="broth" else Noodle.base_id(result["recipe"])
+	var picture:=_picture(_ingredient_texture(id),Vector2(160,116))
+	picture.name="ComponentCompletionFood"
+	body.add_child(picture)
+	var name_label:=_label(str(item["name"]),22)
+	name_label.name="ComponentCompletionName"
+	name_label.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
+	body.add_child(name_label)
+	_facts(body,[["한 그릇 원가",won(item["cost"])],["준비 시간","%d초" % item["seconds"]]])
+	var status:=_label("그릇에 사용 중" if result["applied"] else "완성 · 아직 그릇에 담기 전",16,TEAL)
+	status.name="ComponentCompletionState"
+	status.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
+	body.add_child(status)
+	var browse:=_button("다른 개발품 보기","ComponentCompletionLibrary","chevron_right")
+	browse.pressed.connect(_return_component_library.bind(kind,true))
+	body.add_child(browse)
+	var next: String="그릇에 담고 토핑 고르기"
+	if kind=="broth" and not state.noodle_ready(): next="이 육수 담고 면 만들기"
+	elif kind=="noodle" and not state.broth_ready(): next="이 면 담고 육수 만들기"
+	_modal_footer("개발비 결제 완료",next,func(): _emit(kind+"_use",{"index":index,"advance":true}),bool(_info["busy"]))
+	_compact_detail(540)
 
 
 func _change_component_page(kind: String, delta: int) -> void:

@@ -138,7 +138,8 @@ func _payoff(tag: String, vp: Vector2i) -> void:
 	while state.call("broth_active") and Time.get_ticks_msec()<broth_deadline: await process_frame
 	_check(not state.call("broth_active"),tag+": raw ingredient broth completes before editing ramen")
 	await _settle()
-	await _tap(holder,editor,"BrothUse_0")
+	_check((editor.get("_modal") as Control).get_meta("view_kind","")=="component_complete",tag+": raw broth has explicit completion result")
+	await _tap(holder,editor,"EditorDetailApply")
 	await _tap(holder,editor,"EditorBroth")
 	await _tap(holder,editor,"BrothTab_seasoning")
 	app.set_process(false)
@@ -168,6 +169,10 @@ func _payoff(tag: String, vp: Vector2i) -> void:
 	await _shot(holder,tag+"_payoff_07_discovery_facts.png")
 	await _tap(holder,editor,"EditorDetailApply")
 	await _tap(holder,editor,"EditorDevelopAgain")
+	# The contextual action now opens the relevant real selector. Return through
+	# its visible back button before editing a topping behind that modal.
+	_check(int(editor.get("_mode"))==0 and editor.get("_modal")!=null,tag+": reaction opens a real adjustment sheet")
+	await _tap(holder,editor,"EditorDetailsBack")
 	await _tap(holder,editor,"EditorRemove_1")
 	await _tap(holder,editor,"EditorTaste")
 	app.call("advance_work",12.0)
@@ -190,6 +195,7 @@ func _payoff(tag: String, vp: Vector2i) -> void:
 	badge=editor.find_child("EditorDiscoveryReward",true,false) as Button
 	_check(_state_json(app)==before and badge!=null and not badge.text.contains("새 방향"),tag+": restart keeps earned witness but does not fake a new discovery")
 	await _tap(holder,editor,"EditorDevelopAgain")
+	await _tap(holder,editor,"EditorDetailsBack")
 	editor.call("reveal_ingredient","topping_citrus_peel")
 	await _settle()
 	await _tap(holder,editor,"EditorIngredientExperiment")
