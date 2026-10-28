@@ -13,6 +13,7 @@ const Dish = preload("res://scripts/ui/layered_recipe_view.gd")
 const PixelArt = preload("res://scripts/ui/pixel_art.gd")
 const NameEdit = preload("res://scripts/ui/scrollable_name_edit.gd")
 const Directions = preload("res://scripts/domain/recipe_directions.gd")
+const GoalFocus = preload("res://scripts/ui/tasting_goal_focus.gd")
 const Experiments = preload("res://scripts/domain/recipe_experiments.gd")
 const Check = preload("res://scripts/domain/data_check.gd")
 const BodyFont = preload("res://assets/fonts/Pretendard-Regular.otf")
@@ -639,7 +640,7 @@ func present(new_state: Game, mode: int, information: Dictionary) -> void:
 		_info["busy"], _info["working"], _selected, state.discovered_ingredients(),
 		state.sample_stock("topping_citrus_peel"), state.sample_stock("topping_scallop"),
 		state.recipe_known(state.draft_config),
-		_info.get("new_directions",[]),_info.get("new_themes",[])])
+		_info.get("new_directions",[]),_info.get("new_themes",[]),_info.get("direction_target","")])
 	if key == _last_key:
 		return
 	if _last_key != "" and _filters.visible:
@@ -1810,13 +1811,19 @@ func _render_result() -> void:
 	identity.details_requested.connect(_show_menu_identity.bind(int(record["record_id"])))
 	var fresh: Array=_info.get("new_directions",[])
 	var new_themes: Array=_info.get("new_themes",[])
-	var actual: Array[String]=[]
-	for definition in Directions.catalog():
-		if bool(Directions.assess(str(definition["id"]),record["config"])["matched"]):
-			actual.append(str(definition["title"]))
-	if not fresh.is_empty() or not new_themes.is_empty() or not actual.is_empty():
-		var title: String=(str(fresh[0])+" · 새 방향 발견") if not fresh.is_empty() else ((str(new_themes[0])+" · 새 연구 기록") if not new_themes.is_empty() else str(actual[0])+" · 완성한 방향")
-		var found := _button(title,"EditorDiscoveryReward","check",GOLD)
+	var goal_view: Dictionary=GoalFocus.project(record,str(_info.get("direction_target","")),fresh)
+	if goal_view["error"]!="":
+		var failure:=_label(str(goal_view["error"]),16,RED)
+		failure.name="EditorGoalError"
+		_rows.add_child(failure)
+	elif goal_view["badge"]!="" or not fresh.is_empty() or not new_themes.is_empty() or not goal_view["matches"].is_empty():
+		# A selected goal describes this paid bowl even when an older direction
+		# also matches. An unmet target remains a neutral, inspectable next step.
+		var targeted: bool=goal_view["status"]!=GoalFocus.NO_GOAL
+		var title: String=str(goal_view["badge"]) if targeted else ((str(fresh[0])+" · 새 방향 발견") if not fresh.is_empty() else ((str(new_themes[0])+" · 새 연구 기록") if not new_themes.is_empty() else str(goal_view["matches"][0]["title"])+" · 완성한 방향"))
+		var success: bool=not targeted or bool(goal_view["celebrate"])
+		var found := _button(title,"EditorDiscoveryReward","check" if success else "info",GOLD if success else CREAM)
+		found.set_meta("goal_celebrate",success)
 		found.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
 		found.custom_minimum_size.y=56
 		found.pressed.connect(_show_result_discoveries)
@@ -1952,17 +1959,32 @@ func _show_result_discoveries() -> void:
 	if record.is_empty():
 		body.add_child(_label("확인할 시식 노트가 없어요.",17,RED))
 		return
+	var focus: Dictionary=GoalFocus.project(record,str(_info.get("direction_target","")),_info.get("new_directions",[]))
+	if focus["error"]!="":
+		body.add_child(_label(str(focus["error"]),17,RED))
+		_modal_footer("시식 기록과 목표를 확인해 주세요.","시식 결과로",_close_modal)
+		return
+	if focus["status"]!=GoalFocus.NO_GOAL:
+		var heading:=_label("선택한 목표 · "+str(focus["title"]),20)
+		heading.name="EditorGoalTitle"
+		body.add_child(heading)
+		var met: bool=focus["status"]==GoalFocus.MET
+		var status:=_label("이 그릇으로 조건 충족" if met else "이 그릇은 아직 조건 미충족",18,TEAL if met else RED)
+		status.name="EditorGoalStatus"
+		body.add_child(status)
+		for condition in focus["selected"]["checks"]:
+			body.add_child(_label(("확인 · " if bool(condition["met"]) else "미달 · ")+str(condition["text"]),16,TEAL if bool(condition["met"]) else RED))
 	for title in _info.get("new_directions",[]):
+		if str(title)==str(focus["title"]):continue
 		body.add_child(_label("새 방향 발견 · "+str(title),21,TEAL))
 	for title in _info.get("new_themes",[]):
 		body.add_child(_label("새 연구 기록 · "+str(title),18,TEAL))
 	var tested: Array[String]=Directions.tested_ids(state.records())
 	body.add_child(_label("보관 중인 시식 노트 · 연구 방향 %d/%d" % [tested.size(),Directions.catalog().size()],18))
-	for definition in Directions.catalog():
-		var assessment: Dictionary=Directions.assess(str(definition["id"]),record["config"])
-		if not bool(assessment["matched"]): continue
-		body.add_child(_label("이 그릇으로 완성 · "+str(definition["title"]),20,TEAL))
-		for condition in assessment["checks"]:
+	for entry in focus["matches"]:
+		if bool(entry["selected"]):continue
+		body.add_child(_label("이 그릇으로 완성 · "+str(entry["title"]),20,TEAL))
+		for condition in entry["assessment"]["checks"]:
 			body.add_child(_label(str(condition["text"]),16))
 	body.add_child(_label("실제로 시식한 노트를 기준으로 확인해요. 방향이 같아도 재료·풍미·손님 반응은 달라질 수 있어요.",16,MUTED))
 	_modal_footer("이 시식의 비용과 샘플은 완성할 때 반영했어요.","시식 결과로",_close_modal)
@@ -1974,7 +1996,7 @@ func play_discovery_reveal() -> void:
 	var identity: Control=_rows.find_child("EditorMenuIdentity",true,false) as Control
 	if identity!=null: identity.call("play_reveal")
 	var badge: Control=_rows.find_child("EditorDiscoveryReward",true,false) as Control
-	if badge==null: return
+	if badge==null or not bool(badge.get_meta("goal_celebrate",true)): return
 	badge.pivot_offset=badge.size*0.5
 	badge.scale=Vector2.ONE*0.94
 	var tween:=badge.create_tween()
