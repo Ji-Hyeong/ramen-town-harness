@@ -29,6 +29,20 @@ const DATA: Array = [
 		"brief":"직화 산표고의 향과 진한 국물의 균형. 고명을 겹치면 시간과 원가도 늘어요.",
 		"source":"산골 농가 · 산표고 화덕","requires":["topping_grilled_shiitake"],
 		"limits":[{"axis":"rich","min":7},{"axis":"aroma","min":7}]},
+	# Later experiments connect real samples from two regions. These are open
+	# culinary constraints, not saved optimal recipes or additional rewards.
+	{"id":"citrus_scallop","title":"유자 가리비탕","ingredient":"topping_citrus_peel","slot":"topping","category":"cross_region",
+		"brief":"장터의 유자와 항구의 가리비를 한 그릇에. 향은 살리고 국물은 가볍게 다듬어 보세요.",
+		"source":"새벽 장터 · 아침 항구","requires":["topping_citrus_peel","topping_scallop"],
+		"limits":[{"axis":"rich","max":6},{"axis":"aroma","min":8}]},
+	{"id":"sesame_buckwheat","title":"참깨 메밀 진국","ingredient":"noodle_buckwheat","slot":"noodle","category":"cross_region",
+		"brief":"장터의 고소한 참깨유와 산메밀. 든든한 국물과 씹는 맛을 함께 연구해 보세요.",
+		"source":"새벽 장터 · 산골 농가","requires":["oil_roasted_sesame","noodle_buckwheat"],
+		"limits":[{"axis":"rich","min":7},{"axis":"aroma","min":7},{"axis":"chew","min":6}]},
+	{"id":"sardine_shiitake","title":"정어리 산표고탕","ingredient":"broth_roasted_sardine","slot":"broth","category":"cross_region",
+		"brief":"항구의 정어리 육수에 산골의 직화 표고. 짠맛을 다듬고 깊은 향을 찾아보세요.",
+		"source":"아침 항구 · 산골 농가","requires":["broth_roasted_sardine","topping_grilled_shiitake"],
+		"limits":[{"axis":"rich","max":6},{"axis":"aroma","min":8},{"axis":"salt","max":7}]},
 ]
 
 

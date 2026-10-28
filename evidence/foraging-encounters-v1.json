@@ -1,0 +1,221 @@
+{
+  "task": "foraging-encounters-v1",
+  "date": "2026-10-29",
+  "base_main": "81db0adbc9684194933e66df5f69e6e5e15ad9af",
+  "scope": {
+    "regional_encounters": 3,
+    "new_outcomes": 6,
+    "new_cross_region_directions": 3,
+    "total_directions": 8,
+    "new_ingredient_ids": 0,
+    "schema": 18,
+    "new_persistent_fields": 0
+  },
+  "bundle": {
+    "final": "final-v5",
+    "source_count": 409,
+    "all_sources_equal_checkout": true,
+    "pack_sha256": "7cb518a4823fd55b2bc91a10cb78e71a9d9daf537d49d6dcfaab7c6f28d10eca",
+    "embedded_pack_equal": true,
+    "official_engine_sha256": "c7cccbf8fb143e34e02fd6521e09be2c2b974f0d5db080b19071c9c570718ccf",
+    "post_vendor_strict_signatures": {
+      "v3": 0,
+      "v4": 0,
+      "v5": 0
+    }
+  },
+  "native": {
+    "primary": {
+      "bundle": "final-v5",
+      "checks": 2924,
+      "failures": 0,
+      "exit": 0,
+      "engine_errors": 0,
+      "pngs": 87,
+      "sizes": [
+        [
+          390,
+          844
+        ],
+        [
+          1280,
+          800
+        ],
+        [
+          390,
+          750
+        ]
+      ],
+      "started_by": "Computer Use absolute app; observer timed out, actual fresh run completed"
+    },
+    "regressions": [
+      {
+        "fixture": "exploration_workbench_qa",
+        "exit": 0,
+        "errors": [],
+        "pngs": 28,
+        "summary": [
+          "EXPLORATION WORKBENCH mode=capture checks=678 failures=0"
+        ]
+      },
+      {
+        "fixture": "foraging_goals_qa",
+        "exit": 0,
+        "errors": [],
+        "pngs": 36,
+        "summary": [
+          "FORAGING GOALS checks=965 failures=0 mode=capture"
+        ]
+      }
+    ],
+    "regression_bundle": "final-v3",
+    "v3_to_v5_source_differences": [
+      "scripts/ui/foraging_goal_board.gd",
+      "tests/foraging_plan_tests.gd"
+    ],
+    "accepted_checks": 4567,
+    "accepted_pngs": 151,
+    "all_accepted_exits": 0,
+    "all_accepted_engine_errors": 0,
+    "all_generated_images_manually_opened": false
+  },
+  "pure_final_v5": [
+    {
+      "fixture": "sample_encounter_runner",
+      "exit": 0,
+      "errors": [],
+      "summary": [
+        "SAMPLE ENCOUNTERS checks=1360 failures=0"
+      ]
+    },
+    {
+      "fixture": "foraging_plan_runner",
+      "exit": 0,
+      "errors": [],
+      "summary": [
+        "FORAGING PLAN checks=432 failures=0"
+      ]
+    },
+    {
+      "fixture": "recipe_directions_runner",
+      "exit": 0,
+      "errors": [],
+      "summary": [
+        "Recipe directions checks=160 failures=0"
+      ]
+    }
+  ],
+  "historical_final_v5": {
+    "exit": 0,
+    "errors": [],
+    "summary": [
+      "tests=129 checks=59458 failures=0"
+    ]
+  },
+  "builder": {
+    "tests": 24,
+    "failures": 0
+  },
+  "touch": {
+    "checks": 49,
+    "failures": 0,
+    "mode": "headless layout; no physical phone claim"
+  },
+  "old_v18": {
+    "fixtures": 27,
+    "old_files_untouched": true,
+    "old_roundtrip_values_equal": true,
+    "regional_specs": {
+      "market": {
+        "original_two_targets_and_quantities_exact": true,
+        "other_old_fields_exact": true,
+        "new_targets": 1,
+        "max_amount": [
+          3,
+          5
+        ]
+      },
+      "harbor": {
+        "original_two_targets_and_quantities_exact": true,
+        "other_old_fields_exact": true,
+        "new_targets": 1,
+        "max_amount": [
+          3,
+          5
+        ]
+      },
+      "mountain": {
+        "original_two_targets_and_quantities_exact": true,
+        "other_old_fields_exact": true,
+        "new_targets": 1,
+        "max_amount": [
+          3,
+          5
+        ]
+      }
+    },
+    "claude_owned_files_unchanged": 5,
+    "bundle": "final-v3; domain identical final-v5",
+    "generation_checks": 471,
+    "compatibility_checks": 190,
+    "failures": 0
+  },
+  "fresh_production_progress": {
+    "bundle": "final-v4; domain identical final-v5",
+    "legacy_fixture": false,
+    "injected_progress": false,
+    "reachability_checks": 293,
+    "followup_paid_experiment_checks": 72,
+    "failures": 0,
+    "daily_saved_and_reloaded": 22,
+    "endpoint_day": 23,
+    "endpoint_rank": 3,
+    "research_done": 6,
+    "cross_goals_witnessed": [
+      "citrus_scallop",
+      "sesame_buckwheat",
+      "sardine_shiitake"
+    ],
+    "known_formulas": true,
+    "human_play": false,
+    "elapsed_playtime_measured": false
+  },
+  "presentation_final_state_equal": {
+    "portrait": true,
+    "desktop": true,
+    "compact": true
+  },
+  "claude": {
+    "implementation_owned_files": [
+      "game/scripts/domain/sample_foraging.gd",
+      "game/scripts/domain/market_foraging.gd",
+      "game/scripts/domain/harbor_foraging.gd",
+      "game/scripts/domain/mountain_foraging.gd",
+      "game/tests/sample_encounter_tests.gd"
+    ],
+    "unchanged_after_handoff": true,
+    "actual_exit": 0,
+    "subtype": "success",
+    "is_error": false,
+    "requested_max_turns": 30,
+    "reported_num_turns": 44,
+    "permission_denials": [],
+    "result_nonempty": true,
+    "quota_percentage_inferred": false
+  },
+  "rejected_diagnostics": [
+    "initial native-layout harness attempted already-selected disabled confirmation (3); fixed harness, not production gate",
+    "old-save nested Variant numeric-type comparison (54); semantic exact numeric and independent JSON comparisons pass",
+    "private reachability draft used an overlong recipe name; corrected test input",
+    "private continuation draft read an internal legacy flag from a public review instead of saved state; corrected probe",
+    "initial text-only choices and orphaned ready/selected list unit replaced before final freeze"
+  ],
+  "archive": "outputs/ramen-foraging-encounters-v1/{comparison-v1,final-v3,final-v4,final-v5,private-task}",
+  "manual_review": "see game/docs/uiux-reset/foraging-encounters-v1/review.json",
+  "not_done": [
+    "iPhone install and latest physical touch/safe area/performance",
+    "human fun and 6-10h campaign acceptance",
+    "new alley lots or ending",
+    "live player save changes"
+  ]
+}

@@ -14,6 +14,7 @@ const Mock = preload("res://scripts/ui/mock_fidelity_art.gd")
 const Editor = preload("res://scripts/ui/bowl_workbench.gd")
 const GoalBoard=preload("res://scripts/ui/foraging_goal_board.gd")
 const GoalDirections=preload("res://scripts/domain/recipe_directions.gd")
+const PantryArt=preload("res://scripts/ui/broth_material_art.gd")
 const BODY = preload("res://assets/fonts/Pretendard-Regular.otf")
 const BOLD = preload("res://assets/fonts/Pretendard-Bold.otf")
 const INK := Color("18354f")
@@ -162,11 +163,21 @@ func _image(texture: Texture2D, minimum: Vector2) -> TextureRect:
 
 
 func _food(id: String) -> Texture2D:
+	# Legacy sample IDs share a base-recipe name, but gathering supplies raw
+	# inputs. Never depict the fish/flour sample as an already finished product.
+	if mode=="sample" and id=="broth_roasted_sardine":return PantryArt.texture("sardine")
+	if mode=="sample" and id=="noodle_buckwheat":return PantryArt.texture("buckwheat")
 	if id=="noodle_buckwheat" or id.begins_with("topping_"):
 		return Art.food(id)
 	if id.begins_with("broth_"):
 		return Mock.texture("pot")
 	return Pixel.scaled_tex(Pixel.icon_image(id),3)
+
+
+func _sample_name(id: String) -> String:
+	if id=="broth_roasted_sardine":return "구운 정어리"
+	if id=="noodle_buckwheat":return "산메밀 배합분"
+	return str(Catalog.find(id)["name"])
 
 
 func _build() -> void:
@@ -460,7 +471,7 @@ func _material(id: String, caption: String) -> void:
 	row.add_child(_image(_food(id),Vector2(54,54)))
 	var text := _box(row,4)
 	text.mouse_filter=Control.MOUSE_FILTER_IGNORE
-	text.add_child(_label(str(Catalog.find(id)["name"]),18))
+	text.add_child(_label(_sample_name(id) if mode=="sample" else str(Catalog.find(id)["name"]),18))
 	text.add_child(_label(caption,14,TEAL))
 	var info := _image(Art.icon("info"),Vector2(24,24))
 	info.self_modulate=MUTED
@@ -484,10 +495,47 @@ func _render_preview() -> void:
 		reason.name="ExploreReason"
 		_body.add_child(reason)
 	if mode=="sample":
-		_body.add_child(_label("2개 / 추가 0원 · 3개 / 추가 300원" if region=="market" else ("1개 / 추가 0원 · 3개 / 추가 600원" if region=="harbor" else "1개 / 추가 0원 · 3개 / 추가 800원"),15,TEAL))
+		_body.add_child(_label("기본 채집 2~3개 · 공동구매 최대 5개" if region=="market" else ("기본 채집 1~3개 · 어획물 나눔 최대 5개" if region=="harbor" else "기본 채집 1~3개 · 공동 주문 최대 5개"),15,TEAL))
 	_action.text="출발 · "+Editor.won(int(review["fee"]))
 	_action.disabled=_action.disabled or not bool(review["can_start"])
 	_cost.text="출발비 "+Editor.won(int(review["fee"]))+" · 선택 비용은 별도 표시"
+
+
+## The whole pictured outcome remains one normal scroll-aware button. Its
+## children ignore input, and canceled/released presses restore readable ink.
+func _sample_choice(choice: Dictionary) -> Button:
+	var id: String=str(choice["ingredient"])
+	var title: String=_sample_name(id)+" ×%d개" % int(choice["amount"])
+	var selected: bool=_choice==str(choice["id"])
+	var button:=_button("","ExploreChoice_"+str(choice["id"]),"teal" if selected else "summary")
+	button.custom_minimum_size.y=96
+	button.tooltip_text=title+" · 추가 "+Editor.won(int(choice["cost"]))
+	if "accessibility_name" in button:button.set("accessibility_name",button.tooltip_text)
+	var margin:=MarginContainer.new()
+	margin.mouse_filter=Control.MOUSE_FILTER_IGNORE
+	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	for edge in ["left","right","top","bottom"]:margin.add_theme_constant_override("margin_"+edge,14)
+	button.add_child(margin)
+	var row:=HBoxContainer.new()
+	row.mouse_filter=Control.MOUSE_FILTER_IGNORE
+	row.add_theme_constant_override("separation",14)
+	margin.add_child(row)
+	row.add_child(_image(_food(id),Vector2(58,58)))
+	var column:=VBoxContainer.new()
+	column.mouse_filter=Control.MOUSE_FILTER_IGNORE
+	column.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+	column.size_flags_vertical=Control.SIZE_SHRINK_CENTER
+	column.add_theme_constant_override("separation",5)
+	row.add_child(column)
+	var ink: Color=Color.WHITE if selected else INK
+	var name_label:=_label(title,16,ink)
+	var cost_label:=_label("추가 "+Editor.won(int(choice["cost"])),15,ink)
+	for words in [name_label,cost_label]:
+		words.mouse_filter=Control.MOUSE_FILTER_IGNORE
+		column.add_child(words)
+		button.button_down.connect(func():words.add_theme_color_override("font_color",Color.WHITE))
+		button.button_up.connect(func():words.add_theme_color_override("font_color",ink))
+	return button
 
 
 func _render_active(trip: Dictionary) -> void:
@@ -532,9 +580,15 @@ func _render_active(trip: Dictionary) -> void:
 	_body.add_child(_label(str(event["text"]),15,MUTED))
 	for row in event["choices"]:
 		var choice: Dictionary = row
-		var button := _button(str(choice["label"])+"\n추가 "+Editor.won(int(choice["cost"])),"ExploreChoice_"+str(choice["id"]),"teal" if _choice==str(choice["id"]) else "summary")
+		# Sample outcomes already contain truthful material/portion/cost fields.
+		# Render those once instead of repeating the catalog's narrative price.
+		var portion: bool=mode=="sample" and choice.has("ingredient")
+		var choice_title: String=str(choice["label"])
+		if mode=="sample" and choice.has("ingredient_hint") and not choice.has("quantities"):
+			choice_title=_sample_name(str(choice["ingredient_hint"]))+" 채집"
+		var button: Button=_sample_choice(choice) if portion else _button(choice_title+"\n추가 "+Editor.won(int(choice["cost"])),"ExploreChoice_"+str(choice["id"]),"teal" if _choice==str(choice["id"]) else "summary")
 		button.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
-		button.custom_minimum_size.y=78
+		if not portion:button.custom_minimum_size.y=78
 		button.disabled=bool(_info["busy"]) or not bool(choice["affordable"])
 		button.pressed.connect(func():
 			var position: int=_scroll.scroll_vertical
@@ -542,12 +596,19 @@ func _render_active(trip: Dictionary) -> void:
 			_render()
 			_restore_body_scroll(position,_render_serial))
 		_body.add_child(button)
-		var description: String = str(choice["desc"])
+		var description: String = "" if portion else str(choice["desc"])
+		if mode=="sample" and choice.has("quantities"):
+			var offers: Array[String]=[]
+			for offer in choice["quantities"]:
+				offers.append("%s %d개 · 추가 %s" % [_sample_name(str(offer["ingredient"])),int(offer["amount"]),Editor.won(int(offer["cost"]))])
+			description=" / ".join(offers)
 		if choice.has("ingredient_name"):
 			description+=" · "+str(choice["ingredient_name"])+(" / 이미 발견" if bool(choice["known"]) else " / 새 재료")
 		if not bool(choice["affordable"]) and not bool(choice.get("capacity_blocked",false)):
-			description+=" · 자금 부족"
-		_body.add_child(_label(description,14,MUTED))
+			description+=(" · " if description!="" else "")+"자금 부족"
+		if bool(choice.get("capacity_blocked",false)):
+			description+=(" · " if description!="" else "")+"보관함이 부족해요"
+		if description!="":_body.add_child(_label(description,14,MUTED))
 	_action.text="선택을 골라 주세요"
 	for row in event["choices"]:
 		if str(row["id"])==_choice:

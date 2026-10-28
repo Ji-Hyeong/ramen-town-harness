@@ -38,6 +38,21 @@ static func witness(id: String, variant: int = 0) -> Dictionary:
 			if variant==1:
 				config["noodle"]="noodle_medium"
 				config["toppings"]=["topping_grilled_shiitake","topping_grilled_shiitake"]
+		"citrus_scallop":
+			config.merge({"broth":"broth_chicken","tare":"tare_shio","oil":"oil_scallion","noodle":"noodle_thin","toppings":["topping_citrus_peel","topping_scallop"]},true)
+			if variant==1:
+				config["broth"]="broth_dashi"
+				config["noodle"]="noodle_medium"
+		"sesame_buckwheat":
+			config.merge({"broth":"broth_tonkotsu","tare":"tare_miso","oil":"oil_roasted_sesame","noodle":"noodle_buckwheat","toppings":["topping_egg"]},true)
+			if variant==1:
+				config["tare"]="tare_shoyu"
+				config["toppings"]=["topping_chashu","topping_nori"]
+		"sardine_shiitake":
+			config.merge({"broth":"broth_roasted_sardine","tare":"tare_shio","oil":"oil_scallion","noodle":"noodle_thin","toppings":["topping_grilled_shiitake"]},true)
+			if variant==1:
+				config["noodle"]="noodle_medium"
+				config["toppings"]=["topping_grilled_shiitake","topping_sprouts"]
 	return config
 
 
@@ -92,8 +107,17 @@ func run(check: Callable) -> void:
 			"shiitake_depth":
 				unbalanced["broth"]="broth_chicken"
 				unbalanced["tare"]="tare_shio"
+			"citrus_scallop":
+				unbalanced["broth"]="broth_tonkotsu"
+				unbalanced["toppings"].append_array(["topping_chashu","topping_chashu"])
+			"sesame_buckwheat":
+				unbalanced["broth"]="broth_chicken"
+				unbalanced["tare"]="tare_shio"
+			"sardine_shiitake":
+				unbalanced["tare"]="tare_shoyu"
+				unbalanced["toppings"].append_array(["topping_nori","topping_nori","topping_nori"])
 		check.call(not Directions.assess(id, unbalanced)["matched"], "required material alone cannot bypass actual flavor conditions")
-	check.call(Directions.tested_ids(recipes).size() == 5, "five real directions from actual witnesses")
+	check.call(Directions.tested_ids(recipes).size() == 8, "eight real directions from actual witnesses")
 	for i in signatures.size():
 		for j in range(i + 1, signatures.size()):
 			check.call(signatures[i] != signatures[j] and dishes[i] != dishes[j], "different actual flavor profiles and dish pixels")

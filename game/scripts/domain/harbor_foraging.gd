@@ -18,7 +18,7 @@ const SPEC: Dictionary = {
   "region": "harbor",
   "name": "항구 연구 재료 채집",
   "min_amount": 1,
-  "max_amount": 3,
+  "max_amount": 5,
   "event_title": "오늘의 어획물 고르기",
   "quantity_title": "어부의 손질 제안",
   "targets": [
@@ -35,6 +35,34 @@ const SPEC: Dictionary = {
       "desc": "국물을 진하게 하는 고명. 같은 고명을 겹치면 재료비·준비 시간도 늘어요.",
       "cost": 0,
       "ingredient_hint": "topping_scallop"
+    },
+    {
+      "id": "harbor_shared_catch",
+      "title": "새벽 어획물 나눔",
+      "label": "새벽 어획물 나눔에 낀다",
+      "desc": "어부들이 섞어 잡은 어획물을 나눠요. 구운 정어리 육수 2개 추가 400원, 또는 가리비 고명 5개 추가 1400원.",
+      "cost": 0,
+      "ingredient_hint": "broth_roasted_sardine",
+      "quantity_title": "나눌 어획 고르기",
+      "quantity_text": "어부들이 어획물을 갈라 놓았어요. 어느 몫을 손질해 갈까요?",
+      "quantities": [
+        {
+          "id": "sort_sardine_two",
+          "label": "정어리 몫을 고른다 · 구운 정어리 육수 2개 / 추가 400원",
+          "desc": "400원을 더 내고 구운 정어리 육수 2개를 받아요.",
+          "cost": 400,
+          "ingredient": "broth_roasted_sardine",
+          "amount": 2
+        },
+        {
+          "id": "sort_scallop_five",
+          "label": "가리비 몫을 고른다 · 가리비 고명 5개 / 추가 1400원",
+          "desc": "1400원을 더 내고 가리비 고명 5개를 받아요.",
+          "cost": 1400,
+          "ingredient": "topping_scallop",
+          "amount": 5
+        }
+      ]
     }
   ],
   "quantities": [

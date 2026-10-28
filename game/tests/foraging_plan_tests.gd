@@ -151,7 +151,7 @@ func _projection() -> void:
 	var before: String = fake.snapshot()
 	var plans: Array = Plan.catalog(fake)
 	var definitions: Array = Directions.catalog()
-	check.call(plans.size() == 5 and definitions.size() == 5, "five existing directions")
+	check.call(plans.size() == 8 and definitions.size() == 8, "five regional plus three cross-region directions")
 	for i in plans.size():
 		var plan: Dictionary = plans[i]
 		var definition: Dictionary = definitions[i]
@@ -349,7 +349,7 @@ func _bad_input() -> void:
 	var wrong: Dictionary = Plan.describe(RefCounted.new(), "citrus_clear")
 	check.call(str(wrong["error"]) != "", "an object without the public reviews is an explicit error")
 	var plans: Array = Plan.catalog(null)
-	check.call(plans.size() == 5, "bad state still reports five entries")
+	check.call(plans.size() == 8, "bad state still reports all eight entries")
 	for plan in plans:
 		check.call(str(plan["error"]) != "", "bad state entry is an error")
 	var freed := RefCounted.new()
@@ -367,7 +367,7 @@ func _real_state() -> void:
 	var before: String = _json(fresh)
 	var plans: Array = Plan.catalog(fresh)
 	check.call(_json(fresh) == before, "real new game: projection changes no saved state")
-	check.call(plans.size() == 5 and plans[0]["id"] == Directions.catalog()[0]["id"], "real catalog order")
+	check.call(plans.size() == 8 and plans[0]["id"] == Directions.catalog()[0]["id"], "real catalog order")
 	for plan in plans:
 		check.call(plan["error"] == "" and not bool(plan["tested"]) and not bool(plan["ready"]), "real new game: nothing earned: " + str(plan["id"]))
 		for row in plan["ingredients"]:
@@ -528,20 +528,41 @@ func _board() -> void:
 	board.develop_requested.connect(func(direction_id: String, ingredient_id: String) -> void: events.append(["develop", direction_id, ingredient_id]))
 	board.present(fake, "", false)
 
-	# 목록: 다섯 개의 전체 카드 버튼, 상세 전용 버튼은 없다.
+	# 지역 목록: 다섯 전체 카드와 두 분류 버튼, 상세 전용 버튼은 없다.
 	for definition in Directions.catalog():
+		if definition.get("category","regional")!="regional":continue
 		var open: Node = _node(board, "GoalOpen_" + str(definition["id"]))
 		check.call(open is Button, "list card is a real button: " + str(definition["id"]))
 		if open is Button:
 			check.call(not (open as Button).disabled and (open as Button).custom_minimum_size.y >= 78.0, "list card is enabled and at least 78px tall")
 			check.call("accessibility_name" not in open or str(open.get("accessibility_name")) != "", "list card has an accessible name")
 	check.call(_node(board, "GoalBoardBack") == null and _node(board, "GoalSelect_harbor_sea") == null and _node(board, "GoalSource_" + SARDINE) == null, "list shows no detail buttons")
-	check.call(_buttons(board).size() == 5, "list has exactly five buttons")
+	check.call(_buttons(board).size() == 7, "regional list has five goals and two categories")
 	for text in _texts(board):
 		check.call(str(text).length() <= 70, "list text stays concise: " + str(text))
 	var first_open: Node = _node(board, "GoalOpen_citrus_clear")
 	board.present(fake, "", false)
 	check.call(_node(board, "GoalOpen_citrus_clear") == first_open, "same model keeps the same nodes (no rebuild mid-press)")
+	# Category changes are read-only and must expose only their own real cards.
+	(_node(board,"GoalGroup_cross_region") as Button).pressed.emit()
+	check.call(_buttons(board).size()==5 and _node(board,"GoalOpen_citrus_clear")==null,"three cross-region cards plus two category controls")
+	for id in ["citrus_scallop","sesame_buckwheat","sardine_shiitake"]:
+		check.call(_node(board,"GoalOpen_"+id) is Button,"cross-region goal is reachable: "+id)
+	check.call(fake.snapshot()==before and events.is_empty(),"category browsing never mutates state or selects a goal")
+	board.present(fake,"",false)
+	check.call(_node(board,"GoalOpen_citrus_scallop") is Button,"refresh preserves currently browsed category")
+	# All three status flags can coexist. Keep the readiness fraction intact
+	# instead of allowing the last unit to wrap onto a third orphan line.
+	var combined: Dictionary=Plan.describe(fake,"sesame_buckwheat")
+	combined["tested"]=true
+	combined["ready"]=true
+	for row in combined["ingredients"]:row["sample_ready"]=true
+	board.set("_selected","sesame_buckwheat")
+	var summary: String=board.call("_list_hint",combined)
+	check.call(summary.split("\n").size()==2 and summary.ends_with("샘플 2/2"),"selected+tasted+ready remains two short explicit lines")
+	check.call(summary.split("\n")[0].length()<=12,"combined cross-region status stays concise")
+	board.set("_selected","")
+	(_node(board,"GoalGroup_regional") as Button).pressed.emit()
 
 	# 카드 눌림: 글자가 흰색이 되고, 손을 떼면 원래 색으로, 드래그 취소는 신호가 없다.
 	var open_button: Button = _node(board, "GoalOpen_harbor_sea") as Button
@@ -642,5 +663,5 @@ func _board() -> void:
 	board.present(null, "", false)
 	check.call(board.detail_id() == "" and _node(board, "GoalBoardNotice") != null and _buttons(board).is_empty(), "invalid state shows a notice instead of buttons")
 	board.present(Game.new(), "citrus_clear", false)
-	check.call(_buttons(board).size() == 5, "real new game builds the list")
+	check.call(_buttons(board).size() == 7, "real new game builds regional list plus categories")
 	board.free()

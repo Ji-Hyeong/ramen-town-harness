@@ -18,7 +18,7 @@ const SPEC: Dictionary = {
   "region": "market",
   "name": "새벽 장터 연구 재료 채집",
   "min_amount": 2,
-  "max_amount": 3,
+  "max_amount": 5,
   "event_title": "노점 고르기",
   "quantity_title": "연구 분량 고르기",
   "targets": [
@@ -35,6 +35,34 @@ const SPEC: Dictionary = {
       "desc": "유자 껍질 연구 재료를 구해요.",
       "cost": 0,
       "ingredient_hint": "topping_citrus_peel"
+    },
+    {
+      "id": "market_group_buy",
+      "title": "마감 공동구매",
+      "label": "마감 공동구매에 낀다",
+      "desc": "상인이 마감 물량을 나눠 줘요. 볶은 참깨유 2개 추가 0원, 또는 유자 껍질 5개 추가 900원.",
+      "cost": 0,
+      "ingredient_hint": "oil_roasted_sesame",
+      "quantity_title": "나눌 몫 고르기",
+      "quantity_text": "상인이 남은 마감 물량을 펼쳐 놓았어요. 어느 몫을 가져갈까요?",
+      "quantities": [
+        {
+          "id": "share_sesame_two",
+          "label": "참깨유를 조금씩 나눈다 · 볶은 참깨유 2개 / 추가 0원",
+          "desc": "추가 비용 없이 볶은 참깨유 2개를 받아요.",
+          "cost": 0,
+          "ingredient": "oil_roasted_sesame",
+          "amount": 2
+        },
+        {
+          "id": "prepare_citrus_five",
+          "label": "유자를 함께 손질한다 · 유자 껍질 5개 / 추가 900원",
+          "desc": "900원을 더 내고 유자 껍질 5개를 받아요.",
+          "cost": 900,
+          "ingredient": "topping_citrus_peel",
+          "amount": 5
+        }
+      ]
     }
   ],
   "quantities": [
