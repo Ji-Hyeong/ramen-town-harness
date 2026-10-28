@@ -1,0 +1,172 @@
+{
+  "current_pack": "7cb518a4823fd55b2bc91a10cb78e71a9d9daf537d49d6dcfaab7c6f28d10eca",
+  "native_current_count": 87,
+  "published_current_count": 14,
+  "published_before_count": 2,
+  "manual_review": "All14current and2text-before original bytes opened. Six current files are byte-identical to already-opened v4 captures; eight changed current files reopened from final-v5.",
+  "not_all_native_images_manually_reviewed": true,
+  "files": [
+    {
+      "file": "portrait_event_0_routes.png",
+      "phase": "final-v5",
+      "sha256": "962fbdb6665ae6d1c7178bb789f0ec14c6c51d72474855e7c23b3d02ff357789",
+      "size": [
+        390,
+        844
+      ]
+    },
+    {
+      "file": "portrait_event_0_offer.png",
+      "phase": "final-v5",
+      "sha256": "d842c4732b73662f79095d33becaf5e8a036ff9b352d56c355664898a5540127",
+      "size": [
+        390,
+        844
+      ]
+    },
+    {
+      "file": "portrait_event_0_held.png",
+      "phase": "final-v5",
+      "sha256": "7fbf1b4ff77231cd7f1c2f66684a5b3830564ee7c08207e1e65b8cfc6cfb17f9",
+      "size": [
+        390,
+        844
+      ]
+    },
+    {
+      "file": "portrait_event_2_offer.png",
+      "phase": "final-v5",
+      "sha256": "c061bbf8f9d0e0c04f02eb748011c532488b68ec1221ca52c1f59631e43c37e6",
+      "size": [
+        390,
+        844
+      ]
+    },
+    {
+      "file": "portrait_event_4_offer.png",
+      "phase": "final-v5",
+      "sha256": "a17b4cb57bf26d373e63c794dfc19de878bc64c2d0c6394e3f346089e3642830",
+      "size": [
+        390,
+        844
+      ]
+    },
+    {
+      "file": "portrait_event_1_received.png",
+      "phase": "final-v5",
+      "sha256": "38a80a3f940b220dbb1fd61b1345423ac7c0e680a5bed750ef327a969719a8c8",
+      "size": [
+        390,
+        844
+      ]
+    },
+    {
+      "file": "portrait_cross_list.png",
+      "phase": "final-v5",
+      "sha256": "4da4c97dc4a1fa279da4c4519d750ac01ad035093122c3eb1e61f1794d1f5af9",
+      "size": [
+        390,
+        844
+      ]
+    },
+    {
+      "file": "portrait_goal_citrus_scallop.png",
+      "phase": "final-v5",
+      "sha256": "6542b0161f8adad7b45b11c5a621949c688c441849f1cbd9cf4bcf82cb6f263b",
+      "size": [
+        390,
+        844
+      ]
+    },
+    {
+      "file": "portrait_tasted_citrus_scallop.png",
+      "phase": "final-v5",
+      "sha256": "896099384f5d5926280f0b086975f17fb5a7f5fc9940c2c5d7e8e6b87f17ed2e",
+      "size": [
+        390,
+        844
+      ]
+    },
+    {
+      "file": "portrait_tasted_sesame_buckwheat.png",
+      "phase": "final-v5",
+      "sha256": "2023d8e184c9768152c538c984d1a446ae7c87b22b5c75c25fc9fb59839091e4",
+      "size": [
+        390,
+        844
+      ]
+    },
+    {
+      "file": "portrait_tasted_sardine_shiitake.png",
+      "phase": "final-v5",
+      "sha256": "d645dcfe3a9f7be9891bb9ee45b2dcb00966f5bc7d0f458911f43889fc283a6b",
+      "size": [
+        390,
+        844
+      ]
+    },
+    {
+      "file": "compact_event_4_offer.png",
+      "phase": "final-v5",
+      "sha256": "5cc3f9371cc83a84339f9cd3144571d1086b964ef935a532a762bac36fbfddc3",
+      "size": [
+        390,
+        750
+      ]
+    },
+    {
+      "file": "compact_tasted_sardine_shiitake.png",
+      "phase": "final-v5",
+      "sha256": "12f02b435f9f7c7df2756bbf21f1401e2752c2fb9d36470b13b899a8911f1b81",
+      "size": [
+        390,
+        750
+      ]
+    },
+    {
+      "file": "desktop_tasted_sesame_buckwheat.png",
+      "phase": "final-v5",
+      "sha256": "04cab5929ce0082a7529d050a702fd5f55b8498467d6399e5bb0d44ea1ffcd3a",
+      "size": [
+        1280,
+        800
+      ]
+    },
+    {
+      "file": "before_portrait_event_0_offer.png",
+      "phase": "same-task-text-only-v1",
+      "sha256": "44bf73916abbc1484f5c23176e748ae12e38845cf67c55d1309207e78733b896",
+      "size": [
+        390,
+        844
+      ]
+    },
+    {
+      "file": "before_portrait_event_4_offer.png",
+      "phase": "same-task-text-only-v1",
+      "sha256": "2c0ff973d61f60e18f3d999d03bf1b95da2fd96b7edb1ad9e1f6767b571c1527",
+      "size": [
+        390,
+        844
+      ]
+    }
+  ],
+  "changed_since_opened_v4": [
+    "portrait_event_1_received.png",
+    "portrait_cross_list.png",
+    "portrait_goal_citrus_scallop.png",
+    "portrait_tasted_citrus_scallop.png",
+    "portrait_tasted_sesame_buckwheat.png",
+    "portrait_tasted_sardine_shiitake.png",
+    "compact_tasted_sardine_shiitake.png",
+    "desktop_tasted_sesame_buckwheat.png"
+  ],
+  "reviewed_current_count": 14,
+  "reviewed_before_count": 2,
+  "findings_fixed": [
+    "repeated quantity/cost text",
+    "text-only choice distinction",
+    "finished product depiction for raw fish/flour",
+    "orphan line in combined selected/tasted/ready category hint"
+  ]
+}

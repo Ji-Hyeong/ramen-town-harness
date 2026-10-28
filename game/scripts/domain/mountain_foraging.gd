@@ -18,7 +18,7 @@ const SPEC: Dictionary = {
   "region": "mountain",
   "name": "산골 연구 재료 채집",
   "min_amount": 1,
-  "max_amount": 3,
+  "max_amount": 5,
   "event_title": "농가의 연구 재료 고르기",
   "quantity_title": "농부의 분량 제안",
   "targets": [
@@ -35,6 +35,34 @@ const SPEC: Dictionary = {
       "desc": "직화 향을 더하는 산표고. 향은 강하지만 손질 시간이 길고 국물은 가벼워져요.",
       "cost": 0,
       "ingredient_hint": "topping_grilled_shiitake"
+    },
+    {
+      "id": "mountain_shared_mill",
+      "title": "제분소 공동 주문",
+      "label": "제분소 공동 주문에 낀다",
+      "desc": "농가들이 제분소 주문을 묶어요. 산메밀면 5개 추가 1800원, 또는 구운 산표고 2개 추가 500원.",
+      "cost": 0,
+      "ingredient_hint": "noodle_buckwheat",
+      "quantity_title": "묶음 주문 고르기",
+      "quantity_text": "농가들이 주문을 묶는 중이에요. 어느 몫에 함께할까요?",
+      "quantities": [
+        {
+          "id": "mill_buckwheat_five",
+          "label": "메밀가루를 대량 주문한다 · 산메밀면 5개 / 추가 1800원",
+          "desc": "1800원을 더 내고 산메밀면 5개를 받아요.",
+          "cost": 1800,
+          "ingredient": "noodle_buckwheat",
+          "amount": 5
+        },
+        {
+          "id": "share_shiitake_two",
+          "label": "구운 표고를 나눠 받는다 · 구운 산표고 2개 / 추가 500원",
+          "desc": "500원을 더 내고 구운 산표고 2개를 받아요.",
+          "cost": 500,
+          "ingredient": "topping_grilled_shiitake",
+          "amount": 2
+        }
+      ]
     }
   ],
   "quantities": [

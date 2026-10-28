@@ -1,5 +1,7 @@
 # Ramen Town — Codex × Claude 개발 하네스
 
+>2026-10-29 지역의 만남과 연계 실험: 장터·항구·산골에서 두 몫 중 하나를 선택해 연구 재료를 모으고, 두 지역의 재료를 연결하는 세 개발 방향을 추가합니다. 목표는 ‘지역 실험 / 지역 연계’로 나눠 고릅니다. [조작과 범위](game/docs/FORAGING_ENCOUNTERS_V1.md) · [실제 화면](game/docs/uiux-reset/foraging-encounters-v1/).
+
 >한 그릇의 개성과 실제 판매: 시식한 음식의 짧은 특징과 손님 점수를 카드로 보고, 실제 판매에서도 같은 그릇을 알아볼 수 있습니다. 많이 주문한 손님과 판매 영수증은 실제 완료 주문을 사용하며 자세한 내용은 눌러서 읽습니다. [조작과 한계](game/docs/MENU_IDENTITY_V1.md) · [실제 화면과 전후 비교](game/docs/uiux-reset/menu-identity-v1/).
 
 >2026-10-28 실험 목표와 재료 탐색: 다섯 실험을 재료 그림으로 고르고, 실제 공급처·연구 샘플·개발품 준비 상태를 확인합니다. 공급처를 찾기 전에는 공급처 탐험으로, 발견 후에는 샘플 채집으로 연결합니다. 목표 선택과 화면 이동에는 결제·자동 재료 적용이 없습니다. [조작과 범위](game/docs/FORAGING_GOALS_V1.md) · [실제 화면과 전후 비교](game/docs/uiux-reset/foraging-goals-v1/).

@@ -8,6 +8,9 @@ const MAX_HISTORY: int = 12
 const KEYS: Array = ["stock", "obtained", "used", "first_day", "last_departure_day", "completed", "retired", "active", "history"]
 const ACTIVE_KEYS: Array = ["day", "stage", "fee", "extra", "path"]
 const RECEIPT_KEYS: Array = ["day", "outcome", "fee", "extra", "path", "ingredient", "amount"]
+const MAX_DAY: int = 99999
+## Stock, first-day and v18-era counters never needed more than this (3/day).
+const LEGACY_COUNTER_LIMIT: int = 300000
 
 
 static func empty_state(spec: Dictionary) -> Dictionary:
@@ -31,12 +34,41 @@ static func choices(spec: Dictionary, path: Array) -> Array:
 	if path.size() != 1:
 		return []
 	for i in spec["targets"].size():
-		if path[0] == spec["targets"][i]["id"]:
+		var target: Dictionary = spec["targets"][i]
+		if path[0] == target["id"]:
+			# Story targets own their outcomes (each names its own ingredient);
+			# only they may reach a different ingredient than their hint.
+			if target.has("quantities"):
+				return target["quantities"].duplicate(true)
+			if i >= spec["ids"].size():
+				return []
+			# Original targets: generic quantities map to spec.ids by array index.
 			var rows: Array = spec["quantities"].duplicate(true)
 			for row in rows:
 				row["ingredient"] = spec["ids"][i]
 			return rows
 	return []
+
+
+static func _target(spec: Dictionary, id: Variant) -> Dictionary:
+	for target in spec["targets"]:
+		if id == target["id"]:
+			return target
+	return {}
+
+
+## What a story target can still deliver. `fits`: some outcome fits the stock cap.
+## `open`: ONE SAME outcome both fits and is affordable after the target's own
+## cost, so an affordable-but-full option never pairs with a cheap-but-fitting one.
+static func _access(spec: Dictionary, state: Dictionary, target: Dictionary, wallet: int) -> Dictionary:
+	var budget: int = wallet - int(target["cost"])
+	var fits: bool = false
+	var open: bool = false
+	for row in target["quantities"]:
+		var room: bool = int(state["stock"][row["ingredient"]]) + int(row["amount"]) <= CAPACITY
+		fits = fits or room
+		open = open or (room and budget >= int(row["cost"]))
+	return {"fits": fits, "open": open and budget >= 0}
 
 
 ## Replay at most two known choices to validate both active and historical
@@ -91,9 +123,16 @@ static func choose(spec: Dictionary, state: Dictionary, id: String, wallet: int)
 	if int(selected["cost"]) > wallet:
 		return {"error": "추가 비용 %d원이 부족해요." % int(selected["cost"])}
 	if active["path"].is_empty():
-		var target: String = str(selected["ingredient_hint"])
-		if int(state["stock"][target]) > CAPACITY - int(spec["min_amount"]):
-			return {"error": "이 재료를 담을 공간이 없어요. 다른 재료를 고르거나 먼저 시제품에 사용하세요."}
+		if selected.has("quantities"):
+			var access: Dictionary = _access(spec, state, selected, wallet)
+			if not access["fits"]:
+				return {"error": "이 만남의 재료를 담을 공간이 없어요. 다른 만남을 고르거나 먼저 시제품에 사용하세요."}
+			if not access["open"]:
+				return {"error": "보관 한도와 추가 비용을 함께 맞출 수 있는 분량이 없어요."}
+		else:
+			var target: String = str(selected["ingredient_hint"])
+			if int(state["stock"][target]) > CAPACITY - int(spec["min_amount"]):
+				return {"error": "이 재료를 담을 공간이 없어요. 다른 재료를 고르거나 먼저 시제품에 사용하세요."}
 	if selected.has("ingredient") and int(state["stock"][selected["ingredient"]]) + int(selected["amount"]) > CAPACITY:
 		return {"error": "이 선택은 보관 한도 20개를 넘어요. 다른 수량을 고르거나 먼저 시제품에 사용하세요."}
 	var ns: Dictionary = state.duplicate(true)
@@ -157,14 +196,26 @@ static func active_view(spec: Dictionary, state: Dictionary, wallet: int) -> Dic
 		var rows: Array = choices(spec, active["path"]).duplicate(true)
 		for choice in rows:
 			choice["affordable"] = int(choice["cost"]) <= wallet
+			if choice.has("quantities"):
+				# Story target: selectable only if one SAME outcome fits and is affordable.
+				var access: Dictionary = _access(spec, state, choice, wallet)
+				choice["capacity_blocked"] = not access["fits"]
+				choice["affordable"] = bool(access["open"])
+				if bool(choice["capacity_blocked"]):
+					choice["desc"] += " 보관 한도 20개를 넘어요."
+				elif not bool(access["open"]):
+					choice["desc"] += " 한도와 추가 비용을 함께 맞출 수 없어요."
+				continue
 			var target: String = str(choice.get("ingredient", choice.get("ingredient_hint", "")))
 			var amount: int = int(choice.get("amount", spec["min_amount"]))
 			choice["capacity_blocked"] = int(state["stock"][target]) + amount > CAPACITY
 			if bool(choice["capacity_blocked"]):
 				choice["affordable"] = false
 				choice["desc"] += " 보관 한도 20개를 넘어요."
-		view["event"] = {"step": active["path"].size() + 1, "title": str(spec["event_title"]) if active["path"].is_empty() else str(spec["quantity_title"]),
-			"text": "시제품에 쓸 재료를 고르세요. 등록한 메뉴의 판매 재료는 영업 원가로 공급돼요.", "choices": rows}
+		var story: Dictionary = {} if active["path"].is_empty() else _target(spec, active["path"][0])
+		var title: String = str(spec["event_title"]) if active["path"].is_empty() else str(story.get("quantity_title", spec["quantity_title"]))
+		view["event"] = {"step": active["path"].size() + 1, "title": title,
+			"text": str(story.get("quantity_text", "시제품에 쓸 재료를 고르세요. 등록한 메뉴의 판매 재료는 영업 원가로 공급돼요.")), "choices": rows}
 	return view
 
 
@@ -178,11 +229,15 @@ static func parse(spec: Dictionary, raw: Variant, day: int, next_record: int, ma
 	if typeof(raw) != TYPE_DICTIONARY or Check.keys_error(raw, KEYS, "장터 채집") != "":
 		return _fail(spec)
 	var ns: Dictionary = raw.duplicate(true)
+	# Only the lifetime counters grow with trips: at most max_amount per game day
+	# until MAX_DAY. Five a day legitimately passes the old 3/day 300000 bound, so
+	# widen exactly those two; stock, first_day, history and day links stay strict.
+	var lifetime_limit: int = maxi(LEGACY_COUNTER_LIMIT, int(spec["max_amount"]) * MAX_DAY)
 	for group in ["stock", "obtained", "used", "first_day"]:
 		if typeof(ns[group]) != TYPE_DICTIONARY or Check.keys_error(ns[group], spec["ids"], "연구 재료") != "":
 			return _fail(spec)
 		for id in spec["ids"]:
-			if not Check.in_range(ns[group][id], 0, 300000):
+			if not Check.in_range(ns[group][id], 0, lifetime_limit if group == "obtained" or group == "used" else LEGACY_COUNTER_LIMIT):
 				return _fail(spec)
 			ns[group][id] = int(ns[group][id])
 	for key in ["completed", "retired", "last_departure_day"]:

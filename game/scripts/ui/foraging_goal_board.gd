@@ -1,5 +1,5 @@
 extends VBoxContainer
-## 재료 채집 목표 보드: 목록(다섯 실험) -> 상세(재료별 준비 상태와 길) 두 단계.
+## 재료 목표 보드: 지역/지역연계 목록 -> 재료별 실제 준비 상태와 길.
 ## 보드는 상태를 갖지 않는다. ForagingPlan 이 읽은 사실만 보여 주고, 눌러도 ID 신호만 보낸다.
 ## 출발/결제/개발/시식/적용은 신호를 받은 쪽(실제 컨트롤러)이 다시 계산해 열 뿐이며, 보드는 아무것도 바꾸지 않는다.
 ## 목록/상세 전환은 이 보드 안의 화면 상태일 뿐 저장하지 않는다.
@@ -38,6 +38,7 @@ var _plans: Array = []
 var _selected: String = ""
 var _busy: bool = false
 var _detail: String = ""
+var _group: String = "regional"
 var _shown: Dictionary = {}
 ## 눌려 있는 동안 흰색으로 바꿀 글자/화살표. 카드마다 따로 보관한다.
 var _held_parts: Dictionary = {}
@@ -53,7 +54,12 @@ func _init() -> void:
 ## 모델(읽은 사실, 선택, 바쁨, 상세 화면)이 이전과 같으면 아무것도 다시 만들지 않는다. 누르는 도중 버튼이 사라지지 않게 한다.
 func present(state: Object, selected_id: String = "", busy: bool = false) -> void:
 	var plans: Array = Plan.catalog(state)
-	var next: Dictionary = {"plans": plans, "selected": selected_id, "busy": busy, "detail": _detail}
+	# Reopening a selected cross-region goal lands in its category; refreshing
+	# the same selection preserves the category the player is currently browsing.
+	if _selected!=selected_id or _shown.is_empty():
+		for plan in plans:
+			if plan["id"]==selected_id:_group=str(plan.get("category","regional"))
+	var next: Dictionary = {"plans": plans, "selected": selected_id, "busy": busy, "detail": _detail,"group":_group}
 	if not _plan_ids(plans).has(_detail):
 		_detail = ""
 		next["detail"] = ""
@@ -80,7 +86,9 @@ func open_detail(direction_id: String) -> void:
 	if _detail == direction_id or not _plan_ids(_plans).has(direction_id):
 		return
 	_detail = direction_id
+	_group=str(_plan_of(direction_id).get("category","regional"))
 	_shown["detail"] = direction_id
+	_shown["group"] = _group
 	_rebuild()
 
 
@@ -112,7 +120,15 @@ func _rebuild() -> void:
 func _build_list() -> void:
 	add_child(_text("GoalBoardTitle", "재료 목표", 20, BOLD, INK))
 	add_child(_text("GoalBoardHint", "만들어 보고 싶은 실험을 고르면 필요한 재료를 보여 줘요.", BODY_SIZE, BODY, MUTED))
+	var groups:=HBoxContainer.new()
+	groups.add_theme_constant_override("separation",8)
+	add_child(groups)
+	for group in ["regional","cross_region"]:
+		var choose:=_button("지역 실험" if group=="regional" else "지역 연계","GoalGroup_"+group,"teal" if group==_group else "summary")
+		choose.pressed.connect(_select_group.bind(group))
+		groups.add_child(choose)
 	for plan in _plans:
+		if str(plan.get("category","regional"))!=_group:continue
 		var id: String = str(plan["id"])
 		var title: String = str(plan["title"])
 		var hint: String = _list_hint(plan)
@@ -120,6 +136,15 @@ func _build_list() -> void:
 		var card: Control = _card("GoalOpen_" + id, title, hint, _art_ids(plan), not broken, broken)
 		_bind(card, _on_open.bind(id))
 		add_child(card)
+
+
+## Category navigation is UI state only; no target or transaction is emitted.
+func _select_group(group: String) -> void:
+	_group=group
+	_detail=""
+	_shown["group"]=group
+	_shown["detail"]=""
+	_rebuild()
 
 
 func _build_detail(plan: Dictionary) -> void:
@@ -315,6 +340,13 @@ func _list_hint(plan: Dictionary) -> String:
 		parts.append("선택 중")
 	if bool(plan["tested"]):
 		parts.append("시식함")
+	if str(plan.get("category","regional"))=="cross_region":
+		# Keep status and numeric readiness on separate short lines even after
+		# selection+tasting. Otherwise the final unit can become an orphan line.
+		var ready: int=0
+		for row in plan["ingredients"]:
+			if bool(row["sample_ready"]):ready+=1
+		return (" · ".join(parts)+"\n" if not parts.is_empty() else "")+"샘플 %d/%d" % [ready,plan["ingredients"].size()]
 	if bool(plan["ready"]):
 		parts.append("샘플 준비됨")
 	else:

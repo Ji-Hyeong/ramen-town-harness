@@ -187,7 +187,7 @@ class PreparedBundleScope(unittest.TestCase):
     def test_selected_native_fixture_reaches_launcher_and_manifest(self):
         # All reviewed native flows, including culinary identity, must reach
         # the generated launcher/manifest without allowing arbitrary scripts.
-        for name in ("bowl_editor_qa.gd", "development_cycle_qa.gd", "food_expression_qa.gd", "first_menu_journey_qa.gd", "foraging_goals_qa.gd", "menu_identity_qa.gd"):
+        for name in ("bowl_editor_qa.gd", "development_cycle_qa.gd", "food_expression_qa.gd", "first_menu_journey_qa.gd", "foraging_goals_qa.gd", "menu_identity_qa.gd", "foraging_encounters_qa.gd"):
             with self.subTest(fixture=name), tempfile.TemporaryDirectory() as tmp:
                 project, engine, out, _ = self.prepare(Path(tmp))
                 fixture = "res://tests/" + name

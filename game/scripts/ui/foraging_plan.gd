@@ -1,5 +1,5 @@
 extends RefCounted
-## 재료 채집 목표의 읽기 전용 투영. 기존 RecipeDirections 다섯 개를 현재 GameState 의 공개 조회로만 읽어
+## 재료 채집 목표의 읽기 전용 투영. RecipeDirections 를 현재 GameState 의 공개 조회로만 읽어
 ## "어떤 재료가, 어디서, 지금 가능한지"를 보여 준다. 새 저장/규칙/보상은 없고 상태를 절대 바꾸지 않는다.
 ##
 ## 재료마다 서로 다른 세 가지를 따로 센다:
@@ -40,6 +40,7 @@ static func describe(state: Object, direction_id: String) -> Dictionary:
 		out["error"] = "알 수 없는 실험 방향이에요."
 		return out
 	out["title"] = str(definition["title"])
+	out["category"] = str(definition.get("category","regional"))
 	out["brief"] = str(definition["brief"])
 	out["source"] = str(definition["source"])
 	out["slot"] = str(definition["slot"])
@@ -63,7 +64,7 @@ static func describe(state: Object, direction_id: String) -> Dictionary:
 	return out
 
 
-## 기존 목록 순서의 다섯 방향. 상태가 올바르지 않으면 같은 오류가 담긴 항목이 다섯 개 나온다.
+## 기존 목록 순서의 모든 방향. 잘못된 상태도 항목별 명시적 오류로 보고한다.
 static func catalog(state: Object) -> Array:
 	var out: Array = []
 	for definition in Directions.catalog():
@@ -72,7 +73,7 @@ static func catalog(state: Object) -> Array:
 
 
 static func _empty(direction_id: String) -> Dictionary:
-	return {"error": "", "id": direction_id, "title": "", "brief": "", "source": "", "slot": "", "ingredient": "",
+	return {"error": "", "id": direction_id, "title": "", "category":"regional", "brief": "", "source": "", "slot": "", "ingredient": "",
 		"tested": false, "ready": false, "focus": "", "ingredients": []}
 
 
