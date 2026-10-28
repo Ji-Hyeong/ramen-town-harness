@@ -52,8 +52,12 @@ var _service_result: ServiceResultScript
 var _service_result_context: Dictionary = {}
 var _service_result_key: String = ""
 var _service_sold_snapshot: Array = []
+## Session-only previous receipt. Missing after a restart means no comparison,
+## never a guessed baseline from an edited menu or a synthetic zero day.
+var _service_previous_report: Dictionary = {}
 var _last_report_button: Button
 const ShopHomeScript = preload("res://scripts/ui/shop_home_view.gd")
+const KitchenJourney = preload("res://scripts/ui/kitchen_journey.gd")
 var _home: ShopHomeScript
 const StaffGrowthScript = preload("res://scripts/ui/staff_growth_workbench.gd")
 var _growth_view: StaffGrowthScript
@@ -650,7 +654,7 @@ func _build_home() -> void:
 	_dev_button = _home.dev_button
 	_start_button = _home.start_button
 	_speed_button = _home.speed_button
-	_dev_button.pressed.connect(_on_dev_pressed)
+	_dev_button.pressed.connect(func(): _on_journey_action(str(_journey_model()["action"])))
 	_start_button.pressed.connect(_on_start_pressed)
 	_speed_button.pressed.connect(_on_speed_pressed)
 	_home.action_requested.connect(_on_home_action)
@@ -659,6 +663,9 @@ func _build_home() -> void:
 ## Home routes call the same guarded controller as existing tabs. A detail page
 ## never starts service, settles money, changes a recipe or edits a save itself.
 func _on_home_action(kind: String) -> void:
+	if kind.begins_with("journey:"):
+		_on_journey_action(kind.trim_prefix("journey:"))
+		return
 	if kind == "save":
 		var result: Dictionary = manual_save()
 		_home.set_save_result(str(result["message"]))
@@ -673,6 +680,52 @@ func _on_home_action(kind: String) -> void:
 		"growth": _open_overlay(TAB_GROWTH)
 		"report": _show_service_report()
 		_: push_error("알 수 없는 가게 화면 동작: " + kind)
+	_sync_bowl_editor()
+
+
+## The journey owns navigation only. Recheck live guards on every action so a
+## stale card cannot start work, replace a draft, or navigate during service.
+func _journey_model() -> Dictionary:
+	return KitchenJourney.describe(state,state.craft_active() or state.service_active() or _work.is_running() or _contest_left>0.0 or _training_left>0.0)
+
+
+func _on_journey_action(kind: String) -> void:
+	if kind=="wait": return
+	if kind=="resume_exploration":
+		if state.exploration_active() and not state.craft_active() and not state.service_active() and not _work.is_running() and _contest_left<=0.0 and _training_left<=0.0:
+			_home.hide_details()
+			_open_overlay(TAB_EXPLORATION)
+			_sync_bowl_editor()
+		return
+	if _work_blocked("다음 목표로 이동할"): return
+	_home.hide_details()
+	_result_layer.hide()
+	match kind:
+		"broth","noodle":
+			_open_overlay(TAB_LAB)
+			_sync_bowl_editor()
+			var review: Dictionary=state.broth_review() if kind=="broth" else state.noodle_review()
+			if not (review["recipes"] as Array).is_empty() and not bool(review["ready"]):
+				_bowl_editor._show_component_completion(kind,(review["recipes"] as Array).size()-1)
+			else: _bowl_editor._show_component_workshop(kind)
+		"compose": _open_overlay(TAB_LAB)
+		"selling": _open_overlay(TAB_SERVE)
+		"goals":
+			_open_overlay(TAB_LAB)
+			_sync_bowl_editor()
+			_bowl_editor.show_journey_choices(KitchenJourney.choices(state))
+		"improve":
+			# The observed tasting is independent of the sold menu and the current
+			# draft. Opening it must never implicitly reload its old configuration.
+			var choices: Array=KitchenJourney.choices(state)
+			if not choices.is_empty() and not str(choices[0]["customer"]).is_empty():
+				_bowl_editor.focus_tasting_customer(str(choices[0]["customer"]))
+			_open_overlay(TAB_FEEDBACK if not state.get_record(state.last_feedback_record_id).is_empty() else TAB_NOTEBOOK)
+		"explore": _open_overlay(TAB_EXPLORATION)
+		"research":
+			_on_research_mode(false)
+			_open_overlay(TAB_RESEARCH)
+		_: push_error("알 수 없는 다음 목표: "+kind)
 	_sync_bowl_editor()
 
 
@@ -1608,12 +1661,14 @@ func _start_service() -> void:
 	_flash_until = 0
 	_shop.set_session(state.active_session())
 	_service_sold_snapshot=state.selling_records().duplicate(true)
+	_service_previous_report=state.last_report.duplicate(true)
 	_refresh_all()
 
 
 func _abort_service(message: String) -> void:
 	state.cancel_service()
 	_service_sold_snapshot.clear()
+	_service_previous_report.clear()
 	_shop.set_session(null)
 	_stop_armed_until = 0
 	_fast = false
@@ -1654,6 +1709,8 @@ func _finish_service() -> void:
 	_result_note.add_theme_color_override("font_color", TEAL if saved else VERMILION)
 	_service_result_key=JSON.stringify(report,"",true)
 	_service_result_context={"sold":_service_sold_snapshot.duplicate(true),"avg_stars":res["avg_stars"],"turned_away":res["turned_away"],"experience":experience.strip_edges()}
+	_service_result_context["previous_report"]=_service_previous_report.duplicate(true)
+	_service_previous_report.clear()
 	_service_sold_snapshot.clear()
 	_show_service_report()
 	_service_result.play_reveal()
@@ -1671,6 +1728,7 @@ func _show_service_report() -> void:
 		var reaction: String="평균 만족도 %.1f / 5" % float(context["avg_stars"]) if int(state.last_report["units"])>0 else "완료 주문 없음 · 만족도 집계 없음"
 		context["save_note"]="%s · 매장 앞에서 돌아간 손님 %d명\n%s\n%s" % [reaction,int(context["turned_away"]),str(context.get("experience","")),context["save_note"]]
 	context["chef_challenge"]=state.chef_challenge_review()
+	context["journey_choices"]=KitchenJourney.choices(state)
 	_service_result.present(state.last_report,context,_report_text(state.last_report))
 	_result_layer.visible=true
 	# Godot GUI picking follows sibling order, independently of visual z_index.
@@ -1679,6 +1737,9 @@ func _show_service_report() -> void:
 
 
 func _on_service_result_action(kind: String) -> void:
+	if kind.begins_with("journey:"):
+		_on_journey_action(kind.trim_prefix("journey:"))
+		return
 	_on_result_ok()
 	if kind=="develop":
 		_open_overlay(TAB_LAB)
@@ -3034,6 +3095,7 @@ func _on_bowl_editor_action(kind: String, data: Dictionary) -> void:
 		_on_broth_action(kind,data)
 		return
 	match kind:
+		"journey": _on_journey_action(str(data["action"]))
 		"component_reload":
 			if _work_blocked("개발 배합을 불러올"): return
 			var result: Dictionary=state.load_component_recipe(str(data["kind"]),int(data["index"]))
@@ -3313,7 +3375,12 @@ func _refresh_nav() -> void:
 	_start_button.disabled = _contest_left > 0.0 or _training_left > 0.0
 	_speed_button.visible = active
 	_speed_button.text = "속도 ×2" if _fast else "속도 ×1"
-	_dev_button.text = "메뉴 개발"
+	var journey: Dictionary=_journey_model()
+	_dev_button.text = {"broth":"첫 육수","noodle":"면 만들기","compose":"시식 준비","selling":"판매 준비","goals":"다음 실험","resume_exploration":"탐색 계속","wait":"작업 중"}[journey["action"]]
+	if str(journey["id"]).ends_with("_apply"):
+		_dev_button.text="육수 담기" if journey["action"]=="broth" else "면 담기"
+	_dev_button.tooltip_text=str(journey["title"])+" · "+str(journey["hint"])
+	_dev_button.disabled=bool(journey["disabled"])
 	if active:
 		var armed: bool = _stop_armed_until != 0 and Time.get_ticks_msec() <= _stop_armed_until
 		_start_button.text = "다시 눌러 중단" if armed else "영업 중단"
@@ -3384,6 +3451,7 @@ func _refresh_home() -> void:
 	elif _flash_text != "":
 		phase = "알림 · 눌러서 확인"
 	_home.set_context({"rank":state.rank(),"seats":state.seat_count(),"staff":Staffing.BASE_STAFF+state.hired_staff().size(),"staff_limit":state.staff_capacity(),
+		"journey":_journey_model(),
 		"phase":phase,"menus":state.selling_records(),"no_records":state.record_count()==0,"warning":_banner.visible or save_locked,
 		"busy":state.service_active() or _work.is_running() or _contest_left>0.0 or _training_left>0.0,
 		"has_report":not state.last_report.is_empty(),"save":_banner_label.text if _banner.visible else _save_label.text})
@@ -3823,19 +3891,48 @@ func _customer_card(cd: Dictionary) -> PanelContainer:
 
 func _comparison_card(rec: Dictionary, evaluation: Dictionary) -> PanelContainer:
 	var card: PanelContainer = _card("ComparisonPanel")
+	card.add_theme_stylebox_override("panel",OperationsScript.Mock.style("summary",Vector2(12,12)))
 	var cb: VBoxContainer = _vbox(6)
 	card.add_child(cb)
-	cb.add_child(_label("이전 버전과 비교", 20, VERMILION))
+	cb.add_child(_label("시식한 두 그릇", 18, TEAL))
 	var body: Label = _label("", 15, INK)
 	body.name = "ComparisonLabel"
-	cb.add_child(body)
 	var cmp: Dictionary = rec["comparison"]
 	if cmp.is_empty():
+		cb.add_child(body)
 		body.text = "첫 시식이라 비교할 이전 버전이 없어요. 재료나 가격을 바꿔 다시 시식하면 v2와 비교해 드려요."
+		body.add_theme_font_override("font",OperationsScript.BODY)
 		return card
 	var prev_cfg: Dictionary = cmp["prev_config"]
 	var prev_scores: Dictionary = cmp["prev_scores"]
 	var cfg: Dictionary = rec["config"]
+	# Both dishes are immutable paid tasting witnesses. The current editable
+	# draft is excluded, including when an old notebook record was deleted.
+	var pair:=HBoxContainer.new()
+	cb.add_child(pair)
+	for sample in [{"config":prev_cfg,"title":"이전 v%d" % cmp["prev_version"],"name":"JourneyBeforeDish"},{"config":cfg,"title":"이번 v%d" % rec["version"],"name":"JourneyAfterDish"}]:
+		var food:=_vbox(4)
+		food.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+		pair.add_child(food)
+		food.add_child(_label(sample["title"],16,TEAL))
+		var dish:=ServiceResultScript.Dish.new()
+		dish.name=sample["name"]
+		dish.custom_minimum_size=Vector2(110,100)
+		food.add_child(dish)
+		dish.set_config(sample["config"])
+	var observed: Dictionary=KitchenJourney.comparison(rec)
+	if str(observed["error"])!="": push_error(str(observed["error"]))
+	var metrics:=GridContainer.new()
+	metrics.columns=2
+	metrics.add_theme_constant_override("h_separation",12)
+	metrics.add_theme_constant_override("v_separation",8)
+	cb.add_child(metrics)
+	for row in observed["rows"]:
+		var metric:=_vbox(2)
+		metric.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+		metrics.add_child(metric)
+		metric.add_child(_label(row["label"],14,MUTED))
+		metric.add_child(_label("%d → %d%s" % [row["before"],row["after"],row["unit"]],17,INK))
 	var lines: Array[String] = ["v%d → v%d" % [int(cmp["prev_version"]), int(rec["version"])]]
 	var changes: Array[String] = []
 	for slot in Catalog.SLOTS:
@@ -3872,6 +3969,16 @@ func _comparison_card(rec: Dictionary, evaluation: Dictionary) -> PanelContainer
 	lines.append("원가: %s → %s · 준비 시간: %d초 → %d초" % [_won(prev_cost), _won(int(evaluation["unit_cost"])), prev_prep, int(evaluation["prep_seconds"])])
 	lines.append("%d명이 더 만족하고 %d명이 덜 만족해요." % [up, down])
 	body.text = "\n".join(lines)
+	var details:=ServiceResultScript.make_button("평가·변경 내역","JourneyComparisonDetails","summary","chevron_right")
+	cb.add_child(details)
+	body.hide()
+	cb.add_child(body)
+	details.pressed.connect(func(): body.visible=not body.visible)
+	# This card is shared by legacy controller adapters and the native editor.
+	# Font overrides on a parent Panel do not style its child Labels, so apply
+	# the accepted font explicitly without flattening their size hierarchy.
+	for text in card.find_children("*","Label",true,false):
+		(text as Label).add_theme_font_override("font",OperationsScript.BODY)
 	return card
 
 

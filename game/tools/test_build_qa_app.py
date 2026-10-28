@@ -187,7 +187,7 @@ class PreparedBundleScope(unittest.TestCase):
     def test_selected_native_fixture_reaches_launcher_and_manifest(self):
         # Both the established editor and the new first-menu journey must reach
         # the generated launcher/manifest without allowing arbitrary scripts.
-        for name in ("bowl_editor_qa.gd", "development_cycle_qa.gd", "food_expression_qa.gd"):
+        for name in ("bowl_editor_qa.gd", "development_cycle_qa.gd", "food_expression_qa.gd", "first_menu_journey_qa.gd"):
             with self.subTest(fixture=name), tempfile.TemporaryDirectory() as tmp:
                 project, engine, out, _ = self.prepare(Path(tmp))
                 fixture = "res://tests/" + name
@@ -261,6 +261,27 @@ class PreparedBundleScope(unittest.TestCase):
             self.assertEqual(export_args[-2], qa.PRESET_NAME)
             self.assertIn(str(out / "prep" / "project"), export_args)
             self.assertNotIn(str(project), export_args)
+
+    def test_zero_exit_engine_errors_never_produce_a_ready_app(self):
+        class BrokenGodot(FakeGodot):
+            def __init__(self, broken_step):
+                super().__init__()
+                self.broken_step = broken_step
+
+            def __call__(self, args, **kwargs):
+                result = super().__call__(args, **kwargs)
+                matches = "--import" in args if self.broken_step == "import" else "--export-pack" in args
+                if matches:
+                    kwargs["stdout"].write("SCRIPT ERROR: Parse Error: simulated zero-exit failure\n")
+                return result
+
+        for step in ("import", "export"):
+            with self.subTest(step=step), tempfile.TemporaryDirectory() as tmp:
+                project, engine, out, _ = self.prepare(Path(tmp))
+                with self.assertRaisesRegex(qa.BuildError, "Godot 오류"):
+                    qa.prepare(engine, project, out, runner=BrokenGodot(step), platform="darwin")
+                self.assertTrue((out / "prep" / "FAILED.txt").is_file())
+                self.assertFalse((out / qa.APP_NAME).exists())
 
     def test_app_layout_and_launcher_are_a_real_copy_not_a_reference(self):
         with tempfile.TemporaryDirectory() as tmp:

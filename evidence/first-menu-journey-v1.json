@@ -1,0 +1,155 @@
+{
+  "task": "first-menu-journey-v1",
+  "date_korea": "2026-10-28",
+  "baseline_commit": "47099bfa663e373eb6b5429b89d74833d5b08523",
+  "accepted_pack": {
+    "version": "v4",
+    "sha256": "153ad050a316dbfd29be431cc09e5c06c59b254de197b3790b3e2399e0e2859d",
+    "source_files": 383,
+    "all_sources_equal_checkout": true,
+    "embedded_pack_equal": true,
+    "strict_vendor_signature_before_and_after_exit": 0
+  },
+  "preserved": {
+    "domain_and_services_files": 66,
+    "original_asset_files": 125,
+    "save_schema": 18,
+    "live_saves": "untouched",
+    "iphone": "not installed or tested",
+    "stash": "9d2270c5e684b349f0ef62ef822ed41a9ce3dbbe"
+  },
+  "native": {
+    "entry": "CUA-started wrapper; observer timed out, fresh run/actual captures/status independently verified",
+    "first_menu_journey": {
+      "checks": 449,
+      "failures": 0,
+      "pngs": 30,
+      "exit": 0,
+      "engine_errors": 0
+    },
+    "regressions": [
+      {
+        "name": "shop_home",
+        "exit": 0,
+        "pngs": 24,
+        "errors": [],
+        "summaries": [
+          "SHOP HOME mode=capture checks=780 failures=0"
+        ]
+      },
+      {
+        "name": "service_result",
+        "exit": 0,
+        "pngs": 22,
+        "errors": [],
+        "summaries": [
+          "SERVICE RESULT mode=capture checks=479 failures=0"
+        ]
+      },
+      {
+        "name": "development_cycle",
+        "exit": 0,
+        "pngs": 24,
+        "errors": [],
+        "summaries": [
+          "DEVELOPMENT CYCLE checks=280 failures=0 mode=capture"
+        ]
+      },
+      {
+        "name": "bowl_editor",
+        "exit": 0,
+        "pngs": 30,
+        "errors": [],
+        "summaries": [
+          "QA mode=capture checks=532 failures=0 out=/private/tmp/ramen-first-menu-journey-qa-20261028-v4/independent-runs/bowl_editor/captures"
+        ]
+      }
+    ],
+    "total_checks": 2520,
+    "total_pngs": 130,
+    "failures": 0,
+    "profiles": [
+      "390x844",
+      "390x750",
+      "1280x800"
+    ]
+  },
+  "other_validation": {
+    "pure_journey": {
+      "checks": 191,
+      "failures": 0,
+      "exit": 0
+    },
+    "historical_domain": {
+      "tests": 129,
+      "checks": 59458,
+      "failures": 0,
+      "exit": 0
+    },
+    "finger_input": {
+      "checks": 49,
+      "failures": 0,
+      "exit": 0,
+      "kind": "headless/layout, not physical iPhone"
+    },
+    "qa_builder": {
+      "tests": 24,
+      "failures": 0,
+      "exit": 0
+    }
+  },
+  "baseline": {
+    "pack_sha256": "a1596823dcdbb9229ca9d36748985fbe0a56c237706fc58eba8ce21897bb5aa5",
+    "sources": 375,
+    "same_first_recipe_config": true,
+    "same_recipe_native_checks": 17,
+    "failures": 0,
+    "pngs": 2,
+    "manufacturing": "public APIs with accelerated QA clocks for static comparison only"
+  },
+  "collaboration": {
+    "serial_writers": true,
+    "claude_calls": [
+      {
+        "call": "implementation",
+        "requested_max_turns": 30,
+        "reported_num_turns": 44,
+        "subtype": "success",
+        "exit": 0,
+        "unresolved_permission_denials": 0,
+        "tests_run_by_claude": false
+      },
+      {
+        "call": "correction",
+        "requested_max_turns": 10,
+        "reported_num_turns": 27,
+        "subtype": "success",
+        "exit": 0,
+        "unresolved_permission_denials": 0,
+        "tests_run_by_claude": false
+      }
+    ],
+    "counter_note": "Raw reported counters are preserved; not quota percentages or enforcement proof.",
+    "codex": "integration, unapplied-product projection refinement, font/same-customer correction and all independent test execution"
+  },
+  "visual_review": {
+    "current_originals_opened": 12,
+    "baseline_originals_opened": 2,
+    "all_130_manually_reviewed": false,
+    "gallery": "game/docs/uiux-reset/first-menu-journey-v1/",
+    "image_hashes": "game/docs/uiux-reset/first-menu-journey-v1/review.json"
+  },
+  "rejected_diagnostics": [
+    "Initial full-slot QA attempted a third topping; corrected test to explicitly remove one portion first.",
+    "v1 retained old comparison typography; corrected actual font/frame after rendered review.",
+    "v3 undeclared Customers parse error despite exit0; rejected without launch. Builder now refuses import/export engine errors before ready app creation."
+  ],
+  "private_archive": "outputs/ramen-first-menu-journey-v1/final-v4",
+  "limitations": [
+    "No observed human30-minute fun acceptance or6-10h campaign completion.",
+    "No new ingredients, economy, staff progression, story or alley systems.",
+    "Previous sales comparison is session-only and never reconstructed from the current draft.",
+    "Different sales dates are observations, not causal proof of ingredient-edit profit.",
+    "iPhone physical touch/audio/heat/lifecycle/accessibility acceptance remains separate."
+  ]
+}

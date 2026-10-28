@@ -1,0 +1,91 @@
+{
+  "kind": "unmodified native Mac captures",
+  "manual_review": "All published originals opened individually; not all130 generated images.",
+  "same_baseline_first_recipe": true,
+  "images": [
+    {
+      "file": "portrait_journey_01_first_goal.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "d83a903bfb3e80a08cb51b6286ac3bf7586faeef5823b58169c95a7bce189eae"
+    },
+    {
+      "file": "portrait_journey_02_first_tasting.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "18437842dd745ff7173ce6ec7da04853beaf8146dacf4c5d88a49280973b0f78"
+    },
+    {
+      "file": "portrait_journey_03_selling.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "a7048e343dd5a13008b8b3b3a76e4ce311dcef63338ac9343b4e96cda73c5b7d"
+    },
+    {
+      "file": "portrait_journey_04_sales_choices.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "e2f39ae727b7e68a3df87b8f6dada51898f6756b86a14c2c293709033730470b"
+    },
+    {
+      "file": "portrait_journey_04b_choices.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "22e9f750bbc6f9ecf833c6af862958eee6585c93a365de417a5961ea7b1e4e92"
+    },
+    {
+      "file": "portrait_journey_04c_pressed.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "56f5be07676f6242f323f247efb21abf50df57c6454b50d697fe0a046a71f772"
+    },
+    {
+      "file": "portrait_journey_05_revision.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "c381b7186f3dcfe7aaf3e6012edd4131eb5fad0dad08d58c5515a92d995df908"
+    },
+    {
+      "file": "portrait_journey_05b_sales_comparison.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "08c73feed70e24fcab809da14a92f601c3d1d55ec988b596dabc49dbd1b516f2"
+    },
+    {
+      "file": "portrait_journey_06_next_goals.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "db9b0d06cac618697468ca549c51f5a521b9e1008102b4dd5e9b6b2bec2d66b7"
+    },
+    {
+      "file": "portrait_journey_07_explore.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "fb6d91bb3737ec1782713cf7e94be2154d84a68f24036295c27b74fe7c85e738"
+    },
+    {
+      "file": "desktop_journey_05_revision.png",
+      "width": 1280,
+      "height": 800,
+      "sha256": "8b8c4523041431bc4fbd3454dcaab80eb31e4bb2981de0c32173ab71c60a0f21"
+    },
+    {
+      "file": "compact_journey_04b_choices.png",
+      "width": 390,
+      "height": 750,
+      "sha256": "f76579e264ff2be08cef4b284d856712d30ce1d52c138dc52f0f4a7291bb8c3a"
+    },
+    {
+      "file": "before_portrait_first_goal.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "8165f08f56838b8d49bd6ea71b6a213528a50b706890f4ae63481021cdd6bf2f"
+    },
+    {
+      "file": "before_portrait_sales_result.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "3404a294ab293df5cd789401d1638e0d0480da9f6b1f31e4f2614b416d9135c6"
+    }
+  ]
+}

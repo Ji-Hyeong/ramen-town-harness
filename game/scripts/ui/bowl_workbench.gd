@@ -4,6 +4,7 @@ extends Control
 signal action_requested(kind: String, data: Dictionary)
 const Catalog = preload("res://scripts/domain/ingredient_catalog.gd")
 const Evaluator = preload("res://scripts/domain/recipe_evaluator.gd")
+const Customers = preload("res://scripts/domain/customer_catalog.gd")
 const Game = preload("res://scripts/domain/game_state.gd")
 const ProcessRules = preload("res://scripts/domain/recipe_process.gd")
 const Categories = preload("res://scripts/ui/topping_categories.gd")
@@ -27,6 +28,8 @@ const Disclosure=preload("res://scripts/ui/disclosure_card.gd")
 const Broth = preload("res://scripts/domain/broth_workshop.gd")
 const PantryArt = preload("res://scripts/ui/broth_material_art.gd")
 const WorkView = preload("res://scripts/ui/tasting_work_view.gd")
+const KitchenJourney=preload("res://scripts/ui/kitchen_journey.gd")
+const JourneyCard=preload("res://scripts/ui/journey_card.gd")
 const INK := Color("18354f")
 const NAVY := Color("193e65")
 const CREAM := Color("fff6e4")
@@ -1881,6 +1884,14 @@ func _render_result() -> void:
 		body.add_child(_label("판매가 %s · 원가 %s\n준비 %d초\n토핑: %s" % [won(int(record["config"]["price"])), won(int(evaluation["unit_cost"])), int(evaluation["prep_seconds"]), Catalog.topping_names(record["config"])], 17))
 		_emit("comparison", {"body": body}))
 	_rows.add_child(details)
+	var revision: Dictionary=KitchenJourney.comparison(record)
+	if str(revision["error"])!="": push_error(str(revision["error"]))
+	if bool(revision["available"]):
+		var changes:=_button("이번 개량의 변화","EditorRevisionSummary","chevron_right")
+		changes.pressed.connect(func():
+			var body:=_modal_body("이번 개량의 변화")
+			_emit("comparison",{"body":body}))
+		_rows.add_child(changes)
 	var clues := _button("다음 실험의 단서", "EditorClues", "info")
 	clues.pressed.connect(_show_clues)
 	_rows.add_child(clues)
@@ -1955,6 +1966,31 @@ func _show_directions() -> void:
 			find.pressed.connect(func(): _close_modal(); _emit("direction_source", {"id": id}))
 			detail.add_child(find))
 		body.add_child(button)
+
+
+## Optional next goals route back to real guarded controller pages. These cards
+## do not select ingredients, consume samples, or earn progression themselves.
+func focus_tasting_customer(customer_id: String) -> void:
+	var index: int=Customers.ids().find(customer_id)
+	if index<0:
+		push_error("시식한 손님을 확인할 수 없어요: "+customer_id)
+		return
+	_result_customer=index
+	_last_key=""
+
+
+func show_journey_choices(choices: Array) -> void:
+	var body:=_modal_body("다음 한 그릇은?")
+	_modal.set_meta("view_kind","journey_goals")
+	for choice in choices:
+		var card:=JourneyCard.new()
+		card.button.name="JourneyChoice_"+str(choice["action"])
+		body.add_child(card)
+		card.present(choice)
+		card.action_requested.connect(func(action: String):
+			_close_modal()
+			_emit("journey",{"action":action}))
+	if choices.is_empty(): body.add_child(_label("첫 영업을 마치면 다음 실험을 고를 수 있어요.",16))
 
 
 func _show_clues() -> void:
