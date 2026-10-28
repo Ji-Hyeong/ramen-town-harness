@@ -12,6 +12,8 @@ const Pixel = preload("res://scripts/ui/pixel_art.gd")
 const Art = preload("res://scripts/ui/bowl_editor_art.gd")
 const Mock = preload("res://scripts/ui/mock_fidelity_art.gd")
 const Editor = preload("res://scripts/ui/bowl_workbench.gd")
+const GoalBoard=preload("res://scripts/ui/foraging_goal_board.gd")
+const GoalDirections=preload("res://scripts/domain/recipe_directions.gd")
 const BODY = preload("res://assets/fonts/Pretendard-Regular.otf")
 const BOLD = preload("res://assets/fonts/Pretendard-Bold.otf")
 const INK := Color("18354f")
@@ -51,6 +53,7 @@ var _return_scroll: int = 0
 var _render_serial: int = 0
 var _reward_art: TextureRect
 var _celebrations: int = 0
+var _goal_button: Button
 
 
 ## Select a read-only source page. The controller retains every paid action.
@@ -69,6 +72,27 @@ func _ready() -> void:
 	_build()
 	resized.connect(_layout)
 	_layout()
+
+
+## Configure a review only; never start/pay a trip. A same-day receipt must not
+## obscure the new source's live rank/day/stock/fee requirements.
+func open_source(id: String, purpose: String) -> void:
+	if id not in Regions.region_ids() or purpose not in ["supplier","sample"]:
+		push_error("재료 출처의 지역이나 탐색 방식이 올바르지 않아요.")
+		return
+	region=id
+	mode=purpose
+	_choice=""
+	_detail=""
+	_retiring=false
+	_hide_receipt=true
+	if state!=null: _render()
+
+
+func open_goals(id: String="") -> void:
+	if id!="": _info["direction_target"]=id
+	_detail="goals"
+	if state!=null: _render()
 
 
 func _label(text: String, font_size: int = 16, color: Color = INK) -> Label:
@@ -202,7 +226,18 @@ func _build() -> void:
 	_picture.name = "ExploreLandscape"
 	locations.add_child(_picture)
 	_region_title = _label("",21)
-	locations.add_child(_region_title)
+	var goal_row:=HBoxContainer.new()
+	goal_row.add_theme_constant_override("separation",8)
+	locations.add_child(goal_row)
+	goal_row.add_child(_region_title)
+	_goal_button=_button("목표","ExploreGoals")
+	_goal_button.size_flags_horizontal=Control.SIZE_SHRINK_END
+	_goal_button.add_theme_font_size_override("font_size",14)
+	_goal_button.custom_minimum_size.x=76
+	_goal_button.icon=Art.icon("ramen_dining")
+	_goal_button.add_theme_constant_override("icon_max_width",20)
+	_goal_button.pressed.connect(func(): open_goals())
+	goal_row.add_child(_goal_button)
 	var modes := HBoxContainer.new()
 	_modes_row=modes
 	modes.add_theme_constant_override("separation",5)
@@ -246,7 +281,7 @@ func present(new_state: Game, information: Dictionary) -> void:
 	state = new_state
 	_info = information
 	_wallet.text = Editor.won(state.wallet)
-	var key: String = JSON.stringify([state.to_dict(),_info["busy"],_info["travel"],_info["warning"],_info["notice"]])
+	var key: String = JSON.stringify([state.to_dict(),_info["busy"],_info["travel"],_info["warning"],_info["notice"],_info.get("direction_target","")])
 	if key != _key:
 		_key = key
 		var trip: Dictionary = state.expedition()
@@ -309,6 +344,10 @@ func _render() -> void:
 	_reward_art=null
 	var trip: Dictionary = state.expedition()
 	var active: bool = not trip.is_empty()
+	var goal: Dictionary=GoalDirections.find(str(_info.get("direction_target","")))
+	_goal_button.text="목표" if goal.is_empty() else str(goal["title"])
+	_goal_button.tooltip_text="개발 목표와 재료 준비 보기"
+	_goal_button.disabled=active or bool(_info["busy"]) or bool(_info["travel"])
 	var received: bool=not active and not _hide_receipt and not _receipt().is_empty()
 	_status.text = "%d일차 · 랭크%d · %s" % [state.day,state.rank(),"오늘 출발 사용함" if state.departed_today() else "오늘 한 번 출발 가능"]
 	var warning: String = str(_info["warning"])
@@ -347,6 +386,10 @@ func _render() -> void:
 	elif not _hide_receipt and not _receipt().is_empty():
 		var receipt: Dictionary = _receipt()
 		_render_reward(receipt)
+		if not goal.is_empty():
+			var goal_review:=_button("목표 준비 확인","ExploreGoalReceipt")
+			goal_review.pressed.connect(func(): open_goals())
+			_body.add_child(goal_review)
 		_cost.text="지불 합계 "+Editor.won(int(receipt["fee"])+int(receipt["extra"]))+" · 추가 결제 없음"
 		_secondary.text="지역 보기"
 		_action.text="이 재료로 개발"
@@ -523,6 +566,19 @@ func _render_detail() -> void:
 		if str(_info["warning"])!="":
 			_body.add_child(_label("현재 진행을 저장하지 못했어요. 다시 저장될 때까지 게임을 종료하지 마세요.",18))
 		_body.add_child(_label(str(_info["warning"]) if str(_info["warning"])!="" else str(_info["notice"]),17,RED))
+		return
+	if _detail=="goals":
+		_action.text="지역 보기"
+		_secondary.visible=false
+		var board:=GoalBoard.new()
+		board.name="ExploreGoalBoard"
+		_body.add_child(board)
+		var id: String=str(_info.get("direction_target",""))
+		board.present(state,id,bool(_info["busy"]) or state.exploration_active() or bool(_info["travel"]))
+		if id!="": board.open_detail(id)
+		board.target_selected.connect(func(chosen: String): action_requested.emit("goal_target",{"id":chosen}))
+		board.source_requested.connect(func(chosen: String, ingredient: String): action_requested.emit("goal_source",{"id":chosen,"ingredient":ingredient}))
+		board.develop_requested.connect(func(chosen: String, ingredient: String): action_requested.emit("goal_develop",{"id":chosen,"ingredient":ingredient}))
 		return
 	var item: Dictionary = Catalog.find(_detail)
 	_body.add_child(_image(_food(_detail),Vector2(112,112)))

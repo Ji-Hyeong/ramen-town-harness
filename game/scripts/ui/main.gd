@@ -58,6 +58,7 @@ var _service_previous_report: Dictionary = {}
 var _last_report_button: Button
 const ShopHomeScript = preload("res://scripts/ui/shop_home_view.gd")
 const KitchenJourney = preload("res://scripts/ui/kitchen_journey.gd")
+const ForagingPlan = preload("res://scripts/ui/foraging_plan.gd")
 var _home: ShopHomeScript
 const StaffGrowthScript = preload("res://scripts/ui/staff_growth_workbench.gd")
 var _growth_view: StaffGrowthScript
@@ -676,7 +677,9 @@ func _on_home_action(kind: String) -> void:
 	_home.hide_details()
 	match kind:
 		"menus": _open_overlay(TAB_SERVE)
-		"explore": _open_overlay(TAB_EXPLORATION)
+		"explore":
+			_open_overlay(TAB_EXPLORATION)
+			if not state.exploration_active(): _exploration_view.open_goals(_direction_target)
 		"growth": _open_overlay(TAB_GROWTH)
 		"report": _show_service_report()
 		_: push_error("알 수 없는 가게 화면 동작: " + kind)
@@ -721,7 +724,9 @@ func _on_journey_action(kind: String) -> void:
 			if not choices.is_empty() and not str(choices[0]["customer"]).is_empty():
 				_bowl_editor.focus_tasting_customer(str(choices[0]["customer"]))
 			_open_overlay(TAB_FEEDBACK if not state.get_record(state.last_feedback_record_id).is_empty() else TAB_NOTEBOOK)
-		"explore": _open_overlay(TAB_EXPLORATION)
+		"explore":
+			_open_overlay(TAB_EXPLORATION)
+			_exploration_view.open_goals(_direction_target)
 		"research":
 			_on_research_mode(false)
 			_open_overlay(TAB_RESEARCH)
@@ -743,6 +748,53 @@ func _build_banner() -> void:
 	bb.add_child(_reset_button)
 	_banner.visible = false
 	add_child(_banner)
+
+
+## Recompute a clicked source from live public state. IDs must belong to the
+## same goal; stale UI cannot substitute an unrelated ingredient or pay a trip.
+func _foraging_goal_row(direction_id: String, ingredient_id: String) -> Dictionary:
+	var plan: Dictionary=ForagingPlan.describe(state,direction_id)
+	if str(plan["error"])!="":
+		_flash(str(plan["error"]))
+		return {}
+	for row in plan["ingredients"]:
+		if row["id"]==ingredient_id: return row
+	_flash("목표에 필요한 재료를 다시 골라 주세요.")
+	return {}
+
+
+func _on_foraging_source(direction_id: String, ingredient_id: String) -> void:
+	if _work_blocked("재료 출처를 볼"): return
+	var row: Dictionary=_foraging_goal_row(direction_id,ingredient_id)
+	if row.is_empty(): return
+	_select_direction(direction_id)
+	_open_overlay(TAB_EXPLORATION)
+	_exploration_view.open_source(str(row["region"]),str(row["mode"]))
+	_sync_bowl_editor()
+
+
+func _on_foraging_develop(direction_id: String, ingredient_id: String) -> void:
+	if _work_blocked("목표 재료로 이동할"): return
+	var row: Dictionary=_foraging_goal_row(direction_id,ingredient_id)
+	if row.is_empty(): return
+	if not bool(row["usable"]):
+		_flash("시식용 연구 샘플이나 개발한 재료를 먼저 준비해 주세요.")
+		return
+	_select_direction(direction_id)
+	if bool(row["prepared"]):
+		var kind: String="broth" if ingredient_id.begins_with("broth_") else "noodle"
+		var review: Dictionary=state.broth_review() if kind=="broth" else state.noodle_review()
+		var recipes: Array=review["recipes"]
+		for index in range(recipes.size()-1,-1,-1):
+			var id: String=GameStateScript.Broth.base_id(recipes[index]["recipe"]) if kind=="broth" else GameStateScript.Noodle.base_id(recipes[index]["recipe"])
+			if id==ingredient_id:
+				_open_overlay(TAB_LAB)
+				_sync_bowl_editor()
+				_bowl_editor._show_component_completion(kind,index)
+				return
+		_flash("개발품이 바뀌었어요. 완성한 재료를 다시 확인해 주세요.")
+		return
+	await _open_sample_lab(ingredient_id)
 
 
 func _build_result() -> void:
@@ -2959,6 +3011,7 @@ func _sync_bowl_editor() -> void:
 	if exploring:
 		var save_warning: String = _last_save_message if _last_save_message!="" else (_banner_label.text if _banner.visible else "")
 		_exploration_view.present(state,{
+			"direction_target":_direction_target,
 			"busy":_work.is_running() or state.service_active() or _contest_left>0.0 or _training_left>0.0,
 			"travel":_travel.running(),"progress":_travel.progress(),
 			"warning":save_warning,"notice":_exploration_message.text if _exploration_message.get_theme_color("font_color")==VERMILION else ""})
@@ -2968,6 +3021,7 @@ func _sync_bowl_editor() -> void:
 	if _save_error_shown or save_locked:
 		warning = "저장하지 못했어요. 작업 메뉴의 현재 안내를 확인하세요. " + _last_save_message
 	_bowl_editor.present(state, 1 if tabs.current_tab == TAB_FEEDBACK else 0, {
+		"direction_target":_direction_target,
 		"selected": _selected_topping_position, "busy": _development_busy(),
 		"working": work_active(), "progress": _work.progress(),
 		"phase": ("개발 육수 데우기" if state.draft_config.has("broth_recipe") and _work.phase_index()==0 else WorkScript.phase_name(_work.phase_index())) if work_active() else "",
@@ -3096,6 +3150,8 @@ func _on_bowl_editor_action(kind: String, data: Dictionary) -> void:
 		return
 	match kind:
 		"journey": _on_journey_action(str(data["action"]))
+		"goal_source": _on_foraging_source(str(data["id"]),str(data["ingredient"]))
+		"goal_develop": _on_foraging_develop(str(data["id"]),str(data["ingredient"]))
 		"component_reload":
 			if _work_blocked("개발 배합을 불러올"): return
 			var result: Dictionary=state.load_component_recipe(str(data["kind"]),int(data["index"]))
@@ -3123,14 +3179,11 @@ func _on_bowl_editor_action(kind: String, data: Dictionary) -> void:
 		"audio": _toggle_audio()
 		"direction": _select_direction(str(data["id"]))
 		"direction_source":
-			if _work_blocked("재료 출처를 볼"): return
 			var definition: Dictionary=Directions.find(str(data["id"]))
 			if definition.is_empty():
 				_flash("알려진 실험 방향을 골라 주세요.")
 				return
-			# Browsing a source must never select ingredients or buy a trip.
-			_exploration_view.open_samples(str(Catalog.find(definition["ingredient"]).get("region","market")))
-			_open_overlay(6)
+			_on_foraging_source(str(data["id"]),str(definition["ingredient"]))
 		"comparison":
 			var record: Dictionary = state.get_record(state.last_feedback_record_id)
 			var body: VBoxContainer = data["body"] as VBoxContainer
@@ -3217,6 +3270,9 @@ func _on_exploration_view_action(kind: String, data: Dictionary) -> void:
 	# View-only selection never calls the state. Paid/claim actions retain the
 	# same business and travel guards as the legacy controller entry points.
 	match kind:
+		"goal_target": _select_direction(str(data["id"]))
+		"goal_source": _on_foraging_source(str(data["id"]),str(data["ingredient"]))
+		"goal_develop": _on_foraging_develop(str(data["id"]),str(data["ingredient"]))
 		"close": _on_close_pressed()
 		"depart":
 			if str(data["mode"])=="supplier":

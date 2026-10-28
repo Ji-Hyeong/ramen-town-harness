@@ -30,6 +30,7 @@ const PantryArt = preload("res://scripts/ui/broth_material_art.gd")
 const WorkView = preload("res://scripts/ui/tasting_work_view.gd")
 const KitchenJourney=preload("res://scripts/ui/kitchen_journey.gd")
 const JourneyCard=preload("res://scripts/ui/journey_card.gd")
+const GoalBoard=preload("res://scripts/ui/foraging_goal_board.gd")
 const INK := Color("18354f")
 const NAVY := Color("193e65")
 const CREAM := Color("fff6e4")
@@ -1948,24 +1949,20 @@ func play_discovery_reveal() -> void:
 
 func _show_directions() -> void:
 	var body := _modal_body("파밍 연구 방향")
-	var tested: Array[String] = Directions.tested_ids(state.records())
-	for definition in Directions.catalog():
-		var id: String = str(definition["id"])
-		var button := _button(str(definition["title"]) + (" · 시식 기록 있음" if tested.has(id) else " · 살펴보기"), "EditorDirection_" + id, "chevron_right")
-		button.pressed.connect(func():
-			var detail := _modal_body(str(definition["title"]))
-			var assessment: Dictionary = Directions.assess(id, state.draft_config)
-			detail.add_child(_label(str(definition["source"]), 17, TEAL))
-			for condition in assessment["checks"]:
-				detail.add_child(_label(("확인 · " if bool(condition["met"]) else "목표 · ") + str(condition["text"]), 16))
-			var go := _button("이 방향으로 실험", "EditorChooseDirection_" + id, "ramen_dining")
-			go.disabled = bool(_info["busy"])
-			go.pressed.connect(func(): _emit("direction", {"id": id}); _close_modal())
-			detail.add_child(go)
-			var find := _button("재료 찾기", "EditorDirectionExplore", "chevron_right")
-			find.pressed.connect(func(): _close_modal(); _emit("direction_source", {"id": id}))
-			detail.add_child(find))
-		body.add_child(button)
+	_modal.set_meta("view_kind","foraging_goals")
+	var board:=GoalBoard.new()
+	board.name="ForagingGoalBoard"
+	body.add_child(board)
+	board.present(state,str(_info.get("direction_target","")),bool(_info["busy"]))
+	board.target_selected.connect(func(id: String):
+		_emit("direction",{"id":id})
+		board.present(state,id,bool(_info["busy"])))
+	board.source_requested.connect(func(id: String, ingredient: String):
+		_close_modal()
+		_emit("goal_source",{"id":id,"ingredient":ingredient}))
+	board.develop_requested.connect(func(id: String, ingredient: String):
+		_close_modal()
+		_emit("goal_develop",{"id":id,"ingredient":ingredient}))
 
 
 ## Optional next goals route back to real guarded controller pages. These cards

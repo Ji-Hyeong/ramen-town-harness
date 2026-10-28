@@ -1,0 +1,190 @@
+{
+  "task": "foraging-goals-v1",
+  "date_korea": "2026-10-28",
+  "baseline_commit": "5b2caeadf747c17364a172d9084fce0a702b67f7",
+  "accepted_pack": {
+    "version": "v2",
+    "sha256": "567ddc338b80a9b8ea8b3141576083f825afa8cb99244c1b018e96768c10f0f2",
+    "source_files": 393,
+    "all_sources_equal_checkout": true,
+    "embedded_pack_equal": true,
+    "strict_copied_vendor_signature_before_after_exit": 0
+  },
+  "earlier_pack": {
+    "version": "v1",
+    "sha256": "06aa09c1528d0fa3132bb7560f75209a798356dfbd72edf0902c91d38054afa7",
+    "only_difference_to_final": [
+      "tests/mountain_foraging_qa.gd"
+    ],
+    "all_game_runtime_and_assets_equal_final": true,
+    "goal_capture_checks": 965,
+    "goal_capture_pngs": 36,
+    "strict_copied_vendor_signature_after_exit": 0
+  },
+  "preserved": {
+    "domain_services_files_including_uids": 66,
+    "original_assets": 125,
+    "schema": 18,
+    "live_saves": "untouched",
+    "iphone": "not installed or tested",
+    "stash": "9d2270c5e684b349f0ef62ef822ed41a9ce3dbbe",
+    "original_source_changed": [
+      "scripts/ui/bowl_workbench.gd",
+      "scripts/ui/exploration_workbench.gd",
+      "scripts/ui/main.gd",
+      "tests/mountain_foraging_qa.gd"
+    ]
+  },
+  "native": {
+    "entry": "CUA-started wrappers. Both observers timed out; actual fresh run, GPU captures and exit0 independently verified.",
+    "accepted_flows": [
+      {
+        "name": "foraging_goals",
+        "version": "v2",
+        "checks": 965,
+        "failures": 0,
+        "exit": 0,
+        "engine_errors": 0,
+        "pngs": 36
+      },
+      {
+        "name": "exploration_workbench",
+        "version": "v1",
+        "checks": 678,
+        "failures": 0,
+        "exit": 0,
+        "engine_errors": 0,
+        "pngs": 28
+      },
+      {
+        "name": "ingredient_payoff",
+        "version": "v1",
+        "checks": 515,
+        "failures": 0,
+        "exit": 0,
+        "engine_errors": 0,
+        "pngs": 24
+      },
+      {
+        "name": "first_menu_journey",
+        "version": "v1",
+        "checks": 449,
+        "failures": 0,
+        "exit": 0,
+        "engine_errors": 0,
+        "pngs": 30
+      },
+      {
+        "name": "mountain_foraging",
+        "version": "v2",
+        "checks": 898,
+        "failures": 0,
+        "exit": 0,
+        "engine_errors": 0,
+        "pngs": 30
+      },
+      {
+        "name": "bowl_editor",
+        "version": "v2",
+        "checks": 532,
+        "failures": 0,
+        "exit": 0,
+        "engine_errors": 0,
+        "pngs": 30
+      }
+    ],
+    "total_checks": 4037,
+    "failures": 0,
+    "pngs": 178,
+    "color_and_size_guards": "Every native saved capture passes actual viewport dimensions and >=4 rendered colors in qa_capture.gd; no headless image substitution."
+  },
+  "other_validation": {
+    "pure_projection_and_board": "361/0/exit0/engine0 (v1; unchanged code in v2)",
+    "historical_domain": "129 tests/59458 checks/0/exit0/engine0 (v1; unchanged domain and suites in v2)",
+    "finger_input": "49/0/exit0/engine0, headless layout (v1; unchanged in v2)",
+    "qa_builder": "24 tests/0/exit0",
+    "goal_layout": "857/0/exit0/engine0, three sizes",
+    "mountain_current_layout": "808/0/exit0/engine0"
+  },
+  "baseline": {
+    "fresh_previous_main": "34/0/exit0/engine0/4PNG; correct new GameState reproduces supplier-missing sample dead end",
+    "old_mountain_layout": "484 checks/4 failures/exit1; same legacy typed-helper and obsolete premade-noodle assertions reproduce on unchanged baseline"
+  },
+  "collaboration": {
+    "claude_owned": [
+      "game/scripts/ui/foraging_plan.gd",
+      "game/scripts/ui/foraging_goal_board.gd",
+      "game/tests/foraging_plan_tests.gd"
+    ],
+    "owned_hashes_unchanged_after_handoff": {
+      "game/scripts/ui/foraging_plan.gd": "2cf72076919b8400c6cae61088f45e561aff617474e008e11fd2bd655b0b6b50",
+      "game/scripts/ui/foraging_goal_board.gd": "54f445e252169a6cfc0f0e55546e5ef9861f259d496b7c077f0f45199a9277e7",
+      "game/tests/foraging_plan_tests.gd": "8002a38b04544a703d040d7a8a5a9698be5dca3f6ada49436cf9da6f30bc39d7"
+    },
+    "codex": "controller/editor/exploration integration, current QA and independent actual transaction/render verification",
+    "serial_writers": true,
+    "calls": [
+      {
+        "call": "claude-implementation",
+        "requested_max_turns": 30,
+        "reported_num_turns": 53,
+        "exit": 0,
+        "subtype": "success",
+        "is_error": false,
+        "permission_denials": []
+      },
+      {
+        "call": "claude-correction",
+        "requested_max_turns": 10,
+        "reported_num_turns": 11,
+        "exit": 1,
+        "subtype": "error_max_turns",
+        "is_error": true,
+        "permission_denials": []
+      },
+      {
+        "call": "claude-resume",
+        "requested_max_turns": 10,
+        "reported_num_turns": 17,
+        "exit": 0,
+        "subtype": "success",
+        "is_error": false,
+        "permission_denials": []
+      }
+    ],
+    "tests_run_by_claude": false,
+    "quota_percentages": "unknown; no token-to-quota conversion"
+  },
+  "visual_review": {
+    "gallery": "game/docs/uiux-reset/foraging-goals-v1",
+    "published_current_originals": 12,
+    "published_fresh_before_originals": 2,
+    "all_published_opened_at_original_size": true,
+    "published_current_source": "v1; all game runtime/assets identical final v2",
+    "additional_v2_originals_opened": [
+      "compact_goal_09_prepared_stock0.png",
+      "portrait_mountain_15_source.png",
+      "portrait_mountain_09_buckwheat_bowl.png",
+      "portrait_editor_01_initial.png"
+    ],
+    "all_178_individually_reviewed": false
+  },
+  "rejected_diagnostics": [
+    "Initial direct RefCounted test entry idled; own process terminated exit143. Runner now instantiates dynamically with explicit parse failure and watchdog.",
+    "First correction exhausted turns, exit1/error_max_turns, left missing test functions; partial compile attempt rejected and own idle process terminated143. Explicit same-task resume completed; all tests independently rerun.",
+    "Initial projection confused discovered/unlocked with remaining samples; corrected actual paid transaction tests include zero stock and repeated portions.",
+    "Goal layout845/12: test toggled an already open overlay closed; explicit open setup corrected, accepted857/0. No production workaround.",
+    "v1 mountain native532/4 with engine type errors rejected. Same4 failures reproduce on previous main. Current fixture develops/uses actual raw noodles and uses current public state actions after restart.",
+    "First mountain test adaptation762/82 mistakenly confirmed before choosing flour (handoff already opens workshop); rejected. Corrected808/0 layout and898/0 native.",
+    "Original preserved tool-engine bundle strict check exits1 due known empty Contents/MacOS/_sc_ portable marker. Original left untouched; copied official binaries are byte-equal and both execution bundles pass strict signature before and after. No bypass/resigning."
+  ],
+  "private_archive": "outputs/ramen-foraging-goals-v1/final-v1 and final-v2; private-task preserves raw CLI, failed attempts and fresh baseline",
+  "limitations": [
+    "Goal selection remains existing session UI, not a new persisted objective ledger.",
+    "Prepared raw product usability is separate from new-tasting sample readiness; readiness does not guarantee complete recipe validity or outcome.",
+    "Native goal setup accelerates manufacture/service clocks; current mountain noodle regression uses actual elapsed manufacture.",
+    "Existing generic editor/exploration fixtures retain documented historical migrated supply compatibility, while new goal fresh-game path uses actual current GameState.",
+    "No new ingredients/economy/schema/staff/story/city content.",
+    "No iPhone, physical touch, sound/thermal, assistive technology, human fun, 30-minute playtest or 6-10h campaign acceptance."
+  ]
+}

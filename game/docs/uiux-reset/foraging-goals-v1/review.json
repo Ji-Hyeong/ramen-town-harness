@@ -1,0 +1,159 @@
+{
+  "task": "foraging-goals-v1",
+  "baseline": "5b2caeadf747c17364a172d9084fce0a702b67f7",
+  "current_pack": "06aa09c1528d0fa3132bb7560f75209a798356dfbd72edf0902c91d38054afa7",
+  "published_images": [
+    {
+      "file": "portrait_goal_01_list.png",
+      "sha256": "173626c95611a4cd71ae012003efd42ad3d2aee040c1e6a1b4c65d1b1b81eddf",
+      "size": [
+        390,
+        844
+      ],
+      "source": "current-native",
+      "opened_at_original_size": true
+    },
+    {
+      "file": "portrait_goal_02_detail.png",
+      "sha256": "1e07092274f6d8f503f9b5f0aca088681fc5c6e79b34da71ef504f9a58f82320",
+      "size": [
+        390,
+        844
+      ],
+      "source": "current-native",
+      "opened_at_original_size": true
+    },
+    {
+      "file": "portrait_goal_03_supplier.png",
+      "sha256": "7c790962ab3d0f73fd99f4f215085001b13732a18c44a3a6121b8660d9419618",
+      "size": [
+        390,
+        844
+      ],
+      "source": "current-native",
+      "opened_at_original_size": true
+    },
+    {
+      "file": "portrait_goal_04_sampling.png",
+      "sha256": "87f98cf8f4e59766e2cfd779a2996d8811465e0c080408a3405c705a3997ab9d",
+      "size": [
+        390,
+        844
+      ],
+      "source": "current-native",
+      "opened_at_original_size": true
+    },
+    {
+      "file": "portrait_goal_07_tasted.png",
+      "sha256": "25b02d8ba9d99fd5a23ade6cfc981896a8e3d8f0f4b32804c43e7aace88a3523",
+      "size": [
+        390,
+        844
+      ],
+      "source": "current-native",
+      "opened_at_original_size": true
+    },
+    {
+      "file": "portrait_goal_08_resume.png",
+      "sha256": "971f0bcde34bafd22e4421ef70b33d52af35c992fcf70fc72fd498bd25235bda",
+      "size": [
+        390,
+        844
+      ],
+      "source": "current-native",
+      "opened_at_original_size": true
+    },
+    {
+      "file": "portrait_goal_09_prepared_stock0.png",
+      "sha256": "d000dfa35fc0ee1608d9dc33164a7f6b05df7fcf67071ebf9da55c7e4321bcc2",
+      "size": [
+        390,
+        844
+      ],
+      "source": "current-native",
+      "opened_at_original_size": true
+    },
+    {
+      "file": "portrait_goal_10_prepared_product.png",
+      "sha256": "2113c6805c444c401126464b1c9372f1df11fbd357bd67996c5e73450ca38456",
+      "size": [
+        390,
+        844
+      ],
+      "source": "current-native",
+      "opened_at_original_size": true
+    },
+    {
+      "file": "desktop_goal_02_detail.png",
+      "sha256": "372671d459eb88810be7c26eafd8eff48d31b75dff3204c4e7ae0b1095a197a9",
+      "size": [
+        1280,
+        800
+      ],
+      "source": "current-native",
+      "opened_at_original_size": true
+    },
+    {
+      "file": "compact_goal_05_other_reward.png",
+      "sha256": "de074cae0b4949fdff5bbd8e3d637afd1f5ce7c55ac2d15bfa102bf2bcbdcf1b",
+      "size": [
+        390,
+        750
+      ],
+      "source": "current-native",
+      "opened_at_original_size": true
+    },
+    {
+      "file": "compact_goal_06_target_reward.png",
+      "sha256": "f6e13303a712ab5fef0790c798359b3b87f21f55f8c50f0aec76d8025f7c402c",
+      "size": [
+        390,
+        750
+      ],
+      "source": "current-native",
+      "opened_at_original_size": true
+    },
+    {
+      "file": "compact_goal_01b_pressed.png",
+      "sha256": "3d59afae69a734f6f766fa36c98b3b8e4118e103efc4bb114f94aad68c8f159b",
+      "size": [
+        390,
+        750
+      ],
+      "source": "current-native",
+      "opened_at_original_size": true
+    },
+    {
+      "file": "before_portrait_before_goal.png",
+      "sha256": "8d47d1ef220bae8410a6b2836788dac3b737b6e03febb7457e0a6e8db5b771e4",
+      "size": [
+        390,
+        844
+      ],
+      "source": "fresh-previous-main-native",
+      "opened_at_original_size": true
+    },
+    {
+      "file": "before_portrait_before_source.png",
+      "sha256": "3d089eda372c733c8b2710441eba0942317dc6b877c501fa336619923c3b93a8",
+      "size": [
+        390,
+        844
+      ],
+      "source": "fresh-previous-main-native",
+      "opened_at_original_size": true
+    }
+  ],
+  "manual_scope": "All 12 current and 2 fresh-before originals opened. Other generated captures are not claimed individually reviewed.",
+  "no_image_edits": true,
+  "limitations": [
+    "No exact new-page mock exists; extends selected existing design.",
+    "No physical iPhone, text scaling or assistive-technology acceptance.",
+    "No human fun or campaign-length acceptance."
+  ],
+  "final_pack": "567ddc338b80a9b8ea8b3141576083f825afa8cb99244c1b018e96768c10f0f2",
+  "v1_v2_runtime_equal": true,
+  "only_pack_source_difference": [
+    "tests/mountain_foraging_qa.gd"
+  ]
+}
