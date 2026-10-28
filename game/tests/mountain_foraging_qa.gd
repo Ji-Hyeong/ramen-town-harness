@@ -21,6 +21,18 @@ func _check_mountain_layout(view: Control, holder: SubViewport, tag: String) -> 
 		if label.is_visible_in_tree(): _check(_text_height_fits(label),tag+": complete text height "+label.name)
 
 
+## Disk reload creates the actual GameState, not its historical test subclass.
+## Prepare through current public raw-component actions; never pass that parent
+## into a legacy-only typed helper or restore a premade broth/noodle shortcut.
+func _prepare_current_bowl(st: Object, clear: bool) -> void:
+	_check(st.set_broth_blend(["kelp","ginger"] if clear else ["pork_bone","pork_bone","garlic"],"standard")["ok"],"current public raw broth formula")
+	_check(st.begin_broth()["ok"] and st.advance_broth(20.0)["ok"],"actual paid broth completion for test setup")
+	_check(st.use_broth(st.broth_review()["recipes"].size()-1)["ok"],"explicit use of real completed broth")
+	_check(st.set_draft_choice("tare","tare_shio" if clear else "tare_miso")["ok"],"current guarded tare choice")
+	_check(st.set_draft_choice("oil","oil_scallion" if clear else "oil_garlic")["ok"],"current guarded oil choice")
+	_check(st.set_draft_toppings(["topping_nori"] if clear else ["topping_grilled_shiitake"])["ok"],"current explicit topping portion")
+
+
 func _mountain(tag: String, vp: Vector2i) -> void:
 	var holder:=SubViewport.new()
 	holder.size=vp
@@ -90,11 +102,24 @@ func _mountain(tag: String, vp: Vector2i) -> void:
 	var editor: Control=app.get("_bowl_editor")
 	_check(editor.is_visible_in_tree() and _state_json(app)==before,"handoff opens native noodle details without modifying draft")
 	await _shot(holder,tag+"_mountain_08_noodle_detail.png")
+	_check((editor.get("_modal") as Control).get_meta("view_kind","")=="noodle" and _state_json(app)==before,"material handoff opens raw noodle development without granting a premade noodle")
+	await _tap(holder,editor,"NoodleChoose_buckwheat")
+	await _tap(holder,editor,"NoodleChoose_thick")
+	wallet=st.wallet
 	await _tap(holder,editor,"EditorDetailApply")
-	_check(st.draft_config["noodle"]=="noodle_buckwheat","explicit native apply selects new noodle")
+	_check(st.noodle_active() and st.wallet==wallet and st.sample_stock("noodle_buckwheat")==3,"actual noodle work starts without charge or sample consumption")
+	app.set_process(true)
+	var deadline: int=Time.get_ticks_msec()+10000
+	while st.noodle_active() and Time.get_ticks_msec()<deadline: await process_frame
+	app.set_process(false)
+	await _settle()
+	_check(not st.noodle_active() and st.wallet<wallet and st.noodle_review()["recipes"].size()==1,"real elapsed mountain noodle manufacture completes and charges once")
+	_check((editor.get("_modal") as Control).get_meta("view_kind","")=="component_complete","real completed noodle has an explicit result")
+	await _tap(holder,editor,"EditorDetailApply")
+	_check(st.draft_config["noodle"]=="noodle_buckwheat" and st.draft_config.has("noodle_recipe") and st.sample_stock("noodle_buckwheat")==3,"explicit native use applies the crafted noodle without consuming tasting samples")
 	_check(editor.call("_ingredient_texture","noodle_buckwheat")==FoodArt.food("noodle_buckwheat"),"native new noodle detail uses actual buckwheat asset")
-	await _tap(holder,editor,"EditorDetailsBack")
-	fixture.compose(st,"mountain_clear")
+	editor.call("_close_modal")
+	_prepare_current_bowl(st,true)
 	app.call("_refresh_all")
 	app.call("_sync_bowl_editor")
 	await _settle()
@@ -134,7 +159,7 @@ func _mountain(tag: String, vp: Vector2i) -> void:
 	await _shot(holder,tag+"_mountain_13_shiitake_detail.png")
 	await _tap(holder,editor,"EditorDetailApply")
 	_check(IngredientCatalog.toppings_of(st.draft_config).has("topping_grilled_shiitake"),"explicit native add includes new topping")
-	fixture.compose(st,"shiitake_depth")
+	_prepare_current_bowl(st,false)
 	app.call("_refresh_all")
 	app.call("_sync_bowl_editor")
 	await _settle()
@@ -144,9 +169,9 @@ func _mountain(tag: String, vp: Vector2i) -> void:
 	await _shot(holder,tag+"_mountain_14_shiitake_bowl.png")
 	await _tap(holder,editor,"EditorMenu")
 	await _tap(holder,editor,"EditorDirections")
-	await _tap(holder,editor,"EditorDirection_mountain_clear")
+	await _tap(holder,editor,"GoalOpen_mountain_clear")
 	before=_state_json(app)
-	await _tap(holder,editor,"EditorDirectionExplore")
+	await _tap(holder,editor,"GoalSource_noodle_buckwheat")
 	view=await _show(app)
 	_check(view.region=="mountain" and view.mode=="sample" and _state_json(app)==before,"direction source leads to correct region without spend/apply")
 	await _shot(holder,tag+"_mountain_15_source.png")
