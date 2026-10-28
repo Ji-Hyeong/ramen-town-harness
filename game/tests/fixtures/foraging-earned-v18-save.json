@@ -1,0 +1,838 @@
+{
+	"broth_workshop": {
+		"ingredients": [
+			"chicken_bone",
+			"garlic"
+		],
+		"legacy": false,
+		"method": "standard",
+		"recipes": [
+			{
+				"day": 1,
+				"recipe": {
+					"ingredients": [
+						"ginger",
+						"kelp"
+					],
+					"method": "standard"
+				}
+			},
+			{
+				"day": 2,
+				"recipe": {
+					"ingredients": [
+						"garlic",
+						"pork_bone"
+					],
+					"method": "standard"
+				}
+			},
+			{
+				"day": 3,
+				"recipe": {
+					"ingredients": [
+						"chicken_bone",
+						"garlic"
+					],
+					"method": "standard"
+				}
+			}
+		]
+	},
+	"chef_challenge": {
+		"attempt": {},
+		"completed_day": 0,
+		"start": {}
+	},
+	"contests": {
+		"articles": [],
+		"attempts": 0,
+		"bests": [],
+		"history": [],
+		"last_entry_day": 0
+	},
+	"day": 23,
+	"draft": {
+		"config": {
+			"broth": "broth_chicken",
+			"broth_recipe": {
+				"ingredients": [
+					"chicken_bone",
+					"garlic"
+				],
+				"method": "standard"
+			},
+			"cook": "cook_firm",
+			"noodle": "noodle_thin",
+			"noodle_recipe": {
+				"cut": "thin",
+				"flour": "wheat",
+				"method": "standard",
+				"water": "clear"
+			},
+			"oil": "oil_chili",
+			"price": 7500,
+			"tare": "tare_miso",
+			"toppings": [
+				"topping_nori"
+			]
+		},
+		"lineage_id": 6,
+		"name": "진행 점검 5"
+	},
+	"exploration": {
+		"active": {},
+		"completed": 6,
+		"discovered": [
+			{
+				"day": 11,
+				"id": "tare_plum",
+				"region": "market"
+			},
+			{
+				"day": 12,
+				"id": "topping_pickle",
+				"region": "market"
+			},
+			{
+				"day": 13,
+				"id": "broth_clam",
+				"region": "harbor"
+			},
+			{
+				"day": 14,
+				"id": "oil_shrimp",
+				"region": "harbor"
+			},
+			{
+				"day": 15,
+				"id": "oil_pepper",
+				"region": "mountain"
+			},
+			{
+				"day": 16,
+				"id": "topping_mushroom",
+				"region": "mountain"
+			}
+		],
+		"history": [
+			{
+				"day": 11,
+				"extra": 0,
+				"fee": 3000,
+				"ingredient": "tare_plum",
+				"new": true,
+				"outcome": "finished",
+				"path": [
+					"m_ask",
+					"m_hear_recipe"
+				],
+				"region": "market"
+			},
+			{
+				"day": 12,
+				"extra": 300,
+				"fee": 3000,
+				"ingredient": "topping_pickle",
+				"new": true,
+				"outcome": "finished",
+				"path": [
+					"m_ask",
+					"m_buy_pickle"
+				],
+				"region": "market"
+			},
+			{
+				"day": 13,
+				"extra": 0,
+				"fee": 6000,
+				"ingredient": "broth_clam",
+				"new": true,
+				"outcome": "finished",
+				"path": [
+					"h_boat",
+					"h_share_soup"
+				],
+				"region": "harbor"
+			},
+			{
+				"day": 14,
+				"extra": 400,
+				"fee": 6000,
+				"ingredient": "oil_shrimp",
+				"new": true,
+				"outcome": "finished",
+				"path": [
+					"h_boat",
+					"h_rent_tools"
+				],
+				"region": "harbor"
+			},
+			{
+				"day": 15,
+				"extra": 0,
+				"fee": 10000,
+				"ingredient": "oil_pepper",
+				"new": true,
+				"outcome": "finished",
+				"path": [
+					"t_grove",
+					"g_dry_pepper"
+				],
+				"region": "mountain"
+			},
+			{
+				"day": 16,
+				"extra": 600,
+				"fee": 10000,
+				"ingredient": "topping_mushroom",
+				"new": true,
+				"outcome": "finished",
+				"path": [
+					"t_grove",
+					"g_learn_mushroom"
+				],
+				"region": "mountain"
+			}
+		],
+		"last_departure_day": 16,
+		"retired": 0
+	},
+	"foraging": {
+		"active": {},
+		"completed": 2,
+		"first_day": {
+			"oil_roasted_sesame": 17,
+			"topping_citrus_peel": 18
+		},
+		"history": [
+			{
+				"amount": 2,
+				"day": 17,
+				"extra": 0,
+				"fee": 1000,
+				"ingredient": "oil_roasted_sesame",
+				"outcome": "finished",
+				"path": [
+					"market_group_buy",
+					"share_sesame_two"
+				]
+			},
+			{
+				"amount": 5,
+				"day": 18,
+				"extra": 900,
+				"fee": 1000,
+				"ingredient": "topping_citrus_peel",
+				"outcome": "finished",
+				"path": [
+					"market_group_buy",
+					"prepare_citrus_five"
+				]
+			}
+		],
+		"last_departure_day": 18,
+		"obtained": {
+			"oil_roasted_sesame": 2,
+			"topping_citrus_peel": 5
+		},
+		"retired": 0,
+		"stock": {
+			"oil_roasted_sesame": 2,
+			"topping_citrus_peel": 5
+		},
+		"used": {
+			"oil_roasted_sesame": 0,
+			"topping_citrus_peel": 0
+		}
+	},
+	"growth": {
+		"facilities": [
+			"bench_1"
+		],
+		"rank": 3,
+		"staff": []
+	},
+	"harbor_foraging": {
+		"active": {},
+		"completed": 2,
+		"first_day": {
+			"broth_roasted_sardine": 19,
+			"topping_scallop": 20
+		},
+		"history": [
+			{
+				"amount": 2,
+				"day": 19,
+				"extra": 400,
+				"fee": 1200,
+				"ingredient": "broth_roasted_sardine",
+				"outcome": "finished",
+				"path": [
+					"harbor_shared_catch",
+					"sort_sardine_two"
+				]
+			},
+			{
+				"amount": 5,
+				"day": 20,
+				"extra": 1400,
+				"fee": 1200,
+				"ingredient": "topping_scallop",
+				"outcome": "finished",
+				"path": [
+					"harbor_shared_catch",
+					"sort_scallop_five"
+				]
+			}
+		],
+		"last_departure_day": 20,
+		"obtained": {
+			"broth_roasted_sardine": 2,
+			"topping_scallop": 5
+		},
+		"retired": 0,
+		"stock": {
+			"broth_roasted_sardine": 2,
+			"topping_scallop": 5
+		},
+		"used": {
+			"broth_roasted_sardine": 0,
+			"topping_scallop": 0
+		}
+	},
+	"last_feedback_record_id": 6,
+	"last_report": {
+		"by_source": {
+			"dohyun": 2,
+			"hayoung": 2,
+			"maru": 4,
+			"walkin": 3
+		},
+		"day": 22,
+		"ingredient_cost": 13310,
+		"net": 66190,
+		"overhead": 3000,
+		"price": 7500,
+		"recipe_name": "진행 점검 5",
+		"revenue": 82500,
+		"units": 11,
+		"version": 1,
+		"wallet_after": 1701050
+	},
+	"mountain_foraging": {
+		"active": {},
+		"completed": 2,
+		"first_day": {
+			"noodle_buckwheat": 21,
+			"topping_grilled_shiitake": 22
+		},
+		"history": [
+			{
+				"amount": 5,
+				"day": 21,
+				"extra": 1800,
+				"fee": 1600,
+				"ingredient": "noodle_buckwheat",
+				"outcome": "finished",
+				"path": [
+					"mountain_shared_mill",
+					"mill_buckwheat_five"
+				]
+			},
+			{
+				"amount": 2,
+				"day": 22,
+				"extra": 500,
+				"fee": 1600,
+				"ingredient": "topping_grilled_shiitake",
+				"outcome": "finished",
+				"path": [
+					"mountain_shared_mill",
+					"share_shiitake_two"
+				]
+			}
+		],
+		"last_departure_day": 22,
+		"obtained": {
+			"noodle_buckwheat": 5,
+			"topping_grilled_shiitake": 2
+		},
+		"retired": 0,
+		"stock": {
+			"noodle_buckwheat": 5,
+			"topping_grilled_shiitake": 2
+		},
+		"used": {
+			"noodle_buckwheat": 0,
+			"topping_grilled_shiitake": 0
+		}
+	},
+	"next_lineage_id": 7,
+	"next_record_id": 7,
+	"noodle_workshop": {
+		"formula": {
+			"cut": "thin",
+			"flour": "wheat",
+			"method": "standard",
+			"water": "clear"
+		},
+		"legacy": false,
+		"recipes": [
+			{
+				"day": 1,
+				"recipe": {
+					"cut": "thin",
+					"flour": "wheat",
+					"method": "standard",
+					"water": "clear"
+				}
+			},
+			{
+				"day": 2,
+				"recipe": {
+					"cut": "thick",
+					"flour": "wheat",
+					"method": "standard",
+					"water": "clear"
+				}
+			}
+		]
+	},
+	"recipe_knowledge": {
+		"keys": [
+			"3c106638874189145eacb4bfecb600c4bf93b67840a07aa7dfb24e85dbefa007",
+			"518aab5a05fcc5c12f05c5c179b347985bc3e9ef8a002740f5c2dcb93eb8ffae",
+			"f045e8a4690629520882fb4d2941cc811cc6ea6bdf5bb6a89e205e2d7723fe5b",
+			"ef96cd21b3def3a716b735eecedbc121c7cef4c016c93e2ef32a9e7ff4b90426",
+			"d399ca3315b59e36b3dbcbfd58227872370e354ef3e2f6c7c4d5f07c6bf17711",
+			"0cedbd71f52e32bf335c4158e02583bd97670e71fb887f3aa9722b75f7a1abb1",
+			"ec370c4a650cba8497cd0ff801e459e0f22978819b4c7cd2dda76385b1bb8540",
+			"526ffc9de62ff474971e06e9bc53e28405f4c8900718eca6c48a5e8f12a06071",
+			"02e0e201ad8aceabc57cbb14fd5eb2a9a5e1515209cccad73499ef33237a9681",
+			"88f125a860f7f704387a2e51fc8ca527961026493559e38ccc67ad1f7bbd5d76",
+			"1db1d7829910c799f94ed802c90980442915495b67ac916fdce7ce304d787476",
+			"493b29987636bdce8bd718c7b17d437f9c9c67274dd212dfb71b53e2187f82a2",
+			"ec10312181971fca1531e879088a2ebbfb2c7373b95fb012ae77880f09907b74",
+			"637d8325301ecbf176a31bd2e4457a1644377f3d122f0ab66e4ea6bae559198e",
+			"5faf382c39edf9ef50a50d738eccd7d8b4094575010c95eab67b8e10861c127c",
+			"7b50c6a9aa3e732ccd9696b665bea461354d0cb43ca240e4bb0135343c37a9f6",
+			"cef41e75f8c4f319dc1b893dc34c3f3a70c7c4b63e5664261c9f392e0f5e95ac",
+			"46625ea3ad82c1ea7c3f1551c67244805136bdfad489defeed4780daed66aa6d",
+			"a8cbdec81850c68ee9ba863a4d0c0a7b351f562d8d3235e745b5b05c15a58dc6",
+			"a5f778358e42f962fbc51c3f62bc356a97c8e74226f9e9a0059ba7126879f1cc",
+			"ccf2fdd554c3415adc83a41d6ec4effd50bbf67e123cc21630013ae9afc07565",
+			"6eac5ac53235fb8fe61c1a4cbabc8fd90dbdb526511732fc5b49862182e55a55",
+			"7069d882f347f974b254c603afee1e73f82f2cc77874678a6918ba4f22be2d19",
+			"63987b89207f8dcb56580b83d17c43652464fd0c933d27abe4f4ebace4ac6322",
+			"558d20b2a8a5250d98c5341bf2e0c0457e019c56d3a804247ee0ed172535c35e",
+			"39d062f1bc559a8e8196a90cfb06785cd1b5535f2b7197fd0d8f884103937991"
+		]
+	},
+	"records": [
+		{
+			"comparison": {},
+			"config": {
+				"broth": "broth_dashi",
+				"broth_recipe": {
+					"ingredients": [
+						"ginger",
+						"kelp"
+					],
+					"method": "standard"
+				},
+				"cook": "cook_firm",
+				"noodle": "noodle_thin",
+				"noodle_recipe": {
+					"cut": "thin",
+					"flour": "wheat",
+					"method": "standard",
+					"water": "clear"
+				},
+				"oil": "oil_scallion",
+				"price": 9000,
+				"tare": "tare_shio",
+				"toppings": [
+					"topping_nori"
+				]
+			},
+			"lineage_id": 1,
+			"name": "진행 점검 1",
+			"record_id": 1,
+			"scores": {
+				"dohyun": 61,
+				"hayoung": 91,
+				"maru": 62
+			},
+			"tasted_day": 1,
+			"version": 1
+		},
+		{
+			"comparison": {},
+			"config": {
+				"broth": "broth_tonkotsu",
+				"broth_recipe": {
+					"ingredients": [
+						"garlic",
+						"pork_bone"
+					],
+					"method": "standard"
+				},
+				"cook": "cook_normal",
+				"noodle": "noodle_thick",
+				"noodle_recipe": {
+					"cut": "thick",
+					"flour": "wheat",
+					"method": "standard",
+					"water": "clear"
+				},
+				"oil": "oil_garlic",
+				"price": 9500,
+				"tare": "tare_shoyu",
+				"toppings": [
+					"topping_nori"
+				]
+			},
+			"lineage_id": 2,
+			"name": "진행 점검 0",
+			"record_id": 2,
+			"scores": {
+				"dohyun": 85,
+				"hayoung": 83,
+				"maru": 67
+			},
+			"tasted_day": 2,
+			"version": 1
+		},
+		{
+			"comparison": {},
+			"config": {
+				"broth": "broth_chicken",
+				"broth_recipe": {
+					"ingredients": [
+						"chicken_bone",
+						"garlic"
+					],
+					"method": "standard"
+				},
+				"cook": "cook_firm",
+				"noodle": "noodle_thin",
+				"noodle_recipe": {
+					"cut": "thin",
+					"flour": "wheat",
+					"method": "standard",
+					"water": "clear"
+				},
+				"oil": "oil_chili",
+				"price": 8000,
+				"tare": "tare_miso",
+				"toppings": [
+					"topping_nori"
+				]
+			},
+			"lineage_id": 3,
+			"name": "진행 점검 2",
+			"record_id": 3,
+			"scores": {
+				"dohyun": 73,
+				"hayoung": 78,
+				"maru": 88
+			},
+			"tasted_day": 3,
+			"version": 1
+		},
+		{
+			"comparison": {},
+			"config": {
+				"broth": "broth_tonkotsu",
+				"broth_recipe": {
+					"ingredients": [
+						"garlic",
+						"pork_bone"
+					],
+					"method": "standard"
+				},
+				"cook": "cook_normal",
+				"noodle": "noodle_thick",
+				"noodle_recipe": {
+					"cut": "thick",
+					"flour": "wheat",
+					"method": "standard",
+					"water": "clear"
+				},
+				"oil": "oil_garlic",
+				"price": 11000,
+				"tare": "tare_shoyu",
+				"toppings": [
+					"topping_chashu"
+				]
+			},
+			"lineage_id": 4,
+			"name": "진행 점검 3",
+			"record_id": 4,
+			"scores": {
+				"dohyun": 90,
+				"hayoung": 84,
+				"maru": 66
+			},
+			"tasted_day": 4,
+			"version": 1
+		},
+		{
+			"comparison": {},
+			"config": {
+				"broth": "broth_dashi",
+				"broth_recipe": {
+					"ingredients": [
+						"ginger",
+						"kelp"
+					],
+					"method": "standard"
+				},
+				"cook": "cook_firm",
+				"noodle": "noodle_thin",
+				"noodle_recipe": {
+					"cut": "thin",
+					"flour": "wheat",
+					"method": "standard",
+					"water": "clear"
+				},
+				"oil": "oil_scallion",
+				"price": 9000,
+				"tare": "tare_shio",
+				"toppings": [
+					"topping_egg"
+				]
+			},
+			"lineage_id": 5,
+			"name": "진행 점검 4",
+			"record_id": 5,
+			"scores": {
+				"dohyun": 64,
+				"hayoung": 92,
+				"maru": 63
+			},
+			"tasted_day": 5,
+			"version": 1
+		},
+		{
+			"comparison": {},
+			"config": {
+				"broth": "broth_chicken",
+				"broth_recipe": {
+					"ingredients": [
+						"chicken_bone",
+						"garlic"
+					],
+					"method": "standard"
+				},
+				"cook": "cook_firm",
+				"noodle": "noodle_thin",
+				"noodle_recipe": {
+					"cut": "thin",
+					"flour": "wheat",
+					"method": "standard",
+					"water": "clear"
+				},
+				"oil": "oil_chili",
+				"price": 7500,
+				"tare": "tare_miso",
+				"toppings": [
+					"topping_nori"
+				]
+			},
+			"lineage_id": 6,
+			"name": "진행 점검 5",
+			"record_id": 6,
+			"scores": {
+				"dohyun": 73,
+				"hayoung": 78,
+				"maru": 88
+			},
+			"tasted_day": 6,
+			"version": 1
+		}
+	],
+	"research": {
+		"completed": [
+			{
+				"cash": 2000,
+				"day": 1,
+				"points": 2,
+				"recipe_name": "진행 점검 1",
+				"record_id": 1,
+				"request_id": "hayoung_basic",
+				"version": 1
+			},
+			{
+				"cash": 2000,
+				"day": 2,
+				"points": 2,
+				"recipe_name": "진행 점검 0",
+				"record_id": 2,
+				"request_id": "dohyun_basic",
+				"version": 1
+			},
+			{
+				"cash": 2000,
+				"day": 3,
+				"points": 2,
+				"recipe_name": "진행 점검 2",
+				"record_id": 3,
+				"request_id": "maru_basic",
+				"version": 1
+			},
+			{
+				"cash": 5000,
+				"day": 4,
+				"points": 5,
+				"recipe_name": "진행 점검 3",
+				"record_id": 4,
+				"request_id": "dohyun_advanced",
+				"version": 1
+			},
+			{
+				"cash": 5000,
+				"day": 5,
+				"points": 5,
+				"recipe_name": "진행 점검 4",
+				"record_id": 5,
+				"request_id": "hayoung_advanced",
+				"version": 1
+			},
+			{
+				"cash": 5000,
+				"day": 6,
+				"points": 5,
+				"recipe_name": "진행 점검 5",
+				"record_id": 6,
+				"request_id": "maru_advanced",
+				"version": 1
+			}
+		]
+	},
+	"schema_version": 18,
+	"selected_record_id": 6,
+	"shop": {
+		"expanded": false,
+		"menu_ids": []
+	},
+	"stories": {
+		"arcs": []
+	},
+	"taste_achievements": {
+		"dohyun": {
+			"comparison": {},
+			"config": {
+				"broth": "broth_tonkotsu",
+				"broth_recipe": {
+					"ingredients": [
+						"garlic",
+						"pork_bone"
+					],
+					"method": "standard"
+				},
+				"cook": "cook_normal",
+				"noodle": "noodle_thick",
+				"noodle_recipe": {
+					"cut": "thick",
+					"flour": "wheat",
+					"method": "standard",
+					"water": "clear"
+				},
+				"oil": "oil_garlic",
+				"price": 11000,
+				"tare": "tare_shoyu",
+				"toppings": [
+					"topping_chashu"
+				]
+			},
+			"lineage_id": 4,
+			"name": "진행 점검 3",
+			"record_id": 4,
+			"scores": {
+				"dohyun": 90,
+				"hayoung": 84,
+				"maru": 66
+			},
+			"tasted_day": 4,
+			"version": 1
+		},
+		"hayoung": {
+			"comparison": {},
+			"config": {
+				"broth": "broth_dashi",
+				"broth_recipe": {
+					"ingredients": [
+						"ginger",
+						"kelp"
+					],
+					"method": "standard"
+				},
+				"cook": "cook_firm",
+				"noodle": "noodle_thin",
+				"noodle_recipe": {
+					"cut": "thin",
+					"flour": "wheat",
+					"method": "standard",
+					"water": "clear"
+				},
+				"oil": "oil_scallion",
+				"price": 9000,
+				"tare": "tare_shio",
+				"toppings": [
+					"topping_egg"
+				]
+			},
+			"lineage_id": 5,
+			"name": "진행 점검 4",
+			"record_id": 5,
+			"scores": {
+				"dohyun": 64,
+				"hayoung": 92,
+				"maru": 63
+			},
+			"tasted_day": 5,
+			"version": 1
+		},
+		"maru": {
+			"comparison": {},
+			"config": {
+				"broth": "broth_chicken",
+				"broth_recipe": {
+					"ingredients": [
+						"chicken_bone",
+						"garlic"
+					],
+					"method": "standard"
+				},
+				"cook": "cook_firm",
+				"noodle": "noodle_thin",
+				"noodle_recipe": {
+					"cut": "thin",
+					"flour": "wheat",
+					"method": "standard",
+					"water": "clear"
+				},
+				"oil": "oil_chili",
+				"price": 8000,
+				"tare": "tare_miso",
+				"toppings": [
+					"topping_nori"
+				]
+			},
+			"lineage_id": 3,
+			"name": "진행 점검 2",
+			"record_id": 3,
+			"scores": {
+				"dohyun": 73,
+				"hayoung": 78,
+				"maru": 88
+			},
+			"tasted_day": 3,
+			"version": 1
+		}
+	},
+	"training": {},
+	"wallet": 1701050
+}

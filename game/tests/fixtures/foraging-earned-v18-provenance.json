@@ -1,0 +1,17 @@
+{
+  "source": "PR46 fresh-campaign-v2/day_23/ramen_lab_save.json",
+  "source_pack_sha256": "2f9dc405fd92a5d82e6c5484477b69f06abea36332c2f172ca05c10fc993af15",
+  "sha256": "90010e6b286f943e5f5f99822878e26e1b608d180d62d81d32d8c20eba7b78d3",
+  "production_state": true,
+  "legacy_fixture": false,
+  "progress_injection": false,
+  "daily_disk_roundtrips": 22,
+  "day": 23,
+  "rank": 3,
+  "research_done": 6,
+  "sample_choices_earned": 6,
+  "generation_script_archive": "outputs/ramen-foraging-encounters-v1/private-task/fresh_campaign_probe.gd",
+  "generation_checks": 293,
+  "generation_failures": 0,
+  "not_human_playtime": true
+}

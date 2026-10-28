@@ -1,0 +1,71 @@
+extends "res://tests/foraging_encounters_qa.gd"
+## Starts from a preserved actual fresh-game save, never a migrated fixture.
+## Only paid experiments and read-only goal navigation follow that checkpoint.
+var _focus_profiles: int=0
+func _run() -> void:
+	for profile in [{"tag":"portrait","size":Vector2i(390,844)},{"tag":"desktop","size":Vector2i(1280,800)},{"tag":"compact","size":Vector2i(390,750)}]:
+		await _focus_profile(profile["tag"],profile["size"])
+	_check(_focus_profiles==3,"all selected-goal profiles complete")
+	print("SELECTED GOAL FEEDBACK checks=%d failures=%d mode=%s" % [_checks,_failures.size(),"layout" if _layout_only else "capture"])
+	for failure in _failures:printerr("FAIL: "+failure)
+	quit(0 if _failures.is_empty() else 1)
+func _select_from_result(holder: SubViewport,app: Node,id: String) -> void:
+	var editor: Control=app.get("_bowl_editor")
+	await _tap(holder,editor,"EditorMenu")
+	await _tap(holder,editor,"EditorDirections")
+	await _tap(holder,editor,"GoalGroup_cross_region")
+	await _tap(holder,editor,"GoalOpen_"+id)
+	await _tap(holder,editor,"GoalSelect_"+id)
+	# Underlying result must refresh even while the modal stays open. Changing
+	# mode on return would otherwise hide a missing target in the cache key.
+	_check(app.get("_direction_target")==id,"real same-result goal change")
+func _focus_profile(tag: String,vp: Vector2i) -> void:
+	var holder:=SubViewport.new();holder.size=vp;holder.handle_input_locally=true;holder.render_target_update_mode=SubViewport.UPDATE_ALWAYS;holder.set_meta("qa_tag",tag);root.add_child(holder)
+	var dir: String=_data_root.path_join(tag+"_goal_focus");_check(DirAccess.make_dir_recursive_absolute(dir)==OK,"isolated goal-feedback saves")
+	var app: Node=await _spawn(holder,dir);app.set_process(false)
+	var st:=Actual.new();var fixture: Dictionary=JSON.parse_string(FileAccess.get_file_as_string("res://tests/fixtures/foraging-earned-v18-save.json"))
+	_check(st.load_from_dict(fixture)=="","actual prior fresh-game checkpoint loads unchanged")
+	_check(not st.to_dict()["broth_workshop"]["legacy"] and not st.to_dict()["noodle_workshop"]["legacy"],"both true manufacture gates remain")
+	app.set("state",st);app.call("_refresh_all")
+	var ids: Array=["citrus_scallop","sesame_buckwheat","sardine_shiitake"]
+	for i in 3:
+		await _experiment(holder,app,ids[i],i,tag)
+		app.call("_open_overlay",1);await _settle()
+		var editor: Control=app.get("_bowl_editor")
+		var before: String=_ledger(st)
+		var badge: Button=editor.find_child("EditorDiscoveryReward",true,false)
+		_check(badge!=null and badge.text==CrossDirections.find(ids[i])["title"]+" · 목표 달성","actual selected cross-goal takes priority over another matching direction")
+		await _shot(holder,tag+"_focus_"+ids[i]+".png")
+		await _tap(holder,editor,"EditorDiscoveryReward")
+		var goal: Label=editor.find_child("EditorGoalStatus",true,false)
+		_check(goal!=null and goal.text.contains("충족") and not goal.text.contains("미충족"),"actual selected-goal assessment leads paid detail")
+		await _shot(holder,tag+"_focus_detail_"+ids[i]+".png")
+		await _tap(holder,editor,"EditorDetailsBack")
+		var other: String=ids[(i+1)%3]
+		await _select_from_result(holder,app,other)
+		badge=editor.find_child("EditorDiscoveryReward",true,false)
+		_check(badge.text==CrossDirections.find(other)["title"]+" · 더 실험","same record target switch invalidates result cache before modal closes")
+		await _tap(holder,editor,"EditorDetailsBack")
+		_check(_ledger(st)==before,"choosing another target cannot change paid record, sample or cash")
+		if i==2:_check(CrossDirections.tested_ids(st.records()).has(other),"unmet current goal even though older matching paid record exists")
+		await _shot(holder,tag+"_focus_unmet_"+ids[i]+".png")
+		await _tap(holder,editor,"EditorDiscoveryReward")
+		goal=editor.find_child("EditorGoalStatus",true,false)
+		_check(goal!=null and goal.text.contains("미충족"),"failed current goal never inherits old notebook success")
+		await _tap(holder,editor,"EditorDetailsBack")
+		await _select_from_result(holder,app,ids[i])
+		await _tap(holder,editor,"EditorDetailsBack")
+		_check(_ledger(st)==before,"returning target is still read-only")
+		app.call("_close_overlay")
+	_check(app.call("manual_save")["ok"],"actual goal feedback session saves")
+	var last: String=_ledger(st);app.queue_free();await _settle();app=await _spawn(holder,dir);app.set_process(false)
+	_check(_ledger(app.get("state"))==last,"goal feedback adds no persistent fields and preserves whole state")
+	app.call("_open_overlay",1);await _settle()
+	await _select_from_result(holder,app,"sardine_shiitake")
+	var restored_editor: Control=app.get("_bowl_editor")
+	var restored_badge: Button=restored_editor.find_child("EditorDiscoveryReward",true,false)
+	_check(restored_badge.text==CrossDirections.find("sardine_shiitake")["title"]+" · 목표 충족","retained paid result never claims a new discovery after restart")
+	await _tap(holder,restored_editor,"EditorDetailsBack")
+	_check(_ledger(app.get("state"))==last,"reselecting a retained goal has no saved effect")
+	await _shot(holder,tag+"_focus_restored.png")
+	_focus_profiles+=1;app.queue_free();await _settle();holder.queue_free();await _settle()

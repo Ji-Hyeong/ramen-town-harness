@@ -1,0 +1,146 @@
+{
+  "task": "selected-goal-feedback-v1",
+  "date": "2026-10-29",
+  "base_main": "a02289d08abe6df9795e6f91f3d0d0e0b7e4c517",
+  "behavior": {
+    "actual_paid_record_only": true,
+    "selected_goal_first": true,
+    "retained_match_not_new_discovery": true,
+    "same_result_target_refresh": true,
+    "no_goal_keeps_generic_fallback": true,
+    "schema": 18,
+    "new_persistent_fields": 0,
+    "unmet_neutral_without_success_reveal": true
+  },
+  "bundle": {
+    "source_count": 419,
+    "all_sources_equal_checkout": true,
+    "pack_sha256": "5a4c36dd8449bea2b3ccc83cb8abd9b339a4fcb19adf75fd7e30cbb972a01f16",
+    "embedded_pack_equal": true,
+    "vendor_binary_sha256": "c7cccbf8fb143e34e02fd6521e09be2c2b974f0d5db080b19071c9c570718ccf",
+    "post_vendor_strict_signature_exit": 0,
+    "domain_services_files_unchanged": 66,
+    "asset_files_unchanged": 125
+  },
+  "native": {
+    "primary": {
+      "checks": 1055,
+      "failures": 0,
+      "pngs": 51,
+      "exit": 0,
+      "engine_errors": 0,
+      "viewports": [
+        [
+          390,
+          844
+        ],
+        [
+          1280,
+          800
+        ],
+        [
+          390,
+          750
+        ]
+      ],
+      "launch": "Computer Use absolute app; observer timeout, actual fresh run completes"
+    },
+    "secondary_runs": [
+      {
+        "name": "baseline",
+        "exit": 0,
+        "errors": [],
+        "summary": [
+          "GOAL BASELINE checks=141 failures=0"
+        ],
+        "pngs": 10
+      },
+      {
+        "name": "identity",
+        "exit": 0,
+        "errors": [],
+        "summary": [
+          "MENU IDENTITY checks=953 failures=0 mode=capture"
+        ],
+        "pngs": 48
+      },
+      {
+        "name": "journey",
+        "exit": 0,
+        "errors": [],
+        "summary": [
+          "FIRST MENU JOURNEY checks=449 failures=0 mode=capture"
+        ],
+        "pngs": 30
+      }
+    ],
+    "current_checks": 2457,
+    "current_pngs": 129,
+    "all_exits": 0,
+    "all_engine_errors": 0,
+    "before_is_separate": true,
+    "before_pack_sha256": "7cb518a4823fd55b2bc91a10cb78e71a9d9daf537d49d6dcfaab7c6f28d10eca",
+    "before_current_full_final_state": {
+      "full_value_equal": true,
+      "paid_records": 9,
+      "scope": "one actual previous-main portrait run versus current portrait after same3paid experiments; read-only goal changes add no saved values"
+    }
+  },
+  "pure": {
+    "exit": 0,
+    "errors": [],
+    "summary": [
+      "TASTING GOAL FOCUS checks=48 failures=0"
+    ]
+  },
+  "builder": {
+    "tests": 24,
+    "failures": 0
+  },
+  "fixture": {
+    "source": "PR46 fresh-campaign-v2/day_23/ramen_lab_save.json",
+    "source_pack_sha256": "2f9dc405fd92a5d82e6c5484477b69f06abea36332c2f172ca05c10fc993af15",
+    "sha256": "90010e6b286f943e5f5f99822878e26e1b608d180d62d81d32d8c20eba7b78d3",
+    "production_state": true,
+    "legacy_fixture": false,
+    "progress_injection": false,
+    "daily_disk_roundtrips": 22,
+    "day": 23,
+    "rank": 3,
+    "research_done": 6,
+    "sample_choices_earned": 6,
+    "generation_script_archive": "outputs/ramen-foraging-encounters-v1/private-task/fresh_campaign_probe.gd",
+    "generation_checks": 293,
+    "generation_failures": 0,
+    "not_human_playtime": true
+  },
+  "claude": {
+    "owned_paths": [
+      "game/scripts/ui/tasting_goal_focus.gd",
+      "game/tests/tasting_goal_focus_tests.gd"
+    ],
+    "owned_hashes_unchanged": true,
+    "actual_exit": 0,
+    "subtype": "success",
+    "is_error": false,
+    "requested_max_turns": 30,
+    "reported_num_turns": 12,
+    "permission_denials": [],
+    "nonempty_result": true,
+    "tests_run_by_codex": true,
+    "quota_percentage_inferred": false
+  },
+  "gallery": {
+    "current": 8,
+    "fresh_before": 2,
+    "all10_originals_opened": true,
+    "all129_native_images_manually_opened": false
+  },
+  "archive": "outputs/ramen-selected-goal-feedback-v1/{final-v1,private-task}",
+  "not_done": [
+    "phone install or latest real iPhone acceptance",
+    "human fun and6-10h campaign length",
+    "economic/gameplay/ingredient/art changes",
+    "live player save access"
+  ]
+}

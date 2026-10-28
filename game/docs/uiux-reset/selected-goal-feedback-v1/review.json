@@ -1,0 +1,100 @@
+{
+  "current_pack": "5a4c36dd8449bea2b3ccc83cb8abd9b339a4fcb19adf75fd7e30cbb972a01f16",
+  "current_selected": 8,
+  "before_selected": 2,
+  "full_saved_state_equal": true,
+  "all_native_images_manually_opened": false,
+  "manual_review": "All8current and2fresh frozen-main before original images opened at original size.",
+  "files": [
+    {
+      "file": "portrait_focus_citrus_scallop.png",
+      "phase": "current-v1",
+      "sha256": "c1832dbce8516152321005d39f95a61611eea5defe5132e4fb57b6606e79122a",
+      "size": [
+        390,
+        844
+      ]
+    },
+    {
+      "file": "portrait_focus_sesame_buckwheat.png",
+      "phase": "current-v1",
+      "sha256": "59209bd9504a261d43de1be03c278b77946814b9a4ce841527a864e2c319caf1",
+      "size": [
+        390,
+        844
+      ]
+    },
+    {
+      "file": "portrait_focus_sardine_shiitake.png",
+      "phase": "current-v1",
+      "sha256": "7917b35e58c893ad23058f2c385e14cd7ee6eeb2fad9476349170fa709f9bdd3",
+      "size": [
+        390,
+        844
+      ]
+    },
+    {
+      "file": "portrait_focus_unmet_sardine_shiitake.png",
+      "phase": "current-v1",
+      "sha256": "c9a6f528492f17998548673567b4eb36d2540ecdbfb23a3e21e4229d1be21f67",
+      "size": [
+        390,
+        844
+      ]
+    },
+    {
+      "file": "portrait_focus_detail_citrus_scallop.png",
+      "phase": "current-v1",
+      "sha256": "239ee9023c3bc1d0f095048c49743f16672bda0e143f007489e8f7f0c301af0e",
+      "size": [
+        390,
+        844
+      ]
+    },
+    {
+      "file": "portrait_focus_restored.png",
+      "phase": "current-v1",
+      "sha256": "2281e00b4da439caba4c2cd5e3fec01cf0623e34c0893babd4b2263b7a32f7ed",
+      "size": [
+        390,
+        844
+      ]
+    },
+    {
+      "file": "compact_focus_unmet_citrus_scallop.png",
+      "phase": "current-v1",
+      "sha256": "6b16df282cc55908abbea25c9c17138091f2b5bb1812ff28c07e4cb13c7d7b81",
+      "size": [
+        390,
+        750
+      ]
+    },
+    {
+      "file": "desktop_focus_sesame_buckwheat.png",
+      "phase": "current-v1",
+      "sha256": "41fde8bb2002737aabd346446735c1982ff99ea8eb5cb6aca13324ad0c194061",
+      "size": [
+        1280,
+        800
+      ]
+    },
+    {
+      "file": "before_portrait_focus_citrus_scallop.png",
+      "phase": "frozen-previous-main-a02289d",
+      "sha256": "8ff67af3a3d6efc72e87502173023d9786de69c8e70942761af6df9583867afb",
+      "size": [
+        390,
+        844
+      ]
+    },
+    {
+      "file": "before_portrait_focus_sesame_buckwheat.png",
+      "phase": "frozen-previous-main-a02289d",
+      "sha256": "36991b31ce22ca55ad95ddf208e62bbb1a24e1c57fde156c94d77553fa92e1be",
+      "size": [
+        390,
+        844
+      ]
+    }
+  ]
+}
