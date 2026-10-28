@@ -31,6 +31,8 @@ const WorkView = preload("res://scripts/ui/tasting_work_view.gd")
 const KitchenJourney=preload("res://scripts/ui/kitchen_journey.gd")
 const JourneyCard=preload("res://scripts/ui/journey_card.gd")
 const GoalBoard=preload("res://scripts/ui/foraging_goal_board.gd")
+const MenuIdentity=preload("res://scripts/ui/menu_identity.gd")
+const IdentityCard=preload("res://scripts/ui/menu_identity_card.gd")
 const INK := Color("18354f")
 const NAVY := Color("193e65")
 const CREAM := Color("fff6e4")
@@ -1801,7 +1803,11 @@ func _render_result() -> void:
 		_rows.add_child(_label("시식할 한 그릇을 먼저 만들어봐요.", 18))
 		return
 	var evaluation: Dictionary = Evaluator.evaluate(record["config"])
-	_rows.add_child(_label("%s v%d · 평균 %d점" % [record["name"], record["version"], evaluation["average_score"]], 20))
+	var identity:=IdentityCard.new()
+	identity.name="EditorMenuIdentity"
+	_rows.add_child(identity)
+	identity.present(MenuIdentity.describe(record))
+	identity.details_requested.connect(_show_menu_identity.bind(int(record["record_id"])))
 	var fresh: Array=_info.get("new_directions",[])
 	var new_themes: Array=_info.get("new_themes",[])
 	var actual: Array[String]=[]
@@ -1913,6 +1919,32 @@ func _open_tasting_adjustment(focus: Dictionary) -> void:
 		_switch_group_tab(str(focus["group"]),str(focus["tab"]))
 
 
+## This depth reads a retained paid record, never the later edited draft. It
+## explains this food without renaming it or granting another discovery reward.
+func _show_menu_identity(record_id: int) -> void:
+	var body:=_modal_body("이 그릇의 개성")
+	_modal.set_meta("view_kind","menu_identity")
+	var model: Dictionary=MenuIdentity.describe(state.get_record(record_id))
+	if str(model["error"])!="":
+		body.add_child(_label(str(model["error"]),17,RED))
+		return
+	body.add_child(_label("%s v%d" % [model["recipe_name"],model["version"]],20))
+	var dish:=Dish.new()
+	dish.name="MenuIdentityDish"
+	dish.custom_minimum_size=Vector2(180,142)
+	body.add_child(dish)
+	dish.set_config(model["config"])
+	body.add_child(_label(str(model["headline"]),20,TEAL))
+	for feature in model["features"]: body.add_child(_label(str(feature),16))
+	_facts(body,[["한 그릇 원가",won(int(model["unit_cost"]))],["준비 시간","%d초" % int(model["prep_seconds"])]])
+	body.add_child(_label(Catalog.broth_name(model["config"]),16))
+	body.add_child(_label(str(Catalog.recipe_item(model["config"],model["config"]["noodle"])["name"]),16))
+	var evaluation: Dictionary=Evaluator.evaluate(model["config"])
+	body.add_child(_label("시식 평균 %d점" % int(evaluation["average_score"]),18))
+	_modal_footer("실제로 시식한 그릇의 기록이에요.","시식 결과로",_close_modal)
+	_compact_detail(580)
+
+
 func _show_result_discoveries() -> void:
 	var record: Dictionary=state.get_record(state.last_feedback_record_id)
 	var body := _modal_body("이번 시식의 발견")
@@ -1939,6 +1971,8 @@ func _show_result_discoveries() -> void:
 func play_discovery_reveal() -> void:
 	# Called only after a real completed tasting, never by rendering or customer
 	# selection. Revisiting/reloading results does not replay the reward animation.
+	var identity: Control=_rows.find_child("EditorMenuIdentity",true,false) as Control
+	if identity!=null: identity.call("play_reveal")
 	var badge: Control=_rows.find_child("EditorDiscoveryReward",true,false) as Control
 	if badge==null: return
 	badge.pivot_offset=badge.size*0.5

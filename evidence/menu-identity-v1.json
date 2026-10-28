@@ -1,0 +1,179 @@
+{
+  "task": "menu-identity-v1",
+  "started_date_korea": "2026-10-28",
+  "completed_date_korea": "2026-10-29",
+  "baseline_commit": "45f605868f330a8c58dc9ae788b0c69ee5e6a4dc",
+  "accepted_pack": {
+    "version": "v3",
+    "sha256": "8a5194a77f66f53aefc3a5082396d038f69298ff81b9e5fc7ee8d7a347dfa8b7",
+    "source_files": 403,
+    "all_sources_equal_checkout": true,
+    "embedded_pack_equal": true,
+    "strict_copied_engine_before_after_exit": 0
+  },
+  "native": {
+    "flows": [
+      {
+        "name": "menu_identity",
+        "version": "v3",
+        "checks": 953,
+        "pngs": 48,
+        "failures": 0,
+        "exit": 0,
+        "engine_errors": 0
+      },
+      {
+        "name": "service_result",
+        "version": "v3",
+        "checks": 479,
+        "pngs": 22,
+        "failures": 0,
+        "exit": 0,
+        "engine_errors": 0
+      },
+      {
+        "name": "first_menu_journey",
+        "version": "v3",
+        "checks": 449,
+        "pngs": 30,
+        "failures": 0,
+        "exit": 0,
+        "engine_errors": 0
+      },
+      {
+        "name": "development_cycle",
+        "version": "v2",
+        "checks": 280,
+        "pngs": 24,
+        "failures": 0,
+        "exit": 0,
+        "engine_errors": 0
+      },
+      {
+        "name": "foraging_goals",
+        "version": "v2",
+        "checks": 965,
+        "pngs": 36,
+        "failures": 0,
+        "exit": 0,
+        "engine_errors": 0
+      }
+    ],
+    "checks": 3126,
+    "failures": 0,
+    "pngs": 160,
+    "entry": "CUA-started final app; observer timeout distinguished from actual fresh run/captures/exit0.",
+    "capture_guards": "Every saved actual GPU image passes >=4 colors and exact viewport dimensions."
+  },
+  "regression_pack": {
+    "version": "v2",
+    "sha256": "3b1fa818bb26f85221b6d40316b89ba93143a0d7a792084f0bbb19d02a943356",
+    "only_v2_v3_changes": [
+      "scripts/ui/menu_identity_card.gd",
+      "tests/menu_identity_tests.gd"
+    ],
+    "meaning": "Final change uses original noodle-bundle texture in the new card plus4 pure assertions; v3 re-verifies identity, sale and first-menu rendering. Other runtime/domain/assets unchanged."
+  },
+  "other_validation": {
+    "pure_final_source_and_pack": "201/0/exit0/engine0",
+    "historical_domain": "v1,129 tests/59458 checks/0/exit0/engine0; domain/services/suites unchanged final",
+    "native_finger": "v1,49/0/exit0/engine0, headless layout; explicit new-card pointer drag/reveal tested in final native",
+    "qa_builder": "24 tests/0/exit0",
+    "layout": "809/0/exit0/engine0 (before only noodle texture correction)",
+    "baseline": "fresh previous-main449/0/30PNG/exit0/engine0",
+    "exact_all_value_baseline_current_save_equality": [
+      "portrait",
+      "desktop",
+      "compact"
+    ]
+  },
+  "preserved": {
+    "domain_services_files_including_uids": 66,
+    "original_asset_files": 125,
+    "schema": 18,
+    "old_source_changes": [
+      "scripts/ui/bowl_workbench.gd",
+      "scripts/ui/service_result_view.gd"
+    ],
+    "iphone": "excluded",
+    "live_saves": "untouched",
+    "stash": "9d2270c5e684b349f0ef62ef822ed41a9ce3dbbe"
+  },
+  "collaboration": {
+    "serial_writers": true,
+    "claude_owned_final_hashes": {
+      "game/scripts/ui/menu_identity.gd": "2cd18278b92eb35d34e693fd9aec09a93676e29265ee62430e0782b2ad38b158",
+      "game/scripts/ui/menu_identity_card.gd": "8accd8af904f0579740312e2884bd5fb30c66a6d35fb34a91a4b260b091a7f9c",
+      "game/tests/menu_identity_tests.gd": "82fd622e3bf411e4610985080e1757fdd90cc6023ca9888950019143cf65af95"
+    },
+    "codex": "existing tasting/sales integration, real QA, art review and independent acceptance",
+    "calls": [
+      {
+        "name": "claude-implementation",
+        "requested_max_turns": 30,
+        "reported_num_turns": 31,
+        "exit": 1,
+        "subtype": "error_max_turns",
+        "is_error": true,
+        "result_nonempty": false,
+        "permission_denials": []
+      },
+      {
+        "name": "claude-resume",
+        "requested_max_turns": 10,
+        "reported_num_turns": 16,
+        "exit": 0,
+        "subtype": "success",
+        "is_error": false,
+        "result_nonempty": true,
+        "permission_denials": []
+      },
+      {
+        "name": "claude-correction",
+        "requested_max_turns": 10,
+        "reported_num_turns": 12,
+        "exit": 0,
+        "subtype": "success",
+        "is_error": false,
+        "result_nonempty": true,
+        "permission_denials": []
+      },
+      {
+        "name": "claude-art-correction",
+        "requested_max_turns": 10,
+        "reported_num_turns": 4,
+        "exit": 0,
+        "subtype": "success",
+        "is_error": false,
+        "result_nonempty": true,
+        "permission_denials": []
+      }
+    ],
+    "tests_run_by_claude": false,
+    "quota_percentages": "unknown; not inferred from token/cost estimates"
+  },
+  "visual_review": {
+    "gallery": "game/docs/uiux-reset/menu-identity-v1",
+    "published_current": 12,
+    "fresh_before": 2,
+    "all_published_opened": true,
+    "all160_individually_reviewed": false
+  },
+  "rejected_diagnostics": [
+    "Initial CLI max-turn exhaustion left two files and no tests; not accepted, same task explicitly resumed.",
+    "Initial pure151/1 plus runtime error: test loop expected81 instead of243 and malformed fixture dereferenced price before projection. Targeted correction; actual farmed sardine paid transaction added.",
+    "Integration layout8/1 with parse errors from Codex extra closing parenthesis; fixed, not accepted.",
+    "Layout803/3 requested duplicate noodle manufacture; current fixture explicitly reuses actual archived formula. Corrected809/0.",
+    "v1 native926/0/39PNG rendered valid images but deliberate swipe hid new card in key captures; corrected capture framing in v2.",
+    "v2 native953/0/48PNG used an old dotted noodle icon; actual visual review rejects that art, Claude changes only original texture selection and4 assertions, final v3 recaptured.",
+    "Initial import-metadata cleanup assertion used runtime bundle scope for excluded tracked audit tools; corrected tracked-source provenance, all5 generated unrelated UIDs preserved privately and removed only from this own import."
+  ],
+  "private_archive": "outputs/ramen-menu-identity-v1/{final-v1,final-v2,final-v3,private-task}",
+  "limitations": [
+    "Descriptors are not unique recipes, new rewards/score bonuses or a new persisted collection ledger.",
+    "Tasting preference and actual completed purchase counts are distinct; no per-menu customer sales stars inferred.",
+    "Three example sales occur on different days; not controlled causal evidence.",
+    "Native identity setup accelerates existing production/tasting/service clocks; not real-time animation or human playtest acceptance.",
+    "No new ingredients/economy/campaign/staff/story/city content; no phone/human-fun/6-10h completion claim."
+  ]
+}

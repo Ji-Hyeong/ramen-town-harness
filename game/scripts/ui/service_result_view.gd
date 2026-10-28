@@ -9,6 +9,8 @@ const Pixel = preload("res://scripts/ui/pixel_art.gd")
 const Customers = preload("res://scripts/domain/customer_catalog.gd")
 const Editor = preload("res://scripts/ui/bowl_workbench.gd")
 const JourneyCard = preload("res://scripts/ui/journey_card.gd")
+const MenuIdentity=preload("res://scripts/ui/menu_identity.gd")
+const IdentityCard=preload("res://scripts/ui/menu_identity_card.gd")
 const BODY = preload("res://assets/fonts/Pretendard-Regular.otf")
 const BOLD = preload("res://assets/fonts/Pretendard-Bold.otf")
 const INK := Color("18354f")
@@ -116,6 +118,7 @@ func _ready() -> void:
 	_back.size_flags_horizontal=Control.SIZE_SHRINK_BEGIN
 	_back.pressed.connect(func():
 		if _page=="summary": action_requested.emit("close")
+		elif _page in ["identity","menu_facts"]: _show_page("menu")
 		else: _show_page("summary"))
 	header.add_child(_back)
 	_title=_label("영업 결과",22,INK,"ResultTitle")
@@ -190,12 +193,14 @@ func _show_page(page: String) -> void:
 	for child in _body.get_children():
 		_body.remove_child(child)
 		child.queue_free()
-	_title.text="%d일차 영업 결과" % int(_report.get("day",0)) if page=="summary" else {"menu":"메뉴 판매 상세","customers":"손님과 대기","cost":"비용 영수증","receipt":"정산·저장 안내","sales_comparison":"지난 영업과 비교","goals":"다음 한 그릇은?"}[page]
-	_back.tooltip_text="가게로" if page=="summary" else "결과 요약으로"
+	_title.text="%d일차 영업 결과" % int(_report.get("day",0)) if page=="summary" else {"menu":"메뉴 판매 상세","menu_facts":"메뉴 판매 영수증","identity":"이 그릇의 개성","customers":"손님과 대기","cost":"비용 영수증","receipt":"정산·저장 안내","sales_comparison":"지난 영업과 비교","goals":"다음 한 그릇은?"}[page]
+	_back.tooltip_text="가게로" if page=="summary" else ("메뉴 판매 상세로" if page in ["identity","menu_facts"] else "결과 요약으로")
 	if _report.is_empty():
 		_body.add_child(_label("아직 마친 영업이 없어요.",20))
 	elif page=="summary": _summary()
 	elif page=="menu": _menu_details()
+	elif page=="menu_facts": _menu_facts()
+	elif page=="identity": _identity_details()
 	elif page=="customers": _customers()
 	elif page=="cost": _costs()
 	elif page=="sales_comparison": _sales_comparison()
@@ -278,11 +283,19 @@ func _summary() -> void:
 		menu_name.max_lines_visible=2
 		menu_name.text_overrun_behavior=TextServer.OVERRUN_TRIM_ELLIPSIS
 		text.add_child(menu_name)
-		text.add_child(_label("%d그릇 판매" % int(row["units"]),22,TEAL))
-		text.add_child(_label("매출 "+Editor.won(int(row["revenue"])),14,MUTED))
+		var sold_label:=_label("%d그릇 판매" % int(row["units"]),22,TEAL)
+		text.add_child(sold_label)
+		var model: Dictionary=MenuIdentity.sales(row)
+		var identity_line:=_label(str(model["headline"]) if bool(model["available"]) else "매출 "+Editor.won(int(row["revenue"])),14,MUTED)
+		identity_line.name="SoldIdentityHeading_"+str(index)
+		text.add_child(identity_line)
 		var arrow:=_picture(Art.icon("chevron_right"),Vector2(24,24))
 		arrow.self_modulate=TEAL
 		card.add_child(arrow)
+		# Child labels do not inherit the Button's pressed font color.
+		var words: Array=[[menu_name,INK],[sold_label,TEAL],[identity_line,MUTED]]
+		button.button_down.connect(_menu_held.bind(words,arrow,true))
+		button.button_up.connect(_menu_held.bind(words,arrow,false))
 		button.pressed.connect(func(): _chosen=index; _show_page("menu"))
 		menu_grid.add_child(button)
 	var previous: Dictionary=_context.get("previous_report",{})
@@ -345,6 +358,12 @@ func _goals() -> void:
 		card.action_requested.connect(func(action: String): action_requested.emit("journey:"+action))
 
 
+func _menu_held(words: Array, arrow: TextureRect, held: bool) -> void:
+	for part in words:
+		(part[0] as Label).add_theme_color_override("font_color",Color.WHITE if held else part[1])
+	arrow.self_modulate=Color.WHITE if held else TEAL
+
+
 func _menu_details() -> void:
 	var row: Dictionary=_menus[_chosen]
 	_body.add_child(_label("%s v%d" % [row["recipe_name"],row["version"]],22))
@@ -356,6 +375,21 @@ func _menu_details() -> void:
 		dish.set_config(row["config"])
 	else:
 		_body.add_child(_label("이전 단일 메뉴 기록에는 그릇 구성이 남아 있지 않아요.",15,MUTED))
+	var identity:=IdentityCard.new()
+	identity.name="SoldMenuIdentity"
+	_body.add_child(identity)
+	identity.present(MenuIdentity.sales(row))
+	identity.details_requested.connect(_show_page.bind("identity"))
+	_body.add_child(_label("판매가 "+Editor.won(int(row["price"])),18))
+	var facts:=make_button("판매 영수증·손님 보기","ResultMenuFacts","summary","chevron_right")
+	facts.pressed.connect(_show_page.bind("menu_facts"))
+	_body.add_child(facts)
+
+
+## Quantities and money are the completed receipt, not a recipe forecast.
+func _menu_facts() -> void:
+	var row: Dictionary=_menus[_chosen]
+	_body.add_child(_label("%s v%d" % [row["recipe_name"],row["version"]],22))
 	_body.add_child(_label("판매 %d그릇 · 판매가 %s" % [row["units"],Editor.won(int(row["price"]))],18))
 	_body.add_child(_label("매출 %s\n재료비 −%s\n재료비를 뺀 금액 %s" % [Editor.won(int(row["revenue"])),Editor.won(int(row["ingredient_cost"])),Editor.won(int(row["margin"]))],18,TEAL))
 	_body.add_child(_label("하루 운영비는 전체 영업 결과에서 한 번 차감해요.",15,MUTED))
@@ -363,6 +397,24 @@ func _menu_details() -> void:
 		_body.add_child(_label("완료 주문 평균 대기 %.0f초" % (float(row["wait_total"])/float(row["units"])) if int(row["units"])>0 else "완료 주문이 없어 평균 대기를 계산하지 않아요.",17))
 	_body.add_child(_label("누가 먹었나요?",20))
 	_sources(row["by_source"])
+
+
+## Read only this sold snapshot. Historical missing configs never borrow a
+## recipe from the current draft, notebook or a similarly named menu.
+func _identity_details() -> void:
+	var model: Dictionary=MenuIdentity.sales(_menus[_chosen])
+	if str(model["error"])!="" or not bool(model["available"]):
+		_body.add_child(_label(str(model["error"]) if str(model["error"])!="" else str(model["note"]),17,MUTED))
+		return
+	_body.add_child(_label("%s v%d" % [model["recipe_name"],model["version"]],22))
+	var dish:=Dish.new()
+	dish.name="ResultIdentityDish"
+	dish.custom_minimum_size=Vector2(180,154)
+	_body.add_child(dish)
+	dish.set_config(model["config"])
+	_body.add_child(_label(str(model["headline"]),20,TEAL))
+	for feature in model["features"]: _body.add_child(_label(str(feature),17))
+	_body.add_child(_label("한 그릇 원가 %s · 준비 %d초" % [Editor.won(int(model["unit_cost"])),model["prep_seconds"]],17))
 
 
 func _sources(source: Dictionary) -> void:
