@@ -6,6 +6,7 @@ const Shared = preload("res://scripts/ui/service_result_view.gd")
 const Mock = preload("res://scripts/ui/mock_fidelity_art.gd")
 const Art = preload("res://scripts/ui/bowl_editor_art.gd")
 const Dish = preload("res://scripts/ui/layered_recipe_view.gd")
+const JourneyCard = preload("res://scripts/ui/journey_card.gd")
 const BODY = preload("res://assets/fonts/Pretendard-Regular.otf")
 const BOLD = preload("res://assets/fonts/Pretendard-Bold.otf")
 const INK := Color("18354f")
@@ -43,6 +44,7 @@ var _saved: Label
 var _routes: Array[Button] = []
 var _records: Array = []
 var _records_key: String = "!"
+var _journey: Control
 
 
 func label(text: String, pixels: int = 16, color: Color = INK, bold: bool = false) -> Label:
@@ -247,6 +249,10 @@ func _build_details() -> void:
 	_detail_scroll.size_flags_vertical=Control.SIZE_EXPAND_FILL
 	body.add_child(_detail_scroll)
 	_detail_body=column(_detail_scroll,12)
+	_journey=JourneyCard.new()
+	_journey.name="HomeJourney"
+	_journey.action_requested.connect(func(action: String): action_requested.emit("journey:"+action))
+	_detail_body.add_child(_journey)
 	_capacity=label("",16,TEAL,true)
 	_detail_body.add_child(_capacity)
 	status_label=label("",16)
@@ -314,6 +320,8 @@ func hide_details() -> void:
 
 
 func set_context(data: Dictionary) -> void:
+	var journey: Dictionary=data["journey"]
+	_journey.present(journey)
 	_rank.text="%d랭크 · %d석" % [data["rank"],data["seats"]]
 	_headline.text=str(data["phase"])
 	var warning: bool=bool(data["warning"])
@@ -341,6 +349,11 @@ func set_context(data: Dictionary) -> void:
 		_menu_note.text="저장하지 못했어요 · 안내 보기"
 		_menu_note.add_theme_color_override("font_color",RED)
 	else: _menu_note.add_theme_color_override("font_color",TEAL)
+	if bool(data["no_records"]) and not warning:
+		_menu_name.text=str(journey["title"])
+		var customer: Dictionary=Shared.Customers.find(str(journey["customer"]))
+		if not customer.is_empty():
+			_menu_note.text=str(customer["persona"]).split(" · ")[-1]
 
 
 func set_save_result(message: String) -> void:

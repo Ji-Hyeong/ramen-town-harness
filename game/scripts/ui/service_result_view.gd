@@ -8,6 +8,7 @@ const Dish = preload("res://scripts/ui/layered_recipe_view.gd")
 const Pixel = preload("res://scripts/ui/pixel_art.gd")
 const Customers = preload("res://scripts/domain/customer_catalog.gd")
 const Editor = preload("res://scripts/ui/bowl_workbench.gd")
+const JourneyCard = preload("res://scripts/ui/journey_card.gd")
 const BODY = preload("res://assets/fonts/Pretendard-Regular.otf")
 const BOLD = preload("res://assets/fonts/Pretendard-Bold.otf")
 const INK := Color("18354f")
@@ -189,7 +190,7 @@ func _show_page(page: String) -> void:
 	for child in _body.get_children():
 		_body.remove_child(child)
 		child.queue_free()
-	_title.text="%d일차 영업 결과" % int(_report.get("day",0)) if page=="summary" else {"menu":"메뉴 판매 상세","customers":"손님과 대기","cost":"비용 영수증","receipt":"정산·저장 안내"}[page]
+	_title.text="%d일차 영업 결과" % int(_report.get("day",0)) if page=="summary" else {"menu":"메뉴 판매 상세","customers":"손님과 대기","cost":"비용 영수증","receipt":"정산·저장 안내","sales_comparison":"지난 영업과 비교","goals":"다음 한 그릇은?"}[page]
 	_back.tooltip_text="가게로" if page=="summary" else "결과 요약으로"
 	if _report.is_empty():
 		_body.add_child(_label("아직 마친 영업이 없어요.",20))
@@ -197,6 +198,8 @@ func _show_page(page: String) -> void:
 	elif page=="menu": _menu_details()
 	elif page=="customers": _customers()
 	elif page=="cost": _costs()
+	elif page=="sales_comparison": _sales_comparison()
+	elif page=="goals": _goals()
 	else:
 		_body.add_child(_note)
 		_body.add_child(_label("전체 영업 영수증",20))
@@ -282,6 +285,16 @@ func _summary() -> void:
 		card.add_child(arrow)
 		button.pressed.connect(func(): _chosen=index; _show_page("menu"))
 		menu_grid.add_child(button)
+	var previous: Dictionary=_context.get("previous_report",{})
+	if not previous.is_empty():
+		var compare:=make_button("지난 영업과 비교 · %+d그릇" % (int(_report["units"])-int(previous["units"])), "ResultSalesComparison", "summary", "chevron_right")
+		compare.pressed.connect(_show_page.bind("sales_comparison"))
+		_body.add_child(compare)
+	var choices: Array=_context.get("journey_choices",[])
+	if not choices.is_empty():
+		var next:=make_button("다음 실험 고르기","ResultNextGoals","gold","chevron_right")
+		next.pressed.connect(_show_page.bind("goals"))
+		_body.add_child(next)
 	var customer:=make_button("손님과 대기","ResultCustomers","summary","info")
 	customer.pressed.connect(_show_page.bind("customers"))
 	_body.add_child(customer)
@@ -296,6 +309,40 @@ func _summary() -> void:
 	cost.pressed.connect(_show_page.bind("cost"))
 	_body.add_child(cost)
 
+
+
+## Compare only actual receipts retained for this live service session. The two
+## dates may have different menus/demand/staff, so these are observations rather
+## than a causal claim that the last ingredient edit improved the business.
+func _sales_comparison() -> void:
+	var previous: Dictionary=_context.get("previous_report",{})
+	if previous.is_empty():
+		_body.add_child(_label("비교할 이전 정산 기록이 없어요.",18))
+		return
+	_body.add_child(_label("영업 조건이 다른 날짜별 기록",16,MUTED))
+	var pair:=HBoxContainer.new()
+	pair.add_theme_constant_override("separation",12)
+	_body.add_child(pair)
+	for index in 2:
+		var receipt: Dictionary=previous if index==0 else _report
+		var panel:=_paper(pair)
+		(panel.get_parent() as Control).size_flags_horizontal=Control.SIZE_EXPAND_FILL
+		panel.add_child(_label("%d일차" % receipt["day"],20,INK))
+		panel.add_child(_label("완료 주문",14,MUTED))
+		panel.add_child(_label("%d그릇" % receipt["units"],22,TEAL,"SalesCompareUnits_"+str(index)))
+		panel.add_child(_label("운영비까지 뺀 이익",14,MUTED))
+		panel.add_child(_label(Editor.won(int(receipt["net"])),20,TEAL if int(receipt["net"])>=0 else RED,"SalesCompareNet_"+str(index)))
+	_body.add_child(_label("완료 주문 %+d그릇 · 남긴 돈 %s" % [int(_report["units"])-int(previous["units"]),Editor.won(int(_report["net"])-int(previous["net"]))],18,INK))
+
+
+func _goals() -> void:
+	for choice in _context.get("journey_choices",[]):
+		var card:=JourneyCard.new()
+		card.name="ResultJourneyCard_"+str(choice["action"])
+		card.button.name="ResultJourney_"+str(choice["action"])
+		_body.add_child(card)
+		card.present(choice)
+		card.action_requested.connect(func(action: String): action_requested.emit("journey:"+action))
 
 
 func _menu_details() -> void:

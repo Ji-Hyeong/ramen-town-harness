@@ -152,6 +152,12 @@ def run_logged(args: list, log_path: Path, env: dict, cwd: Path, runner, timeout
         except OSError as err:
             raise BuildError(f"실행하지 못했습니다: {args[0]}: {err} (로그: {log_path})")
         log.write(f"\n[exit status {proc.returncode}]\n")
+    # Godot can report a parse/compile failure while returning zero. Refuse a
+    # broken import/export before creating a seemingly ready QA application.
+    if "--import" in args or "--export-pack" in args:
+        text = re.sub(r"\x1b\[[0-9;]*m", "", log_path.read_text(encoding="utf-8"))
+        if re.search(r"(?m)^\s*(?:SCRIPT ERROR|ERROR):", text):
+            raise BuildError(f"Godot 오류가 있어 준비를 중단했습니다 (로그: {log_path})")
     return proc.returncode
 
 
@@ -341,7 +347,7 @@ def prepare(godot: Path, project: Path, output_dir: Path, runner=subprocess.run,
     engine_app = verify_engine(godot, platform)
     check_project_source(project)
     # Fixed reviewed project fixtures only; never interpolate an arbitrary path.
-    if qa_script not in (QA_SCRIPT, "res://tests/bowl_editor_qa.gd", "res://tests/broth_workshop_qa.gd", "res://tests/noodle_workshop_qa.gd", "res://tests/component_comparison_qa.gd", "res://tests/recipe_knowledge_qa.gd", "res://tests/development_cycle_qa.gd", "res://tests/food_expression_qa.gd"):
+    if qa_script not in (QA_SCRIPT, "res://tests/bowl_editor_qa.gd", "res://tests/broth_workshop_qa.gd", "res://tests/noodle_workshop_qa.gd", "res://tests/component_comparison_qa.gd", "res://tests/recipe_knowledge_qa.gd", "res://tests/development_cycle_qa.gd", "res://tests/food_expression_qa.gd", "res://tests/first_menu_journey_qa.gd"):
         raise BuildError("Unsupported QA fixture.")
     if not (project / qa_script.removeprefix("res://")).is_file():
         raise BuildError("Selected QA fixture is missing.")
@@ -418,7 +424,7 @@ def main(argv: list) -> int:
     ap.add_argument("--godot", required=True, help="Godot.app/Contents/MacOS/Godot 절대 경로")
     ap.add_argument("--project", required=True, help="game 프로젝트 폴더 절대 경로")
     ap.add_argument("--output-dir", required=True, help="아직 없는 새 폴더의 절대 경로")
-    ap.add_argument("--fixture", choices=("full", "bowl-editor", "broth-workshop", "noodle-workshop", "component-comparison", "recipe-knowledge", "development-cycle", "food-expression"), default="full", help="검토한 네이티브 검사 흐름")
+    ap.add_argument("--fixture", choices=("full", "bowl-editor", "broth-workshop", "noodle-workshop", "component-comparison", "recipe-knowledge", "development-cycle", "food-expression", "first-menu-journey"), default="full", help="검토한 네이티브 검사 흐름")
     args = ap.parse_args(argv)
     try:
         godot = absolute_path("--godot", args.godot)
@@ -426,7 +432,7 @@ def main(argv: list) -> int:
         output_dir = absolute_path("--output-dir", args.output_dir)
         if not project.is_dir():
             raise BuildError(f"--project: 폴더가 아닙니다: {project}")
-        entry = {"full": QA_SCRIPT, "bowl-editor": "res://tests/bowl_editor_qa.gd", "broth-workshop": "res://tests/broth_workshop_qa.gd", "noodle-workshop": "res://tests/noodle_workshop_qa.gd", "component-comparison": "res://tests/component_comparison_qa.gd", "recipe-knowledge": "res://tests/recipe_knowledge_qa.gd", "development-cycle": "res://tests/development_cycle_qa.gd", "food-expression": "res://tests/food_expression_qa.gd"}[args.fixture]
+        entry = {"full": QA_SCRIPT, "bowl-editor": "res://tests/bowl_editor_qa.gd", "broth-workshop": "res://tests/broth_workshop_qa.gd", "noodle-workshop": "res://tests/noodle_workshop_qa.gd", "component-comparison": "res://tests/component_comparison_qa.gd", "recipe-knowledge": "res://tests/recipe_knowledge_qa.gd", "development-cycle": "res://tests/development_cycle_qa.gd", "food-expression": "res://tests/food_expression_qa.gd", "first-menu-journey": "res://tests/first_menu_journey_qa.gd"}[args.fixture]
         result = prepare(godot, project, output_dir, qa_script=entry)
     except (BuildError, OSError) as err:
         print(f"error: {err}", file=sys.stderr)
