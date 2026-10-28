@@ -1,0 +1,157 @@
+{
+  "task": "menu-identity-v1",
+  "final_pack": "8a5194a77f66f53aefc3a5082396d038f69298ff81b9e5fc7ee8d7a347dfa8b7",
+  "published": [
+    {
+      "file": "portrait_0_taste.png",
+      "source": "v3 actual native",
+      "size": [
+        390,
+        844
+      ],
+      "sha256": "da9aa6271c6386b6a4efcb48e9d8e6e628fb1f4fca928304bd822d4526674860",
+      "opened_original": true
+    },
+    {
+      "file": "portrait_1_taste.png",
+      "source": "v3 actual native",
+      "size": [
+        390,
+        844
+      ],
+      "sha256": "c4fe6311d8edf071f30645377ffeade1ab08fa660ba58fcd2ae3b9ab97ab3618",
+      "opened_original": true
+    },
+    {
+      "file": "portrait_2_taste.png",
+      "source": "v3 actual native",
+      "size": [
+        390,
+        844
+      ],
+      "sha256": "ee3c44c4b37e85cb7c18ec8b3bd0281bae05ad82d705dcf2cc35e9a1f2f6b383",
+      "opened_original": true
+    },
+    {
+      "file": "portrait_0_taste_detail.png",
+      "source": "v3 actual native",
+      "size": [
+        390,
+        844
+      ],
+      "sha256": "737df9ea3caafd79e4256cffb1315f33528a7329f3dca4ac96f64ba5c4dfcc41",
+      "opened_original": true
+    },
+    {
+      "file": "portrait_0_sales_menu.png",
+      "source": "v3 actual native",
+      "size": [
+        390,
+        844
+      ],
+      "sha256": "a4073e88388c03f7df7a5ccf1cf4f6fceb8c7e0f4d557bf77e435e02de4acb33",
+      "opened_original": true
+    },
+    {
+      "file": "portrait_1_sales_menu.png",
+      "source": "v3 actual native",
+      "size": [
+        390,
+        844
+      ],
+      "sha256": "b6929832722781942396c65fce7022488c4e31bfa5c38cbf8ef383f3ed62e99a",
+      "opened_original": true
+    },
+    {
+      "file": "portrait_2_sales_menu.png",
+      "source": "v3 actual native",
+      "size": [
+        390,
+        844
+      ],
+      "sha256": "cc6337feea6e7e6281452fe7528acb125aa0ac4ca2c0ee2157c6b783738f19a8",
+      "opened_original": true
+    },
+    {
+      "file": "portrait_restored_unknown.png",
+      "source": "v3 actual native",
+      "size": [
+        390,
+        844
+      ],
+      "sha256": "c4a99d27b373d01bbde18fcb7c3a67e51f09db8d80312f3f8c87e8705944555a",
+      "opened_original": true
+    },
+    {
+      "file": "compact_2_taste.png",
+      "source": "v3 actual native",
+      "size": [
+        390,
+        750
+      ],
+      "sha256": "6677d1884aa973deeab3f991699843073eb9f7643d40d7678aff9f7eb0d86e9a",
+      "opened_original": true
+    },
+    {
+      "file": "desktop_1_sales_menu.png",
+      "source": "v3 actual native",
+      "size": [
+        1280,
+        800
+      ],
+      "sha256": "1bf3bc9ce142710e1dbcec79947523ea9af0e5f1871c119ea04931218d69552f",
+      "opened_original": true
+    },
+    {
+      "file": "current_portrait_journey_02_first_tasting.png",
+      "source": "v3 same-fixture current",
+      "size": [
+        390,
+        844
+      ],
+      "sha256": "4066d0e2f5aa506f893ac62ff6d1b1e12fb97a0d08bedf9bf0e4f927518a828b",
+      "opened_original": true
+    },
+    {
+      "file": "before_portrait_journey_02_first_tasting.png",
+      "source": "fresh previous-main native",
+      "size": [
+        390,
+        844
+      ],
+      "sha256": "0e2fd75df19fd4fe9aa693d82566e128f143a5375d6e93af0feccc5ab5b6e394",
+      "opened_original": true
+    },
+    {
+      "file": "current_portrait_journey_04_sales_choices.png",
+      "source": "v3 same-fixture current",
+      "size": [
+        390,
+        844
+      ],
+      "sha256": "731b9694067a56b9ddbb05cdb0a9e4be9138c75bd1a48ebbe1c681c1626a6dc1",
+      "opened_original": true
+    },
+    {
+      "file": "before_portrait_journey_04_sales_choices.png",
+      "source": "fresh previous-main native",
+      "size": [
+        390,
+        844
+      ],
+      "sha256": "7fad9137c6c8c9949614a98dfb122fb072f121c030982cdcd6c6529e3b3832e2",
+      "opened_original": true
+    }
+  ],
+  "manual_scope": "All12 current +2 fresh-before originals opened at original size. Not all160 individually reviewed.",
+  "same_fixture_all_saved_values_equal": [
+    "portrait",
+    "desktop",
+    "compact"
+  ],
+  "retained_design": "Existing raster food, Pretendard, wood/cream/navy/teal/gold. No new-page exact mock claim.",
+  "limits": [
+    "No iPhone, assistive technology, audio/thermal or human fun/campaign-length acceptance.",
+    "Existing high-balance header ellipsis and duplicated unavailable-config notice in historical single receipt remain."
+  ]
+}
