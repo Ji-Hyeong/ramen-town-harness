@@ -255,7 +255,7 @@ func persistence(st: State) -> void:
 	keys.sort()
 	var expected: Array=State.TOP_KEYS.duplicate()
 	expected.sort()
-	verify(State.SCHEMA_VERSION==18 and keys==expected and st.to_dict()["schema_version"]==18,"schema18 adds knowledge while comparison leaves persisted keys intact")
+	verify(State.SCHEMA_VERSION==19 and keys==expected and st.to_dict()["schema_version"]==19,"schema19 includes server challenge while comparison leaves persisted keys intact")
 	var store:=Save.new(data_dir.path_join("current"))
 	verify(DirAccess.make_dir_recursive_absolute(store.dir)==OK and store.save_state(st)["ok"],"save reloaded and crafted formulas")
 	var restart:=State.new()

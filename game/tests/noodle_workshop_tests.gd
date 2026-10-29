@@ -145,7 +145,7 @@ func _initialize() -> void:
 			"id": bad["draft"]["config"]["noodle"]="noodle_thin"
 			"duplicate": bad["noodle_workshop"]["recipes"].append(bad["noodle_workshop"]["recipes"][0])
 			"future": bad["noodle_workshop"]["recipes"][0]["day"]=9999
-			"old_root": bad.erase("noodle_workshop"); bad.erase("recipe_knowledge"); bad["schema_version"]=16
+			"old_root": bad.erase("noodle_workshop"); bad.erase("recipe_knowledge"); bad.erase("server_challenge"); bad["schema_version"]=16
 			"witness": bad["records"][0]["config"].erase("noodle_recipe")
 		verify(st.load_from_dict(bad)!="" and json(st)==before,"malformed nested formula rejected atomically: "+kind)
 	var original: String=FileAccess.get_file_as_string("res://tests/fixtures/noodle-v16-save.json")
@@ -157,7 +157,7 @@ func _initialize() -> void:
 	var migrated:=State.new()
 	verify(old_store.load_into(migrated)["status"]=="ok","genuine frozen v16 migrates")
 	var compared: Dictionary=migrated.to_dict()
-	compared.erase("noodle_workshop"); compared.erase("recipe_knowledge"); compared["schema_version"]=16
+	compared.erase("noodle_workshop"); compared.erase("recipe_knowledge"); compared.erase("server_challenge"); compared["schema_version"]=16
 	verify(JSON.parse_string(JSON.stringify(compared))==old and migrated.noodle_review()["recipes"].is_empty(),"all old broth/menu/report/wallet values preserved without fake noodles")
 	for record in old["records"]:
 		verify(Eval.evaluate(Check.parse_config(record["config"],"baseline")["config"])["customers"]==Eval.evaluate(migrated.get_record(int(record["record_id"]))["config"])["customers"],"old actual evaluation remains equal")

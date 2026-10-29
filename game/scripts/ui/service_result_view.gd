@@ -239,6 +239,13 @@ func _summary() -> void:
 		var goal:=make_button(text,"ResultChef","gold" if status=="ready" else "summary","chevron_right")
 		goal.pressed.connect(func(): action_requested.emit("chef"))
 		_body.add_child(goal)
+	var server: Dictionary=_context.get("server_challenge",{})
+	if not server.is_empty() and server["status"]!="open":
+		var text: String={"active":"서버", "ready":"서버 도전 달성! 성장 확인", "mastered":"서버 · 점심 동선 습득"}[server["status"]]
+		if server["status"]=="active": text="서버 현재 도전 · %d/6 조건" % server["met"]
+		var goal:=make_button(text,"ResultServer","gold" if server["status"]=="ready" else "summary","chevron_right")
+		goal.pressed.connect(func(): action_requested.emit("server"))
+		_body.add_child(goal)
 	_body.add_child(_label("어떤 메뉴가 팔렸나요?",20))
 	var menu_grid:=GridContainer.new()
 	menu_grid.name="ResultMenuGrid"

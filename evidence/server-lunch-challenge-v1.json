@@ -1,0 +1,188 @@
+{
+  "date": "2026-10-29",
+  "task": "server-lunch-challenge-v1",
+  "base": "e962eafb15bbad376200c3a29daa96910037208c",
+  "status": "native_mac_accepted",
+  "schema": 19,
+  "bundled_sources": 430,
+  "pck_sha256": "8b40cbe8522c02b1775baa30e7319ced30a1b8555c45a7f22989c790c7c847ec",
+  "vendor_binary_sha256": "c7cccbf8fb143e34e02fd6521e09be2c2b974f0d5db080b19071c9c570718ccf",
+  "vendor_signature_verified": true,
+  "claude_calls": [
+    {
+      "reported_turns": 42,
+      "requested_max_turns": 30,
+      "exit": 0,
+      "subtype": "success",
+      "is_error": false,
+      "permission_denials": []
+    },
+    {
+      "reported_turns": 5,
+      "requested_max_turns": 10,
+      "exit": 0,
+      "subtype": "success",
+      "is_error": false,
+      "permission_denials": []
+    }
+  ],
+  "claude_owned_sha256": {
+    "game/scripts/domain/server_challenge.gd": "07bdbb72f7d38a960951ae162207341e32b8047e1ddbff35f21adb01c30bc39c",
+    "game/tests/server_challenge_tests.gd": "1008405e5ca681a7f9a102eb3523e111cd55036989fd2161a86d2a82c1760d7e"
+  },
+  "checks": {
+    "server_focused": {
+      "checks": 1272,
+      "failures": 0,
+      "exit": 0,
+      "version": "v5"
+    },
+    "historical_domain": {
+      "tests": 130,
+      "checks": 60730,
+      "failures": 0,
+      "exit": 0,
+      "version": "v5"
+    },
+    "recipe_knowledge": {
+      "checks": 4138,
+      "failures": 0,
+      "exit": 0,
+      "version": "v4",
+      "note": "only new mastery percentage changed after this run"
+    },
+    "component_comparison": {
+      "checks": 373,
+      "failures": 0,
+      "exit": 0,
+      "version": "v4"
+    },
+    "raw_noodle": {
+      "checks": 276,
+      "failures": 0,
+      "exit": 0,
+      "version": "v4"
+    },
+    "raw_broth": {
+      "checks": 226,
+      "failures": 0,
+      "exit": 0,
+      "version": "v4"
+    },
+    "old18_generation": {
+      "checks": 99,
+      "fixtures": 11,
+      "failures": 0,
+      "exit": 0,
+      "code": "previous-main419PCK"
+    },
+    "old18_migration": {
+      "checks": 122,
+      "fixtures": 11,
+      "failures": 0,
+      "exit": 0,
+      "version": "v5",
+      "independent_json_backup_original_hashes_equal": 11
+    },
+    "actual_raw_boundary_matrix": {
+      "cases": 12,
+      "checks": 203,
+      "independent_python_O_checks": 307,
+      "failures": 0,
+      "exit": 0,
+      "version": "v4",
+      "note": "before any mastery claim; its conditions/configs/source rows unchanged in v5"
+    },
+    "actual_mastery_pairs": {
+      "pairs": 2,
+      "checks": 78,
+      "failures": 0,
+      "exit": 0,
+      "version": "v5",
+      "reward_percent_reduction": 20,
+      "actual_units_each": 10,
+      "mean_wait_none": [
+        136.9,
+        134.9
+      ],
+      "mean_wait_basic_hall": [
+        132.9,
+        131.9
+      ],
+      "mean_stars_all": 3.7
+    },
+    "server_layout": {
+      "checks": 773,
+      "failures": 0,
+      "exit": 0,
+      "version": "v5",
+      "rendered": false
+    },
+    "staff_regression_layout": {
+      "checks": 690,
+      "failures": 0,
+      "exit": 0,
+      "version": "v5",
+      "rendered": false
+    },
+    "chef_regression_layout": {
+      "checks": 784,
+      "failures": 0,
+      "exit": 0,
+      "version": "v5",
+      "rendered": false
+    },
+    "qa_builder": {
+      "tests": 24,
+      "failures": 0,
+      "exit": 0
+    }
+  },
+  "native": {
+    "status": "passed",
+    "version": "v5",
+    "approved_exact_app": "/private/tmp/ramen-server-lunch-qa-20261029-v5/Ramen QA.app",
+    "run": "20261029T051547Z-78328",
+    "checks": 881,
+    "failures": 0,
+    "exit": 0,
+    "engine_errors": 0,
+    "script_errors": 0,
+    "screenshots": 36,
+    "profiles": [
+      [
+        1280,
+        800
+      ],
+      [
+        390,
+        844
+      ],
+      [
+        390,
+        750
+      ]
+    ],
+    "personally_reviewed_all_originals_via_sheets": true,
+    "published_originals": [
+      "portrait_server_00_pressed.png",
+      "portrait_server_02_open.png",
+      "portrait_server_04_conditions_bottom.png",
+      "portrait_server_07_ready.png",
+      "portrait_server_09_save_failure.png",
+      "portrait_server_10_mastered_restart.png",
+      "desktop_server_07_ready.png",
+      "compact_server_10_mastered_restart.png"
+    ],
+    "superseded_app_versions": [
+      "v1",
+      "v2",
+      "v3",
+      "v4"
+    ]
+  },
+  "archive": "outputs/ramen-server-lunch-challenge-v1",
+  "phone_installation": false,
+  "live_player_save_touched": false,
+  "human_playtest_or_campaign_completion_claim": false
+}

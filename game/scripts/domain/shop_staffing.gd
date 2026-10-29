@@ -13,6 +13,9 @@ extends RefCounted
 const BASE_STAFF: int = 2
 const PREP_PERCENT: int = 80
 const SERVE_PERCENT: int = 70
+## A smaller discount vanished on the trained helper's 6/8-second inner trips.
+## Twenty percent keeps a real, rounded benefit with or without that helper.
+const SERVER_PERCENT: int = 80
 const Training = preload("res://scripts/domain/staff_training.gd")
 const Check = preload("res://scripts/domain/data_check.gd")
 
@@ -53,7 +56,7 @@ static func find(id: String) -> Dictionary:
 
 ## 고용 목록(고용 순서)에서 영업 스냅샷을 만든다. 순서와 무관하게 카탈로그 순서로 정렬해 같은 구성은 같은 스냅샷이 된다.
 ## 알 수 없는 id는 무시하지 않고 호출자(GameState)가 이미 검증한 목록만 받는다.
-static func snapshot(hired: Array, training: Dictionary = {}, chef_level: int = 0) -> Dictionary:
+static func snapshot(hired: Array, training: Dictionary = {}, chef_level: int = 0, server_level: int = 0) -> Dictionary:
 	var ordered: Array = []
 	var wage: int = 0
 	var prep_pct: int = 100
@@ -83,6 +86,8 @@ static func snapshot(hired: Array, training: Dictionary = {}, chef_level: int = 
 		out["training"] = qualifications
 	if chef_level == 1:
 		out["chef"] = 1
+	if server_level == 1:
+		out["server"] = 1
 	return out
 
 
@@ -127,7 +132,9 @@ static func snapshot_error(staffing: Dictionary) -> String:
 			return "직원 효과는 유효한 정수여야 해요."
 	if staffing.has("chef") and not Check.in_range(staffing["chef"],1,1):
 		return "요리사 자격이 올바르지 않아요."
-	var expected: Dictionary = snapshot(staffing["hired"] as Array, entries, int(staffing.get("chef",0)))
+	if staffing.has("server") and not Check.in_range(staffing["server"],1,1):
+		return "서버 자격이 올바르지 않아요."
+	var expected: Dictionary = snapshot(staffing["hired"] as Array, entries, int(staffing.get("chef",0)), int(staffing.get("server",0)))
 	if JSON.stringify(expected, "", true) != JSON.stringify(staffing, "", true):
 		return "직원 구성 값이 직원 목록과 맞지 않아요."
 	return ""
@@ -138,7 +145,7 @@ static func _keys(d: Dictionary) -> String:
 		if not d.has(k):
 			return "직원 구성: 항목 누락 (%s)" % str(k)
 	for k in d.keys():
-		if not SNAPSHOT_KEYS.has(k) and k not in ["training","chef"]:
+		if not SNAPSHOT_KEYS.has(k) and k not in ["training","chef","server"]:
 			return "직원 구성: 알 수 없는 항목 (%s)" % str(k)
 	return ""
 
@@ -161,14 +168,17 @@ static func effective_prep(base_prep: int, staffing: Dictionary) -> int:
 ## 서버가 음식을 들고 자리까지 가는 시간(초).
 static func effective_carry(base_seconds: int, staffing: Dictionary) -> int:
 	var pct: int = _pct(staffing, "serve_percent")
-	return maxi(1, (base_seconds * pct + 99) / 100)
+	var helper: int = maxi(1, (base_seconds * pct + 99) / 100)
+	# Apply mastery to the already rounded helper timing; old snapshots stay exact.
+	return maxi(1, (helper * SERVER_PERCENT + 99) / 100) if int(staffing.get("server",0)) == 1 else helper
 
 
 ## 서버가 빈손으로 주방 앞에 돌아오는 시간(초). 기준 돌아오는 시간 = 기준 서빙 시간 x back_percent / 100(최소 1초).
 static func effective_return(base_seconds: int, back_percent: int, staffing: Dictionary) -> int:
 	var base_back: int = maxi(1, base_seconds * back_percent / 100)
 	var pct: int = _pct(staffing, "serve_percent")
-	return maxi(1, (base_back * pct + 99) / 100)
+	var helper: int = maxi(1, (base_back * pct + 99) / 100)
+	return maxi(1, (helper * SERVER_PERCENT + 99) / 100) if int(staffing.get("server",0)) == 1 else helper
 
 
 ## 하루 보조 직원 운영비 합(원). 정산 때 영업 운영비에 더해진다.

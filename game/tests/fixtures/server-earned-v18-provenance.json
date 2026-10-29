@@ -1,0 +1,13 @@
+{
+  "source": "PR49 raw-staff-value-v1/run-v2/light_none/day-14/ramen_lab_save.json",
+  "source_pack_sha256": "5a4c36dd8449bea2b3ccc83cb8abd9b339a4fcb19adf75fd7e30cbb972a01f16",
+  "sha256": "337a80f40c8ce1ed0f73d5280f201d2a61f67352406d6b2aa66a3c6af7174968",
+  "production_state": true,
+  "legacy_fixture": false,
+  "progress_injection": false,
+  "daily_disk_roundtrips": 14,
+  "day": 15,
+  "rank": 2,
+  "research_done": 2,
+  "not_human_playtime": true
+}

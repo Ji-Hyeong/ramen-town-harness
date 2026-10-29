@@ -39,6 +39,7 @@ var _positions: Dictionary = {}
 var _generation: int = 0
 var _portraits: Dictionary = {}
 var _dismissed_notice: String = ""
+var _server_details: bool = false
 
 
 func _label(text: String, fs: int = 16, color: Color = INK, bold: bool = false, node_name: String = "") -> Label:
@@ -92,8 +93,8 @@ func _picture(texture: Texture2D, minimum: Vector2) -> TextureRect:
 
 
 func _portrait(id: String) -> Texture2D:
-	if id=="chef":
-		if not _portraits.has(id): _portraits[id]=ImageTexture.create_from_image(Pixel.person_image(Pixel.LOOK_CHEF,"stand",0,false))
+	if id in ["chef","server"]:
+		if not _portraits.has(id): _portraits[id]=ImageTexture.create_from_image(Pixel.person_image(Pixel.LOOK_CHEF if id=="chef" else Pixel.LOOK_SERVER,"stand",0,false))
 		return _portraits[id]
 	if not _portraits.has(id): _portraits[id]=ImageTexture.create_from_image(Pixel.staff_portrait_image(id))
 	return _portraits[id]
@@ -242,7 +243,7 @@ func _render(preserve: bool = false) -> void:
 			child.queue_free()
 	_wallet.text=Growth._won(_state.wallet)
 	_summary.text="%d랭크 · 직원 %d/%d명 · 등록 메뉴 %d/%d종" % [_state.rank(),Staffing.BASE_STAFF+_state.hired_staff().size(),_state.staff_capacity(),_state.menu_count(),_state.menu_capacity()]
-	_title.text={"list":"직원·가게","staff":"직원 상세","training":"직원 육성","facility":"설비 상세","expand":"가게 증축","rank":"등급 심사","notice":"처리 결과","chef":"요리사 도전"}[_page]
+	_title.text={"list":"직원·가게","staff":"직원 상세","training":"직원 육성","facility":"설비 상세","expand":"가게 증축","rank":"등급 심사","notice":"처리 결과","chef":"요리사 도전","server":"서버 도전"}[_page]
 	for section in [["staff","직원"],["facility","설비"],["shop","증축·랭크"]]:
 		var tab:=_button(section[1],"GrowthTab_"+section[0],"teal" if section[0]==_section else "summary")
 		tab.disabled=bool(_context["closing_blocked"])
@@ -266,6 +267,7 @@ func _render(preserve: bool = false) -> void:
 		"staff": _staff_page()
 		"training": _training_page()
 		"chef": _chef_page()
+		"server": _server_page()
 		"facility": _facility_page()
 		"expand": _expand_page()
 		"rank": _rank_page()
@@ -325,16 +327,27 @@ func _card(parent: Node, title: String, subtitle: String, texture: Texture2D, no
 	var arrow:=_picture(Art.icon("chevron_right"),Vector2(20,24))
 	arrow.modulate=TEAL
 	row.add_child(arrow)
+	# Child labels do not inherit the button's pressed foreground. Keep the whole
+	# card legible, including during a finger hold, and restore on drag cancel.
+	card.button_down.connect(func():
+		for word in words.get_children(): word.add_theme_color_override("font_color",Color.WHITE)
+		arrow.modulate=Color.WHITE)
+	card.button_up.connect(func():
+		words.get_child(0).add_theme_color_override("font_color",INK)
+		words.get_child(1).add_theme_color_override("font_color",TEAL)
+		arrow.modulate=TEAL)
 
 
 func _list_page() -> void:
 	match _section:
 		"staff":
 			_body.add_child(_label("기본 직원 2명 · 요리사와 서버",16))
-			_body.add_child(_label("요리사는 메뉴 개발 도전으로, 보조 직원은 영업 경험과 훈련으로 성장해요.",15))
+			_body.add_child(_label("기본 직원은 메뉴 도전으로, 보조 직원은 영업·훈련으로 성장해요.",15))
 			var grid:=_grid()
 			var chef: Dictionary=_state.chef_challenge_review()
 			_card(grid,"요리사 · 점심 조리",{"open":"새 도전 · 점심 라멘 개발","active":"도전 중 · %d/6 조건 달성" % chef["met"],"ready":"도전 달성! 성장 확인","mastered":"점심 조리 습득 · 조리 시간 -5%"}[chef["status"]],_portrait("chef"),"GrowthChef",_navigate.bind("chef"))
+			var server: Dictionary=_state.server_challenge_review()
+			_card(grid,"서버 · 점심 동선",{"open":"2랭크·증축 후 두 메뉴 도전","active":"도전 중 · %d/6 조건 달성" % server["met"],"ready":"도전 달성! 성장 확인","mastered":"점심 동선 습득 · 왕복 시간 -20%"}[server["status"]],_portrait("server"),"GrowthServer",_navigate.bind("server"))
 			for staff in _state.staff_reviews():
 				var id: String=staff["id"]
 				var hired: bool=staff["hired"]
@@ -511,6 +524,12 @@ func _rank_page() -> void:
 
 func _commit() -> void:
 	match _page:
+		"server":
+			var status: String=_state.server_challenge_review()["status"]
+			if status=="open": action_requested.emit("server_start","","")
+			elif status=="ready": action_requested.emit("server_claim","","")
+			elif status=="active": action_requested.emit("chef_sell","","")
+			else: action_requested.emit("close","","")
 		"chef":
 			var status: String=_state.chef_challenge_review()["status"]
 			if status=="open": action_requested.emit("chef_start","","")
@@ -532,6 +551,67 @@ func _commit() -> void:
 func open_chef() -> void:
 	_section="staff"
 	_navigate("chef")
+
+
+func open_server() -> void:
+	_section="staff"
+	_navigate("server")
+
+
+## Show a concise actionable role card first. Exact requirements and the most
+## recent actual receipt live one level deeper; viewing cannot grant progress.
+func _server_page() -> void:
+	var review: Dictionary=_state.server_challenge_review()
+	var status: String=review["status"]
+	var hero:=_paper(_body,"ServerHero")
+	var row:=HBoxContainer.new()
+	row.add_theme_constant_override("separation",12)
+	hero.add_child(row)
+	row.add_child(_picture(_portrait("server"),Vector2(64,80)))
+	var words:=_col(row)
+	words.add_child(_label("SERVER · 02",14,TEAL,true))
+	words.add_child(_label("두 메뉴의 점심",23,INK,true,"ServerChallengeTitle"))
+	words.add_child(_label({"open":"2랭크 · 증축 · 판매 메뉴 2종","active":"도전 중 · %d/6" % review["met"],"ready":"달성! 성장 확인 가능","mastered":"점심 동선 습득"}[status],16,TEAL,true,"ServerChallengeState"))
+	var reward:=_paper(_body,"ServerReward")
+	reward.add_child(_label("서빙·복귀 시간 -20%",20,TEAL,true))
+	reward.add_child(_label("보조 효과 뒤 올림 · 다음 영업부터",15))
+	if status=="mastered": reward.add_child(_label("%d일차 습득 · 비용·일당 변화 없음" % review["completed_day"],15,TEAL,false,"ServerMastery"))
+	else:
+		_body.add_child(_label("수락 → 두 메뉴 새 구성 시식 → 함께 영업",16,INK,true))
+		var develop:=_button("두 메뉴 개발하기","ServerDevelop","summary","ramen_dining")
+		develop.disabled=bool(_context["busy"])
+		develop.pressed.connect(func(): action_requested.emit("develop","",""))
+		_body.add_child(develop)
+	var bar:=ProgressBar.new()
+	bar.custom_minimum_size.y=12
+	_style_progress(bar)
+	bar.value=100.0*float(review["met"])/6.0
+	_body.add_child(bar)
+	var attempt: Dictionary=review["attempt"]
+	if not attempt.is_empty():
+		var proof:=_paper(_body,"ServerAttempt")
+		proof.add_child(_label("%d일차 · %s" % [attempt["day"],"첫 달성 영업" if status in ["ready","mastered"] else "최근 영업"],16,TEAL,true))
+		for menu in attempt["menus"]:
+			var food:=HBoxContainer.new()
+			food.add_theme_constant_override("separation",10)
+			proof.add_child(food)
+			food.add_child(_picture(Mock.bowl(menu["config"]["noodle"]),Vector2(48,40)))
+			food.add_child(_label("%s · %d그릇" % [menu["name"],menu["units"]],16))
+		if int(attempt["units"])>0:
+			proof.add_child(_label("평균 대기 %.1f초 · 만족도 %.2f/5" % [float(attempt["wait_total"])/attempt["units"],float(attempt["star_sum"])/attempt["units"]],15,TEAL))
+	var detail:=_button("조건 %d/6 · %s" % [review["met"],"접기" if _server_details else "펼치기"],"ServerConditions","summary","remove" if _server_details else "add")
+	detail.pressed.connect(func(): _server_details=not _server_details; _render(true))
+	_body.add_child(detail)
+	if _server_details:
+		for condition in review["rows"]:
+			var cell:=_paper(_body,"ServerCondition"+str(_body.get_child_count()))
+			cell.add_child(_label(("달성 · " if condition["met"] else "목표 · ")+condition["title"],16,TEAL if condition["met"] else INK,true))
+			cell.add_child(_label(condition["value"],15))
+		_body.add_child(_label("가격만 변경한 메뉴는 제외해요. 중단·예측·수락 전 영업은 집계하지 않아요.",15))
+	_primary.text={"open":"무료로 도전 수락","active":"판매 메뉴 확인","ready":"성장 확인 · 왕복 -20%","mastered":"가게로"}[status]
+	if status=="open" and (_state.rank()<2 or not _state.shop_expanded() or _state.selling_records().size()!=2):
+		_primary.disabled=true
+		_body.add_child(_label("2랭크에서 증축 후 판매 메뉴 두 종류를 지정해 주세요.",15,TEAL,false,"ServerLocked"))
 
 
 func _chef_page() -> void:
