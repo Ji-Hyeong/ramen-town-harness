@@ -1,0 +1,417 @@
+{
+  "task": "raw-staff-value-v1",
+  "date": "2026-10-29",
+  "base_main": "2e88c66d5252d4ced53cbbbf9c92c74e7d8808c0",
+  "scope": {
+    "raw_menus": 2,
+    "policies_per_menu": 3,
+    "actual_services_each": 14,
+    "actual_settlements": 84,
+    "daily_full_state_disk_roundtrips": 84,
+    "progress_injection": false,
+    "legacy_fixture": false,
+    "known_formulas": true,
+    "time_accelerated": true
+  },
+  "execution": {
+    "exit": 0,
+    "errors": [],
+    "summary": [
+      "raw staff audit: scenarios=6 settlements=84 checks=3038 failures=0"
+    ]
+  },
+  "reported_checks": 3038,
+  "independent_python_optimized": {
+    "checks": 6231,
+    "failures": 0,
+    "exit": 0,
+    "order_trace_derived": {
+      "light_none": {
+        "menu": "light",
+        "policy": "none",
+        "wallet": 1015160,
+        "units": 126,
+        "wait_total": 9648,
+        "star_sum": 498,
+        "mean_wait": 76.57142857142857,
+        "mean_stars": 3.9523809523809526,
+        "training_day": 0
+      },
+      "light_kitchen_policy": {
+        "menu": "light",
+        "policy": "kitchen_policy",
+        "wallet": 980660,
+        "units": 126,
+        "wait_total": 8014,
+        "star_sum": 498,
+        "mean_wait": 63.6031746031746,
+        "mean_stars": 3.9523809523809526,
+        "training_day": 9
+      },
+      "light_hall_policy": {
+        "menu": "light",
+        "policy": "hall_policy",
+        "wallet": 982760,
+        "units": 126,
+        "wait_total": 9293,
+        "star_sum": 498,
+        "mean_wait": 73.75396825396825,
+        "mean_stars": 3.9523809523809526,
+        "training_day": 9
+      },
+      "rich_none": {
+        "menu": "rich",
+        "policy": "none",
+        "wallet": 1069640,
+        "units": 134,
+        "wait_total": 29612,
+        "star_sum": 463,
+        "mean_wait": 220.98507462686567,
+        "mean_stars": 3.455223880597015,
+        "training_day": 0
+      },
+      "rich_kitchen_policy": {
+        "menu": "rich",
+        "policy": "kitchen_policy",
+        "wallet": 1067270,
+        "units": 138,
+        "wait_total": 21272,
+        "star_sum": 535,
+        "mean_wait": 154.14492753623188,
+        "mean_stars": 3.8768115942028984,
+        "training_day": 8
+      },
+      "rich_hall_policy": {
+        "menu": "rich",
+        "policy": "hall_policy",
+        "wallet": 1037090,
+        "units": 134,
+        "wait_total": 29219,
+        "star_sum": 464,
+        "mean_wait": 218.05223880597015,
+        "mean_stars": 3.462686567164179,
+        "training_day": 8
+      }
+    }
+  },
+  "summary": {
+    "comparison_rule": "difference = policy scenario minus the same menu's none scenario; never compare different menus",
+    "menus": {
+      "light": {
+        "hall_policy": {
+          "action_costs": {
+            "hire": 7000,
+            "staff_1": 15000,
+            "train_basic": 4000
+          },
+          "action_days": {
+            "hire": 4,
+            "promotion": 4,
+            "staff_1": 4,
+            "train_basic": 9
+          },
+          "complete": true,
+          "config_signature": "1e84a530b53055b1cf0086f2131f5f2c22e5adb6a2545a0322c7c609241fd40e",
+          "difference_vs_none": {
+            "final_wallet": -32400,
+            "ingredient_cost": 0,
+            "overhead": 6400,
+            "preparation_spend": 26000,
+            "revenue": 0,
+            "service_net": -6400,
+            "turned_away": 0,
+            "units": 0
+          },
+          "final_rank": 2,
+          "final_wallet": 982760,
+          "same_setup_and_config_as_none": true,
+          "setup_signature": "8f80ceb8b1f3281b3a0d3b9e335a91d471dcb3c406a465d637c44b360f13781f",
+          "totals": {
+            "ingredient_cost": 107100,
+            "overhead": 48400,
+            "preparation_spend": 26000,
+            "revenue": 1134000,
+            "service_net": 978500,
+            "turned_away": 0,
+            "units": 126
+          }
+        },
+        "kitchen_policy": {
+          "action_costs": {
+            "hire": 8000,
+            "staff_1": 15000,
+            "train_basic": 4000
+          },
+          "action_days": {
+            "hire": 4,
+            "promotion": 4,
+            "staff_1": 4,
+            "train_basic": 9
+          },
+          "complete": true,
+          "config_signature": "1e84a530b53055b1cf0086f2131f5f2c22e5adb6a2545a0322c7c609241fd40e",
+          "difference_vs_none": {
+            "final_wallet": -34500,
+            "ingredient_cost": 0,
+            "overhead": 7500,
+            "preparation_spend": 27000,
+            "revenue": 0,
+            "service_net": -7500,
+            "turned_away": 0,
+            "units": 0
+          },
+          "final_rank": 2,
+          "final_wallet": 980660,
+          "same_setup_and_config_as_none": true,
+          "setup_signature": "8f80ceb8b1f3281b3a0d3b9e335a91d471dcb3c406a465d637c44b360f13781f",
+          "totals": {
+            "ingredient_cost": 107100,
+            "overhead": 49500,
+            "preparation_spend": 27000,
+            "revenue": 1134000,
+            "service_net": 977400,
+            "turned_away": 0,
+            "units": 126
+          }
+        },
+        "none": {
+          "action_costs": {
+            "hire": 0,
+            "staff_1": 0,
+            "train_basic": 0
+          },
+          "action_days": {
+            "hire": 0,
+            "promotion": 4,
+            "staff_1": 0,
+            "train_basic": 0
+          },
+          "complete": true,
+          "config_signature": "1e84a530b53055b1cf0086f2131f5f2c22e5adb6a2545a0322c7c609241fd40e",
+          "final_rank": 2,
+          "final_wallet": 1015160,
+          "setup_signature": "8f80ceb8b1f3281b3a0d3b9e335a91d471dcb3c406a465d637c44b360f13781f",
+          "totals": {
+            "ingredient_cost": 107100,
+            "overhead": 42000,
+            "preparation_spend": 0,
+            "revenue": 1134000,
+            "service_net": 984900,
+            "turned_away": 0,
+            "units": 126
+          }
+        }
+      },
+      "rich": {
+        "hall_policy": {
+          "action_costs": {
+            "hire": 7000,
+            "staff_1": 15000,
+            "train_basic": 4000
+          },
+          "action_days": {
+            "hire": 4,
+            "promotion": 4,
+            "staff_1": 4,
+            "train_basic": 8
+          },
+          "complete": true,
+          "config_signature": "f6a318e90abeff92ad26c7f61bf3e12d52694ce8dfb95775c5b748918b98a2a2",
+          "difference_vs_none": {
+            "final_wallet": -32550,
+            "ingredient_cost": 0,
+            "overhead": 6550,
+            "preparation_spend": 26000,
+            "revenue": 0,
+            "service_net": -6550,
+            "turned_away": 0,
+            "units": 0
+          },
+          "final_rank": 2,
+          "final_wallet": 1037090,
+          "same_setup_and_config_as_none": true,
+          "setup_signature": "8f80ceb8b1f3281b3a0d3b9e335a91d471dcb3c406a465d637c44b360f13781f",
+          "totals": {
+            "ingredient_cost": 191620,
+            "overhead": 48550,
+            "preparation_spend": 26000,
+            "revenue": 1273000,
+            "service_net": 1032830,
+            "turned_away": 0,
+            "units": 134
+          }
+        },
+        "kitchen_policy": {
+          "action_costs": {
+            "hire": 8000,
+            "staff_1": 15000,
+            "train_basic": 4000
+          },
+          "action_days": {
+            "hire": 4,
+            "promotion": 4,
+            "staff_1": 4,
+            "train_basic": 8
+          },
+          "complete": true,
+          "config_signature": "f6a318e90abeff92ad26c7f61bf3e12d52694ce8dfb95775c5b748918b98a2a2",
+          "difference_vs_none": {
+            "final_wallet": -2370,
+            "ingredient_cost": 5720,
+            "overhead": 7650,
+            "preparation_spend": 27000,
+            "revenue": 38000,
+            "service_net": 24630,
+            "turned_away": 0,
+            "units": 4
+          },
+          "final_rank": 2,
+          "final_wallet": 1067270,
+          "same_setup_and_config_as_none": true,
+          "setup_signature": "8f80ceb8b1f3281b3a0d3b9e335a91d471dcb3c406a465d637c44b360f13781f",
+          "totals": {
+            "ingredient_cost": 197340,
+            "overhead": 49650,
+            "preparation_spend": 27000,
+            "revenue": 1311000,
+            "service_net": 1064010,
+            "turned_away": 0,
+            "units": 138
+          }
+        },
+        "none": {
+          "action_costs": {
+            "hire": 0,
+            "staff_1": 0,
+            "train_basic": 0
+          },
+          "action_days": {
+            "hire": 0,
+            "promotion": 4,
+            "staff_1": 0,
+            "train_basic": 0
+          },
+          "complete": true,
+          "config_signature": "f6a318e90abeff92ad26c7f61bf3e12d52694ce8dfb95775c5b748918b98a2a2",
+          "final_rank": 2,
+          "final_wallet": 1069640,
+          "setup_signature": "8f80ceb8b1f3281b3a0d3b9e335a91d471dcb3c406a465d637c44b360f13781f",
+          "totals": {
+            "ingredient_cost": 191620,
+            "overhead": 42000,
+            "preparation_spend": 0,
+            "revenue": 1273000,
+            "service_net": 1039380,
+            "turned_away": 0,
+            "units": 134
+          }
+        }
+      }
+    }
+  },
+  "safety": {
+    "cases": [
+      {
+        "case": "missing",
+        "exit": 2
+      },
+      {
+        "case": "relative",
+        "exit": 2
+      },
+      {
+        "case": "existing-dir",
+        "exit": 2
+      },
+      {
+        "case": "existing-file",
+        "exit": 2
+      },
+      {
+        "case": "broken-link",
+        "exit": 2
+      },
+      {
+        "case": "parent-alias",
+        "exit": 2
+      },
+      {
+        "case": "missing-parent",
+        "exit": 2
+      }
+    ],
+    "existing_inputs_preserved": true,
+    "no_forbidden_target_created": true
+  },
+  "semantic_mutations": {
+    "cases": [
+      {
+        "mutation": "total",
+        "exit": 1
+      },
+      {
+        "mutation": "wallet",
+        "exit": 1
+      },
+      {
+        "mutation": "wage",
+        "exit": 1
+      },
+      {
+        "mutation": "selling",
+        "exit": 1
+      },
+      {
+        "mutation": "order-price",
+        "exit": 1
+      },
+      {
+        "mutation": "training-gate",
+        "exit": 1
+      }
+    ],
+    "saved_game_files_unchanged_after_instrumentation": 84
+  },
+  "sources_sha256": {
+    "game/tools/audit_raw_staff_value.gd": "bc5773069f4085f2d9c07717e680aaa40a9d466d3d0380dbbc55bb8a77026b0d",
+    "game/tools/audit_raw_staff_value.gd.uid": "3d7a23a2225e53f6e20335d9c364ffe83a2c7289fc656f0e9081cf0b9e35b601",
+    "game/tools/verify_raw_staff_value.py": "53c9c7661163ad72f5f1895b508c94592278851defe21b90c8fb433aed71a095"
+  },
+  "runtime_unchanged": {
+    "bundled_files": 419,
+    "domain_services": 66,
+    "assets": 125,
+    "schema": 18,
+    "native_graphics_rerun": false,
+    "vendor_post_signature_exit": 0
+  },
+  "claude": {
+    "owned_files": [
+      "game/tools/audit_raw_staff_value.gd"
+    ],
+    "initial_exit": 0,
+    "initial_subtype": "success",
+    "initial_is_error": false,
+    "initial_requested_turns": 30,
+    "initial_reported_turns": 39,
+    "targeted_correction_exit": 0,
+    "correction_subtype": "success",
+    "correction_is_error": false,
+    "correction_requested_turns": 10,
+    "correction_reported_turns": 7,
+    "permission_denials": [],
+    "final_owned_hash_unchanged": true,
+    "tests_independently_run_by_codex": true
+  },
+  "diagnostics_preserved": [
+    "initial report.json check count2701 versus console2702; corrected to3038 after raw trace instrumentation",
+    "Codex verifier initially assumed record_id on single-menu order rows; actual saved named receipt/pin/price linkage now verified, no invented field"
+  ],
+  "archive": "outputs/ramen-raw-staff-value-v1/private-task",
+  "not_done": [
+    "new worker challenge implementation",
+    "game balance changes",
+    "native graphical or phone acceptance",
+    "blind human play and6-10h campaign acceptance"
+  ]
+}
