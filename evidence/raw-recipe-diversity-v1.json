@@ -1,0 +1,68 @@
+{
+  "date": "2026-10-29",
+  "task": "raw-recipe-diversity-v1",
+  "accepted_base": "e962eafb15bbad376200c3a29daa96910037208c",
+  "runtime_source_count": 419,
+  "runtime_sources_unchanged": true,
+  "schema_version": 18,
+  "source_pack_sha256": "5a4c36dd8449bea2b3ccc83cb8abd9b339a4fcb19adf75fd7e30cbb972a01f16",
+  "scope": "pure enumeration in3fixed bowls; not played, crafted, discovered, visual uniqueness, profit or human fun",
+  "theoretical_candidates": {
+    "broth": 128,
+    "noodle": 24
+  },
+  "full_numeric_groups": {
+    "broth": 128,
+    "noodle": 24
+  },
+  "taste_numeric_groups": {
+    "broth": 119,
+    "noodle": 24
+  },
+  "broth_candidates_in_taste_collision_groups": 17,
+  "broth_taste_collision_groups": 8,
+  "report_sha256": "75954a8bb12105d87cc8357ada53790810c9cf69b72c18daa04034066572f59a",
+  "repeat_whole_report_byte_equal": true,
+  "writer": {
+    "checks_before_write": 12592,
+    "checks_total": 12597,
+    "failures": 0,
+    "exit": 0
+  },
+  "independent_python": {
+    "optimized_mode": true,
+    "checks": 3281,
+    "failures": 0,
+    "exit": 0
+  },
+  "independent_evaluator": {
+    "bowls": 456,
+    "checks": 1825,
+    "failures": 0,
+    "exit": 0
+  },
+  "unsafe_outputs": {
+    "cases": 9,
+    "all_exit": 2,
+    "original_file_link_bytes_preserved": true
+  },
+  "semantic_mutations": {
+    "cases": 6,
+    "all_exit": 1
+  },
+  "claude": {
+    "reported_turns": 20,
+    "requested_max_turns": 30,
+    "exit": 0,
+    "subtype": "success",
+    "is_error": false,
+    "permission_denials": [],
+    "owned_file": "game/tools/audit_raw_recipe_diversity.gd",
+    "owned_sha256_unchanged": "001e1424e8cc6d83c22726a5e29ccf8b7a9a610d89275533f30cb12762613c4d"
+  },
+  "native_rendering": "not_applicable_tools_only",
+  "phone_installation": false,
+  "live_save_touched": false,
+  "server_pr50": "separate; native-v5launchapprovalpending, not merged",
+  "archive": "outputs/ramen-raw-recipe-diversity-v1"
+}
