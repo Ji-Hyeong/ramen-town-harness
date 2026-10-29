@@ -2,7 +2,7 @@
   "date": "2026-10-29",
   "task": "server-lunch-challenge-v1",
   "base": "e962eafb15bbad376200c3a29daa96910037208c",
-  "status": "implemented_headless_verified_native_pending",
+  "status": "native_mac_accepted",
   "schema": 19,
   "bundled_sources": 430,
   "pck_sha256": "8b40cbe8522c02b1775baa30e7319ced30a1b8555c45a7f22989c790c7c847ec",
@@ -139,9 +139,41 @@
     }
   },
   "native": {
-    "status": "pending_exact_app_launch_approval",
-    "app": "/private/tmp/ramen-server-lunch-qa-20261029-v5/Ramen QA.app",
-    "screenshots": 0,
+    "status": "passed",
+    "version": "v5",
+    "approved_exact_app": "/private/tmp/ramen-server-lunch-qa-20261029-v5/Ramen QA.app",
+    "run": "20261029T051547Z-78328",
+    "checks": 881,
+    "failures": 0,
+    "exit": 0,
+    "engine_errors": 0,
+    "script_errors": 0,
+    "screenshots": 36,
+    "profiles": [
+      [
+        1280,
+        800
+      ],
+      [
+        390,
+        844
+      ],
+      [
+        390,
+        750
+      ]
+    ],
+    "personally_reviewed_all_originals_via_sheets": true,
+    "published_originals": [
+      "portrait_server_00_pressed.png",
+      "portrait_server_02_open.png",
+      "portrait_server_04_conditions_bottom.png",
+      "portrait_server_07_ready.png",
+      "portrait_server_09_save_failure.png",
+      "portrait_server_10_mastered_restart.png",
+      "desktop_server_07_ready.png",
+      "compact_server_10_mastered_restart.png"
+    ],
     "superseded_app_versions": [
       "v1",
       "v2",

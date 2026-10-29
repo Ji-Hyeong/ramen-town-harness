@@ -63,4 +63,5 @@
 `game/tools/verify_raw_recipe_diversity.py`. 기계 판독 기록은
 `evidence/raw-recipe-diversity-v1.json`, 원문·로그·안전성/변조 검사는 작업 산출물
 `outputs/ramen-raw-recipe-diversity-v1/`에 보존한다.
-별도 서버 성장 PR50은 실제 화면 실행 승인 대기이며 이 조사로 수용 처리하지 않는다.
+별도 서버 성장 PR50의 실제 화면 검증은 이 조사와 구분한다. 서버 수용 결과는
+[서버 성장 기록](SERVER_LUNCH_CHALLENGE_V1.md)을 따른다.
