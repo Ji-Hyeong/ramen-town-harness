@@ -1,0 +1,14 @@
+{
+  "main-6e0cbb4": {
+    "ref": "6e0cbb4463bdfb765c7dd54f68dfac2ce9d5a080",
+    "bytes": 198519,
+    "sha256": "b46990aef11e13681c91bcaf53719f220cca8999becd88f7ada13c005209a8f3",
+    "archive": "docs/agent-history/AGENTS-main-6e0cbb4.md"
+  },
+  "pending-pr52-d64586a": {
+    "ref": "d64586aaf045d2fabd756f7e24c20e6ec2a49c35",
+    "bytes": 201531,
+    "sha256": "1e6bafe34cdf6db6ad37cdb5c9622a3c53340c4be0f41a43dafd1199e51d842f",
+    "archive": "docs/agent-history/AGENTS-pending-pr52-d64586a.md"
+  }
+}
