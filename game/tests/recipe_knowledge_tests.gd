@@ -393,7 +393,7 @@ func persistence(st: State) -> void:
 	keys.sort()
 	var expected: Array=State.TOP_KEYS.duplicate()
 	expected.sort()
-	verify(State.SCHEMA_VERSION==18 and keys==expected and st.to_dict()["schema_version"]==18,"schema18 persisted keys")
+	verify(State.SCHEMA_VERSION==19 and keys==expected and st.to_dict()["schema_version"]==19,"schema19 persisted keys")
 	var cfgs: Array=tried.duplicate(true)
 	verify(cfgs.size()==3 and count(st)>=cfgs.size(),"good, neutral and bad experiments are stored")
 	for digest in st.to_dict()["recipe_knowledge"]["keys"]: verify(digest.length()==64,"only compact hashes are persisted")
@@ -441,8 +441,8 @@ func malformed(st: State) -> void:
 	d=good.duplicate(true); d["recipe_knowledge"]["keys"].append("g".repeat(64)); cases["key with non-hex letters"]=d
 	d=good.duplicate(true); d["recipe_knowledge"]["keys"].append(first); cases["duplicate key"]=d
 	d=good.duplicate(true); d["recipe_knowledge"]["keys"][0]={"tare":"tare_shio"}; cases["config snapshot instead of a hash"]=d
-	d=good.duplicate(true); d["schema_version"]=17; cases["v17 may not carry knowledge"]=d
-	d=good.duplicate(true); d["schema_version"]=16; cases["v16 may not carry knowledge"]=d
+	d=good.duplicate(true); d["schema_version"]=17; d.erase("server_challenge"); cases["v17 may not carry knowledge"]=d
+	d=good.duplicate(true); d["schema_version"]=16; d.erase("server_challenge"); cases["v16 may not carry knowledge"]=d
 	for label in cases:
 		var message: String=other.load_from_dict(cases[label])
 		verify(message!="","malformed save is refused: "+label)
@@ -539,12 +539,12 @@ func migration(name: String, version: int) -> void:
 	d["draft"]["config"]["oil"]="oil_chili"
 	var probe:=State.new()
 	verify(probe.load_from_dict(d)=="" and not probe.recipe_known(probe.draft_config) and count(probe)==unique.size(),"v%d: untested draft stays unknown" % version)
-	# Saving: v18 main file, the original bytes kept under the generic versioned backup.
+	# Saving: current main file, the original bytes kept under the generic versioned backup.
 	var before: String=core(st)
 	verify(store.save_state(st)["ok"],"v%d: first save" % version)
 	verify(FileAccess.get_file_as_string(store.legacy_bak_path(version))==original,"v%d: original bytes preserved in the versioned backup" % version)
 	var written: Dictionary=JSON.parse_string(FileAccess.get_file_as_string(store.main_path()))
-	verify(int(written["schema_version"])==18 and written.has("recipe_knowledge") and int(written["wallet"])==int(parsed["wallet"]),"v%d: main file is now schema 18" % version)
+	verify(int(written["schema_version"])==19 and written.has("recipe_knowledge") and int(written["wallet"])==int(parsed["wallet"]),"v%d: main file is now schema 19" % version)
 	var reread:=State.new()
 	verify(store.load_into(reread)["status"]=="ok" and json(reread)==json(st) and core(reread)==before,"v%d: migrated save round-trips" % version)
 	verify(store.save_state(reread)["ok"] and FileAccess.get_file_as_string(store.legacy_bak_path(version))==original,"v%d: later saves keep the original bytes" % version)

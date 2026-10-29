@@ -74,7 +74,7 @@ func _component_profile(tag: String, vp: Vector2i) -> void:
 	var st:=ActualState.new()
 	_check(st.load_from_dict(raw)=="",tag+": genuine pre-feature v17 loads")
 	var migrated: Dictionary=st.to_dict()
-	migrated.erase("recipe_knowledge"); migrated["schema_version"]=17
+	migrated.erase("recipe_knowledge"); migrated.erase("server_challenge"); migrated["schema_version"]=17
 	_check(JSON.parse_string(JSON.stringify(migrated))==raw,tag+": every genuine v17 gameplay field is preserved")
 	app.set("state",st)
 	_check(st.set_broth_blend(["kelp"],"gentle")["ok"] and st.set_noodle_formula("cut","thick")["ok"],tag+": unfinished drafts differ from archived formulas")

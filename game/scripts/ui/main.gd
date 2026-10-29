@@ -1780,6 +1780,7 @@ func _show_service_report() -> void:
 		var reaction: String="평균 만족도 %.1f / 5" % float(context["avg_stars"]) if int(state.last_report["units"])>0 else "완료 주문 없음 · 만족도 집계 없음"
 		context["save_note"]="%s · 매장 앞에서 돌아간 손님 %d명\n%s\n%s" % [reaction,int(context["turned_away"]),str(context.get("experience","")),context["save_note"]]
 	context["chef_challenge"]=state.chef_challenge_review()
+	context["server_challenge"]=state.server_challenge_review()
 	context["journey_choices"]=KitchenJourney.choices(state)
 	_service_result.present(state.last_report,context,_report_text(state.last_report))
 	_result_layer.visible=true
@@ -1799,6 +1800,10 @@ func _on_service_result_action(kind: String) -> void:
 	elif kind=="chef":
 		_open_overlay(TAB_GROWTH)
 		_growth_view.open_chef()
+		_sync_bowl_editor()
+	elif kind=="server":
+		_open_overlay(TAB_GROWTH)
+		_growth_view.open_server()
 		_sync_bowl_editor()
 
 
@@ -3044,13 +3049,16 @@ func _on_growth_view_action(kind: String, id: String, style: String) -> void:
 		"train": _on_staff_train(id,style)
 		"chef_sell":
 			if not _work_blocked("판매 메뉴를 확인할"): _open_overlay(TAB_SERVE)
-		"chef_start", "chef_claim":
-			if _work_blocked("요리사 도전을 진행할"): return
-			var result: Dictionary=state.start_chef_challenge() if kind=="chef_start" else state.claim_chef_challenge()
-			if result["ok"] and kind=="chef_claim":
+		"chef_start", "chef_claim", "server_start", "server_claim":
+			if _work_blocked("직원 도전을 진행할"): return
+			var is_server: bool=kind.begins_with("server")
+			var result: Dictionary
+			if is_server: result=state.start_server_challenge() if kind=="server_start" else state.claim_server_challenge()
+			else: result=state.start_chef_challenge() if kind=="chef_start" else state.claim_chef_challenge()
+			if result["ok"] and kind.ends_with("claim"):
 				_training_left=2.0
-				_training_target="chef"
-				_juice.burst(get_viewport_rect().size*Vector2(0.5,0.4),TEAL,"점심 조리 습득!",null,true)
+				_training_target="server" if is_server else "chef"
+				_juice.burst(get_viewport_rect().size*Vector2(0.5,0.4),TEAL,"점심 동선 습득!" if is_server else "점심 조리 습득!",null,true)
 			_finish_growth_action(result)
 		"cancel":
 			_promote_armed_until = 0
@@ -4463,7 +4471,7 @@ func _refresh_growth() -> void:
 	_growth_box.add_child(training_head)
 	_growth_box.add_child(_label("끝까지 마친 영업의 판매 그릇만 경험이 돼요. 두 보조 직원부터 육성할 수 있고 맛 점수는 바뀌지 않아요.", 14, MUTED))
 	if _training_left > 0.0:
-		var pending: Label = _label("%s · 반복 연습과 훈련 결과 정리 중…\n비용·자격을 반영했어요. 이 연출은 경험을 더 주지 않아요." % ("요리사" if _training_target=="chef" else Staffing.find(_training_target)["name"]), 15, TEAL)
+		var pending: Label = _label("%s · 반복 연습과 훈련 결과 정리 중…\n비용·자격을 반영했어요. 이 연출은 경험을 더 주지 않아요." % ({"chef":"요리사","server":"서버"}.get(_training_target,Staffing.find(_training_target).get("name","직원"))), 15, TEAL)
 		pending.name = "TrainingPresentation"
 		_growth_box.add_child(pending)
 		var bar: ProgressBar = ProgressBar.new()

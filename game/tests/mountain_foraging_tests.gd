@@ -155,7 +155,7 @@ func _corruptions(st: State) -> void:
 			"stage": farm["active"]={"stage":"fake"}
 			"type": farm["completed"]=true
 			"version":
-				raw["schema_version"]=14; raw.erase("broth_workshop"); raw.erase("noodle_workshop"); raw.erase("recipe_knowledge")
+				raw["schema_version"]=14; raw.erase("broth_workshop"); raw.erase("noodle_workshop"); raw.erase("recipe_knowledge"); raw.erase("server_challenge")
 				raw.erase("mountain_foraging")
 			"supplier": raw["exploration"]["discovered"].pop_back()
 		var target:=State.new()
@@ -259,7 +259,7 @@ func _legacy(data_dir: String) -> void:
 	ok(st.claim_chef_challenge(),"old version earned mastery")
 	var raw: Dictionary=st.to_dict()
 	raw.erase("mountain_foraging")
-	raw["schema_version"]=14; raw.erase("broth_workshop"); raw.erase("noodle_workshop"); raw.erase("recipe_knowledge")
+	raw["schema_version"]=14; raw.erase("broth_workshop"); raw.erase("noodle_workshop"); raw.erase("recipe_knowledge"); raw.erase("server_challenge")
 	var text: String=JSON.stringify(raw,"\t",true)+"\n"
 	var store=Save.new(data_dir.path_join("legacy14"))
 	check.call(DirAccess.make_dir_recursive_absolute(store.dir)==OK,"isolated legacy directory")
@@ -272,7 +272,7 @@ func _legacy(data_dir: String) -> void:
 	check.call(store.load_into(migrated)["status"]=="ok" and migrated.mountain_foraging_state()==Mountain.empty_state(),"v14 migration grants no materials")
 	var compared: Dictionary=migrated.to_dict()
 	compared.erase("mountain_foraging")
-	compared["schema_version"]=14; compared.erase("broth_workshop"); compared.erase("noodle_workshop"); compared.erase("recipe_knowledge")
+	compared["schema_version"]=14; compared.erase("broth_workshop"); compared.erase("noodle_workshop"); compared.erase("recipe_knowledge"); compared.erase("server_challenge")
 	check.call(compared==raw and migrated.chef_challenge_review()["status"]=="mastered","every progressed value/mastery exactly preserved")
 	ok(store.save_state(migrated),"first v15 save")
 	check.call(FileAccess.get_file_as_string(store.legacy_bak_path(14))==text,"original v14 bytes backed up")

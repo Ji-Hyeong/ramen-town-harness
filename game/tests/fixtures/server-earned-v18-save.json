@@ -1,0 +1,442 @@
+{
+	"broth_workshop": {
+		"ingredients": [
+			"pork_bone",
+			"garlic"
+		],
+		"legacy": false,
+		"method": "standard",
+		"recipes": [
+			{
+				"day": 1,
+				"recipe": {
+					"ingredients": [
+						"ginger",
+						"kelp"
+					],
+					"method": "standard"
+				}
+			},
+			{
+				"day": 1,
+				"recipe": {
+					"ingredients": [
+						"garlic",
+						"pork_bone"
+					],
+					"method": "standard"
+				}
+			}
+		]
+	},
+	"chef_challenge": {
+		"attempt": {},
+		"completed_day": 0,
+		"start": {}
+	},
+	"contests": {
+		"articles": [],
+		"attempts": 0,
+		"bests": [],
+		"history": [],
+		"last_entry_day": 0
+	},
+	"day": 15,
+	"draft": {
+		"config": {
+			"broth": "broth_tonkotsu",
+			"broth_recipe": {
+				"ingredients": [
+					"garlic",
+					"pork_bone"
+				],
+				"method": "standard"
+			},
+			"cook": "cook_normal",
+			"noodle": "noodle_thick",
+			"noodle_recipe": {
+				"cut": "thick",
+				"flour": "wheat",
+				"method": "standard",
+				"water": "clear"
+			},
+			"oil": "oil_garlic",
+			"price": 9500,
+			"tare": "tare_shoyu",
+			"toppings": [
+				"topping_nori"
+			]
+		},
+		"lineage_id": 2,
+		"name": "Rich pork shoyu"
+	},
+	"exploration": {
+		"active": {},
+		"completed": 0,
+		"discovered": [],
+		"history": [],
+		"last_departure_day": 0,
+		"retired": 0
+	},
+	"foraging": {
+		"active": {},
+		"completed": 0,
+		"first_day": {
+			"oil_roasted_sesame": 0,
+			"topping_citrus_peel": 0
+		},
+		"history": [],
+		"last_departure_day": 0,
+		"obtained": {
+			"oil_roasted_sesame": 0,
+			"topping_citrus_peel": 0
+		},
+		"retired": 0,
+		"stock": {
+			"oil_roasted_sesame": 0,
+			"topping_citrus_peel": 0
+		},
+		"used": {
+			"oil_roasted_sesame": 0,
+			"topping_citrus_peel": 0
+		}
+	},
+	"growth": {
+		"facilities": [],
+		"rank": 2,
+		"staff": []
+	},
+	"harbor_foraging": {
+		"active": {},
+		"completed": 0,
+		"first_day": {
+			"broth_roasted_sardine": 0,
+			"topping_scallop": 0
+		},
+		"history": [],
+		"last_departure_day": 0,
+		"obtained": {
+			"broth_roasted_sardine": 0,
+			"topping_scallop": 0
+		},
+		"retired": 0,
+		"stock": {
+			"broth_roasted_sardine": 0,
+			"topping_scallop": 0
+		},
+		"used": {
+			"broth_roasted_sardine": 0,
+			"topping_scallop": 0
+		}
+	},
+	"last_feedback_record_id": 2,
+	"last_report": {
+		"by_source": {
+			"dohyun": 2,
+			"hayoung": 3,
+			"maru": 1,
+			"walkin": 3
+		},
+		"day": 14,
+		"ingredient_cost": 7650,
+		"net": 70350,
+		"overhead": 3000,
+		"price": 9000,
+		"recipe_name": "Light kelp shio",
+		"revenue": 81000,
+		"units": 9,
+		"version": 1,
+		"wallet_after": 1015160
+	},
+	"mountain_foraging": {
+		"active": {},
+		"completed": 0,
+		"first_day": {
+			"noodle_buckwheat": 0,
+			"topping_grilled_shiitake": 0
+		},
+		"history": [],
+		"last_departure_day": 0,
+		"obtained": {
+			"noodle_buckwheat": 0,
+			"topping_grilled_shiitake": 0
+		},
+		"retired": 0,
+		"stock": {
+			"noodle_buckwheat": 0,
+			"topping_grilled_shiitake": 0
+		},
+		"used": {
+			"noodle_buckwheat": 0,
+			"topping_grilled_shiitake": 0
+		}
+	},
+	"next_lineage_id": 3,
+	"next_record_id": 3,
+	"noodle_workshop": {
+		"formula": {
+			"cut": "thick",
+			"flour": "wheat",
+			"method": "standard",
+			"water": "clear"
+		},
+		"legacy": false,
+		"recipes": [
+			{
+				"day": 1,
+				"recipe": {
+					"cut": "thin",
+					"flour": "wheat",
+					"method": "standard",
+					"water": "clear"
+				}
+			},
+			{
+				"day": 1,
+				"recipe": {
+					"cut": "thick",
+					"flour": "wheat",
+					"method": "standard",
+					"water": "clear"
+				}
+			}
+		]
+	},
+	"recipe_knowledge": {
+		"keys": [
+			"3c106638874189145eacb4bfecb600c4bf93b67840a07aa7dfb24e85dbefa007",
+			"518aab5a05fcc5c12f05c5c179b347985bc3e9ef8a002740f5c2dcb93eb8ffae",
+			"f045e8a4690629520882fb4d2941cc811cc6ea6bdf5bb6a89e205e2d7723fe5b",
+			"ef96cd21b3def3a716b735eecedbc121c7cef4c016c93e2ef32a9e7ff4b90426",
+			"d399ca3315b59e36b3dbcbfd58227872370e354ef3e2f6c7c4d5f07c6bf17711",
+			"0cedbd71f52e32bf335c4158e02583bd97670e71fb887f3aa9722b75f7a1abb1",
+			"ec370c4a650cba8497cd0ff801e459e0f22978819b4c7cd2dda76385b1bb8540",
+			"526ffc9de62ff474971e06e9bc53e28405f4c8900718eca6c48a5e8f12a06071",
+			"02e0e201ad8aceabc57cbb14fd5eb2a9a5e1515209cccad73499ef33237a9681"
+		]
+	},
+	"records": [
+		{
+			"comparison": {},
+			"config": {
+				"broth": "broth_dashi",
+				"broth_recipe": {
+					"ingredients": [
+						"ginger",
+						"kelp"
+					],
+					"method": "standard"
+				},
+				"cook": "cook_firm",
+				"noodle": "noodle_thin",
+				"noodle_recipe": {
+					"cut": "thin",
+					"flour": "wheat",
+					"method": "standard",
+					"water": "clear"
+				},
+				"oil": "oil_scallion",
+				"price": 9000,
+				"tare": "tare_shio",
+				"toppings": [
+					"topping_nori"
+				]
+			},
+			"lineage_id": 1,
+			"name": "Light kelp shio",
+			"record_id": 1,
+			"scores": {
+				"dohyun": 61,
+				"hayoung": 91,
+				"maru": 62
+			},
+			"tasted_day": 1,
+			"version": 1
+		},
+		{
+			"comparison": {},
+			"config": {
+				"broth": "broth_tonkotsu",
+				"broth_recipe": {
+					"ingredients": [
+						"garlic",
+						"pork_bone"
+					],
+					"method": "standard"
+				},
+				"cook": "cook_normal",
+				"noodle": "noodle_thick",
+				"noodle_recipe": {
+					"cut": "thick",
+					"flour": "wheat",
+					"method": "standard",
+					"water": "clear"
+				},
+				"oil": "oil_garlic",
+				"price": 9500,
+				"tare": "tare_shoyu",
+				"toppings": [
+					"topping_nori"
+				]
+			},
+			"lineage_id": 2,
+			"name": "Rich pork shoyu",
+			"record_id": 2,
+			"scores": {
+				"dohyun": 85,
+				"hayoung": 83,
+				"maru": 67
+			},
+			"tasted_day": 1,
+			"version": 1
+		}
+	],
+	"research": {
+		"completed": [
+			{
+				"cash": 2000,
+				"day": 1,
+				"points": 2,
+				"recipe_name": "Light kelp shio",
+				"record_id": 1,
+				"request_id": "hayoung_basic",
+				"version": 1
+			},
+			{
+				"cash": 2000,
+				"day": 1,
+				"points": 2,
+				"recipe_name": "Rich pork shoyu",
+				"record_id": 2,
+				"request_id": "dohyun_basic",
+				"version": 1
+			}
+		]
+	},
+	"schema_version": 18,
+	"selected_record_id": 2,
+	"shop": {
+		"expanded": false,
+		"menu_ids": [
+			1
+		]
+	},
+	"stories": {
+		"arcs": []
+	},
+	"taste_achievements": {
+		"dohyun": {
+			"comparison": {},
+			"config": {
+				"broth": "broth_tonkotsu",
+				"broth_recipe": {
+					"ingredients": [
+						"garlic",
+						"pork_bone"
+					],
+					"method": "standard"
+				},
+				"cook": "cook_normal",
+				"noodle": "noodle_thick",
+				"noodle_recipe": {
+					"cut": "thick",
+					"flour": "wheat",
+					"method": "standard",
+					"water": "clear"
+				},
+				"oil": "oil_garlic",
+				"price": 9500,
+				"tare": "tare_shoyu",
+				"toppings": [
+					"topping_nori"
+				]
+			},
+			"lineage_id": 2,
+			"name": "Rich pork shoyu",
+			"record_id": 2,
+			"scores": {
+				"dohyun": 85,
+				"hayoung": 83,
+				"maru": 67
+			},
+			"tasted_day": 1,
+			"version": 1
+		},
+		"hayoung": {
+			"comparison": {},
+			"config": {
+				"broth": "broth_dashi",
+				"broth_recipe": {
+					"ingredients": [
+						"ginger",
+						"kelp"
+					],
+					"method": "standard"
+				},
+				"cook": "cook_firm",
+				"noodle": "noodle_thin",
+				"noodle_recipe": {
+					"cut": "thin",
+					"flour": "wheat",
+					"method": "standard",
+					"water": "clear"
+				},
+				"oil": "oil_scallion",
+				"price": 9000,
+				"tare": "tare_shio",
+				"toppings": [
+					"topping_nori"
+				]
+			},
+			"lineage_id": 1,
+			"name": "Light kelp shio",
+			"record_id": 1,
+			"scores": {
+				"dohyun": 61,
+				"hayoung": 91,
+				"maru": 62
+			},
+			"tasted_day": 1,
+			"version": 1
+		},
+		"maru": {
+			"comparison": {},
+			"config": {
+				"broth": "broth_tonkotsu",
+				"broth_recipe": {
+					"ingredients": [
+						"garlic",
+						"pork_bone"
+					],
+					"method": "standard"
+				},
+				"cook": "cook_normal",
+				"noodle": "noodle_thick",
+				"noodle_recipe": {
+					"cut": "thick",
+					"flour": "wheat",
+					"method": "standard",
+					"water": "clear"
+				},
+				"oil": "oil_garlic",
+				"price": 9500,
+				"tare": "tare_shoyu",
+				"toppings": [
+					"topping_nori"
+				]
+			},
+			"lineage_id": 2,
+			"name": "Rich pork shoyu",
+			"record_id": 2,
+			"scores": {
+				"dohyun": 85,
+				"hayoung": 83,
+				"maru": 67
+			},
+			"tasted_day": 1,
+			"version": 1
+		}
+	},
+	"training": {},
+	"wallet": 1015160
+}

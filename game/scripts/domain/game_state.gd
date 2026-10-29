@@ -17,6 +17,7 @@ const Research = preload("res://scripts/domain/ramen_research.gd")
 const Growth = preload("res://scripts/domain/shop_growth.gd")
 const Staffing = preload("res://scripts/domain/shop_staffing.gd")
 const Chef = preload("res://scripts/domain/chef_challenge.gd")
+const Server = preload("res://scripts/domain/server_challenge.gd")
 const Training = preload("res://scripts/domain/staff_training.gd")
 const Exploration = preload("res://scripts/domain/ingredient_exploration.gd")
 const Foraging = preload("res://scripts/domain/market_foraging.gd")
@@ -60,7 +61,8 @@ const Stories = preload("res://scripts/domain/regular_stories.gd")
 ## v17 adds explicit flour/water/cut formulas; old products keep their original values.
 ## v18 remembers which exact recipes were really selected/tasted (recipe_knowledge.gd). v1..17 are seeded
 ## only from actual tasting witnesses; money, day, formulas, records and scores are never touched.
-const SCHEMA_VERSION: int = 18
+## v19 adds an explicitly accepted server challenge; older games get no retroactive proof.
+const SCHEMA_VERSION: int = 19
 const EXPANSION_PRICE: int = 60000
 const MIN_SCHEMA_VERSION: int = 1
 const LEGACY_MAX_RECORDS: int = 30
@@ -90,7 +92,8 @@ const TOP_KEYS_V14: Array = TOP_KEYS_V13 + ["chef_challenge"]
 const TOP_KEYS_V15: Array = TOP_KEYS_V14 + ["mountain_foraging"]
 const TOP_KEYS_V16: Array = TOP_KEYS_V15 + ["broth_workshop"]
 const TOP_KEYS_V17: Array = TOP_KEYS_V16 + ["noodle_workshop"]
-const TOP_KEYS: Array = TOP_KEYS_V17 + ["recipe_knowledge"]
+const TOP_KEYS_V18: Array = TOP_KEYS_V17 + ["recipe_knowledge"]
+const TOP_KEYS: Array = TOP_KEYS_V18 + ["server_challenge"]
 const RECORD_KEYS: Array = ["record_id", "lineage_id", "name", "version", "tasted_day", "config", "scores", "comparison"]
 const COMPARISON_KEYS: Array = ["prev_record_id", "prev_version", "prev_scores", "prev_config"]
 const DRAFT_KEYS: Array = ["config", "name", "lineage_id"]
@@ -119,6 +122,7 @@ var _facilities: Array = []
 var _hired: Array = []
 var _training: Dictionary = {}
 var _chef_challenge: Dictionary = Chef.empty_state()
+var _server_challenge: Dictionary = Server.empty_state()
 var _expanded: bool = false
 var _menu_ids: Array = []
 ## 재료 탐험 상태(저장). 발견한 재료(영구), 마지막 출발일(하루 1번 규칙), 누적 완료/포기 횟수, 진행 중 탐험, 최근 영수증. 구조는 ingredient_exploration.gd 참고.
@@ -778,8 +782,12 @@ func serve() -> Dictionary:
 		var opened: Dictionary = begin_service()
 		if not bool(opened["ok"]):
 			return opened
-		_active_session.run_to_end()
-		var result: Dictionary = settle_service()
+		if not _active_session.run_to_end():
+			cancel_service()
+			return _fail("계산용 영업을 끝내지 못했어요.")
+		# This historical test shortcut may settle money, but cannot earn the new
+		# role's actual-play proof. Public UI uses settle_service(), below.
+		var result: Dictionary = _settle_menu_session(_active_session, false)
 		if not bool(result["ok"]):
 			cancel_service()
 		return result
@@ -1034,7 +1042,8 @@ func expand_shop() -> Dictionary:
 	return _ok("매장을 넓혔어요. 8석→12석 · 판매 메뉴 1종→2종. 기존 메뉴는 유지돼요. 증축비는 돌려받지 못해요.")
 
 
-func _settle_menu_session(s: Session) -> Dictionary:
+func _settle_menu_session(s: Session, observe_server: bool = true) -> Dictionary:
+	if s != _active_session or s.settled or not s.is_finished(): return _fail("완료한 현재 영업만 정산할 수 있어요.")
 	var sm: Dictionary = s.summary()
 	if str(sm["error"]) != "":
 		return _fail(str(sm["error"]))
@@ -1063,7 +1072,10 @@ func _settle_menu_session(s: Session) -> Dictionary:
 	if str(trained["error"]) != "":
 		return _fail(str(trained["error"]))
 	var chef_after: Dictionary = Chef.observe(_chef_challenge, today[0], day, s.completed) if today.size() == 1 else _chef_challenge.duplicate(true)
+	var server_after: Dictionary = Server.observe(_server_challenge, today, day, s.completed) if observe_server else {"error":"", "state":_server_challenge.duplicate(true)}
+	if str(server_after["error"]) != "": return _fail(str(server_after["error"]))
 	_chef_challenge = chef_after
+	_server_challenge = server_after["state"]
 	# 검사 뒤에만 비용/경험/일차/불변 보고를 함께 반영한다. 공통 운영비는 이 한 번뿐이다.
 	wallet = after
 	_training = trained["state"]
@@ -1323,9 +1335,31 @@ func claim_chef_challenge() -> Dictionary:
 	return _ok("요리사가 점심 조리를 익혔어요! 다음 영업부터 조리 시간이 5% 줄어요.")
 
 
-## Freeze assistant qualifications and earned base-chef mastery for this service.
+## Free acceptance captures the current selling recipes before further development.
+func server_challenge_review() -> Dictionary:
+	return Server.review(_server_challenge)
+
+
+func start_server_challenge() -> Dictionary:
+	if _busy(): return _locked_fail()
+	if not _expanded: return _fail("2랭크에서 가게를 증축하고 판매 메뉴 두 종류를 골라 주세요.")
+	var result: Dictionary = Server.begin(_server_challenge, selling_records(), day, next_record_id, _rank)
+	if not result["ok"]: return _fail(str(result["error"]))
+	_server_challenge = result["state"]
+	return _ok("두 메뉴의 점심 도전을 수락했어요. 두 메뉴의 구성을 바꿔 새로 시식한 뒤 함께 판매해 보세요.")
+
+
+func claim_server_challenge() -> Dictionary:
+	if _busy(): return _locked_fail()
+	var result: Dictionary = Server.claim(_server_challenge, day)
+	if not result["ok"]: return _fail(str(result["error"]))
+	_server_challenge = result["state"]
+	return _ok("서버가 점심 동선을 익혔어요! 다음 영업부터 서빙·복귀 시간이 20% 줄어요.")
+
+
+## Freeze helper qualifications and both earned base-role masteries for this service.
 func current_staffing() -> Dictionary:
-	return Staffing.snapshot(_hired, _training, Chef.level(_chef_challenge))
+	return Staffing.snapshot(_hired, _training, Chef.level(_chef_challenge), Server.level(_server_challenge))
 
 
 ## 영업 시작 시점에 세션에 복사해 두는 성장 요약(표시/검증용). 정산 금액에는 직원 구성만 쓰인다.
@@ -1434,7 +1468,7 @@ func hiring_preview(id: String) -> Dictionary:
 	candidates.append(id)
 	var qualifications: Dictionary = _training.duplicate(true)
 	qualifications[id] = Training.empty()
-	var after: Dictionary = MenuSales.simulate(selling, day, Staffing.snapshot(candidates, qualifications, Chef.level(_chef_challenge)))
+	var after: Dictionary = MenuSales.simulate(selling, day, Staffing.snapshot(candidates, qualifications, Chef.level(_chef_challenge), Server.level(_server_challenge)))
 	if str(after["error"]) != "":
 		return {"error": str(after["error"])}
 	# Return fresh forecasts so editing a view model cannot mutate game records,
@@ -2025,6 +2059,7 @@ func to_dict() -> Dictionary:
 		"harbor_foraging": _harbor_foraging.duplicate(true),
 		"mountain_foraging": _mountain_foraging.duplicate(true),
 		"chef_challenge": _chef_challenge.duplicate(true),
+		"server_challenge": _server_challenge.duplicate(true),
 	}
 
 
@@ -2071,6 +2106,8 @@ func load_from_dict(raw: Variant) -> String:
 	elif version == 17:
 		expected_keys = TOP_KEYS_V17
 	elif version == 18:
+		expected_keys = TOP_KEYS_V18
+	elif version == 19:
 		expected_keys = TOP_KEYS
 	var key_err: String = Check.keys_error(d, expected_keys, "저장")
 	if key_err != "":
@@ -2346,6 +2383,12 @@ func load_from_dict(raw: Variant) -> String:
 		var chef_result: Dictionary = Chef.parse(d["chef_challenge"], int(d["day"]), n_record, growth_rank, slot_limit, discovered_now, parsed)
 		if str(chef_result["error"]) != "": return str(chef_result["error"])
 		chef_parsed = chef_result["state"]
+	var server_parsed: Dictionary = Server.empty_state()
+	if version >= 19:
+		var server_result: Dictionary = Server.parse(d["server_challenge"], int(d["day"]), n_record, growth_rank, slot_limit, discovered_now, parsed)
+		if str(server_result["error"]) != "": return str(server_result["error"])
+		server_parsed = server_result["state"]
+		if not expanded and not server_parsed["start"].is_empty(): return "증축하지 않은 매장의 서빙 도전이에요."
 	if new_report:
 		if not expanded:
 			return "증축하지 않은 매장의 확장 영업 보고예요."
@@ -2355,7 +2398,7 @@ func load_from_dict(raw: Variant) -> String:
 		rep_result = MenuReport.parse(d["last_report"], int(d["day"]), n_record, retained, discovered_now, slot_limit, growth_rank)
 		if str(rep_result["error"]) != "":
 			return str(rep_result["error"])
-		var staff_error: String = _report_staff_error(rep_result["report"]["staffing"], growth_staff, training_parsed, int(rep_result["report"]["day"]), chef_parsed)
+		var staff_error: String = _report_staff_error(rep_result["report"]["staffing"], growth_staff, training_parsed, int(rep_result["report"]["day"]), chef_parsed, server_parsed)
 		if staff_error != "":
 			return staff_error
 	var stories_parsed: Array = []
@@ -2418,6 +2461,7 @@ func load_from_dict(raw: Variant) -> String:
 	_hired = growth_staff
 	_training = training_parsed
 	_chef_challenge = chef_parsed
+	_server_challenge = server_parsed
 	_exploration = exploration_parsed
 	_foraging = foraging_parsed
 	_harbor_foraging = harbor_parsed
@@ -2633,7 +2677,7 @@ static func _has_process(raw: Variant) -> bool:
 
 
 ## 보고일 뒤에 훈련을 받았더라도 당시 자격을 소급하지 않는다. 과거에 없었던 고용/자격을 주장하면 거부한다.
-static func _report_staff_error(staff: Dictionary, hired: Array, training: Dictionary, on_day: int, chef: Dictionary = {}) -> String:
+static func _report_staff_error(staff: Dictionary, hired: Array, training: Dictionary, on_day: int, chef: Dictionary = {}, server: Dictionary = {}) -> String:
 	var historical: Dictionary = {}
 	for id in staff.get("hired", []):
 		if not hired.has(id):
@@ -2644,7 +2688,8 @@ static func _report_staff_error(staff: Dictionary, hired: Array, training: Dicti
 				e["lessons"].append(lesson.duplicate(true))
 		historical[id] = e
 	var chef_at_service: int = 1 if int(chef.get("completed_day",0)) > 0 and int(chef["completed_day"]) <= on_day else 0
-	if MenuReport._json(Staffing.snapshot(staff.get("hired", []), historical, chef_at_service)) != MenuReport._json(staff):
+	var server_at_service: int = 1 if int(server.get("completed_day",0)) > 0 and int(server["completed_day"]) <= on_day else 0
+	if MenuReport._json(Staffing.snapshot(staff.get("hired", []), historical, chef_at_service, server_at_service)) != MenuReport._json(staff):
 		return "영업 보고의 자격이 당시 훈련과 달라요."
 	return ""
 
