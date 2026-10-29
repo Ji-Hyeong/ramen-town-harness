@@ -25,6 +25,7 @@ const NoodleView=preload("res://scripts/ui/noodle_work_view.gd")
 const NoodleChoices=preload("res://scripts/ui/noodle_formula_choices.gd")
 const TastingFocus=preload("res://scripts/ui/tasting_focus.gd")
 const Comparison=preload("res://scripts/domain/component_comparison.gd")
+const ChangeSummary=preload("res://scripts/ui/recipe_change_summary.gd")
 const Disclosure=preload("res://scripts/ui/disclosure_card.gd")
 const Broth = preload("res://scripts/domain/broth_workshop.gd")
 const PantryArt = preload("res://scripts/ui/broth_material_art.gd")
@@ -2323,6 +2324,33 @@ func _comparison_number(parent: Control, caption: String, before: int, after: in
 
 ## Separate component facts from whole-ramen forecasts. A new player's missing
 ## component never becomes an invented "before" dish or a scored tasting record.
+## Keep the consequence readable before the detailed numbers. Knowledge checks
+## use the two exact whole-bowl configs, never the fact a product was manufactured.
+## Expanding this card is presentation only; existing footer actions still own use.
+func _recipe_change_card(parent: Control, before: Dictionary, after: Dictionary, candidate: Dictionary) -> void:
+	var summary: Dictionary=ChangeSummary.project(before,after,state.recipe_known(state.draft_config),state.recipe_known(candidate))
+	var details:=_details(parent,str(summary["title"]),"RecipeChangeSummary")
+	var card: Disclosure=parent.get_child(parent.get_child_count()-1)
+	card.summary_label.text=str(summary["economy_text"]).replace(" · 준비", " · 기본 준비")
+	card.summary_label.visible=bool(summary["has_economy"])
+	card.summary_label.add_theme_font_size_override("font_size",15)
+	card.summary_label.add_theme_color_override("font_color",TEAL)
+	# The disclosure helper already handles its title/icon. Its newly populated
+	# secondary line needs the same pressed contrast and drag-cancel restoration.
+	card.header_button.button_down.connect(func(): card.summary_label.add_theme_color_override("font_color",Color.WHITE))
+	card.header_button.button_up.connect(func(): card.summary_label.add_theme_color_override("font_color",TEAL))
+	if str(summary["error"])!="":
+		details.add_child(_label(str(summary["error"]),15,RED))
+		return
+	var reason: String=str(summary["reason"])
+	if reason=="": reason="두 레시피를 직접 그릇에 담으면 맛을 비교할 수 있어요."
+	var note:=_label(reason,15,MUTED)
+	note.name="RecipeChangeReason"
+	details.add_child(note)
+	_comparison_number(details,"한 그릇 원가",before["unit_cost"],after["unit_cost"],"원")
+	_comparison_number(details,"기본 준비",before["prep_seconds"],after["prep_seconds"],"초")
+
+
 func _show_component_comparison(kind: String, index: int, whole: bool=false) -> void:
 	var result: Dictionary=state.component_comparison(kind,index)
 	var title: String="육수" if kind=="broth" else "면"
@@ -2363,7 +2391,10 @@ func _show_component_comparison(kind: String, index: int, whole: bool=false) -> 
 			card.add_child(_label(item["name"],18))
 			card.add_child(_label("%s · %d초" % [won(item["cost"]),item["seconds"]],15,TEAL))
 		if not current.is_empty():
-			_facts(body,[["원가 변화","%+d원" % (int(selected["cost"])-int(current["cost"]))],["준비 변화","%+d초" % (int(selected["seconds"])-int(current["seconds"]))]])
+			if not result["current_ramen"].is_empty() and not result["candidate_ramen"].is_empty():
+				_recipe_change_card(body,result["current_ramen"],result["candidate_ramen"],candidate)
+			else:
+				_facts(body,[["원가 변화","%+d원" % (int(selected["cost"])-int(current["cost"]))],["준비 변화","%+d초" % (int(selected["seconds"])-int(current["seconds"]))]])
 		var values:=_details(body,"배합·수치","ComponentValues")
 		if not current.is_empty():
 			_comparison_number(values,"원가",current["cost"],selected["cost"],"원")
@@ -2399,9 +2430,7 @@ func _show_component_comparison(kind: String, index: int, whole: bool=false) -> 
 				column.add_child(dish)
 				column.add_child(_label("현재" if dishes.get_child_count()==0 else "선택하면",14,MUTED))
 				dishes.add_child(column)
-			var facts:=_component_panel(body)
-			_comparison_number(facts,"한 그릇 원가",before["unit_cost"],after["unit_cost"],"원")
-			_comparison_number(facts,"기본 준비",before["prep_seconds"],after["prep_seconds"],"초")
+			_recipe_change_card(body,before,after,candidate)
 			var values:=_details(body,"풍미 수치","ComponentFlavor")
 			for axis in Catalog.AXES: _comparison_number(values,Catalog.AXIS_NAMES[axis],before["profile"][axis],after["profile"][axis])
 			_knowledge_rows(body,candidate,"ComponentKnowledge")

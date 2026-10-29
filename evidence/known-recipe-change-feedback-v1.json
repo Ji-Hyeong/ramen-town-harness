@@ -1,0 +1,95 @@
+{
+  "date": "2026-10-29",
+  "task": "known-recipe-change-feedback-v1",
+  "base": "6e0cbb4463bdfb765c7dd54f68dfac2ce9d5a080",
+  "status": "headless_accepted_native_pending",
+  "schema_version": 19,
+  "gameplay_domain_services_assets_unchanged": true,
+  "old_runtime_file_count": 430,
+  "modified_old_runtime_files": [
+    "scripts/ui/bowl_workbench.gd"
+  ],
+  "current_runtime_files": 440,
+  "current_pck_sha256": "6a86fe342862c35e5cb441facdcbde509333ce38c2bd6f384b5f631e07ecb41d",
+  "baseline_files": 434,
+  "baseline_all_old430_exact": true,
+  "baseline_test_only_flag": true,
+  "baseline_pck_sha256": "6832412aa85f937d4b4011948b3963e12fb730ccf27870165c3954beaf230496",
+  "claude": {
+    "initial_reported_turns": 15,
+    "initial_requested_max": 30,
+    "correction1_reported_turns": 11,
+    "correction1_requested_max": 10,
+    "correction2_reported_turns": 4,
+    "correction2_requested_max": 10,
+    "all_exit": 0,
+    "all_subtype_success": true,
+    "all_is_error_false": true,
+    "all_permission_denials": [],
+    "owned_final_sha256": {
+      "game/scripts/ui/recipe_change_summary.gd": "5f618cfec888d004e66c4cfc6c38bc87febd6454ac4a84633bc8c4f42440825d",
+      "game/tests/recipe_change_summary_tests.gd": "f01fd464ad47977e305e06ee39d91cfc4145742efb117c70e83566c40e7ab5a3"
+    },
+    "usage_steering": "user requested fewer calls after all3calls had already ended; no calls since"
+  },
+  "checks": {
+    "actual_baseline_fixture": {
+      "checks": 37,
+      "failures": 0,
+      "exit": 0
+    },
+    "pure_and_actual_integration": {
+      "checks": 436,
+      "failures": 0,
+      "exit": 0,
+      "pack": "v2; same pure/domain/fixture/integration as final"
+    },
+    "layout_after": {
+      "checks": 329,
+      "failures": 0,
+      "exit": 0,
+      "rendered": false
+    },
+    "layout_before": {
+      "checks": 248,
+      "failures": 0,
+      "exit": 0,
+      "rendered": false
+    },
+    "old_component_ui_layout": {
+      "checks": 315,
+      "failures": 0,
+      "exit": 0,
+      "rendered": false
+    },
+    "recipe_knowledge": {
+      "checks": 4138,
+      "failures": 0,
+      "exit": 0
+    },
+    "component_comparison": {
+      "checks": 373,
+      "failures": 0,
+      "exit": 0
+    },
+    "builder_helper": {
+      "tests": 24,
+      "failures": 0,
+      "exit": 0
+    },
+    "before_after_whole_state_files_equal": 15,
+    "all_final_engine_script_errors": 0,
+    "all_final_warnings": 0
+  },
+  "native": {
+    "status": "pending_exact_pair_approval",
+    "apps": [
+      "/private/tmp/ramen-known-recipe-change-before-20261029-v2/Ramen QA.app",
+      "/private/tmp/ramen-known-recipe-change-qa-20261029-v3/Ramen QA.app"
+    ],
+    "executed": false
+  },
+  "archive": "outputs/ramen-known-recipe-change-feedback-v1",
+  "phone_installed": false,
+  "live_user_save_touched": false
+}
