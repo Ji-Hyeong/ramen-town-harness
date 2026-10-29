@@ -2,7 +2,7 @@
   "date": "2026-10-29",
   "task": "known-recipe-change-feedback-v1",
   "base": "6e0cbb4463bdfb765c7dd54f68dfac2ce9d5a080",
-  "status": "headless_accepted_native_pending",
+  "status": "headless_and_native_accepted",
   "schema_version": 19,
   "gameplay_domain_services_assets_unchanged": true,
   "old_runtime_file_count": 430,
@@ -82,14 +82,78 @@
     "all_final_warnings": 0
   },
   "native": {
-    "status": "pending_exact_pair_approval",
+    "status": "accepted",
     "apps": [
       "/private/tmp/ramen-known-recipe-change-before-20261029-v2/Ramen QA.app",
       "/private/tmp/ramen-known-recipe-change-qa-20261029-v3/Ramen QA.app"
     ],
-    "executed": false
+    "executed": true,
+    "approval": "human approved both exact app paths in current thread",
+    "render_mode": "OpenGL 4.1 Metal Compatibility on Apple M3 Pro; no headless/layout-only",
+    "whole_state_pairs_equal": 15,
+    "visual_review": {
+      "status": "completed",
+      "contact_sheet_images": 48,
+      "desktop_originals": [
+        "desktop_change_03_same_expensive.png",
+        "desktop_change_05_reason.png"
+      ],
+      "new_visual_defects": [],
+      "scope": "existing selected design; new comparison labels/details/pressed contrast/fixed action; not final art or human fun acceptance"
+    },
+    "runs": {
+      "before": {
+        "run": "/private/tmp/ramen-known-recipe-change-before-20261029-v2/runs/20261029T114337Z-19377",
+        "checks": 311,
+        "failures": 0,
+        "exit": 0,
+        "screenshots": 21,
+        "post_signature_exit": 0,
+        "console_engine_script_errors_warnings": 0
+      },
+      "after": {
+        "run": "/private/tmp/ramen-known-recipe-change-qa-20261029-v3/runs/20261029T114502Z-19714",
+        "checks": 410,
+        "failures": 0,
+        "exit": 0,
+        "screenshots": 27,
+        "post_signature_exit": 0,
+        "console_engine_script_errors_warnings": 0
+      }
+    },
+    "published_originals": {
+      "before-portrait.png": {
+        "capture": "portrait_change_03_same_expensive.png",
+        "run": "before",
+        "sha256": "f65c72cdd5174bda532e646a4eeb7a597748602081ba8ead430059485b39dbdf"
+      },
+      "after-portrait.png": {
+        "capture": "portrait_change_03_same_expensive.png",
+        "run": "after",
+        "sha256": "c53826b89ec84cf87c000ac05dd89cd260a350b1fdb129b4df813c838d26c46d"
+      },
+      "after-compact-pressed.png": {
+        "capture": "compact_change_04_pressed.png",
+        "run": "after",
+        "sha256": "bc2193840bf13abc7190fad6aadf368153219fdea70f35d0d2d083a0fa3a6204"
+      },
+      "after-compact-details.png": {
+        "capture": "compact_change_05_reason.png",
+        "run": "after",
+        "sha256": "d36171faac17661874904d0574c587372d88f0e6e7348f75c7fdc4e3b53d46f6"
+      },
+      "after-desktop-details.png": {
+        "capture": "desktop_change_05_reason.png",
+        "run": "after",
+        "sha256": "bd81614a9851521286f17c36ab51fd2c907f3e992fcdc3ead6a4ef4618817d68"
+      }
+    }
   },
   "archive": "outputs/ramen-known-recipe-change-feedback-v1",
   "phone_installed": false,
-  "live_user_save_touched": false
+  "live_user_save_touched": false,
+  "harness_context_integration": {
+    "published_main": "1c99e07f8e0c1b357b5b05cb3cc5509d6312a904",
+    "candidate_game_and_pack_unchanged": true
+  }
 }
