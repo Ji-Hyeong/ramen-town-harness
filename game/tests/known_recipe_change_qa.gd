@@ -1,0 +1,130 @@
+extends "res://tests/component_comparison_qa.gd"
+## Same actual manufacture/selection/ledger path for frozen-before and current UI.
+## Baseline alters this test flag only; no old production source is changed.
+const BASELINE_MODE: bool=false
+const ChangeFixture=preload("res://tests/known_change_fixtures.gd")
+var _change_profiles: int=0
+func _run() -> void:
+ for profile in [{"tag":"portrait","size":Vector2i(390,844)},{"tag":"desktop","size":Vector2i(1280,800)},{"tag":"compact","size":Vector2i(390,750)}]:
+  await _change_flow(profile["tag"],profile["size"])
+ _check(_change_profiles==3,"all known-change profiles reach the final assertion")
+ print("KNOWN RECIPE CHANGE baseline=%s mode=%s checks=%d failures=%d" % [BASELINE_MODE,"layout-only" if _layout_only else "capture",_checks,_failures.size()])
+ for failure in _failures:printerr("FAIL: "+failure)
+ quit(0 if _failures.is_empty() else 1)
+func _ledger(st: Object) -> String:return JSON.stringify(st.to_dict(),"",true)
+func _refresh_change(app: Node) -> void:
+ app.call("_refresh_all");app.call("_sync_bowl_editor");await _settle()
+func _open_change(app: Node,kind: String,index: int,whole: bool=true) -> Control:
+ var editor: Control=app.get("_bowl_editor")
+ editor.call("_show_component_comparison",kind,index,whole)
+ await _settle()
+ return editor
+func _change_text(editor: Control) -> String:
+ var card: Node=editor.find_child("RecipeChangeSummary",true,false)
+ if card==null:return ""
+ var texts: Array[String]=[]
+ for label in card.find_children("*","Label",true,false):texts.append(label.text)
+ return " ".join(texts)
+func _snapshot(st: Object,folder: String,name: String) -> void:
+ var path: String=folder.path_join(name+".json")
+ _check(not FileAccess.file_exists(path),"new stage snapshot")
+ var file:=FileAccess.open(path,FileAccess.WRITE)
+ _check(file!=null,"stage snapshot file")
+ if file!=null:file.store_string(JSON.stringify(st.to_dict(),"\t",true));file.close()
+func _change_flow(tag: String,vp: Vector2i) -> void:
+ var holder:=SubViewport.new();holder.size=vp;holder.handle_input_locally=true;holder.render_target_update_mode=SubViewport.UPDATE_ALWAYS;root.add_child(holder)
+ var folder: String=_data_root.path_join(tag+"_change");_check(DirAccess.make_dir_recursive_absolute(folder)==OK,"isolated known-change data")
+ var app: Node=await _spawn(holder,folder);app.set_process(false)
+ var fixture:=ChangeFixture.new();fixture.check=_check
+ var st: Object=fixture.initial();app.set("state",st);await _refresh_change(app)
+ app.call("_on_dev_pressed");await _settle()
+ var editor: Control=await _open_change(app,"broth",1)
+ var before: String=_ledger(st)
+ _fixed_action(editor,vp,tag+" unknown")
+ if not BASELINE_MODE:
+  _check(editor.find_child("RecipeChangeSummary",true,false)!=null,"unknown has a neutral compact comparison card")
+  var copy: String=_change_text(editor)
+  _check(not copy.contains("같") and not copy.contains("절약") and not copy.contains("상한") and not copy.contains("동일"),"unknown comparison has no equality, advantage or cap inference")
+  _check(editor.find_child("ComponentRatings",true,false)==null,"untried full bowl has no customer score detail")
+ await _shot(holder,tag+"_change_01_unknown.png")
+ await _tap(holder,editor,"EditorDetailsBack")
+ editor=await _open_change(app,"broth",1,false)
+ if not BASELINE_MODE:await _tap(holder,editor,"RecipeChangeSummaryToggle")
+ _check(_ledger(st)==before,"opening both comparison depths never reveals/charges/changes anything")
+ await _shot(holder,tag+"_change_02_unknown_component.png")
+ _snapshot(st,folder,"01_unknown")
+ # Only the existing explicit footer use action is allowed to reveal this bowl.
+ await _tap(holder,editor,"EditorDetailApply")
+ _check(st.draft_config["broth_recipe"]["ingredients"].size()==3 and st.recipe_known(st.draft_config),"actual pointer selection reveals candidate")
+ _check(st.taste()["ok"],"actual paid known candidate witness")
+ _check(st.use_broth(0)["ok"],"explicit return to known original")
+ await _refresh_change(app)
+ editor=await _open_change(app,"broth",1)
+ before=_ledger(st)
+ var result: Dictionary=st.component_comparison("broth",1)
+ _check(result["candidate_ramen"]["unit_cost"]-result["current_ramen"]["unit_cost"]==480 and result["candidate_ramen"]["prep_seconds"]-result["current_ramen"]["prep_seconds"]==24,"actual controlled480won/24seconds")
+ if not BASELINE_MODE:
+  var text: String=_change_text(editor)
+  _check(text.contains("480") and text.contains("24") and (text.contains("같") or text.contains("동일") or text.contains("유지")),"known equal taste and actual cost/time consequences are short and visible")
+  var card: Node=editor.find_child("RecipeChangeSummary",true,false)
+  _check(not card.get("expanded"),"consequence reason initially folded")
+  var caption: Label=card.get("summary_label")
+  _check(caption.is_visible_in_tree() and caption.text.contains("480") and caption.text.contains("24"),"actual delta is visible before expansion, not merely a hidden label")
+  for label in [card.get("title_label"),caption]:
+   _check(_text_height_fits(label) and card.get("header_button").get_global_rect().grow(-4).encloses(label.get_global_rect()),"summary text fits its padded actual header")
+ _fixed_action(editor,vp,tag+" expensive known")
+ await _shot(holder,tag+"_change_03_same_expensive.png")
+ if not BASELINE_MODE:
+  var header: Button=editor.find_child("RecipeChangeSummaryToggle",true,false)
+  var scroll: ScrollContainer=editor.find_child("DetailsScroll",true,false)
+  scroll.ensure_control_visible(header);await _settle()
+  var point: Vector2=header.get_global_rect().get_center();_point(holder,point,true);await _frames(3)
+  var card: Node=editor.find_child("RecipeChangeSummary",true,false)
+  _check(card.get("title_label").get_theme_color("font_color")==Color.WHITE and card.get("summary_label").get_theme_color("font_color")==Color.WHITE,"held consequence title and delta remain legible")
+  await _shot(holder,tag+"_change_04_pressed.png")
+  for step in 6:
+   var event:=InputEventMouseMotion.new();point.y-=12;event.position=point;event.global_position=point;event.relative=Vector2(0,-12);event.button_mask=MOUSE_BUTTON_MASK_LEFT;holder.push_input(event);await _frames(1)
+  _point(holder,point,false);await _settle()
+  _check(not card.get("expanded") and _ledger(st)==before,"summary drag cancels expansion and creates no transaction")
+  await _tap(holder,editor,"RecipeChangeSummaryToggle")
+  _check(card.get("expanded"),"whole summary tap opens reason")
+  var cost: Label=editor.find_child("ComponentValue_한_그릇_원가",true,false)
+  var time: Label=editor.find_child("ComponentValue_기본_준비",true,false)
+  _check(cost!=null and cost.text.contains("480") and time!=null and time.text.contains("24"),"expanded evidence retains exact before/after values")
+  _fixed_action(editor,vp,tag+" known details")
+  await _shot(holder,tag+"_change_05_reason.png")
+ _check(_ledger(st)==before,"known comparison remains fully read-only")
+ _snapshot(st,folder,"02_known_same")
+ # Reverse comparison is savings, not a universal taste improvement.
+ _check(st.use_broth(1)["ok"],"explicit known triple current")
+ await _refresh_change(app);editor=await _open_change(app,"broth",0)
+ if not BASELINE_MODE:
+  var text: String=_change_text(editor)
+  _check(text.contains("480") and text.contains("24") and (text.contains("절약") or text.contains("줄") or text.contains("감소")),"known same taste and real savings")
+ await _shot(holder,tag+"_change_06_saving.png")
+ _check(st.use_broth(0)["ok"],"restore baseline before culinary change")
+ var index: int=fixture.changed_broth(st)
+ await _refresh_change(app);editor=await _open_change(app,"broth",index)
+ if not BASELINE_MODE:
+  var text: String=_change_text(editor)
+  _check(text.contains("달라") and not text.contains("같"),"genuinely changed broth has an actual changed-taste headline")
+ await _shot(holder,tag+"_change_07_changed_broth.png")
+ index=fixture.changed_noodle(st)
+ await _refresh_change(app);editor=await _open_change(app,"noodle",index)
+ before=_ledger(st)
+ if not BASELINE_MODE:_check(_change_text(editor).contains("달라"),"genuinely changed noodles also show the changed-taste headline")
+ _fixed_action(editor,vp,tag+" noodle")
+ await _shot(holder,tag+"_change_08_changed_noodle.png")
+ await _tap(holder,editor,"ComponentReload")
+ _check(st.draft_config["noodle_recipe"]["cut"]=="thin" and st.noodle_review()["formula"]["cut"]=="thick","existing reload copies workshop only, not bowl")
+ _snapshot(st,folder,"03_changed")
+ _check(app.call("manual_save")["ok"],"actual save succeeds")
+ var saved: String=_ledger(st);app.queue_free();await _settle()
+ app=await _spawn(holder,folder);app.set_process(false)
+ _check(_ledger(app.get("state"))==saved,"whole state/knowledge exact after disk restart")
+ app.call("_on_dev_pressed");await _settle();editor=await _open_change(app,"broth",1)
+ if not BASELINE_MODE:_check(_change_text(editor).contains("480"),"known comparison remains known after restart")
+ _fixed_action(editor,vp,tag+" restart")
+ await _shot(holder,tag+"_change_09_restart.png")
+ _snapshot(app.get("state"),folder,"04_restart")
+ _change_profiles+=1;app.queue_free();await _settle();holder.queue_free();await _settle()
