@@ -63,6 +63,15 @@
   "native_rendering": "not_applicable_tools_only",
   "phone_installation": false,
   "live_save_touched": false,
-  "server_pr50": "separate; native-v5launchapprovalpending, not merged",
-  "archive": "outputs/ramen-raw-recipe-diversity-v1"
+  "server_pr50": "native-v5accepted separately; final merge follows",
+  "archive": "outputs/ramen-raw-recipe-diversity-v1",
+  "schema19_integration_recheck": {
+    "writer_checks": 12597,
+    "writer_exit": 0,
+    "report_equal_to_original_except_schema": true,
+    "independent_checks_each": 3281,
+    "independent_exit_each": 0,
+    "six_mutations_still_rejected": true,
+    "unsupported20_rejected": true
+  }
 }

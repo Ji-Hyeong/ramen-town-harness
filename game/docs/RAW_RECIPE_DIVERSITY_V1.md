@@ -59,6 +59,10 @@
   아이폰·경영 규칙을 바꾸지 않았다. 세 조건의 일치는 모든 상황의 동등성,
   시각적 유사성, 판매 성과나 사람의 재미 평가를 뜻하지 않는다.
 
+서버 저장19 통합 뒤에도 같은 도구를 실제v5 PCK에서 재실행했다. 보고서는
+저장 버전 표기만18→19로 바뀌고 나머지 전체 값이 같았다. 공개 검증기는
+검증한18/19만 허용하고 미래20은 거부한다.
+
 도구: `game/tools/audit_raw_recipe_diversity.gd`와
 `game/tools/verify_raw_recipe_diversity.py`. 기계 판독 기록은
 `evidence/raw-recipe-diversity-v1.json`, 원문·로그·안전성/변조 검사는 작업 산출물

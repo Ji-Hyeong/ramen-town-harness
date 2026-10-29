@@ -15,7 +15,11 @@ parser = argparse.ArgumentParser(description="Verify the bounded starter-recipe 
 parser.add_argument("report", type=Path)
 args = parser.parse_args()
 d = json.loads(args.report.read_text(encoding="utf-8"))
-require((d['format'],d['algorithm_version'],d['game_schema_version'],d['starter_rank'])==(1,1,18,1),'accepted-main catalog audit metadata')
+# The server challenge adds save metadata in v19 without changing this catalog.
+# Accept both independently compared versions; future schema changes need review.
+require((d['format'],d['algorithm_version'],d['starter_rank'])==(1,1,1)
+        and type(d['game_schema_version']) is int
+        and d['game_schema_version'] in (18,19),'supported catalog audit metadata')
 require(not d['failures'],'producer zero failures')
 contexts=d['contexts'];ctxids=[c['id'] for c in contexts]
 require(ctxids==['clear_light','rich_hearty','spicy_soft'],'three fixed context identities')
