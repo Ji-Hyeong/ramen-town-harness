@@ -1902,7 +1902,17 @@ func _render_result() -> void:
 	var revision: Dictionary=KitchenJourney.comparison(record)
 	if str(revision["error"])!="": push_error(str(revision["error"]))
 	if bool(revision["available"]):
-		var changes:=_button("이번 개량의 변화","EditorRevisionSummary","chevron_right")
+		# A paid record keeps its own predecessor. The later live draft and the
+		# current notebook selection must never change this result's headline.
+		var previous: Dictionary=record["comparison"]["prev_config"]
+		var change: Dictionary=ChangeSummary.project(Evaluator.evaluate(previous),evaluation,
+			state.recipe_known(previous),state.recipe_known(record["config"]))
+		var change_title: String="이번 개량의 변화"
+		if str(change["error"])!="":
+			push_error(str(change["error"]))
+		elif str(change["state"])!="neutral":
+			change_title=str(change["title"])
+		var changes:=_button(change_title,"EditorRevisionSummary","chevron_right")
 		changes.pressed.connect(func():
 			var body:=_modal_body("이번 개량의 변화")
 			_emit("comparison",{"body":body}))

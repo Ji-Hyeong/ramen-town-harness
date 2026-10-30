@@ -1,0 +1,99 @@
+{
+  "after": {
+    "app": "/private/tmp/ramen-paid-result-change-qa-20261030-v2/Ramen QA.app",
+    "source_count": 442,
+    "pack_sha256": "842c39de37a33c9f0dcca30838353e3ef6b341f54a345d44589d8b1b7d4a8767",
+    "signature_valid": true
+  },
+  "before": {
+    "app": "/private/tmp/ramen-paid-result-change-before-20261030-v1/Ramen QA.app",
+    "source_count": 442,
+    "pack_sha256": "804c57244d92aa11c346edac0bfbe610feac26ae50076f222fa7ceb6ac80dd74",
+    "signature_valid": true
+  },
+  "checks": {
+    "new_layout": 365,
+    "before_layout": 365,
+    "summary_integration": 436,
+    "selected_goal_layout": 884,
+    "first_journey_layout": 359,
+    "builder_unit_tests": 24,
+    "all_failures": 0,
+    "all_engine_script_errors_warnings": 0,
+    "all_command_exits": 0
+  },
+  "whole_state_pairs_equal": [
+    "compact_paid/01_burden.json",
+    "compact_paid/02_retained.json",
+    "compact_paid/03_restart.json",
+    "compact_paid/ramen_lab_save.json",
+    "desktop_paid/01_burden.json",
+    "desktop_paid/02_retained.json",
+    "desktop_paid/03_restart.json",
+    "desktop_paid/ramen_lab_save.json",
+    "portrait_paid/01_burden.json",
+    "portrait_paid/02_retained.json",
+    "portrait_paid/03_restart.json",
+    "portrait_paid/ramen_lab_save.json"
+  ],
+  "status": "headless_and_native_accepted",
+  "claude_calls": 0,
+  "phone_installed": false,
+  "schema_version": 19,
+  "native": {
+    "before": {
+      "run": "/private/tmp/ramen-paid-result-change-before-20261030-v1/runs/20261030T090207Z-19431",
+      "checks": 455,
+      "failures": 0,
+      "exit": 0,
+      "screenshots": 30,
+      "post_signature_exit": 0,
+      "errors_warnings": 0
+    },
+    "after": {
+      "run": "/private/tmp/ramen-paid-result-change-qa-20261030-v2/runs/20261030T090401Z-19865",
+      "checks": 455,
+      "failures": 0,
+      "exit": 0,
+      "screenshots": 30,
+      "post_signature_exit": 0,
+      "errors_warnings": 0
+    },
+    "whole_state_pairs_equal": 12,
+    "visual_review": {
+      "status": "completed",
+      "captures_reviewed": 60,
+      "new_visual_defects": [],
+      "scope": "new short result title, pressed contrast, old details, small/desktop reflow; not final art or human-fun acceptance"
+    },
+    "render_mode": "actual OpenGL 4.1 Metal Compatibility Apple M3 Pro",
+    "approval": "human approved both exact app paths in current thread",
+    "published_originals": {
+      "before-portrait.png": {
+        "capture": "portrait_paid_02_burden.png",
+        "run": "before",
+        "sha256": "eb0adbe317b0265724109566da3d74d122e6702dcd85fd823c08ca583da72024"
+      },
+      "after-portrait.png": {
+        "capture": "portrait_paid_02_burden.png",
+        "run": "after",
+        "sha256": "1605bd69f2fb85df9943e8150290f5b65e84840bdbbbe23915fe4678d61882e2"
+      },
+      "after-pressed.png": {
+        "capture": "portrait_paid_03_pressed.png",
+        "run": "after",
+        "sha256": "151ff5d09c75fcc161440b59b7925d803cdab15dfea77b2977ac6f0c8607af54"
+      },
+      "after-compact-price.png": {
+        "capture": "compact_paid_08_price.png",
+        "run": "after",
+        "sha256": "fce57496acfedb9b8765d5673551877801e7986a1384421fa4ac40497ceed163"
+      },
+      "after-details.png": {
+        "capture": "portrait_paid_04_detail.png",
+        "run": "after",
+        "sha256": "e98312f92452610a2e383e3d742d55e7f9a26245a8a31aade3af806de24bee05"
+      }
+    }
+  }
+}
