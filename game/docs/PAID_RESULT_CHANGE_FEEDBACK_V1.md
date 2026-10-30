@@ -2,7 +2,8 @@
 
 2026-10-30 개발본. 기존 시식 결과의 `이번 개량의 변화` 버튼 제목을 실제 변화로
 바꾼다. 새 카드나 긴 설명을 추가하지 않고, 같은 48px 버튼을 누르면 기존 전후
-그릇·수치·평가 상세가 열린다. **실제 그래픽 실행은 정확한 전후 앱 승인 대기다.**
+그릇·수치·평가 상세가 열린다. **승인한 전후 앱의 실제 Mac 그래픽 실행과
+세 화면 크기의 캡처 검토를 완료했다.**
 
 | 실제 유료 개정 | 결과 버튼 |
 |---|---|
@@ -35,8 +36,11 @@ Codex가 직접 구현·독립 검증했다. Claude와 다른 에이전트 호�
   미확인 유료 시식이라고 주장하지 않는다. 실제 진행 증거와 파일을 분리한다.
 - 기존 순수/실제 요약436검사, 선택 목표884검사, 첫 메뉴 여정359검사,
   앱 생성기24시험 통과. 모든 실행 종료0이며 엔진/스크립트 오류·경고는0이다.
-- 위 화면 시험은 명시적인 headless/layout-only다. 실제 렌더링·iPhone·사람의
-  재미나 본편6~10시간을 검증한 것으로 세지 않는다.
+- 위 배치 시험은 명시적인 headless/layout-only다. 이후 별도 실제 OpenGL
+  실행에서 수정 전/후 각각455검사·30PNG·실패0·종료0을 확인했다. 전체60장을
+  전후 검토했으며 짧은 제목의 여백·눌림 대비·기존 상세에서 새 결함이 없었다.
+  실제 실행의 전체 상태12파일도 같고 실행 후 엄격 엔진 서명도 유효하다.
+  iPhone·사람의 재미나 본편6~10시간을 검증한 것으로 세지 않는다.
 - 두 준비 앱은 각각442소스와 PCK를 동결했고 공식 엔진 엄격 서명을 확인했다.
   수정 전의 기존440소스는 main df3741c와 같고 시험2파일만 추가했다. 수정 후의
   기존 파일 변경은 시식 버튼을 그리는 `bowl_workbench.gd` 하나뿐이다.
@@ -45,3 +49,13 @@ Codex가 직접 구현·독립 검증했다. Claude와 다른 에이전트 호�
 기계 판독 기록: `evidence/paid-result-change-feedback-v1.json`.
 원본 코드·PCK·준비 로그·시험 로그는 작업 산출물
 `outputs/ramen-paid-result-change-feedback-v1/`와 `work/paid-result-change-feedback-v1/`에 보존한다.
+
+## 실제 원본 화면
+
+| 수정 전 | 수정 후 |
+|---|---|
+| ![일반 제목](../../evidence/paid-result-change-feedback-v1/before-portrait.png) | ![실제 개량 결과](../../evidence/paid-result-change-feedback-v1/after-portrait.png) |
+
+[눌림 표시](../../evidence/paid-result-change-feedback-v1/after-pressed.png) ·
+[작은 화면 가격 변경](../../evidence/paid-result-change-feedback-v1/after-compact-price.png) ·
+[기존 전후 상세](../../evidence/paid-result-change-feedback-v1/after-details.png)
