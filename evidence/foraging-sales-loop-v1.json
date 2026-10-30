@@ -1,0 +1,35 @@
+{
+  "date": "2026-10-30",
+  "task": "foraging-sales-loop-v1",
+  "base": "2ac226e0c15099c48fc1c594c61852f4912b29f0",
+  "status": "headless_accepted_native_pending",
+  "schema_version": 19,
+  "source_count": 450,
+  "modified_old_runtime_files": [
+    "scripts/ui/bowl_workbench.gd",
+    "scripts/ui/foraging_goal_board.gd"
+  ],
+  "domain_services_assets_unchanged": true,
+  "app": "/private/tmp/ramen-foraging-sales-loop-qa-20261030-v3/Ramen QA.app",
+  "pck_sha256": "b37103088350c60a158354d72a95d29abb90775843ddec4106278e31786c9171",
+  "vendor_signature_valid": true,
+  "checks": {
+    "pure": 45,
+    "actual_sales_layout": 575,
+    "foraging_plan": 433,
+    "original_goals_layout": 857,
+    "selected_goal_layout": 884,
+    "builder_tests": 24,
+    "all_failures": 0,
+    "all_engine_script_errors_warnings": 0,
+    "all_command_exits": 0
+  },
+  "actual_fixture": "existing earned raw/farming v18 checkpoint normalized by official GameState load; actual paid regional experiments, single and shared completed services, explicit selection/paid expansion",
+  "synthetic_fixture": "defensive pure inputs only, not progression evidence",
+  "original_single_receipt": "requires unique retained paid witness matching dated name/version, price/revenue and ingredient cost; missing/deleted/ambiguous evidence unavailable",
+  "expanded_receipt": "own immutable config remains after record deletion",
+  "claude_calls": 0,
+  "phone_or_live_save": false,
+  "native_executed": false,
+  "archive": "outputs/ramen-foraging-sales-loop-v1"
+}

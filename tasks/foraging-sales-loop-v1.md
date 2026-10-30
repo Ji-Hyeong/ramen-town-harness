@@ -20,7 +20,11 @@ full future timed-order/reward system or completed campaign content.
 - Name the actual paid/sold menu and version. Match full food config and record
   identity; unrelated or changed current draft/menu must not replace old receipts.
   If the paid notebook record was deleted, the actual immutable receipt may still
-  describe its completed sale. Do not invent missing old receipt config.
+  describe its completed sale. Existing pre-expansion receipts omit config/id;
+  bind only one retained immutable paid witness with matching name/version,
+  tasted date no later than service, price/revenue and completed ingredient cost.
+  Missing/deleted/ambiguous witnesses are unavailable. Never use a live draft or
+  create a saved snapshot to fill missing old receipt config.
 - Caption explicitly says recent sales; do not imply permanent completion or a
   new customer request. No accept/reward/save ledger, fees, demand modifiers,
   score bonuses, sample use, time limits, new schema or domain changes.
@@ -39,8 +43,9 @@ fixture registry, docs/evidence/tasks/AGENTS. Preserve PR54's independent change
 ## VERIFICATION
 Pure defensive tests: unknown id/state, untried/draft-only, actual paid match,
 unrelated selected recipe, selected match, wrong record/config, zero sales,
-single/multiple settled menus, valid older receipt after record deletion, absent
-legacy config, malformed report/values, copying/input immutability.
+single/multiple settled menus, valid older expanded receipt after record deletion,
+strict retained-witness binding for original single receipts, absent evidence,
+reused names/future tasting/price/cost/ambiguous witness and malformed values.
 Actual public raw/farming checkpoint provenance, real paid regional experiments,
 explicit sales selection and completed begin/settle service. Reopen/save/restart,
 later draft changes and stale report/selection refresh. Keep live data untouched.
