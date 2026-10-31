@@ -2030,6 +2030,9 @@ func _show_directions() -> void:
 	board.develop_requested.connect(func(id: String, ingredient: String):
 		_close_modal()
 		_emit("goal_develop",{"id":id,"ingredient":ingredient}))
+	board.selling_requested.connect(func(_id: String):
+		_close_modal()
+		_emit("journey",{"action":"selling"}))
 
 
 ## Optional next goals route back to real guarded controller pages. These cards

@@ -10,9 +10,11 @@ extends VBoxContainer
 signal target_selected(direction_id: String)
 signal source_requested(direction_id: String, ingredient_id: String)
 signal develop_requested(direction_id: String, ingredient_id: String)
+signal selling_requested(direction_id: String)
 
 const SHARED_PATH := "res://scripts/ui/service_result_view.gd"
 const Plan = preload("res://scripts/ui/foraging_plan.gd")
+const SalesFollowup = preload("res://scripts/ui/foraging_sales_followup.gd")
 const Art = preload("res://scripts/ui/bowl_editor_art.gd")
 const Mock = preload("res://scripts/ui/mock_fidelity_art.gd")
 const Pixel = preload("res://scripts/ui/pixel_art.gd")
@@ -40,6 +42,10 @@ var _busy: bool = false
 var _detail: String = ""
 var _group: String = "regional"
 var _shown: Dictionary = {}
+## Read-only source reference, not a new progress ledger. Evaluate one opened
+## direction only; avoid evaluating all notebook recipes for all eight cards.
+var _source: Object
+var _sale: Dictionary = {}
 ## 눌려 있는 동안 흰색으로 바꿀 글자/화살표. 카드마다 따로 보관한다.
 var _held_parts: Dictionary = {}
 
@@ -53,6 +59,7 @@ func _init() -> void:
 
 ## 모델(읽은 사실, 선택, 바쁨, 상세 화면)이 이전과 같으면 아무것도 다시 만들지 않는다. 누르는 도중 버튼이 사라지지 않게 한다.
 func present(state: Object, selected_id: String = "", busy: bool = false) -> void:
+	_source=state
 	var plans: Array = Plan.catalog(state)
 	# Reopening a selected cross-region goal lands in its category; refreshing
 	# the same selection preserves the category the player is currently browsing.
@@ -63,6 +70,8 @@ func present(state: Object, selected_id: String = "", busy: bool = false) -> voi
 	if not _plan_ids(plans).has(_detail):
 		_detail = ""
 		next["detail"] = ""
+	_sale={} if _detail=="" else SalesFollowup.describe(state,_detail)
+	next["sale"]=_sale
 	if next == _shown:
 		return
 	_plans = plans
@@ -89,6 +98,8 @@ func open_detail(direction_id: String) -> void:
 	_group=str(_plan_of(direction_id).get("category","regional"))
 	_shown["detail"] = direction_id
 	_shown["group"] = _group
+	_sale=SalesFollowup.describe(_source,direction_id)
+	_shown["sale"]=_sale
 	_rebuild()
 
 
@@ -155,8 +166,15 @@ func _build_detail(plan: Dictionary) -> void:
 	add_child(back)
 	add_child(_text("GoalDetailTitle", str(plan["title"]), 20, BOLD, INK))
 	add_child(_text("GoalDetailBrief", str(plan["brief"]), BODY_SIZE, BODY, MUTED))
-	if bool(plan["tested"]):
-		add_child(_text("GoalDetailTested", "이 방향의 시식 기록이 있어요.", BODY_SIZE, BOLD, TEAL))
+	if str(_sale.get("error",""))!="":
+		add_child(_text("GoalSalesError",str(_sale["error"]),BODY_SIZE,BODY,RED))
+	elif str(_sale.get("stage","untasted"))!="untasted":
+		# Replace the old "tasted" sentence with one actionable food card.
+		# Caption says recent sales; this is not a permanent completed request.
+		var followup: Control=_card("GoalSales_"+id,str(_sale["title"]),str(_sale["hint"]),[str(plan["ingredient"])],true,_busy)
+		_button_of(followup).tooltip_text="%s v%d · 판매 메뉴와 영업 준비 열기" % [_sale["name"],_sale["version"]]
+		_bind(followup,_on_selling.bind(id))
+		add_child(followup)
 	add_child(_text("GoalDetailSource", "재료는 " + str(plan["source"]) + "에서 구해요.", BODY_SIZE, BODY, MUTED))
 	for row in plan["ingredients"]:
 		add_child(_ingredient_panel(id, plan, row))
@@ -328,6 +346,19 @@ func _on_develop(direction_id: String, ingredient_id: String) -> void:
 		if str(row["id"]) == ingredient_id and not bool(row["usable"]):
 			return
 	develop_requested.emit(direction_id, ingredient_id)
+
+
+func _on_selling(direction_id: String) -> void:
+	if _busy:return
+	var latest: Dictionary=SalesFollowup.describe(_source,direction_id)
+	if str(latest["error"])!="" or str(latest["stage"])=="untasted":
+		# A source changed after the card was drawn. Show the new error/absence
+		# instead of leaving a clickable card that silently does nothing.
+		_sale=latest
+		_shown["sale"]=_sale
+		_rebuild()
+		return
+	selling_requested.emit(direction_id)
 
 
 # ---------- 문구 ----------
