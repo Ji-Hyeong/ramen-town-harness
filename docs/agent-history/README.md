@@ -10,7 +10,6 @@ entry only. Older relative links retain their original repository-root context.
 | --- | --- | ---: | --- |
 | [Accepted main](AGENTS-main-6e0cbb4.md) | `6e0cbb4463bdfb765c7dd54f68dfac2ce9d5a080` | 198519 | Full accepted root before compaction |
 | [Pending PR 52](AGENTS-pending-pr52-d64586a.md) | `d64586aaf045d2fabd756f7e24c20e6ec2a49c35` | 201531 | Full feature-branch root; native acceptance was still pending |
-
 | [Sales-loop headless](AGENTS-sales-loop-headless-932cb6b.md) | `932cb6b148e854a709c76c41ebca4801628e76e7` | 14065 | Full 12-entry root before the next compact history |
 
 [Provenance](provenance.json) records exact commit, byte count and SHA256 for each
