@@ -13,6 +13,12 @@ func _run() -> void:
 func _formula_labels(editor: Control,vp: Vector2i) -> void:
 	for label in editor.find_children("Journey*Formula_*","Label",true,false):
 		_check(_text_height_fits(label),"whole formula text fits its allocated height")
+		# Width is measured with the final inherited font, not an assumed Korean
+		# character count. Every complete atomic choice must fit its own column.
+		_check(label.autowrap_mode==TextServer.AUTOWRAP_OFF,"formula choices never split inside an ingredient or quantity")
+		var font: Font=label.get_theme_font("font")
+		for line in label.text.split("\n"):
+			_check(font.get_string_size(line,HORIZONTAL_ALIGNMENT_LEFT,-1,label.get_theme_font_size("font_size")).x<=label.size.x,"complete ingredient/quantity fits the paid dish column: "+line)
 		var rect: Rect2=label.get_global_rect()
 		_check(rect.position.x>=22 and rect.end.x<=vp.x-22,"formula keeps modal horizontal padding")
 	await _reachable(editor,vp,"EditorDetailsBack")
