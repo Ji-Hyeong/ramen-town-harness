@@ -1,4 +1,5 @@
 extends SceneTree
+## Historical schema projections also exclude the optional v20 market order.
 ## Current new-game acceptance, historical v16 behavior, independent of the v15 fixtures
 ## used by historical regression suites. Only isolated paths are written.
 const State=preload("res://scripts/domain/game_state.gd")
@@ -18,7 +19,7 @@ var data_dir: String=""
 func broth_state() -> State:
 	var st:=State.new()
 	var previous: Dictionary=st.to_dict()
-	previous.erase("noodle_workshop"); previous.erase("recipe_knowledge"); previous.erase("server_challenge")
+	previous.erase("noodle_workshop"); previous.erase("recipe_knowledge"); previous.erase("server_challenge"); previous.erase("market_tasting_order")
 	previous["schema_version"]=16
 	var err: String=st.load_from_dict(previous)
 	if err!="": push_error(err)
@@ -163,7 +164,7 @@ func _initialize() -> void:
 			"capacity": bad["broth_workshop"]["ingredients"]=["pork_bone","pork_bone","pork_bone","pork_bone"]
 			"duplicate": bad["broth_workshop"]["recipes"].append(bad["broth_workshop"]["recipes"][0].duplicate(true))
 			"future_day": bad["broth_workshop"]["recipes"][0]["day"]=9999
-			"legacy_version": bad["schema_version"]=15; bad.erase("broth_workshop"); bad.erase("noodle_workshop"); bad.erase("recipe_knowledge"); bad.erase("server_challenge")
+			"legacy_version": bad["schema_version"]=15; bad.erase("broth_workshop"); bad.erase("noodle_workshop"); bad.erase("recipe_knowledge"); bad.erase("server_challenge"); bad.erase("market_tasting_order")
 		verify(st.load_from_dict(bad)!="" and json(st)==before,"corrupt craft rejected atomically: "+kind)
 	# This fixture was emitted by frozen, unmodified main/v15, not by editing a
 	# schema16 save until it looked old. Keep the original bytes as migration proof.
@@ -176,7 +177,7 @@ func _initialize() -> void:
 	var migrated:=broth_state()
 	verify(old_store.load_into(migrated)["status"]=="ok","frozen real v15 save migrates")
 	var compared: Dictionary=migrated.to_dict()
-	compared.erase("broth_workshop"); compared.erase("noodle_workshop"); compared.erase("recipe_knowledge"); compared.erase("server_challenge"); compared["schema_version"]=15
+	compared.erase("broth_workshop"); compared.erase("noodle_workshop"); compared.erase("recipe_knowledge"); compared.erase("server_challenge"); compared.erase("market_tasting_order"); compared["schema_version"]=15
 	verify(JSON.parse_string(JSON.stringify(compared))==old_raw,"every v15 wallet/day/config/score/report value is preserved")
 	verify(migrated.broth_review()["recipes"].is_empty(),"migration fabricates no brewed recipes")
 	verify(old_store.save_state(migrated)["ok"] and FileAccess.get_file_as_string(old_store.legacy_bak_path(15))==original,"first v16 save retains byte-identical old backup")

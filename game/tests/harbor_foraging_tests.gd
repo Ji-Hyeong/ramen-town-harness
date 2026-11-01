@@ -1,4 +1,5 @@
 extends RefCounted
+## Historical schema projections also exclude the optional v20 market order.
 ## Real game transactions, not injected stock/rank/wallet. This fixture is also
 ## shared by native scene QA so both acceptance paths use the same unlock.
 const State = preload("res://tests/legacy_game_fixture.gd")
@@ -139,7 +140,7 @@ func _corruptions(state: State) -> void:
 			"stage": farm["active"] = {"stage": "fake"}
 			"type": farm["completed"] = true
 			"old_version":
-				raw["schema_version"] = 12; raw.erase("broth_workshop"); raw.erase("noodle_workshop"); raw.erase("recipe_knowledge"); raw.erase("server_challenge")
+				raw["schema_version"] = 12; raw.erase("broth_workshop"); raw.erase("noodle_workshop"); raw.erase("recipe_knowledge"); raw.erase("server_challenge"); raw.erase("market_tasting_order")
 				raw.erase("harbor_foraging")
 				raw.erase("chef_challenge")
 				raw.erase("mountain_foraging")
@@ -169,7 +170,7 @@ func _legacy(data_dir: String) -> void:
 	raw.erase("harbor_foraging")
 	raw.erase("chef_challenge")
 	raw.erase("mountain_foraging")
-	raw["schema_version"] = 12; raw.erase("broth_workshop"); raw.erase("noodle_workshop"); raw.erase("recipe_knowledge"); raw.erase("server_challenge")
+	raw["schema_version"] = 12; raw.erase("broth_workshop"); raw.erase("noodle_workshop"); raw.erase("recipe_knowledge"); raw.erase("server_challenge"); raw.erase("market_tasting_order")
 	var text: String = JSON.stringify(raw, "\t", true) + "\n"
 	var store := Save.new(data_dir.path_join("legacy12"))
 	check.call(DirAccess.make_dir_recursive_absolute(store.dir) == OK, "legacy isolated directory")
@@ -185,7 +186,7 @@ func _legacy(data_dir: String) -> void:
 	compared.erase("harbor_foraging")
 	compared.erase("chef_challenge")
 	compared.erase("mountain_foraging")
-	compared["schema_version"] = 12; compared.erase("broth_workshop"); compared.erase("noodle_workshop"); compared.erase("recipe_knowledge"); compared.erase("server_challenge")
+	compared["schema_version"] = 12; compared.erase("broth_workshop"); compared.erase("noodle_workshop"); compared.erase("recipe_knowledge"); compared.erase("server_challenge"); compared.erase("market_tasting_order")
 	check.call(compared == raw, "all old values preserved exactly")
 	ok(store.save_state(migrated), "first v13 write")
 	check.call(FileAccess.get_file_as_string(store.legacy_bak_path(12)) == text, "exact original v12 bytes backed up")

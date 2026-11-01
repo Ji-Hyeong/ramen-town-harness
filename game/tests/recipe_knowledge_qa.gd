@@ -1,4 +1,5 @@
 extends "res://tests/component_comparison_qa.gd"
+## Historical schema projections also exclude the optional v20 market order.
 ## Actual native pointer/capture proof. Previewing is read-only; only successful
 ## explicit selections learn a recipe. All saves use fresh isolated directories.
 const KnowledgePreview=preload("res://scripts/ui/ingredient_trial_preview.gd")
@@ -54,7 +55,7 @@ func _knowledge_profile(tag: String, vp: Vector2i) -> void:
 	var st:=ActualState.new()
 	_check(st.load_from_dict(raw)=="",tag+": genuine previous-main17 fixture migrates")
 	var projected: Dictionary=st.to_dict()
-	projected.erase("recipe_knowledge"); projected.erase("server_challenge")
+	projected.erase("recipe_knowledge"); projected.erase("server_challenge"); projected.erase("market_tasting_order")
 	projected["schema_version"]=17
 	_check(JSON.parse_string(JSON.stringify(projected))==raw,tag+": migration preserves every pre-feature field")
 	app.set("state",st)
