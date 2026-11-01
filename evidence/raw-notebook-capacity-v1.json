@@ -1,0 +1,201 @@
+{
+  "date": "2026-11-02",
+  "task": "raw-notebook-capacity-v1",
+  "base": "fc7e5e914bc1cfb1d659d8deed8fd08e8f3df70f",
+  "script_sha256": "5639d44b13a76b859c48a0b24f7d0952105d46fe1b097a98e820464efe6c824c",
+  "runtime_schema": 19,
+  "runtime452unchanged": true,
+  "accepted_runs": [
+    "run-v1",
+    "run-v2"
+  ],
+  "actual_exit_each": 0,
+  "checks_each": 2008,
+  "failures_each": 0,
+  "engine_errors_warnings_each": 0,
+  "records": 300,
+  "broth_products": 60,
+  "noodle_products": 24,
+  "actual_funding_services_each": 8,
+  "non_report_file_pairs_equal": 8,
+  "semantic_report_equal_excluding_only_measured_times": true,
+  "actual_utf8_max_bytes": 454851,
+  "save_guard_bytes": 2097152,
+  "milestones_each": [
+    [
+      {
+        "id": "01_initial",
+        "known_keys": 1,
+        "load_us": 3691,
+        "records": 1,
+        "save_us": 824,
+        "serialize_us": 211,
+        "sha256": "89646a205db64450e1190bba7bb9ebc332163061322300220cef5d2c21661ca7",
+        "utf8_bytes": 6178
+      },
+      {
+        "id": "02_workshops",
+        "known_keys": 1,
+        "load_us": 6939,
+        "records": 1,
+        "save_us": 1875,
+        "serialize_us": 492,
+        "sha256": "fec8f22e001ec71096509c6079e9a669f0ceeb7aa67fe16274cfc99948f20a99",
+        "utf8_bytes": 18296
+      },
+      {
+        "id": "03_records_100",
+        "known_keys": 100,
+        "load_us": 110479,
+        "records": 100,
+        "save_us": 7376,
+        "serialize_us": 4180,
+        "sha256": "51f6466ddcecb2216f4466e5b1500ada40c2df3cecf7904d9b4143bdfb4ba7d9",
+        "utf8_bytes": 163684
+      },
+      {
+        "id": "03_records_200",
+        "known_keys": 200,
+        "load_us": 197280,
+        "records": 200,
+        "save_us": 36067,
+        "serialize_us": 6977,
+        "sha256": "864b3d816f47fc1f94495056b94e71638a8be1a0b7f28db1de07058b5d21d019",
+        "utf8_bytes": 309203
+      },
+      {
+        "id": "03_records_300",
+        "known_keys": 300,
+        "load_us": 350683,
+        "records": 300,
+        "save_us": 23519,
+        "serialize_us": 10469,
+        "sha256": "575abab8bdb885a195033aeb193e71e7076f03f27c4e2e2c346b92db5b389127",
+        "utf8_bytes": 454623
+      },
+      {
+        "id": "04_after_cleanup",
+        "known_keys": 301,
+        "load_us": 312392,
+        "records": 300,
+        "save_us": 27007,
+        "serialize_us": 12480,
+        "sha256": "3ca62c1f227c74d94141e2727c7037ec0106e423c2aa417abc8e9d300c2a5479",
+        "utf8_bytes": 454851
+      }
+    ],
+    [
+      {
+        "id": "01_initial",
+        "known_keys": 1,
+        "load_us": 3864,
+        "records": 1,
+        "save_us": 1067,
+        "serialize_us": 207,
+        "sha256": "89646a205db64450e1190bba7bb9ebc332163061322300220cef5d2c21661ca7",
+        "utf8_bytes": 6178
+      },
+      {
+        "id": "02_workshops",
+        "known_keys": 1,
+        "load_us": 6269,
+        "records": 1,
+        "save_us": 2037,
+        "serialize_us": 450,
+        "sha256": "fec8f22e001ec71096509c6079e9a669f0ceeb7aa67fe16274cfc99948f20a99",
+        "utf8_bytes": 18296
+      },
+      {
+        "id": "03_records_100",
+        "known_keys": 100,
+        "load_us": 112202,
+        "records": 100,
+        "save_us": 6322,
+        "serialize_us": 4118,
+        "sha256": "51f6466ddcecb2216f4466e5b1500ada40c2df3cecf7904d9b4143bdfb4ba7d9",
+        "utf8_bytes": 163684
+      },
+      {
+        "id": "03_records_200",
+        "known_keys": 200,
+        "load_us": 206124,
+        "records": 200,
+        "save_us": 14887,
+        "serialize_us": 10640,
+        "sha256": "864b3d816f47fc1f94495056b94e71638a8be1a0b7f28db1de07058b5d21d019",
+        "utf8_bytes": 309203
+      },
+      {
+        "id": "03_records_300",
+        "known_keys": 300,
+        "load_us": 314164,
+        "records": 300,
+        "save_us": 22860,
+        "serialize_us": 10621,
+        "sha256": "575abab8bdb885a195033aeb193e71e7076f03f27c4e2e2c346b92db5b389127",
+        "utf8_bytes": 454623
+      },
+      {
+        "id": "04_after_cleanup",
+        "known_keys": 301,
+        "load_us": 331098,
+        "records": 300,
+        "save_us": 26883,
+        "serialize_us": 11062,
+        "sha256": "3ca62c1f227c74d94141e2727c7037ec0106e423c2aa417abc8e9d300c2a5479",
+        "utf8_bytes": 454851
+      }
+    ]
+  ],
+  "funding_services": [
+    {
+      "day": 1,
+      "net": 63960,
+      "units": 9
+    },
+    {
+      "day": 2,
+      "net": 63960,
+      "units": 9
+    },
+    {
+      "day": 3,
+      "net": 63960,
+      "units": 9
+    },
+    {
+      "day": 4,
+      "net": 78840,
+      "units": 11
+    },
+    {
+      "day": 5,
+      "net": 93720,
+      "units": 13
+    },
+    {
+      "day": 6,
+      "net": 49080,
+      "units": 7
+    },
+    {
+      "day": 7,
+      "net": 63960,
+      "units": 9
+    },
+    {
+      "day": 8,
+      "net": 63960,
+      "units": 9
+    }
+  ],
+  "existing_output_refusal": {
+    "actual_exit": 2,
+    "all_hashes_unchanged": true,
+    "preserved_files": 9
+  },
+  "broth_full_behavior": "A distinct61st raw broth is refused atomically at60. No completed broth/noodle notebook deletion API exists; broth_remove in UI only removes a draft ingredient. Safe completed-component cleanup/expansion is future work, not implemented in this diagnostic.",
+  "limits": "Actual fresh raw/public API path with known funding recipe, accelerated manufacture and runtime service clocks. Local Mac HEADLESS wall timings only, including serialization/normal file IO. Not human/fun/6-10h/iOS timing or force-termination evidence. Finite workload only: remembered keys are unbounded, so this does not prove all future save sizes fit the2MiB guard.",
+  "native_or_phone_run": false,
+  "claude_or_agents": 0
+}
