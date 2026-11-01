@@ -4001,7 +4001,12 @@ func _comparison_card(rec: Dictionary, evaluation: Dictionary) -> PanelContainer
 		food.add_child(dish)
 		dish.set_config(sample["config"])
 		for kind in changed_formulas:
-			var caption:=_label(_paid_formula_caption(sample["config"],kind),15,INK)
+			# Keep each ingredient/quantity or noodle choice on one complete line.
+			# CJK automatic wrapping can otherwise split a short name such as onion
+			# between the two paid dishes on a narrow phone, obscuring the recipe.
+			var literal: String=_paid_formula_caption(sample["config"],kind)
+			var caption:=_label(literal.replace(" + ","\n").replace(" · ","\n"),15,INK)
+			caption.autowrap_mode=TextServer.AUTOWRAP_OFF
 			caption.name=("JourneyBeforeFormula_" if sample["name"]=="JourneyBeforeDish" else "JourneyAfterFormula_")+kind
 			caption.mouse_filter=Control.MOUSE_FILTER_IGNORE
 			food.add_child(caption)
