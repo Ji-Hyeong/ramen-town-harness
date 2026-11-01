@@ -1783,6 +1783,7 @@ func _show_service_report() -> void:
 		context["save_note"]="%s · 매장 앞에서 돌아간 손님 %d명\n%s\n%s" % [reaction,int(context["turned_away"]),str(context.get("experience","")),context["save_note"]]
 	context["chef_challenge"]=state.chef_challenge_review()
 	context["server_challenge"]=state.server_challenge_review()
+	context["market_order"]=state.market_order_review()
 	context["journey_choices"]=KitchenJourney.choices(state)
 	_service_result.present(state.last_report,context,_report_text(state.last_report))
 	_result_layer.visible=true
@@ -1806,6 +1807,12 @@ func _on_service_result_action(kind: String) -> void:
 	elif kind=="server":
 		_open_overlay(TAB_GROWTH)
 		_growth_view.open_server()
+		_sync_bowl_editor()
+	elif kind=="market_order":
+		# The result celebrates eligibility, not an automatic cash payout.
+		_on_research_mode(false)
+		_open_overlay(TAB_RESEARCH)
+		_operations_view.call("_navigate","detail","market_tasting")
 		_sync_bowl_editor()
 
 
@@ -3076,6 +3083,20 @@ func _on_growth_view_action(kind: String, id: String, style: String) -> void:
 ## handler; browsing a card or a receipt never selects it implicitly.
 func _on_operations_action(kind: String, data: Dictionary) -> void:
 	match kind:
+		"market_start","market_claim": _on_market_order_action(kind,data)
+		"market_selling":
+			if not _work_blocked("판매 메뉴를 볼"):_open_overlay(TAB_SERVE)
+		"market_goal":
+			if _work_blocked("시식회 재료를 볼"):return
+			var direction: String=str(data["direction"])
+			if not state.MarketOrder.ROUTES.has(direction):
+				_flash("시식회의 요리 방향을 확인해 주세요.")
+				return
+			_open_overlay(TAB_LAB)
+			_sync_bowl_editor()
+			_bowl_editor._show_directions()
+			var board: Control=_bowl_editor.find_child("ForagingGoalBoard",true,false)
+			if board!=null:board.open_detail(direction)
 		"close": _on_close_pressed()
 		"route": _on_tab_link(int(data["tab"]))
 		"section":
@@ -3131,6 +3152,21 @@ func _on_operations_action(kind: String, data: Dictionary) -> void:
 	# Content callbacks run synchronously inside present(); recursively invoking
 	# present() here would rebuild the very body they are populating.
 	if kind not in ["comparison","map"]: _sync_bowl_editor()
+
+
+## The existing notice/save warning and feedback layer report the actual domain
+## result. A successful payout is never confused with a successful disk write.
+func _on_market_order_action(kind: String,data: Dictionary) -> void:
+	if _work_blocked("장터 시식회를 진행할"):return
+	var result: Dictionary=state.start_market_order(str(data["direction"])) if kind=="market_start" else state.claim_market_order()
+	_operations_notice=str(result["message"])
+	if result["ok"]:
+		_persist()
+		_operations_notice=_unsaved_notice(_operations_notice)
+		_audio.play("plate")
+		_juice.burst(get_viewport_rect().size*Vector2(0.5,0.4),TEAL,"답례 +5,000원" if kind=="market_claim" else "시식회 수락!",null,true)
+	else:_flash(str(result["message"]))
+	_refresh_all()
 
 
 ## Existing comparison/map adapters retain their actual content while adopting

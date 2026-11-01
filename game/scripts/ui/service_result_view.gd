@@ -232,6 +232,14 @@ func _summary() -> void:
 		var box:=_box(numbers,2)
 		box.add_child(_label(str(pair[0]),14,MUTED))
 		box.add_child(_label(str(pair[1]),22,INK,str(pair[2])))
+	var market: Dictionary=_context.get("market_order",{})
+	if market.get("status","")=="ready":
+		# Use actual frozen eligibility supplied by the host. An old unclaimed
+		# proof may still be ready after a later service, so do not claim that the
+		# currently displayed report itself completed this event.
+		var reward:=make_button("시식회 답례 도착 · 의뢰 보기","ResultMarketOrder","gold","chevron_right")
+		reward.pressed.connect(func():action_requested.emit("market_order"))
+		_body.add_child(reward)
 	var chef: Dictionary=_context.get("chef_challenge",{})
 	if not chef.is_empty():
 		var status: String=chef["status"]

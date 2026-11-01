@@ -7,6 +7,8 @@ func _init() -> void:
 	var previous: Dictionary=to_dict()
 	previous.erase("broth_workshop"); previous.erase("noodle_workshop")
 	previous.erase("recipe_knowledge"); previous.erase("server_challenge")
+	# A supported v15 document cannot carry later optional order progress.
+	previous.erase("market_tasting_order")
 	previous["schema_version"]=15
 	var err: String=load_from_dict(previous)
 	if err!="": push_error("Historical v15 fixture migration failed: "+err)

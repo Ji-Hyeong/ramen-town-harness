@@ -1,0 +1,549 @@
+{
+	"broth_workshop": {
+		"ingredients": [
+			"pork_bone",
+			"pork_bone",
+			"pork_bone"
+		],
+		"legacy": false,
+		"method": "standard",
+		"recipes": [
+			{
+				"day": 1,
+				"recipe": {
+					"ingredients": [
+						"pork_bone",
+						"pork_bone"
+					],
+					"method": "standard"
+				}
+			},
+			{
+				"day": 1,
+				"recipe": {
+					"ingredients": [
+						"pork_bone",
+						"pork_bone",
+						"pork_bone"
+					],
+					"method": "standard"
+				}
+			}
+		]
+	},
+	"chef_challenge": {
+		"attempt": {},
+		"completed_day": 0,
+		"start": {}
+	},
+	"contests": {
+		"articles": [],
+		"attempts": 0,
+		"bests": [],
+		"history": [],
+		"last_entry_day": 0
+	},
+	"day": 1,
+	"draft": {
+		"config": {
+			"broth": "broth_tonkotsu",
+			"broth_recipe": {
+				"ingredients": [
+					"pork_bone",
+					"pork_bone",
+					"pork_bone"
+				],
+				"method": "standard"
+			},
+			"cook": "cook_firm",
+			"noodle": "noodle_thin",
+			"noodle_recipe": {
+				"cut": "thin",
+				"flour": "wheat",
+				"method": "standard",
+				"water": "clear"
+			},
+			"oil": "oil_chili",
+			"price": 9000,
+			"tare": "tare_shio",
+			"toppings": [
+				"topping_nori"
+			]
+		},
+		"lineage_id": 1,
+		"name": "시제품 1"
+	},
+	"exploration": {
+		"active": {},
+		"completed": 0,
+		"discovered": [],
+		"history": [],
+		"last_departure_day": 0,
+		"retired": 0
+	},
+	"foraging": {
+		"active": {},
+		"completed": 0,
+		"first_day": {
+			"oil_roasted_sesame": 0,
+			"topping_citrus_peel": 0
+		},
+		"history": [],
+		"last_departure_day": 0,
+		"obtained": {
+			"oil_roasted_sesame": 0,
+			"topping_citrus_peel": 0
+		},
+		"retired": 0,
+		"stock": {
+			"oil_roasted_sesame": 0,
+			"topping_citrus_peel": 0
+		},
+		"used": {
+			"oil_roasted_sesame": 0,
+			"topping_citrus_peel": 0
+		}
+	},
+	"growth": {
+		"facilities": [],
+		"rank": 1,
+		"staff": []
+	},
+	"harbor_foraging": {
+		"active": {},
+		"completed": 0,
+		"first_day": {
+			"broth_roasted_sardine": 0,
+			"topping_scallop": 0
+		},
+		"history": [],
+		"last_departure_day": 0,
+		"obtained": {
+			"broth_roasted_sardine": 0,
+			"topping_scallop": 0
+		},
+		"retired": 0,
+		"stock": {
+			"broth_roasted_sardine": 0,
+			"topping_scallop": 0
+		},
+		"used": {
+			"broth_roasted_sardine": 0,
+			"topping_scallop": 0
+		}
+	},
+	"last_feedback_record_id": 2,
+	"last_report": {},
+	"mountain_foraging": {
+		"active": {},
+		"completed": 0,
+		"first_day": {
+			"noodle_buckwheat": 0,
+			"topping_grilled_shiitake": 0
+		},
+		"history": [],
+		"last_departure_day": 0,
+		"obtained": {
+			"noodle_buckwheat": 0,
+			"topping_grilled_shiitake": 0
+		},
+		"retired": 0,
+		"stock": {
+			"noodle_buckwheat": 0,
+			"topping_grilled_shiitake": 0
+		},
+		"used": {
+			"noodle_buckwheat": 0,
+			"topping_grilled_shiitake": 0
+		}
+	},
+	"next_lineage_id": 2,
+	"next_record_id": 5,
+	"noodle_workshop": {
+		"formula": {
+			"cut": "thick",
+			"flour": "strong",
+			"method": "moist",
+			"water": "alkaline"
+		},
+		"legacy": false,
+		"recipes": [
+			{
+				"day": 1,
+				"recipe": {
+					"cut": "thin",
+					"flour": "wheat",
+					"method": "standard",
+					"water": "clear"
+				}
+			},
+			{
+				"day": 1,
+				"recipe": {
+					"cut": "thick",
+					"flour": "strong",
+					"method": "moist",
+					"water": "alkaline"
+				}
+			}
+		]
+	},
+	"recipe_knowledge": {
+		"keys": [
+			"f4711629189eb02b6d51155ed23da2f0efb931463c7663a429d4c75e91f2435c",
+			"d048048a399d17deb822fa0dbe0eb270078bb3552718d111796731cff40540ea",
+			"185b316bb5fd9e299728ebc4e65f5e9ee1d65ce332d97502383e3df017e6204b",
+			"485869901e8245564e0fa204b8809a592399d3dcc9ff423023a173136f1814a0"
+		]
+	},
+	"records": [
+		{
+			"comparison": {
+				"prev_config": {
+					"broth": "broth_tonkotsu",
+					"broth_recipe": {
+						"ingredients": [
+							"pork_bone",
+							"pork_bone"
+						],
+						"method": "standard"
+					},
+					"cook": "cook_firm",
+					"noodle": "noodle_thin",
+					"noodle_recipe": {
+						"cut": "thin",
+						"flour": "wheat",
+						"method": "standard",
+						"water": "clear"
+					},
+					"oil": "oil_scallion",
+					"price": 9000,
+					"tare": "tare_shio",
+					"toppings": [
+						"topping_nori"
+					]
+				},
+				"prev_record_id": 1,
+				"prev_scores": {
+					"dohyun": 82,
+					"hayoung": 78,
+					"maru": 60
+				},
+				"prev_version": 1
+			},
+			"config": {
+				"broth": "broth_tonkotsu",
+				"broth_recipe": {
+					"ingredients": [
+						"pork_bone",
+						"pork_bone",
+						"pork_bone"
+					],
+					"method": "standard"
+				},
+				"cook": "cook_firm",
+				"noodle": "noodle_thin",
+				"noodle_recipe": {
+					"cut": "thin",
+					"flour": "wheat",
+					"method": "standard",
+					"water": "clear"
+				},
+				"oil": "oil_scallion",
+				"price": 9000,
+				"tare": "tare_shio",
+				"toppings": [
+					"topping_nori"
+				]
+			},
+			"lineage_id": 1,
+			"name": "시제품 1",
+			"record_id": 2,
+			"scores": {
+				"dohyun": 82,
+				"hayoung": 78,
+				"maru": 60
+			},
+			"tasted_day": 1,
+			"version": 2
+		},
+		{
+			"comparison": {
+				"prev_config": {
+					"broth": "broth_tonkotsu",
+					"broth_recipe": {
+						"ingredients": [
+							"pork_bone",
+							"pork_bone",
+							"pork_bone"
+						],
+						"method": "standard"
+					},
+					"cook": "cook_firm",
+					"noodle": "noodle_thin",
+					"noodle_recipe": {
+						"cut": "thin",
+						"flour": "wheat",
+						"method": "standard",
+						"water": "clear"
+					},
+					"oil": "oil_scallion",
+					"price": 9000,
+					"tare": "tare_shio",
+					"toppings": [
+						"topping_nori"
+					]
+				},
+				"prev_record_id": 2,
+				"prev_scores": {
+					"dohyun": 82,
+					"hayoung": 78,
+					"maru": 60
+				},
+				"prev_version": 2
+			},
+			"config": {
+				"broth": "broth_tonkotsu",
+				"broth_recipe": {
+					"ingredients": [
+						"pork_bone",
+						"pork_bone",
+						"pork_bone"
+					],
+					"method": "standard"
+				},
+				"cook": "cook_firm",
+				"noodle": "noodle_thin",
+				"noodle_recipe": {
+					"cut": "thin",
+					"flour": "wheat",
+					"method": "standard",
+					"water": "clear"
+				},
+				"oil": "oil_scallion",
+				"price": 9100,
+				"tare": "tare_shio",
+				"toppings": [
+					"topping_nori"
+				]
+			},
+			"lineage_id": 1,
+			"name": "시제품 1",
+			"record_id": 3,
+			"scores": {
+				"dohyun": 82,
+				"hayoung": 78,
+				"maru": 60
+			},
+			"tasted_day": 1,
+			"version": 3
+		},
+		{
+			"comparison": {
+				"prev_config": {
+					"broth": "broth_tonkotsu",
+					"broth_recipe": {
+						"ingredients": [
+							"pork_bone",
+							"pork_bone",
+							"pork_bone"
+						],
+						"method": "standard"
+					},
+					"cook": "cook_firm",
+					"noodle": "noodle_thin",
+					"noodle_recipe": {
+						"cut": "thin",
+						"flour": "wheat",
+						"method": "standard",
+						"water": "clear"
+					},
+					"oil": "oil_scallion",
+					"price": 9100,
+					"tare": "tare_shio",
+					"toppings": [
+						"topping_nori"
+					]
+				},
+				"prev_record_id": 3,
+				"prev_scores": {
+					"dohyun": 82,
+					"hayoung": 78,
+					"maru": 60
+				},
+				"prev_version": 3
+			},
+			"config": {
+				"broth": "broth_tonkotsu",
+				"broth_recipe": {
+					"ingredients": [
+						"pork_bone",
+						"pork_bone",
+						"pork_bone"
+					],
+					"method": "standard"
+				},
+				"cook": "cook_firm",
+				"noodle": "noodle_thick",
+				"noodle_recipe": {
+					"cut": "thick",
+					"flour": "strong",
+					"method": "moist",
+					"water": "alkaline"
+				},
+				"oil": "oil_scallion",
+				"price": 9100,
+				"process": {
+					"broth": "standard",
+					"noodle": "moist"
+				},
+				"tare": "tare_shio",
+				"toppings": [
+					"topping_nori"
+				]
+			},
+			"lineage_id": 1,
+			"name": "시제품 1",
+			"record_id": 4,
+			"scores": {
+				"dohyun": 81,
+				"hayoung": 72,
+				"maru": 55
+			},
+			"tasted_day": 1,
+			"version": 4
+		}
+	],
+	"research": {
+		"completed": []
+	},
+	"schema_version": 19,
+	"selected_record_id": 2,
+	"server_challenge": {
+		"attempt": {},
+		"completed_day": 0,
+		"start": {}
+	},
+	"shop": {
+		"expanded": false,
+		"menu_ids": []
+	},
+	"stories": {
+		"arcs": []
+	},
+	"taste_achievements": {
+		"dohyun": {
+			"comparison": {},
+			"config": {
+				"broth": "broth_tonkotsu",
+				"broth_recipe": {
+					"ingredients": [
+						"pork_bone",
+						"pork_bone"
+					],
+					"method": "standard"
+				},
+				"cook": "cook_firm",
+				"noodle": "noodle_thin",
+				"noodle_recipe": {
+					"cut": "thin",
+					"flour": "wheat",
+					"method": "standard",
+					"water": "clear"
+				},
+				"oil": "oil_scallion",
+				"price": 9000,
+				"tare": "tare_shio",
+				"toppings": [
+					"topping_nori"
+				]
+			},
+			"lineage_id": 1,
+			"name": "시제품 1",
+			"record_id": 1,
+			"scores": {
+				"dohyun": 82,
+				"hayoung": 78,
+				"maru": 60
+			},
+			"tasted_day": 1,
+			"version": 1
+		},
+		"hayoung": {
+			"comparison": {},
+			"config": {
+				"broth": "broth_tonkotsu",
+				"broth_recipe": {
+					"ingredients": [
+						"pork_bone",
+						"pork_bone"
+					],
+					"method": "standard"
+				},
+				"cook": "cook_firm",
+				"noodle": "noodle_thin",
+				"noodle_recipe": {
+					"cut": "thin",
+					"flour": "wheat",
+					"method": "standard",
+					"water": "clear"
+				},
+				"oil": "oil_scallion",
+				"price": 9000,
+				"tare": "tare_shio",
+				"toppings": [
+					"topping_nori"
+				]
+			},
+			"lineage_id": 1,
+			"name": "시제품 1",
+			"record_id": 1,
+			"scores": {
+				"dohyun": 82,
+				"hayoung": 78,
+				"maru": 60
+			},
+			"tasted_day": 1,
+			"version": 1
+		},
+		"maru": {
+			"comparison": {},
+			"config": {
+				"broth": "broth_tonkotsu",
+				"broth_recipe": {
+					"ingredients": [
+						"pork_bone",
+						"pork_bone"
+					],
+					"method": "standard"
+				},
+				"cook": "cook_firm",
+				"noodle": "noodle_thin",
+				"noodle_recipe": {
+					"cut": "thin",
+					"flour": "wheat",
+					"method": "standard",
+					"water": "clear"
+				},
+				"oil": "oil_scallion",
+				"price": 9000,
+				"tare": "tare_shio",
+				"toppings": [
+					"topping_nori"
+				]
+			},
+			"lineage_id": 1,
+			"name": "시제품 1",
+			"record_id": 1,
+			"scores": {
+				"dohyun": 82,
+				"hayoung": 78,
+				"maru": 60
+			},
+			"tasted_day": 1,
+			"version": 1
+		}
+	},
+	"training": {},
+	"wallet": 18700
+}

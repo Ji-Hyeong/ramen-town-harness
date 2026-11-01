@@ -18,6 +18,7 @@ const Growth = preload("res://scripts/domain/shop_growth.gd")
 const Staffing = preload("res://scripts/domain/shop_staffing.gd")
 const Chef = preload("res://scripts/domain/chef_challenge.gd")
 const Server = preload("res://scripts/domain/server_challenge.gd")
+const MarketOrder = preload("res://scripts/domain/market_tasting_order.gd")
 const Training = preload("res://scripts/domain/staff_training.gd")
 const Exploration = preload("res://scripts/domain/ingredient_exploration.gd")
 const Foraging = preload("res://scripts/domain/market_foraging.gd")
@@ -62,7 +63,9 @@ const Stories = preload("res://scripts/domain/regular_stories.gd")
 ## v18 remembers which exact recipes were really selected/tasted (recipe_knowledge.gd). v1..17 are seeded
 ## only from actual tasting witnesses; money, day, formulas, records and scores are never touched.
 ## v19 adds an explicitly accepted server challenge; older games get no retroactive proof.
-const SCHEMA_VERSION: int = 19
+## v20 adds one optional market service order. Earlier saves gain empty progress
+## only; no past tasting/service grants retroactive cash, items or eligibility.
+const SCHEMA_VERSION: int = 20
 const EXPANSION_PRICE: int = 60000
 const MIN_SCHEMA_VERSION: int = 1
 const LEGACY_MAX_RECORDS: int = 30
@@ -93,7 +96,8 @@ const TOP_KEYS_V15: Array = TOP_KEYS_V14 + ["mountain_foraging"]
 const TOP_KEYS_V16: Array = TOP_KEYS_V15 + ["broth_workshop"]
 const TOP_KEYS_V17: Array = TOP_KEYS_V16 + ["noodle_workshop"]
 const TOP_KEYS_V18: Array = TOP_KEYS_V17 + ["recipe_knowledge"]
-const TOP_KEYS: Array = TOP_KEYS_V18 + ["server_challenge"]
+const TOP_KEYS_V19: Array = TOP_KEYS_V18 + ["server_challenge"]
+const TOP_KEYS: Array = TOP_KEYS_V19 + ["market_tasting_order"]
 const RECORD_KEYS: Array = ["record_id", "lineage_id", "name", "version", "tasted_day", "config", "scores", "comparison"]
 const COMPARISON_KEYS: Array = ["prev_record_id", "prev_version", "prev_scores", "prev_config"]
 const DRAFT_KEYS: Array = ["config", "name", "lineage_id"]
@@ -123,6 +127,7 @@ var _hired: Array = []
 var _training: Dictionary = {}
 var _chef_challenge: Dictionary = Chef.empty_state()
 var _server_challenge: Dictionary = Server.empty_state()
+var _market_tasting_order: Dictionary = MarketOrder.empty_state()
 var _expanded: bool = false
 var _menu_ids: Array = []
 ## 재료 탐험 상태(저장). 발견한 재료(영구), 마지막 출발일(하루 1번 규칙), 누적 완료/포기 횟수, 진행 중 탐험, 최근 영수증. 구조는 ingredient_exploration.gd 참고.
@@ -954,8 +959,11 @@ func settle_service() -> Dictionary:
 	if str(trained["error"]) != "":
 		return _fail(str(trained["error"]))
 	var chef_after: Dictionary = Chef.observe(_chef_challenge, rec, day, s.completed)
+	var order_after: Dictionary = MarketOrder.observe(_market_tasting_order,[rec],day,s.completed)
+	if not order_after["ok"]:return _fail(str(order_after["error"]))
 	# --- 여기부터는 실패 지점이 없다 ---
 	_chef_challenge = chef_after
+	_market_tasting_order = order_after["state"]
 	last_report = {
 		"day": day,
 		"recipe_name": str(rec["name"]),
@@ -1042,7 +1050,7 @@ func expand_shop() -> Dictionary:
 	return _ok("매장을 넓혔어요. 8석→12석 · 판매 메뉴 1종→2종. 기존 메뉴는 유지돼요. 증축비는 돌려받지 못해요.")
 
 
-func _settle_menu_session(s: Session, observe_server: bool = true) -> Dictionary:
+func _settle_menu_session(s: Session, observe_runtime: bool = true) -> Dictionary:
 	if s != _active_session or s.settled or not s.is_finished(): return _fail("완료한 현재 영업만 정산할 수 있어요.")
 	var sm: Dictionary = s.summary()
 	if str(sm["error"]) != "":
@@ -1072,10 +1080,15 @@ func _settle_menu_session(s: Session, observe_server: bool = true) -> Dictionary
 	if str(trained["error"]) != "":
 		return _fail(str(trained["error"]))
 	var chef_after: Dictionary = Chef.observe(_chef_challenge, today[0], day, s.completed) if today.size() == 1 else _chef_challenge.duplicate(true)
-	var server_after: Dictionary = Server.observe(_server_challenge, today, day, s.completed) if observe_server else {"error":"", "state":_server_challenge.duplicate(true)}
+	# The analytical serve() shortcut deliberately cannot create actual runtime
+	# evidence for either a staff challenge or the market tasting commission.
+	var server_after: Dictionary = Server.observe(_server_challenge, today, day, s.completed) if observe_runtime else {"error":"", "state":_server_challenge.duplicate(true)}
 	if str(server_after["error"]) != "": return _fail(str(server_after["error"]))
+	var order_after: Dictionary = MarketOrder.observe(_market_tasting_order,today,day,s.completed) if observe_runtime else {"ok":true,"state":_market_tasting_order.duplicate(true)}
+	if not order_after["ok"]:return _fail(str(order_after["error"]))
 	_chef_challenge = chef_after
 	_server_challenge = server_after["state"]
+	_market_tasting_order = order_after["state"]
 	# 검사 뒤에만 비용/경험/일차/불변 보고를 함께 반영한다. 공통 운영비는 이 한 번뿐이다.
 	wallet = after
 	_training = trained["state"]
@@ -1360,6 +1373,31 @@ func claim_server_challenge() -> Dictionary:
 ## Freeze helper qualifications and both earned base-role masteries for this service.
 func current_staffing() -> Dictionary:
 	return Staffing.snapshot(_hired, _training, Chef.level(_chef_challenge), Server.level(_server_challenge))
+
+
+## Read-only review. It neither evaluates an editable draft nor rewards a sale.
+func market_order_review() -> Dictionary:
+	return MarketOrder.review(_market_tasting_order,_rank)
+
+
+func start_market_order(direction: String) -> Dictionary:
+	if _busy():return _locked_fail()
+	var result: Dictionary=MarketOrder.begin(_market_tasting_order,direction,day,_rank)
+	if not result["ok"]:return _fail(str(result["error"]))
+	_market_tasting_order=result["state"]
+	return _ok("장터 시식회를 수락했어요. 대상 메뉴를 실제 영업에서 대접해 주세요.")
+
+
+## Reserve the entire payout before changing either the proof or the wallet.
+## A cap/busy/duplicate refusal leaves both fields untouched and claimable later.
+func claim_market_order() -> Dictionary:
+	if _busy():return _locked_fail()
+	var result: Dictionary=MarketOrder.claim(_market_tasting_order,day)
+	if not result["ok"]:return _fail(str(result["error"]))
+	if wallet>MAX_WALLET-int(result["reward"]):return _fail("답례를 받으면 자금 한도를 넘어요. 자금을 사용한 뒤 다시 받아 주세요.")
+	_market_tasting_order=result["state"]
+	wallet+=int(result["reward"])
+	return _ok("장터 시식회가 끝났어요! 답례 5,000원을 받았어요.")
 
 
 ## 영업 시작 시점에 세션에 복사해 두는 성장 요약(표시/검증용). 정산 금액에는 직원 구성만 쓰인다.
@@ -2060,6 +2098,7 @@ func to_dict() -> Dictionary:
 		"mountain_foraging": _mountain_foraging.duplicate(true),
 		"chef_challenge": _chef_challenge.duplicate(true),
 		"server_challenge": _server_challenge.duplicate(true),
+		"market_tasting_order": _market_tasting_order.duplicate(true),
 	}
 
 
@@ -2108,6 +2147,8 @@ func load_from_dict(raw: Variant) -> String:
 	elif version == 18:
 		expected_keys = TOP_KEYS_V18
 	elif version == 19:
+		expected_keys = TOP_KEYS_V19
+	elif version == 20:
 		expected_keys = TOP_KEYS
 	var key_err: String = Check.keys_error(d, expected_keys, "저장")
 	if key_err != "":
@@ -2401,6 +2442,11 @@ func load_from_dict(raw: Variant) -> String:
 		var staff_error: String = _report_staff_error(rep_result["report"]["staffing"], growth_staff, training_parsed, int(rep_result["report"]["day"]), chef_parsed, server_parsed)
 		if staff_error != "":
 			return staff_error
+	var market_order_parsed: Dictionary=MarketOrder.empty_state()
+	if version>=20:
+		var order_result: Dictionary=MarketOrder.parse(d["market_tasting_order"],int(d["day"]),n_record,growth_rank,slot_limit,discovered_now,parsed,rep_result["report"])
+		if not order_result["ok"]:return str(order_result["error"])
+		market_order_parsed=order_result["state"]
 	var stories_parsed: Array = []
 	if version >= 9:
 		var retained: Dictionary = {}
@@ -2462,6 +2508,7 @@ func load_from_dict(raw: Variant) -> String:
 	_training = training_parsed
 	_chef_challenge = chef_parsed
 	_server_challenge = server_parsed
+	_market_tasting_order = market_order_parsed
 	_exploration = exploration_parsed
 	_foraging = foraging_parsed
 	_harbor_foraging = harbor_parsed
