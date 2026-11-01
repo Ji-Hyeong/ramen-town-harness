@@ -32,3 +32,6 @@ wrapped labels, real scroll reachability and fixed return control. Run original
 paid-result/first-journey regression. Headless is not native rendering. Prepare a
 fresh isolated app and request exact action-time approval; Mac lock is not bypassed.
 Publish READY PR/attach; only merge after actual screenshot/cleanup acceptance.
+
+## INTEGRATION 2026-11-01
+User requests continuation with30% reserve. Merge accepted PR55 ea8170e without changing either UI implementation. Preserve exact conflicting history and union reviewed QA fixture registries. Verify combined452runtime source: formula470, sales575, paid365, first journey359, builder24; no production edits planned. Prepare a new isolated combined formula app; independent444/450source captures are not current combined evidence. Request exact action-time approval before its GUI execution. Withhold merge until current native acceptance. No Claude, phone, live save or global settings.
