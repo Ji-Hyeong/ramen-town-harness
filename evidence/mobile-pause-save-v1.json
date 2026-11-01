@@ -1,0 +1,84 @@
+{
+  "date": "2026-11-02",
+  "task": "mobile-pause-save-v1",
+  "base": "e959e07dd1ada2c6033747ad2627e558fc9131e9",
+  "runtime_base": "1ce05cd059164d70e75f7e4ec825259dfbe50827",
+  "runtime_schema": 19,
+  "runtime452unchanged": true,
+  "script_sha256": "65c299af2b91a602b4a4ca7f8873a0f7c6310a7c457b12b15b9c3b754b8a9a11",
+  "accepted_runs": [
+    "run-v3",
+    "run-v4"
+  ],
+  "actual_exit_each": 0,
+  "checks_each": 197,
+  "failures_each": 0,
+  "errors_warnings_each": 0,
+  "entire_file_pairs_equal": 20,
+  "report_sha256": "a9cbab9b38c979e495ea96ffe0060929c2837f5b9cd1674da3807dffffe8e535",
+  "existing_output_refusal": {
+    "exit": 2,
+    "files_preserved": 20,
+    "all_hashes_unchanged": true
+  },
+  "native_required": false,
+  "cases": [
+    {
+      "id": "broth",
+      "pause_checkpoint_sha256": "960d41032a020bcf5110746ecc0a1c69f759f3028c2376824a0e323fc3aeee66",
+      "quoted_fee": 570,
+      "real_save_refusal": false,
+      "restart_has_no_pending_job": true,
+      "same_process_completes_once": true,
+      "wallet_after": 29430,
+      "wallet_before": 30000
+    },
+    {
+      "id": "noodle",
+      "pause_checkpoint_sha256": "db78e5f4c92e35baa748261afe9ea5ef961b67ecbf789cd1b165d2972563c41e",
+      "quoted_fee": 320,
+      "real_save_refusal": false,
+      "restart_has_no_pending_job": true,
+      "same_process_completes_once": true,
+      "wallet_after": 29680,
+      "wallet_before": 30000
+    },
+    {
+      "id": "taste",
+      "pause_checkpoint_sha256": "64d023098f442a18227bf29b8a8f45a28377e8ca4a6e06e2cf87586d5b0c0fc1",
+      "quoted_fee": 2040,
+      "real_save_refusal": false,
+      "restart_has_no_pending_job": true,
+      "same_process_completes_once": true,
+      "wallet_after": 23770,
+      "wallet_before": 25810
+    },
+    {
+      "id": "broth_save_refusal",
+      "pause_checkpoint_sha256": "c8164655632ca5b6ffec7bcb963d64137ec21ec4fb1a46d9195701689a50d58b",
+      "quoted_fee": 570,
+      "real_save_refusal": true,
+      "restart_has_no_pending_job": true,
+      "same_process_completes_once": true,
+      "wallet_after": 29430,
+      "wallet_before": 30000
+    },
+    {
+      "final_units": 9,
+      "id": "service",
+      "net": 63960,
+      "partial_orders_before_pause": 1,
+      "restart_discards_unsettled_orders": true,
+      "same_process_settles_once": true
+    },
+    {
+      "id": "exploration",
+      "once_only_result": true,
+      "prepaid_cost": 1900,
+      "received_samples": 5,
+      "restart_preserves_paid_choices": true
+    }
+  ],
+  "initial_failures": "run-v1 preserved: uninitialized hidden development presenter in craft test; fixed fixture to open real development view. Service fixture needed bounded HARD_LIMIT rather than 300 accelerated seconds for first actual order. No production correction or relaxed conditions. run-v2 clean marker preserved, not used for two accepted actual exit records.",
+  "limits": "Headless owned main-scene callbacks only. Node.notification(APPLICATION_PAUSED) is delivered to that one owned Node, not the OS or global tree. Same-process continuation and restart from a copied normal save are distinct. Accelerated frame/work/service clocks. No actual iPhone/OS termination, pause-time budget, rendering, performance/heat or final policy approval claim."
+}
