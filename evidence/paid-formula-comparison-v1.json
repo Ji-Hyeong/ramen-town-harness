@@ -1,0 +1,132 @@
+{
+  "date": "2026-11-01",
+  "task": "paid-formula-comparison-v1",
+  "base": "2ac226e0c15099c48fc1c594c61852f4912b29f0",
+  "status": "combined452_native_accepted",
+  "schema_version": 19,
+  "source_count": 452,
+  "modified_old_runtime_files": [
+    "scripts/ui/main.gd"
+  ],
+  "domain_services_assets_unchanged": true,
+  "app": "/private/tmp/ramen-paid-formula-integration-qa-20261101-v1/Ramen QA.app",
+  "pack_sha256": "2fec20246b6f6bb7d8dba95e8fbc924d6f4ebcc02ad31c07163eb8736aac2b2d",
+  "vendor_signature_valid": true,
+  "checks": {
+    "formula_actual_layout": 470,
+    "paid_result_regression": 365,
+    "first_journey_regression": 359,
+    "all_failures": 0,
+    "all_command_exits": 0,
+    "all_engine_script_errors_warnings": 0,
+    "builder_tests": 24
+  },
+  "fixture_scope": [
+    "actual fresh raw paid revisions",
+    "separate earned rank3 raw five-ingredient/noodle checkpoint continuation",
+    "separate supported legacy save compatibility"
+  ],
+  "initial_test_repairs": "create explicit fixture save directories; await asynchronous reachability check before freeing modal; null guard on failed restart lookup; no game behavior workaround",
+  "native_executed": true,
+  "claude_calls": 0,
+  "phone_or_live_save": false,
+  "archive": "outputs/ramen-paid-formula-comparison-v1",
+  "native": {
+    "run": "/private/tmp/ramen-paid-formula-integration-qa-20261101-v1/runs/20261101T105450Z-73997",
+    "checks": 533,
+    "failures": 0,
+    "exit": 0,
+    "captures": 21,
+    "errors_warnings": 0,
+    "post_signature_exit": 0,
+    "visual_review": {
+      "status": "completed",
+      "captures": 21,
+      "method": "all three contact sheets",
+      "new_clipping_overlap": false,
+      "known_polish": "small-screen long ingredient word wraps remain"
+    },
+    "accepted_scope": "current combined452source and exact PCK",
+    "published_originals": {
+      "portrait-portions.png": {
+        "capture": "portrait_formula_01_portions.png",
+        "sha256": "81ccf4cf2c4ea812b530980730c8334a98065e38137cb769e4f8349fe030236f"
+      },
+      "portrait-long.png": {
+        "capture": "portrait_formula_06_long.png",
+        "sha256": "e2dfb67249e2dc45d853b269edfb06783c5c30bbf7d8d5fd289d6f25331011bb"
+      },
+      "desktop-long.png": {
+        "capture": "desktop_formula_06_long.png",
+        "sha256": "fe1b34ead8ed01b195d4658cbbf2ecfb9e6f20f35aa604910e3ee91f011d7eac"
+      }
+    }
+  },
+  "integration": {
+    "base_main": "ea8170e62ca6c258b19d53eebe0074a07d41f301",
+    "PR55_combined_tested": true,
+    "checks": {
+      "formula": {
+        "exit": 0,
+        "errors_warnings": [],
+        "summary": [
+          "PAID FORMULA COMPARISON checks=470 failures=0 mode=layout-only"
+        ]
+      },
+      "sales": {
+        "exit": 0,
+        "errors_warnings": [],
+        "summary": [
+          "FORAGING SALES LOOP checks=575 failures=0 mode=layout-only"
+        ]
+      },
+      "paid": {
+        "exit": 0,
+        "errors_warnings": [],
+        "summary": [
+          "PAID RESULT CHANGE baseline=false mode=layout-only checks=365 failures=0"
+        ]
+      },
+      "journey": {
+        "exit": 0,
+        "errors_warnings": [],
+        "summary": [
+          "FIRST MENU JOURNEY checks=359 failures=0 mode=layout"
+        ]
+      }
+    },
+    "builder_tests": 24,
+    "unchanged_original_implementations": true
+  },
+  "standalone_444_native": {
+    "run": "/private/tmp/ramen-paid-formula-comparison-qa-20261031-v2/runs/20261101T104448Z-71120",
+    "checks": 533,
+    "failures": 0,
+    "exit": 0,
+    "captures": 21,
+    "errors_warnings": 0,
+    "post_signature_exit": 0,
+    "visual_review": {
+      "status": "completed",
+      "captures": 21,
+      "method": "three contact sheets plus portrait/desktop long-formula originals",
+      "clipping_or_overlap_found": false,
+      "followup": "small-screen long ingredient words can wrap mid-word; readability polish remains"
+    },
+    "accepted_scope": "approved standalone444source and exact PCK only",
+    "published_originals": {
+      "portrait-portions.png": {
+        "capture": "portrait_formula_01_portions.png",
+        "sha256": "bcd3d3a0bd41db478632dcd50d327c5cc90e27d7c96a2ce5257db03d9b25a4fb"
+      },
+      "portrait-long.png": {
+        "capture": "portrait_formula_06_long.png",
+        "sha256": "038920c53c103c31b09d6ec9d5e7361232e27cb4348e67cfe5d82c4ef1c091d9"
+      },
+      "desktop-long.png": {
+        "capture": "desktop_formula_06_long.png",
+        "sha256": "6dd3928a6a26acb22fb557cadf53a0cd1cd3536040b9ad23659a74fe8b96e041"
+      }
+    }
+  }
+}

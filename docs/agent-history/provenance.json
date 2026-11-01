@@ -16,5 +16,11 @@
     "bytes": 14065,
     "sha256": "ef29aa08ae88614bb7d2d45e90530197334623ac7c30b617f82b3f91b341f31c",
     "archive": "docs/agent-history/AGENTS-sales-loop-headless-932cb6b.md"
+  },
+  "paid-formula-native-797ef8f": {
+    "ref": "797ef8fd847c4eac7b13c6c6024b47bb5ee0c1f6",
+    "bytes": 14570,
+    "sha256": "8d5f7a66a2b246ad24ddc4c9138ca915ac1beb6ae9a1ca18a3f941bcea7d212e",
+    "archive": "docs/agent-history/AGENTS-paid-formula-native-797ef8f.md"
   }
 }
