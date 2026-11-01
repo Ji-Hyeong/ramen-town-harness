@@ -18,7 +18,8 @@
     "first_journey_regression": 359,
     "all_failures": 0,
     "all_command_exits": 0,
-    "all_engine_script_errors_warnings": 0
+    "all_engine_script_errors_warnings": 0,
+    "builder_tests": 24
   },
   "fixture_scope": [
     "actual fresh raw paid revisions",
@@ -27,7 +28,7 @@
   ],
   "initial_test_repairs": "create explicit fixture save directories; await asynchronous reachability check before freeing modal; null guard on failed restart lookup; no game behavior workaround",
   "native_executed": false,
-  "native_blocker": "Mac locked; manual unlock requested for existing PR55 diagnostics. New exact-app action-time approval still needed when native run is possible.",
+  "native_blocker": "Human confirmed Mac unlock; exact new-app action-time approval requested and pending. Finish prior PR55 diagnostics serially; preserve at least30% quota.",
   "claude_calls": 0,
   "phone_or_live_save": false,
   "archive": "outputs/ramen-paid-formula-comparison-v1"
