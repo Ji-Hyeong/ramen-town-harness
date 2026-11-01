@@ -1,0 +1,8 @@
+{
+  "source_commit": "cdfc78bbeed491226c9045e9186186f88d7cae36",
+  "source_path": "AGENTS.md",
+  "archive": "docs/agent-history/AGENTS-market-integration-headless-cdfc78b.md",
+  "bytes": 11150,
+  "sha256": "7aabcf721290817a822bf10f4bde9335d68adc4a651aaba8abf7634cc76e1e6a",
+  "purpose": "Preserve original combined candidate history before resolving only our root/index changes against tools-only accepted main2ed3dc2. Native approval remains pending."
+}
