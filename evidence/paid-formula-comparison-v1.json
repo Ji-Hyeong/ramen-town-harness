@@ -1,0 +1,34 @@
+{
+  "date": "2026-11-01",
+  "task": "paid-formula-comparison-v1",
+  "base": "2ac226e0c15099c48fc1c594c61852f4912b29f0",
+  "status": "headless_accepted_native_not_run",
+  "schema_version": 19,
+  "source_count": 444,
+  "modified_old_runtime_files": [
+    "scripts/ui/main.gd"
+  ],
+  "domain_services_assets_unchanged": true,
+  "app": "/private/tmp/ramen-paid-formula-comparison-qa-20261031-v2/Ramen QA.app",
+  "pack_sha256": "7b0e3e7f44c85d4f63da89f43056fbabab8bb11ed87413e7804fd6c63f87ea61",
+  "vendor_signature_valid": true,
+  "checks": {
+    "formula_actual_layout": 470,
+    "paid_result_regression": 365,
+    "first_journey_regression": 359,
+    "all_failures": 0,
+    "all_command_exits": 0,
+    "all_engine_script_errors_warnings": 0
+  },
+  "fixture_scope": [
+    "actual fresh raw paid revisions",
+    "separate earned rank3 raw five-ingredient/noodle checkpoint continuation",
+    "separate supported legacy save compatibility"
+  ],
+  "initial_test_repairs": "create explicit fixture save directories; await asynchronous reachability check before freeing modal; null guard on failed restart lookup; no game behavior workaround",
+  "native_executed": false,
+  "native_blocker": "Mac locked; manual unlock requested for existing PR55 diagnostics. New exact-app action-time approval still needed when native run is possible.",
+  "claude_calls": 0,
+  "phone_or_live_save": false,
+  "archive": "outputs/ramen-paid-formula-comparison-v1"
+}

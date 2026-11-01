@@ -20,6 +20,8 @@ const Growth = preload("res://scripts/domain/shop_growth.gd")
 const Staffing = preload("res://scripts/domain/shop_staffing.gd")
 const Training = preload("res://scripts/domain/staff_training.gd")
 const ProcessRules = preload("res://scripts/domain/recipe_process.gd")
+const PaidBrothFormula = preload("res://scripts/domain/broth_workshop.gd")
+const PaidNoodleFormula = preload("res://scripts/domain/noodle_workshop.gd")
 const SaveServiceScript = preload("res://scripts/services/save_service.gd")
 const FeedbackScript = preload("res://scripts/ui/action_feedback.gd")
 const Discovery = preload("res://scripts/domain/recipe_discovery.gd")
@@ -3953,6 +3955,17 @@ func _customer_card(cd: Dictionary) -> PanelContainer:
 	return card
 
 
+## Literal stored formula only: no forecast or inference about missing legacy
+## raw data. The existing catalogs own material counts and method names.
+func _paid_formula_caption(config: Dictionary,kind: String) -> String:
+	var key: String=kind+"_recipe"
+	if not config.has(key):return str(Catalog.recipe_item(config,str(config[kind]))["name"])
+	var raw: Dictionary=config[key]
+	if kind=="broth":
+		return PaidBrothFormula.ingredients_text(raw)+"\n"+str(ProcessRules.method(kind,raw["method"])["name"])
+	return "%s · %s\n%s · %s" % [PaidNoodleFormula.option("flour",raw["flour"])["name"],PaidNoodleFormula.option("water",raw["water"])["name"],PaidNoodleFormula.option("cut",raw["cut"])["name"],ProcessRules.method(kind,raw["method"])["name"]]
+
+
 func _comparison_card(rec: Dictionary, evaluation: Dictionary) -> PanelContainer:
 	var card: PanelContainer = _card("ComparisonPanel")
 	card.add_theme_stylebox_override("panel",OperationsScript.Mock.style("summary",Vector2(12,12)))
@@ -3974,6 +3987,9 @@ func _comparison_card(rec: Dictionary, evaluation: Dictionary) -> PanelContainer
 	# draft is excluded, including when an old notebook record was deleted.
 	var pair:=HBoxContainer.new()
 	cb.add_child(pair)
+	var changed_formulas: Array[String]=[]
+	for kind in ["broth","noodle"]:
+		if prev_cfg.get(kind+"_recipe",{})!=cfg.get(kind+"_recipe",{}):changed_formulas.append(kind)
 	for sample in [{"config":prev_cfg,"title":"이전 v%d" % cmp["prev_version"],"name":"JourneyBeforeDish"},{"config":cfg,"title":"이번 v%d" % rec["version"],"name":"JourneyAfterDish"}]:
 		var food:=_vbox(4)
 		food.size_flags_horizontal=Control.SIZE_EXPAND_FILL
@@ -3984,6 +4000,11 @@ func _comparison_card(rec: Dictionary, evaluation: Dictionary) -> PanelContainer
 		dish.custom_minimum_size=Vector2(110,100)
 		food.add_child(dish)
 		dish.set_config(sample["config"])
+		for kind in changed_formulas:
+			var caption:=_label(_paid_formula_caption(sample["config"],kind),15,INK)
+			caption.name=("JourneyBeforeFormula_" if sample["name"]=="JourneyBeforeDish" else "JourneyAfterFormula_")+kind
+			caption.mouse_filter=Control.MOUSE_FILTER_IGNORE
+			food.add_child(caption)
 	var observed: Dictionary=KitchenJourney.comparison(rec)
 	if str(observed["error"])!="": push_error(str(observed["error"]))
 	var metrics:=GridContainer.new()
@@ -4007,7 +4028,9 @@ func _comparison_card(rec: Dictionary, evaluation: Dictionary) -> PanelContainer
 		elif str(prev_cfg[slot]) != str(cfg[slot]) or prev_cfg.get(slot+"_recipe",{})!=cfg.get(slot+"_recipe",{}):
 			var old_item: Dictionary = Catalog.recipe_item(prev_cfg,str(prev_cfg[slot]))
 			var new_item: Dictionary = Catalog.recipe_item(cfg,str(cfg[slot]))
-			changes.append("%s: %s → %s" % [str(Catalog.SLOT_NAMES[slot]), str(old_item["name"]), str(new_item["name"])])
+			var old_description: String=_paid_formula_caption(prev_cfg,slot).replace("\n"," · ") if slot in changed_formulas else str(old_item["name"])
+			var new_description: String=_paid_formula_caption(cfg,slot).replace("\n"," · ") if slot in changed_formulas else str(new_item["name"])
+			changes.append("%s: %s → %s" % [str(Catalog.SLOT_NAMES[slot]), old_description, new_description])
 	if int(prev_cfg["price"]) != int(cfg["price"]):
 		changes.append("가격: %s → %s" % [_won(int(prev_cfg["price"])), _won(int(cfg["price"]))])
 	if prev_cfg.get("process", {}) != cfg.get("process", {}):
