@@ -28,3 +28,11 @@ or subscription quota. No percentage of service usage savings is promised.
 - [AGENTS-market-order-headless-1fb9a0a](AGENTS-market-order-headless-1fb9a0a.md): exact 1fb9a0a5b05bbcad6be9fd044ccc53717db4c99a Git blob, 14629 bytes.
 
 [Integration provenance](market-order-readability-v1-provenance.json) records full SHA256 values. Native acceptance was pending for both feature roots; archival preserves that scope.
+
+## Raw notebook accepted root
+
+[AGENTS-raw-notebook-accepted-71ba335.md](AGENTS-raw-notebook-accepted-71ba335.md) preserves the exact 71ba3351f5694dc73b2096ce5664052eed91fb6f Git blob (16327bytes). [Provenance](component-notebook-references-v1-provenance.json) records SHA256. The compact active root retains current safeguards and immediate accepted summaries.
+
+## Combined candidate before latest main sync
+
+[Exact combined headless root](AGENTS-market-integration-headless-cdfc78b.md) and [provenance](market-order-latest-main-provenance.json) preserve cdfc78b before merging only accepted diagnostics. Native acceptance remains pending.

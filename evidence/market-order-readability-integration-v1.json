@@ -98,5 +98,7 @@
   ],
   "claude_or_other_agents": 0,
   "phone_live_save_global_config_changed": false,
-  "limits": "Headless does not verify rendered images or human fun; withheld main merge pending exact native runs and all fresh screenshot review. Existing PR57/58 evidence remains scoped to separate candidates."
+  "limits": "Headless does not verify rendered images or human fun; withheld main merge pending exact native runs and all fresh screenshot review. Existing PR57/58 evidence remains scoped to separate candidates.",
+  "latest_tools_docs_main_merged": "2ed3dc2db34f6c58a2d053d8aa0f1e2bac07696f",
+  "post_main_sync_runtime_source_unchanged": true
 }
