@@ -10,5 +10,11 @@
     "bytes": 201531,
     "sha256": "1e6bafe34cdf6db6ad37cdb5c9622a3c53340c4be0f41a43dafd1199e51d842f",
     "archive": "docs/agent-history/AGENTS-pending-pr52-d64586a.md"
+  },
+  "sales-loop-headless-932cb6b": {
+    "ref": "932cb6b148e854a709c76c41ebca4801628e76e7",
+    "bytes": 14065,
+    "sha256": "ef29aa08ae88614bb7d2d45e90530197334623ac7c30b617f82b3f91b341f31c",
+    "archive": "docs/agent-history/AGENTS-sales-loop-headless-932cb6b.md"
   }
 }
