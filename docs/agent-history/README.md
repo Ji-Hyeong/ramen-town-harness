@@ -20,3 +20,7 @@ current safeguards, project navigation, role/quota preferences and immediate his
 
 The root file became smaller by moving old records, not by measuring model tokens
 or subscription quota. No percentage of service usage savings is promised.
+
+## Raw notebook accepted root
+
+[AGENTS-raw-notebook-accepted-71ba335.md](AGENTS-raw-notebook-accepted-71ba335.md) preserves the exact 71ba3351f5694dc73b2096ce5664052eed91fb6f Git blob (16327bytes). [Provenance](component-notebook-references-v1-provenance.json) records SHA256. The compact active root retains current safeguards and immediate accepted summaries.

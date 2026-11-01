@@ -1,0 +1,147 @@
+{
+  "date": "2026-11-02",
+  "task": "component-notebook-references-v1",
+  "base": "71ba3351f5694dc73b2096ce5664052eed91fb6f",
+  "script_sha256": "6735029ede5a340462f81eaa8731666d1122bd9b6321e1caaa5b77f3a17b88e9",
+  "runtime452unchanged": true,
+  "cases": [
+    {
+      "source": "01_initial.json",
+      "source_sha256": "89646a205db64450e1190bba7bb9ebc332163061322300220cef5d2c21661ca7",
+      "checks": 312,
+      "actual_exit": 0,
+      "engine_errors_warnings": 0,
+      "all_reference_paths_verified": true,
+      "only_intended_two_arrays_changed": true,
+      "inventory": {
+        "broth": {
+          "counterfactual_unused_count": 1,
+          "original_count": 2,
+          "referenced_count": 1
+        },
+        "noodle": {
+          "counterfactual_unused_count": 0,
+          "original_count": 1,
+          "referenced_count": 1
+        }
+      }
+    },
+    {
+      "source": "02_workshops.json",
+      "source_sha256": "fec8f22e001ec71096509c6079e9a669f0ceeb7aa67fe16274cfc99948f20a99",
+      "checks": 932,
+      "actual_exit": 0,
+      "engine_errors_warnings": 0,
+      "all_reference_paths_verified": true,
+      "only_intended_two_arrays_changed": true,
+      "inventory": {
+        "broth": {
+          "counterfactual_unused_count": 59,
+          "original_count": 60,
+          "referenced_count": 1
+        },
+        "noodle": {
+          "counterfactual_unused_count": 23,
+          "original_count": 24,
+          "referenced_count": 1
+        }
+      }
+    },
+    {
+      "source": "03_records_300.json",
+      "source_sha256": "575abab8bdb885a195033aeb193e71e7076f03f27c4e2e2c346b92db5b389127",
+      "checks": 20142,
+      "actual_exit": 0,
+      "engine_errors_warnings": 0,
+      "all_reference_paths_verified": true,
+      "only_intended_two_arrays_changed": true,
+      "inventory": {
+        "broth": {
+          "counterfactual_unused_count": 0,
+          "original_count": 60,
+          "referenced_count": 60
+        },
+        "noodle": {
+          "counterfactual_unused_count": 19,
+          "original_count": 24,
+          "referenced_count": 5
+        }
+      }
+    },
+    {
+      "source": "04_after_cleanup.json",
+      "source_sha256": "3ca62c1f227c74d94141e2727c7037ec0106e423c2aa417abc8e9d300c2a5479",
+      "checks": 20151,
+      "actual_exit": 0,
+      "engine_errors_warnings": 0,
+      "all_reference_paths_verified": true,
+      "only_intended_two_arrays_changed": true,
+      "inventory": {
+        "broth": {
+          "counterfactual_unused_count": 0,
+          "original_count": 60,
+          "referenced_count": 60
+        },
+        "noodle": {
+          "counterfactual_unused_count": 18,
+          "original_count": 24,
+          "referenced_count": 6
+        }
+      }
+    }
+  ],
+  "independently_resolved_reference_paths": 2444,
+  "replay": {
+    "source": "03_records_300.json",
+    "actual_exit": 0,
+    "exact_output_pairs": 2
+  },
+  "input_refusals": [
+    {
+      "case": "missing",
+      "actual_exit": 2,
+      "output_not_created": true
+    },
+    {
+      "case": "symlink",
+      "actual_exit": 2,
+      "output_not_created": true
+    },
+    {
+      "case": "oversize",
+      "actual_exit": 2,
+      "output_not_created": true
+    },
+    {
+      "case": "tampered",
+      "actual_exit": 2,
+      "output_not_created": true
+    },
+    {
+      "case": "wrong-scope",
+      "actual_exit": 2,
+      "output_not_created": true
+    },
+    {
+      "case": "relative",
+      "actual_exit": 2,
+      "output_not_created": true
+    },
+    {
+      "case": "unnormalized",
+      "actual_exit": 2,
+      "output_not_created": true
+    }
+  ],
+  "existing_output_refusal": {
+    "actual_exit": 2,
+    "preserved_files": 2,
+    "all_hashes_unchanged": true
+  },
+  "input_hashes_unchanged": true,
+  "root_archive_verified_against_original_git_blob": true,
+  "native_required": false,
+  "gameplay_cleanup_implemented": false,
+  "claude_or_other_agents": 0,
+  "limits": "Read-only reference/normal parser planning evidence; no actual player cleanup or archive ownership policy implemented. All60broths are referenced in the300row sample, so unused cleanup alone cannot solve every full-library state. Current/durable references and whole-state validation must govern future transactions; no recipe-knowledge erasure or silent historic-menu pruning."
+}
