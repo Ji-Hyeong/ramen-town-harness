@@ -2,7 +2,7 @@
   "date": "2026-10-30",
   "task": "foraging-sales-loop-v1",
   "base": "2ac226e0c15099c48fc1c594c61852f4912b29f0",
-  "status": "native_checks_passed_cleanup_pending",
+  "status": "native_accepted_after_two_clean_repeats_prior_warning_unreproduced",
   "schema_version": 19,
   "source_count": 450,
   "modified_old_runtime_files": [
@@ -33,16 +33,42 @@
   "native_executed": true,
   "archive": "outputs/ramen-foraging-sales-loop-v1",
   "native": {
-    "run": "/private/tmp/ramen-foraging-sales-loop-qa-20261030-v3/runs/20261030T094450Z-30684",
+    "run": "/private/tmp/ramen-foraging-sales-loop-qa-20261030-v3/runs/20261101T103045Z-67560",
     "checks": 647,
     "failures": 0,
     "exit": 0,
-    "PNGs": 24,
-    "cleanup_warning": "61 ObjectDB instances leaked",
-    "cleanup_error": "3 resources still in use",
-    "visual_review": "three portrait originals reviewed; remaining/final acceptance pending",
-    "accepted": false,
-    "post_vendor_signature_valid": true
+    "screenshots": 24,
+    "errors_warnings": 0,
+    "post_signature_exit": 0,
+    "verbose_clean_run": "20261101T102644Z-66496",
+    "prior_unclean_run": "20261030T094450Z-30684",
+    "prior_warning_reproduced_in_either_repeat": false,
+    "prior_warning_root_cause": "not established; no game-code fix claimed",
+    "visual_review": {
+      "status": "completed",
+      "captures_reviewed": 24,
+      "new_visual_defects": [],
+      "scope": "untried/choose/ready/sold/shared/restart, pressed text, actual selling navigation; existing selected design"
+    },
+    "accepted": true,
+    "published_originals": {
+      "portrait-choose.png": {
+        "capture": "portrait_sales_02_choose.png",
+        "sha256": "4dc0e38c6656f97d45c7875f040407885ff46d187cad812900bcecf3aeb93450"
+      },
+      "portrait-pressed.png": {
+        "capture": "portrait_sales_03_pressed.png",
+        "sha256": "485d675ab5d2ad15839d10ebf592c66302ea23aa87cbfcc90cfd8aab49e12153"
+      },
+      "portrait-shared.png": {
+        "capture": "portrait_sales_07_shared.png",
+        "sha256": "e2e288604002cda4b2f779c71e45465ca9dd9f5410c574d42f94dab70df67005"
+      },
+      "compact-restart.png": {
+        "capture": "compact_sales_08_restart.png",
+        "sha256": "96601135efac6c089aa0f05963e161e7c6680d524f8fb0bc2ba4104a39673ac6"
+      }
+    }
   },
   "diagnostic": {
     "same_approved_app": true,
@@ -54,6 +80,12 @@
       "exit": 0,
       "cleanup_leak_reproduced": false
     },
-    "native_retry": "blocked before launching: Mac locked and automatic unlock failed; manual unlock requested"
+    "native_retry": "human unlocked Mac; verbose native 647/0 then byte-exact original launcher normal native647/0; both exit0, no errors/warnings"
+  },
+  "prior_native_cleanup_warning": {
+    "run": "20261030T094450Z-30684",
+    "objects": 61,
+    "resources": 3,
+    "root_cause": "not established; preserved, no code fix claimed"
   }
 }
