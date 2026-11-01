@@ -1,0 +1,357 @@
+{
+  "date": "2026-11-02",
+  "task": "novice-research-paths-v1",
+  "base": "1ce05cd059164d70e75f7e4ec825259dfbe50827",
+  "algorithm": "starter-random-paid-score-v1",
+  "script_sha256": "76561aca54985d553fee0a3836b652445e6d001eaf60d731b2bacc777158d21e",
+  "runtime_schema": 19,
+  "runtime452unchanged": true,
+  "native_required": false,
+  "actual_cases_per_run": 12,
+  "actual_services_per_run": 168,
+  "checks_per_run": 8672,
+  "successful_runs": [
+    "run-v2",
+    "run-v3"
+  ],
+  "exit_each": 0,
+  "errors_warnings_each": 0,
+  "failures_each": 0,
+  "entire_file_pairs_equal": 193,
+  "daily_snapshot_pairs_equal": 168,
+  "report_sha256": "0484569b326253f5175407b5c18fd3ff0390f438c2d863d0298234d565fc3e28",
+  "existing_output_refusal": {
+    "exit": 2,
+    "files_preserved": 193,
+    "all_hashes_unchanged": true
+  },
+  "case_aggregates": [
+    {
+      "id": "seed11_price6500_try1",
+      "seed": 11,
+      "price": 6500,
+      "attempts_per_day": 1,
+      "ending_wallet": 596860,
+      "ending_rank": 2,
+      "research_count": 2,
+      "paid_recipes": 14,
+      "paid_score_profiles": 14,
+      "milestones": {
+        "first_research": 3,
+        "rank2": 4
+      },
+      "actual_service_days": 14,
+      "units": 151,
+      "net": 593920,
+      "craft_spend": 8030,
+      "tasting_spend": 23030,
+      "research_cash": 4000,
+      "minimum_wallet_before_service": 27330,
+      "reserve_skips": 0
+    },
+    {
+      "id": "seed11_price6500_try3",
+      "seed": 11,
+      "price": 6500,
+      "attempts_per_day": 3,
+      "ending_wallet": 612710,
+      "ending_rank": 3,
+      "research_count": 4,
+      "paid_recipes": 42,
+      "paid_score_profiles": 42,
+      "milestones": {
+        "first_research": 1,
+        "rank2": 4,
+        "rank3": 11
+      },
+      "actual_service_days": 14,
+      "units": 163,
+      "net": 650950,
+      "craft_spend": 9210,
+      "tasting_spend": 70030,
+      "research_cash": 11000,
+      "minimum_wallet_before_service": 23680,
+      "reserve_skips": 0
+    },
+    {
+      "id": "seed11_price9000_try1",
+      "seed": 11,
+      "price": 9000,
+      "attempts_per_day": 1,
+      "ending_wallet": 810360,
+      "ending_rank": 2,
+      "research_count": 1,
+      "paid_recipes": 14,
+      "paid_score_profiles": 14,
+      "milestones": {
+        "first_research": 6,
+        "rank2": 6
+      },
+      "actual_service_days": 14,
+      "units": 127,
+      "net": 809420,
+      "craft_spend": 8030,
+      "tasting_spend": 23030,
+      "research_cash": 2000,
+      "minimum_wallet_before_service": 27330,
+      "reserve_skips": 0
+    },
+    {
+      "id": "seed11_price9000_try3",
+      "seed": 11,
+      "price": 9000,
+      "attempts_per_day": 3,
+      "ending_wallet": 822560,
+      "ending_rank": 2,
+      "research_count": 3,
+      "paid_recipes": 42,
+      "paid_score_profiles": 42,
+      "milestones": {
+        "first_research": 2,
+        "rank2": 4
+      },
+      "actual_service_days": 14,
+      "units": 134,
+      "net": 862800,
+      "craft_spend": 9210,
+      "tasting_spend": 70030,
+      "research_cash": 9000,
+      "minimum_wallet_before_service": 21680,
+      "reserve_skips": 0
+    },
+    {
+      "id": "seed29_price6500_try1",
+      "seed": 29,
+      "price": 6500,
+      "attempts_per_day": 1,
+      "ending_wallet": 958860,
+      "ending_rank": 2,
+      "research_count": 2,
+      "paid_recipes": 14,
+      "paid_score_profiles": 14,
+      "milestones": {
+        "first_research": 2,
+        "rank2": 4
+      },
+      "actual_service_days": 14,
+      "units": 192,
+      "net": 953670,
+      "craft_spend": 7070,
+      "tasting_spend": 21740,
+      "research_cash": 4000,
+      "minimum_wallet_before_service": 27870,
+      "reserve_skips": 0
+    },
+    {
+      "id": "seed29_price6500_try3",
+      "seed": 29,
+      "price": 6500,
+      "attempts_per_day": 3,
+      "ending_wallet": 940370,
+      "ending_rank": 3,
+      "research_count": 4,
+      "paid_recipes": 42,
+      "paid_score_profiles": 42,
+      "milestones": {
+        "first_research": 1,
+        "rank2": 4,
+        "rank3": 11
+      },
+      "actual_service_days": 14,
+      "units": 196,
+      "net": 975240,
+      "craft_spend": 8830,
+      "tasting_spend": 67040,
+      "research_cash": 11000,
+      "minimum_wallet_before_service": 25600,
+      "reserve_skips": 0
+    },
+    {
+      "id": "seed29_price9000_try1",
+      "seed": 29,
+      "price": 9000,
+      "attempts_per_day": 1,
+      "ending_wallet": 1137040,
+      "ending_rank": 2,
+      "research_count": 1,
+      "paid_recipes": 14,
+      "paid_score_profiles": 14,
+      "milestones": {
+        "first_research": 5,
+        "rank2": 5
+      },
+      "actual_service_days": 14,
+      "units": 153,
+      "net": 1133850,
+      "craft_spend": 7070,
+      "tasting_spend": 21740,
+      "research_cash": 2000,
+      "minimum_wallet_before_service": 27870,
+      "reserve_skips": 0
+    },
+    {
+      "id": "seed29_price9000_try3",
+      "seed": 29,
+      "price": 9000,
+      "attempts_per_day": 3,
+      "ending_wallet": 1100390,
+      "ending_rank": 2,
+      "research_count": 2,
+      "paid_recipes": 42,
+      "paid_score_profiles": 42,
+      "milestones": {
+        "first_research": 2,
+        "rank2": 4
+      },
+      "actual_service_days": 14,
+      "units": 154,
+      "net": 1142260,
+      "craft_spend": 8830,
+      "tasting_spend": 67040,
+      "research_cash": 4000,
+      "minimum_wallet_before_service": 23600,
+      "reserve_skips": 0
+    },
+    {
+      "id": "seed73_price6500_try1",
+      "seed": 73,
+      "price": 6500,
+      "attempts_per_day": 1,
+      "ending_wallet": 826980,
+      "ending_rank": 2,
+      "research_count": 3,
+      "paid_recipes": 14,
+      "paid_score_profiles": 14,
+      "milestones": {
+        "first_research": 4,
+        "rank2": 4
+      },
+      "actual_service_days": 14,
+      "units": 176,
+      "net": 819080,
+      "craft_spend": 6530,
+      "tasting_spend": 21570,
+      "research_cash": 6000,
+      "minimum_wallet_before_service": 26880,
+      "reserve_skips": 0
+    },
+    {
+      "id": "seed73_price6500_try3",
+      "seed": 73,
+      "price": 6500,
+      "attempts_per_day": 3,
+      "ending_wallet": 866290,
+      "ending_rank": 2,
+      "research_count": 3,
+      "paid_recipes": 42,
+      "paid_score_profiles": 42,
+      "milestones": {
+        "first_research": 2,
+        "rank2": 4
+      },
+      "actual_service_days": 14,
+      "units": 188,
+      "net": 905060,
+      "craft_spend": 8770,
+      "tasting_spend": 66000,
+      "research_cash": 6000,
+      "minimum_wallet_before_service": 22890,
+      "reserve_skips": 0
+    },
+    {
+      "id": "seed73_price9000_try1",
+      "seed": 73,
+      "price": 9000,
+      "attempts_per_day": 1,
+      "ending_wallet": 1028580,
+      "ending_rank": 2,
+      "research_count": 2,
+      "paid_recipes": 14,
+      "paid_score_profiles": 14,
+      "milestones": {
+        "first_research": 4,
+        "rank2": 4
+      },
+      "actual_service_days": 14,
+      "units": 144,
+      "net": 1022680,
+      "craft_spend": 6530,
+      "tasting_spend": 21570,
+      "research_cash": 4000,
+      "minimum_wallet_before_service": 26880,
+      "reserve_skips": 0
+    },
+    {
+      "id": "seed73_price9000_try3",
+      "seed": 73,
+      "price": 9000,
+      "attempts_per_day": 3,
+      "ending_wallet": 1060250,
+      "ending_rank": 2,
+      "research_count": 3,
+      "paid_recipes": 42,
+      "paid_score_profiles": 42,
+      "milestones": {
+        "first_research": 2,
+        "rank2": 4
+      },
+      "actual_service_days": 14,
+      "units": 151,
+      "net": 1096020,
+      "craft_spend": 8770,
+      "tasting_spend": 66000,
+      "research_cash": 9000,
+      "minimum_wallet_before_service": 22890,
+      "reserve_skips": 0
+    }
+  ],
+  "paired_prices": [
+    {
+      "seed": 11,
+      "attempts": 1,
+      "same_trial_config_sequence": true,
+      "same_sold_record_days": 14,
+      "higher_price_wallet_difference": 213500
+    },
+    {
+      "seed": 11,
+      "attempts": 3,
+      "same_trial_config_sequence": true,
+      "same_sold_record_days": 14,
+      "higher_price_wallet_difference": 209850
+    },
+    {
+      "seed": 29,
+      "attempts": 1,
+      "same_trial_config_sequence": true,
+      "same_sold_record_days": 14,
+      "higher_price_wallet_difference": 178180
+    },
+    {
+      "seed": 29,
+      "attempts": 3,
+      "same_trial_config_sequence": true,
+      "same_sold_record_days": 14,
+      "higher_price_wallet_difference": 160020
+    },
+    {
+      "seed": 73,
+      "attempts": 1,
+      "same_trial_config_sequence": true,
+      "same_sold_record_days": 14,
+      "higher_price_wallet_difference": 201600
+    },
+    {
+      "seed": 73,
+      "attempts": 3,
+      "same_trial_config_sequence": true,
+      "same_sold_record_days": 14,
+      "higher_price_wallet_difference": 193960
+    }
+  ],
+  "claude_other_agents": 0,
+  "phone_live_save_global_settings": false,
+  "limits": "Deterministic bots, not humans. Starter materials/standard methods only; fixed price, random experiments, perfect paid-record bookkeeping, at most one eligible research/day, no investments/exploration/contests/stories. Recipe outcomes never queried before actual paid tasting. Craft/service clocks accelerated, not human time or fun. Different experiment budgets consume the RNG differently, not a controlled menu-equivalent causal comparison.",
+  "pending_features": "PR57 and PR58 remain independent/native approval pending; no candidate code used",
+  "private_archive": "outputs/ramen-novice-research-paths-v1"
+}
