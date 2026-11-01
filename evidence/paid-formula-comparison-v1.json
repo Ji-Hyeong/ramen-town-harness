@@ -2,7 +2,7 @@
   "date": "2026-11-01",
   "task": "paid-formula-comparison-v1",
   "base": "2ac226e0c15099c48fc1c594c61852f4912b29f0",
-  "status": "headless_accepted_native_not_run",
+  "status": "standalone_native_accepted_integration_with_PR55_pending",
   "schema_version": 19,
   "source_count": 444,
   "modified_old_runtime_files": [
@@ -27,9 +27,45 @@
     "separate supported legacy save compatibility"
   ],
   "initial_test_repairs": "create explicit fixture save directories; await asynchronous reachability check before freeing modal; null guard on failed restart lookup; no game behavior workaround",
-  "native_executed": false,
-  "native_blocker": "Human confirmed Mac unlock; exact new-app action-time approval requested and pending. Finish prior PR55 diagnostics serially; preserve at least30% quota.",
+  "native_executed": true,
   "claude_calls": 0,
   "phone_or_live_save": false,
-  "archive": "outputs/ramen-paid-formula-comparison-v1"
+  "archive": "outputs/ramen-paid-formula-comparison-v1",
+  "native": {
+    "run": "/private/tmp/ramen-paid-formula-comparison-qa-20261031-v2/runs/20261101T104448Z-71120",
+    "checks": 533,
+    "failures": 0,
+    "exit": 0,
+    "captures": 21,
+    "errors_warnings": 0,
+    "post_signature_exit": 0,
+    "visual_review": {
+      "status": "completed",
+      "captures": 21,
+      "method": "three contact sheets plus portrait/desktop long-formula originals",
+      "clipping_or_overlap_found": false,
+      "followup": "small-screen long ingredient words can wrap mid-word; readability polish remains"
+    },
+    "accepted_scope": "approved standalone444source and exact PCK only",
+    "published_originals": {
+      "portrait-portions.png": {
+        "capture": "portrait_formula_01_portions.png",
+        "sha256": "bcd3d3a0bd41db478632dcd50d327c5cc90e27d7c96a2ce5257db03d9b25a4fb"
+      },
+      "portrait-long.png": {
+        "capture": "portrait_formula_06_long.png",
+        "sha256": "038920c53c103c31b09d6ec9d5e7361232e27cb4348e67cfe5d82c4ef1c091d9"
+      },
+      "desktop-long.png": {
+        "capture": "desktop_formula_06_long.png",
+        "sha256": "6dd3928a6a26acb22fb557cadf53a0cd1cd3536040b9ad23659a74fe8b96e041"
+      }
+    }
+  },
+  "integration": {
+    "accepted_main": "ea8170e62ca6c258b19d53eebe0074a07d41f301",
+    "PR55_combined_tested": false,
+    "merge": "withheld",
+    "reason": "preserve requested30percent quota reserve"
+  }
 }
