@@ -1,0 +1,102 @@
+{
+  "date": "2026-11-02",
+  "task": "market-order-readability-integration-v1",
+  "base": "fc7e5e914bc1cfb1d659d8deed8fd08e8f3df70f",
+  "runtime_schema": 20,
+  "candidate_head_before_evidence": "029e594eace151d38ec9047b992ebc490f17248d",
+  "status": "combined_headless_accepted_native_approval_pending",
+  "source_count": 464,
+  "candidates": [
+    "14bb4352a6af504a61f71fbf7dbb230af3f9fd58",
+    "1fb9a0a5b05bbcad6be9fd044ccc53717db4c99a"
+  ],
+  "checks": {
+    "domain": {
+      "actual_exit": 0,
+      "errors_warnings": 0,
+      "summary": "tests=130 checks=60730 failures=0"
+    },
+    "market-domain": {
+      "actual_exit": 0,
+      "errors_warnings": 0,
+      "summary": "MARKET ORDER checks=198 failures=0"
+    },
+    "market-ui": {
+      "actual_exit": 0,
+      "errors_warnings": 0,
+      "summary": "MARKET ORDER UI checks=723 failures=0 mode=layout-only"
+    },
+    "formula-ui": {
+      "actual_exit": 0,
+      "errors_warnings": 0,
+      "summary": "PAID FORMULA COMPARISON checks=635 failures=0 mode=layout-only"
+    },
+    "sales-ui": {
+      "actual_exit": 0,
+      "errors_warnings": 0,
+      "summary": "FORAGING SALES LOOP checks=575 failures=0 mode=layout-only"
+    },
+    "paid-ui": {
+      "actual_exit": 0,
+      "errors_warnings": 0,
+      "summary": "PAID RESULT CHANGE baseline=false mode=layout-only checks=365 failures=0"
+    },
+    "journey-ui": {
+      "actual_exit": 0,
+      "errors_warnings": 0,
+      "summary": "FIRST MENU JOURNEY checks=359 failures=0 mode=layout"
+    },
+    "pause-combined": {
+      "actual_exit": 0,
+      "errors_warnings": 0,
+      "summary": "MOBILE PAUSE CONTRACT cases=6 checks=197 failures=0"
+    },
+    "builder": {
+      "actual_exit": 0,
+      "tests": 24,
+      "failures": 0
+    }
+  },
+  "apps": [
+    {
+      "app": "/private/tmp/ramen-market-order-integrated-qa-20261102-v1/Ramen QA.app",
+      "source_count": 464,
+      "pack_sha256": "7d789a075bb1eaeeb106f4a48341f2a1bb4bdc8f00e7f19c8b9c011dd39b1e70",
+      "engine_signature_exit": 0,
+      "source_exact": true,
+      "qa_script": "res://tests/market_order_qa.gd"
+    },
+    {
+      "app": "/private/tmp/ramen-formula-integrated-qa-20261102-v1/Ramen QA.app",
+      "source_count": 464,
+      "pack_sha256": "4dd62b9974cabfc6d4b7176796979a2d34d1ee7da6ef4715ec68a6dd3775b2fc",
+      "engine_signature_exit": 0,
+      "source_exact": true,
+      "qa_script": "res://tests/paid_formula_comparison_qa.gd"
+    }
+  ],
+  "old_schema_19_values": {
+    "comparison": "Exact parsed values for every old19field; only20version and canonical empty new order differ. No dropped old field.",
+    "states": [
+      "qa_data/compact_formula/earned/ramen_lab_save.json",
+      "qa_data/compact_formula/fresh/ramen_lab_save.json",
+      "qa_data/compact_formula/legacy/ramen_lab_save.json",
+      "qa_data/desktop_formula/earned/ramen_lab_save.json",
+      "qa_data/desktop_formula/fresh/ramen_lab_save.json",
+      "qa_data/desktop_formula/legacy/ramen_lab_save.json",
+      "qa_data/portrait_formula/earned/ramen_lab_save.json",
+      "qa_data/portrait_formula/fresh/ramen_lab_save.json",
+      "qa_data/portrait_formula/legacy/ramen_lab_save.json"
+    ],
+    "all_old_values_equal": true
+  },
+  "three_root_archives_verified_against_git_blobs": true,
+  "native_executed": false,
+  "pending_approval_replaces": [
+    "/private/tmp/ramen-paid-formula-readability-qa-20261102-v1/Ramen QA.app",
+    "/private/tmp/ramen-market-tasting-order-qa-20261102-v3/Ramen QA.app"
+  ],
+  "claude_or_other_agents": 0,
+  "phone_live_save_global_config_changed": false,
+  "limits": "Headless does not verify rendered images or human fun; withheld main merge pending exact native runs and all fresh screenshot review. Existing PR57/58 evidence remains scoped to separate candidates."
+}
