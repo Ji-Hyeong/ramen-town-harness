@@ -36,9 +36,14 @@ request exact launch approval, inspect actual exit/logs/all32freshcaptures and
 saved states against approved integrated baseline. No broad duplicate regressions
 for unchanged domain code or tests asserting a literal string against itself.
 
-## CURRENT RESULT
+## FINAL RESULT
 Headless actual market723/0, actual exit0/errors-warnings0. Three whole saved
 states are byte-identical to accepted before native. All464 frozen files match
 current source, only operations_workbench.gd differs from before in four literal
-strings; PCK and official signature exact. Fresh app prepared and exact launch
-approval requested. Native after/capture comparison and main merge await approval.
+strings; PCK and official signature exact. User approved exact new app; actual
+run20261102T051638Z-95434 passes819/0/32freshcaptures, actual exit0/errors-warnings0.
+All32reviewed via9sheets and compared to accepted before32; three whole before/
+after/headless saved states byte-identical. Four shortened copies fit the actual
+narrow UI without orphan syllables/disabled-prompt wraps. Preserve two unmodified
+compact before/after originals. Runtime source matches exact90b56ce candidate;
+newer independent pending shelf/schema21 work was never used as this evidence.

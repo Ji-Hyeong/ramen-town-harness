@@ -2,7 +2,7 @@
   "date": "2026-11-02",
   "task": "market-copy-readability-v1",
   "base": "02dabeeb0af5a1624d5e960faf89cb21577994ff",
-  "status": "headless_accepted_native_approval_pending",
+  "status": "headless_and_native_accepted",
   "schema": 20,
   "source_count": 464,
   "changed_runtime_paths": [
@@ -28,7 +28,34 @@
   "before_native_checks": 819,
   "before_native_captures": 32,
   "before_native_all_reviewed": true,
-  "native_executed": false,
+  "native_executed": true,
   "claude_or_other_agents": 0,
-  "phone_live_save_changed": false
+  "phone_live_save_changed": false,
+  "native": {
+    "run_id": "20261102T051638Z-95434",
+    "checks": 819,
+    "failures": 0,
+    "actual_exit": 0,
+    "engine_errors_warnings": 0,
+    "captures": 32,
+    "all_reviewed": true,
+    "sheets": 9,
+    "post_signature_exit": 0,
+    "frozen_source_matches_commit": "90b56ced7acb8580778b0686be7f7007ccf66d56",
+    "whole_before_after_headless_saved_states_byte_equal": [
+      "compact_market/ramen_lab_save.json",
+      "desktop_market/ramen_lab_save.json",
+      "portrait_market/ramen_lab_save.json"
+    ]
+  },
+  "published_originals": [
+    {
+      "path": "game/docs/market-copy-readability-screenshots/before-compact-choice.png",
+      "sha256": "64def5d091035b2629e330588b733a2f84799c88633c73834602711b3375ca60"
+    },
+    {
+      "path": "game/docs/market-copy-readability-screenshots/after-compact-choice.png",
+      "sha256": "6e59d232dce45395bc1e3b43342f4f42b6952e73eb88b2c96844900e4fdc03ef"
+    }
+  ]
 }

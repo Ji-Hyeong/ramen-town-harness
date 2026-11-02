@@ -20,10 +20,20 @@
 중 operations_workbench.gd만 다르고 그 차이는 위 네 문자열뿐이다. 새 앱의
 원본 소스·패키지 해시·공식 엔진 서명도 일치한다.
 
-수정본 `/private/tmp/ramen-market-copy-qa-20261102-v1/Ramen QA.app`은
-실제 실행 승인을 요청했다. 현재 수정 후 렌더링은 검증 전이며, 새32장의 전후
-화면 비교와 실제 종료·로그 확인을 마치기 전에는 병합하지 않는다.
-이전 통합본의32장·819확인은 수정 전 근거로만 사용한다.
+수정본 `/private/tmp/ramen-market-copy-qa-20261102-v1/Ramen QA.app`을
+사용자 승인 후 실제 실행했다. 20261102T051638Z-95434 실행은819확인·실패0·
+새32장·실제 종료0이며 엔진 오류·경고도 없다. 세 크기의 현재32장을9개 모아보기에서
+모두 검토하고 승인된 이전32장과 비교했다. 짧은 도입·심사 설명과 두 비활성
+문구가 좁은 화면에서도 온전한 한 줄로 표시된다. 거래·저장 실패·복구·재시작
+표시는 유지됐고 전체 저장3개는 수정 전·후·배치 검사 모두 바이트 같다.
+
+실행 후 소스464개·각 패키지·공식 엔진 서명도 확인했다. 검사 중 별도 작업 중이던
+육수 보관함/schema21 소스 대신, 정확한 수정 후보90b56ce와 동결본을 비교했다.
+수정 전 캡처를 수정 후 증거로 재사용하지 않았다. 본편 재미·iPhone 검증은 별도다.
+
+[작은 화면 수정 전](market-copy-readability-screenshots/before-compact-choice.png) ·
+[같은 흐름의 수정 후](market-copy-readability-screenshots/after-compact-choice.png).
+두 이미지는 해당 실제 실행의 가공하지 않은 원본이다.
 
 [작업 계약](../../tasks/market-copy-readability-v1.md),
 [집계 근거](../../evidence/market-copy-readability-v1.json).
