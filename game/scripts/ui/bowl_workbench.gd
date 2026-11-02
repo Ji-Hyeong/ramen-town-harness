@@ -2177,6 +2177,33 @@ func _arrange_stage() -> void:
 	_pointer_right.size = Vector2(40,58)
 
 
+## Read-only ingredient groups identify same-name broths without another tap.
+## Each icon/name/count stays together when wrapping; PASS/IGNORE preserves the
+## list's drag gesture instead of introducing a second set of clickable chips.
+func _broth_library_cues(card: VBoxContainer, recipe: Dictionary, index: int) -> void:
+	var flow:=HFlowContainer.new()
+	flow.name="BrothRecipeCues_"+str(index)
+	flow.set_meta("recipe_index",index)
+	flow.mouse_filter=Control.MOUSE_FILTER_PASS
+	flow.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+	flow.add_theme_constant_override("h_separation",12)
+	flow.add_theme_constant_override("v_separation",4)
+	card.add_child(flow)
+	var seen: Array=[]
+	for id in recipe["ingredients"]:
+		if seen.has(id):continue
+		seen.append(id)
+		var group:=HBoxContainer.new()
+		group.mouse_filter=Control.MOUSE_FILTER_PASS
+		group.add_theme_constant_override("separation",4)
+		group.add_child(_picture(PantryArt.texture(id),Vector2(24,24)))
+		var name_label:=_label("%s ×%d" % [Broth.material(id)["name"],recipe["ingredients"].count(id)],15)
+		name_label.name="BrothRecipeIngredient_"+str(index)+"_"+id
+		name_label.autowrap_mode=TextServer.AUTOWRAP_OFF
+		group.add_child(name_label)
+		flow.add_child(group)
+
+
 ## UI-only paging preserves immutable archive indices; newest results stay first.
 ## Both workshops use the same read-only comparison and explicit transaction UI.
 func _render_component_library(kind: String, review: Dictionary, body: VBoxContainer) -> void:
@@ -2262,7 +2289,12 @@ func _render_component_library(kind: String, review: Dictionary, body: VBoxConta
 			archive.pressed.connect(func(): _emit("broth_restore" if _broth_archive_view else "broth_archive",{"index":index}))
 			hero.add_child(archive)
 		card.add_child(hero)
-		card.add_child(_label("한 그릇 %s · 준비 %d초" % [won(item["cost"]),item["seconds"]],16,TEAL))
+		if kind=="broth":_broth_library_cues(card,result["recipe"],index)
+		var facts: String="한 그릇 %s · 준비 %d초" % [won(item["cost"]),item["seconds"]]
+		if kind=="broth":facts+=" · "+str(ProcessRules.method("broth",result["recipe"]["method"])["name"])
+		var facts_label:=_label(facts,16,TEAL)
+		facts_label.name="ComponentLibraryFacts_"+kind+"_"+str(index)
+		card.add_child(facts_label)
 		var actions:=HBoxContainer.new()
 		actions.mouse_filter=Control.MOUSE_FILTER_PASS
 		actions.add_theme_constant_override("separation",8)

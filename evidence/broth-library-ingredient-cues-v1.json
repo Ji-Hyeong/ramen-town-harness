@@ -1,0 +1,73 @@
+{
+  "base_main": "ad9261936f6b95d9d5e4b8ba453ef1361bcc8c2e",
+  "source_count": 474,
+  "source_exact": true,
+  "changed_runtime_files": [
+    "scripts/ui/bowl_workbench.gd",
+    "tests/broth_shelf_qa.gd"
+  ],
+  "pack_sha256": "27bd68a6eb292c8e40d1ac4eb63ca75daa3f65710bd07f0ed4ef93a003103daf",
+  "official_signature_exit": 0,
+  "whole_headless_vs_accepted_main_native": [
+    {
+      "profile": "portrait",
+      "sha256": "88e28e70e927c79f5116ebf0864e2ad3f57d2fcbec6c3e192b5d4b288254706d",
+      "byte_equal_accepted_main_native": true
+    },
+    {
+      "profile": "compact",
+      "sha256": "88e28e70e927c79f5116ebf0864e2ad3f57d2fcbec6c3e192b5d4b288254706d",
+      "byte_equal_accepted_main_native": true
+    },
+    {
+      "profile": "desktop",
+      "sha256": "88e28e70e927c79f5116ebf0864e2ad3f57d2fcbec6c3e192b5d4b288254706d",
+      "byte_equal_accepted_main_native": true
+    }
+  ],
+  "native_executed": false,
+  "date": "2026-11-02",
+  "task": "broth-library-ingredient-cues-v1",
+  "status": "headless_accepted_native_approval_pending",
+  "schema": 21,
+  "candidate_app": "/private/tmp/ramen-broth-ingredient-cues-qa-20261102-v2/Ramen QA.app",
+  "superseded_unrun_app": "/private/tmp/ramen-broth-ingredient-cues-qa-20261102-v1/Ramen QA.app",
+  "checks": {
+    "frozen-ui-v2": {
+      "actual_exit": 0,
+      "issue_lines": [],
+      "summary": [
+        "BROTH SHELF UI checks=2651 failures=0 mode=layout-only"
+      ]
+    },
+    "domain-v1": {
+      "actual_exit": 0,
+      "issue_lines": [],
+      "summary": [
+        "BROTH SHELF checks=425 failures=0 services=3"
+      ]
+    },
+    "component-v1": {
+      "actual_exit": 0,
+      "issue_lines": [],
+      "summary": [
+        "COMPONENT UI checks=315 failures=0 mode=layout"
+      ]
+    },
+    "formula-v1": {
+      "actual_exit": 0,
+      "issue_lines": [],
+      "summary": [
+        "PAID FORMULA COMPARISON checks=635 failures=0 mode=layout-only"
+      ]
+    }
+  },
+  "synthetic_layout_cases_separate": true,
+  "synthetic_layout_cases": [
+    "five identical kelp portions",
+    "five distinct ingredients including long source-material names",
+    "five distinct bones/vegetables"
+  ],
+  "claude_or_other_agents": 0,
+  "phone_live_save_global_settings_changed": false
+}

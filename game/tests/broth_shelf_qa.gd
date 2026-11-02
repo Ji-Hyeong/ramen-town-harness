@@ -2,6 +2,8 @@ extends "res://tests/component_comparison_qa.gd"
 ## Actual paid ownership is built separately per viewport. No legacy app-state
 ## fixture or progress/cash injection substitutes for the full working shelf.
 const ShelfActual=preload("res://tests/broth_shelf_tests.gd")
+const CueBroth=preload("res://scripts/domain/broth_workshop.gd")
+const CueMethods=preload("res://scripts/domain/recipe_process.gd")
 var _shelf_profiles: int=0
 var _shelf_finished: bool=false
 
@@ -36,11 +38,55 @@ func _shelf_open(app: Node) -> Control:
 
 func _shelf_bounds(editor: Control,vp: Vector2i) -> void:
 	_fixed_action(editor,vp,"broth shelf")
+	var st: Object=editor.get("state")
+	for flow in editor.find_children("BrothRecipeCues_*","HFlowContainer",true,false):
+		var index: int=flow.get_meta("recipe_index")
+		var recipe: Dictionary=st.broth_review()["recipes"][index]["recipe"]
+		_check_cues(flow,recipe,vp.x-14)
+		var facts: Label=editor.find_child("ComponentLibraryFacts_broth_"+str(index),true,false)
+		var item: Dictionary=st.component_comparison("broth",index)["selected_component"]
+		_check(facts!=null and facts.text.replace(",","")=="한 그릇 %d원 · 준비 %d초 · %s" % [item["cost"],item["seconds"],CueMethods.method("broth",recipe["method"])["name"]],"owned method and once-applied cost/time facts match exact comparison")
 	for name in ["BrothShelfWorking","BrothShelfArchive"]:
 		var button: Button=editor.find_child(name,true,false)
 		_check(button!=null and button.size.y>=44 and button.get_global_rect().position.x>=14 and button.get_global_rect().end.x<=vp.x-14,"fixed shelf category remains padded and usable: "+name)
 	for label in editor.find_children("*","Label",true,false):
 		if label.is_visible_in_tree():_check(_text_height_fits(label),"full shelf label fits: "+label.name)
+
+## Inspect actual laid-out child rectangles, not only a configured wrap flag.
+## Catalog quantities come from the owned recipe, never its generic pot title.
+func _check_cues(flow: HFlowContainer,recipe: Dictionary,right: float) -> void:
+	var seen: Array=[]
+	for id in recipe["ingredients"]:
+		if not seen.has(id):seen.append(id)
+	_check(flow.get_child_count()==seen.size(),"one complete icon/name group per distinct ingredient")
+	for i in seen.size():
+		var group: HBoxContainer=flow.get_child(i)
+		var icon: TextureRect=group.get_child(0)
+		var label: Label=group.get_child(1)
+		var id: String=seen[i]
+		_check(label.text=="%s ×%d" % [CueBroth.material(id)["name"],recipe["ingredients"].count(id)],"owned raw name and repeated portion count are explicit")
+		_check(icon.texture!=null and icon.size.x>=24 and icon.size.y>=24,"raw pantry artwork is visible at readable size")
+		_check(group.get_global_rect().end.x<=right and group.get_global_rect().position.x>=14,"whole ingredient group stays within padded content width")
+		_check(group.get_global_rect().encloses(label.get_global_rect()) and _text_height_fits(label),"ingredient name/count stays whole inside its group")
+		_check(label.mouse_filter==Control.MOUSE_FILTER_IGNORE and icon.mouse_filter==Control.MOUSE_FILTER_IGNORE and group.mouse_filter==Control.MOUSE_FILTER_PASS,"ingredient cues pass list gestures without new actions")
+
+func _cue_boundaries(holder: SubViewport,editor: Control) -> void:
+	# Synthetic layout only: these legal rank3 formulas are not granted/earned.
+	# Reuse the actual narrow card width, without altering state or disk data.
+	var actual: HFlowContainer=editor.find_children("BrothRecipeCues_*","HFlowContainer",true,false)[0]
+	var probe:=VBoxContainer.new();probe.position=Vector2(16,16);probe.size.x=actual.size.x;holder.add_child(probe)
+	var before: String=_json(editor.get("state"))
+	for ids in [["kelp","kelp","kelp","kelp","kelp"],["chicken_bone","kelp","sardine","shiitake","ginger"],["pork_bone","chicken_bone","kelp","garlic","onion"]]:
+		var recipe: Dictionary={"ingredients":ids,"method":"rolling"}
+		_check(CueBroth.error(recipe,3)=="","synthetic maximum-portion layout formula is legal")
+		editor.call("_broth_library_cues",probe,recipe,999)
+		await _settle()
+		var flow: HFlowContainer=probe.get_child(0)
+		_check_cues(flow,recipe,16+actual.size.x)
+		_check(flow.size.y<=84,"maximum five raw ingredients use at most three compact rows")
+		flow.queue_free();await _settle()
+	_check(_json(editor.get("state"))==before,"synthetic render probes neither grant ingredients nor mutate gameplay")
+	probe.queue_free();await _settle()
 
 func _shelf_flow(tag: String,vp: Vector2i) -> void:
 	var holder:=SubViewport.new();holder.size=vp;holder.handle_input_locally=true;holder.render_target_update_mode=SubViewport.UPDATE_ALWAYS;root.add_child(holder)
@@ -58,6 +104,11 @@ func _shelf_flow(tag: String,vp: Vector2i) -> void:
 	await _shot(holder,tag+"_shelf_01_full_working.png")
 	var original_records: String=JSON.stringify(state.records(),"",true)
 	var before: String=_json(state)
+	var cue: Control=editor.find_child("BrothRecipeCues_59",true,false)
+	var scroll: ScrollContainer=editor.find_child("DetailsScroll",true,false)
+	var old_scroll: int=scroll.scroll_vertical
+	await _drag_list(holder,cue.get_global_rect().get_center())
+	_check(scroll.scroll_vertical>old_scroll and _json(state)==before,"swiping actual ingredient icons scrolls without applying or archiving")
 	var archive: Button=editor.find_child("BrothArchive_59",true,false)
 	_check(archive!=null,"newest currently used formula has an archive control")
 	var ack: int=app.get("_juice").acknowledgement_count()
@@ -143,4 +194,5 @@ func _shelf_flow(tag: String,vp: Vector2i) -> void:
 	await _tap(holder,editor,"BrothShelfArchive")
 	await _shelf_bounds(editor,vp)
 	await _shot(holder,tag+"_shelf_10_restart.png")
+	await _cue_boundaries(holder,editor)
 	_shelf_profiles+=1;app.queue_free();await _settle();holder.queue_free();await _settle()
