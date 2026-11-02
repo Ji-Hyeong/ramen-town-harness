@@ -72,3 +72,16 @@ PR64 copy native has separately passed819/0/32captures; preserve its exact sourc
 
 Accepted PR64 is now main9fcb503; merge its four literal copy changes before
 final freeze. Earlier standalone shelf headless results remain scoped evidence.
+
+## HEADLESS ACCEPTANCE
+Final v3 source474/PCK/official signature/import-export exact and clean. Shelf
+UI1955/0 (v2 frozen active UI/game bytes are identical to v3), domain425, full
+130tests/60730checks, old broth226/noodle276, knowledge4138, market198/UI723,
+component315/formula635 and builder24 all actual exit0/errors-warnings0.
+The extra knowledge regression found4hardcoded19writer assertions; accepted20
+baseline shows the same4failures. Fix only current writer expectations, retain
+strict old inputs/full values/backup checks; frozen v3 knowledge4138/0 proves it.
+Prepared v1/v2 were not launched; replace premature v2 request with exact v3.
+Full-shelf restore now shows a visible reason and fixed read-only working-notes
+navigation. All60old records/best witnesses and first60owned formulas equal
+after actual61st brew/service; exact20backup verified. Native approval pending.

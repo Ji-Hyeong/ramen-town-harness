@@ -96,8 +96,11 @@ func _shelf_flow(tag: String,vp: Vector2i) -> void:
 	await _tap(holder,editor,"BrothShelfArchive")
 	var restore: Button=editor.find_child("BrothRestore_59",true,false)
 	_check(restore!=null and restore.disabled,"full working shelf honestly disables restoration")
+	_check(editor.find_child("BrothShelfFullHint",true,false)!=null,"full restore reason is visible without hovering")
 	await _shot(holder,tag+"_shelf_06_restore_full.png")
-	await _tap(holder,editor,"BrothShelfWorking")
+	before=_json(state)
+	await _tap(holder,editor,"EditorDetailApply")
+	_check(editor.find_child("BrothArchive_60",true,false)!=null and _json(state)==before,"fixed full-shelf action opens working notes without a transaction")
 	await _tap(holder,editor,"BrothArchive_60")
 	await _tap(holder,editor,"BrothShelfArchive")
 	money=state.wallet

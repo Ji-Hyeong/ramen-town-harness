@@ -2209,6 +2209,9 @@ func _render_component_library(kind: String, review: Dictionary, body: VBoxConta
 			shelves.add_child(shelf)
 		var capacity:=_label("작업 %d/%d · 전체 %d/%d" % [review["working_count"],review["working_limit"],review["recipes"].size(),review["owned_limit"]],14,TEAL)
 		capacity.name="BrothShelfCapacity";body.add_child(capacity)
+		if _broth_archive_view and int(review["working_count"])>=int(review["working_limit"]):
+			var full:=_label("작업 노트가 가득해요.",15,MUTED)
+			full.name="BrothShelfFullHint";body.add_child(full)
 	column.add_child(pager)
 	column.move_child(pager,3 if kind=="broth" else 2)
 	var previous:=_button("","ComponentPrevious","arrow_back")
@@ -2274,7 +2277,11 @@ func _render_component_library(kind: String, review: Dictionary, body: VBoxConta
 		use.pressed.connect(func(): _emit(kind+"_use",{"index":index}); _close_modal())
 		actions.add_child(use)
 		body.add_child(panel)
-	_modal_footer("","새 %s 배합" % title,_show_component_workshop.bind(kind))
+	if kind=="broth" and _broth_archive_view and int(review["working_count"])>=int(review["working_limit"]):
+		# Touch users cannot hover a disabled restore button for its reason.
+		# Keep the next usable action visible beside the full-shelf explanation.
+		_modal_footer("육수 하나를 보관하면 꺼낼 수 있어요.","작업 노트 보기",func(): _broth_archive_view=false;_component_pages["broth"]=0;_show_broth_workshop("library"))
+	else:_modal_footer("","새 %s 배합" % title,_show_component_workshop.bind(kind))
 	_compact_detail(minf(700,330+230*mini(2,maxi(1,count))))
 
 

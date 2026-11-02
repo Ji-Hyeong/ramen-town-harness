@@ -395,7 +395,9 @@ func persistence(st: State) -> void:
 	keys.sort()
 	var expected: Array=State.TOP_KEYS.duplicate()
 	expected.sort()
-	verify(State.SCHEMA_VERSION==19 and keys==expected and st.to_dict()["schema_version"]==19,"schema19 persisted keys")
+	# The writer emits the declared current schema; historical input grammars and
+	# original-byte backups below remain strict. Do not pin the writer to v19.
+	verify(keys==expected and st.to_dict()["schema_version"]==State.SCHEMA_VERSION,"current-schema persisted keys")
 	var cfgs: Array=tried.duplicate(true)
 	verify(cfgs.size()==3 and count(st)>=cfgs.size(),"good, neutral and bad experiments are stored")
 	for digest in st.to_dict()["recipe_knowledge"]["keys"]: verify(digest.length()==64,"only compact hashes are persisted")
@@ -546,7 +548,7 @@ func migration(name: String, version: int) -> void:
 	verify(store.save_state(st)["ok"],"v%d: first save" % version)
 	verify(FileAccess.get_file_as_string(store.legacy_bak_path(version))==original,"v%d: original bytes preserved in the versioned backup" % version)
 	var written: Dictionary=JSON.parse_string(FileAccess.get_file_as_string(store.main_path()))
-	verify(int(written["schema_version"])==19 and written.has("recipe_knowledge") and int(written["wallet"])==int(parsed["wallet"]),"v%d: main file is now schema 19" % version)
+	verify(int(written["schema_version"])==State.SCHEMA_VERSION and written.has("recipe_knowledge") and int(written["wallet"])==int(parsed["wallet"]),"v%d: main file uses current schema" % version)
 	var reread:=State.new()
 	verify(store.load_into(reread)["status"]=="ok" and json(reread)==json(st) and core(reread)==before,"v%d: migrated save round-trips" % version)
 	verify(store.save_state(reread)["ok"] and FileAccess.get_file_as_string(store.legacy_bak_path(version))==original,"v%d: later saves keep the original bytes" % version)
