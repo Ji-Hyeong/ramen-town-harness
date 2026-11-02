@@ -65,6 +65,10 @@ domain130tests/60730checks and both market routes198 pass. New UI three-size
 actual pointer/work/save-refusal/recovery/restart flow1949/0, actual exit0 and no
 errors/warnings. Initial migration assertion compared JSON float/int rendering,
 fixed to complete value equality; initial UI lacked its local serialization
-helper, fixed without production fallback. Failed logs retained. Editor import
-passes;8owned generated tools UIDs preserved privately,4new runtime/test UIDs kept.
+helper, fixed without production fallback. Failed logs retained. Editor import returns0 with4known missing cached tools UID warnings; all8owned
+generated tools UIDs preserved privately,4new runtime/test UIDs kept. No clean-warning
+claim for that source import; frozen builder excludes tools.
 PR64 copy native has separately passed819/0/32captures; preserve its exact source.
+
+Accepted PR64 is now main9fcb503; merge its four literal copy changes before
+final freeze. Earlier standalone shelf headless results remain scoped evidence.

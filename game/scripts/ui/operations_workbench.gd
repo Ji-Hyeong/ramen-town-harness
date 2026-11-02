@@ -478,7 +478,7 @@ func _target() -> void:
 	var target:=_button("제출할 시식 기록 고르기" if rec.is_empty() else "대상: %s v%d" % [rec["name"],rec["version"]],"OpsChooseTarget","summary","chevron_right")
 	target.pressed.connect(func(): action_requested.emit("section",{"section":"notebook"}))
 	_body.add_child(target)
-	_body.add_child(_label("시식 당시 기록을 심사해요. 편집 중인 초안은 대상이 아니에요.",14,TEAL))
+	_body.add_child(_label("시식 기록만 심사해요. 초안은 제외해요.",14,TEAL))
 
 
 func _research_list() -> void:
@@ -542,9 +542,9 @@ func _market_order_page() -> void:
 	paper.add_child(_label("장터에서 가게까지",24,INK,true,"OpsMarketTitle"))
 	_policy.text="선택 후 변경 불가 · 답례 5,000원 1회"
 	_primary.disabled=true
-	_primary.text="요리 방향을 골라 주세요"
+	_primary.text="요리 방향 선택"
 	if status in ["locked","open"]:
-		paper.add_child(_label("장터 재료로 만든 메뉴를 손님에게 대접해 주세요.",17))
+		paper.add_child(_label("장터 메뉴를 손님께 대접해 보세요.",17))
 		for route in MarketOrder.routes():
 			var option:=_paper(_body)
 			option.add_child(_market_picture(route["ingredient"],Vector2(0,64)))
@@ -584,7 +584,7 @@ func _market_order_page() -> void:
 	else:
 		_link("재료와 개발 보기","OpsMarketGoal","market_goal",{"direction":review["direction"]},busy)
 		_link("판매 준비","OpsMarketSelling","market_selling",{},busy)
-		_primary.text="답례 5,000원 받기" if status=="ready" else "실제 영업에서 대접해 주세요"
+		_primary.text="답례 5,000원 받기" if status=="ready" else "영업 후 확인"
 		_primary_kind="market_claim"
 		_primary.disabled=busy or status!="ready" or _state.wallet>_state.MAX_WALLET-MarketOrder.REWARD
 		if status=="ready" and _state.wallet>_state.MAX_WALLET-MarketOrder.REWARD:_body.add_child(_label("자금 한도를 넘어요. 자금을 사용한 뒤 받아 주세요.",16,RED,false,"OpsMarketCap"))
