@@ -1,0 +1,45 @@
+{
+  "date": "2026-11-02",
+  "task": "native-qa-audit-v1",
+  "status": "tooling_accepted",
+  "unit_tests": 10,
+  "unit_failures": 0,
+  "actual_cli_exit": 0,
+  "tool_sha256": "09b0a290f12907246ed405126ee1fc52a28c6b5a2664c0bc155522d659ae0a20",
+  "input_files": 517,
+  "all_input_bytes_unchanged": true,
+  "checked_existing_run": "/private/tmp/ramen-broth-shelf-qa-20261102-v3/runs/20261102T101349Z-56279",
+  "source_revision": "ad9261936f6b95d9d5e4b8ba453ef1361bcc8c2e",
+  "source_count": 474,
+  "checks": 2045,
+  "failures": 0,
+  "actual_native_exit": 0,
+  "engine_errors_warnings": 0,
+  "capture_count": 30,
+  "whole_save_pairs": [
+    {
+      "file": "portrait_shelf/ramen_lab_save.json",
+      "sha256": "88e28e70e927c79f5116ebf0864e2ad3f57d2fcbec6c3e192b5d4b288254706d",
+      "byte_equal": true
+    },
+    {
+      "file": "compact_shelf/ramen_lab_save.json",
+      "sha256": "88e28e70e927c79f5116ebf0864e2ad3f57d2fcbec6c3e192b5d4b288254706d",
+      "byte_equal": true
+    },
+    {
+      "file": "desktop_shelf/ramen_lab_save.json",
+      "sha256": "88e28e70e927c79f5116ebf0864e2ad3f57d2fcbec6c3e192b5d4b288254706d",
+      "byte_equal": true
+    }
+  ],
+  "pack_sha256": "3884a6e560c5d2dd6e6e3cbe01eb55db591ef97845f044568a3dd5df4074c7b5",
+  "official_signature_exit": 0,
+  "visual_review_required": true,
+  "pixel_content_decoded": false,
+  "iphone_or_human_fun_acceptance": false,
+  "engine_or_gui_launched": false,
+  "runtime_or_live_save_changed": false,
+  "claude_or_other_agents": 0,
+  "full_private_report_sha256": "0233283f3c30f96fe4fd6a673e7ddda51e22de4c0757ba560de85ca2f208a5bc"
+}
