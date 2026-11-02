@@ -1,0 +1,8 @@
+{
+  "source_commit": "2ce3ab37cfea21d652f7e722d75b7be88fec3a59",
+  "source_path": "AGENTS.md",
+  "archive": "docs/agent-history/AGENTS-broth-shelf-headless-2ce3ab3.md",
+  "bytes": 15736,
+  "sha256": "a6a40854d7d769a3ef6c7569900f09edc53d7c2cd94081c294c7e45c376b759d",
+  "purpose": "Lossless headless-candidate archive before adding native acceptance would exceed12active entries/16KB. Historical state has native approval pending."
+}

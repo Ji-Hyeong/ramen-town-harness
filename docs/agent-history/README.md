@@ -40,3 +40,7 @@ or subscription quota. No percentage of service usage savings is promised.
 ## Broth shelf implementation checkpoint
 
 [Exact pending shelf root](AGENTS-broth-shelf-checkpoint-1ae88f8.md) and [provenance](broth-shelf-main-sync-provenance.json) preserve1ae88f8 before merging accepted copy main9fcb503. This checkpoint is not native shelf approval.
+
+## Broth shelf headless acceptance
+
+[Exact2ce3ab3root](AGENTS-broth-shelf-headless-2ce3ab3.md) and [provenance](broth-shelf-headless-provenance.json) preserve all pending acceptance/checkpoint records before the next active history entry. Native approval was pending; archives do not grant it.
