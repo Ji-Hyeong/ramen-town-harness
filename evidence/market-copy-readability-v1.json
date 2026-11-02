@@ -1,0 +1,34 @@
+{
+  "date": "2026-11-02",
+  "task": "market-copy-readability-v1",
+  "base": "02dabeeb0af5a1624d5e960faf89cb21577994ff",
+  "status": "headless_accepted_native_approval_pending",
+  "schema": 20,
+  "source_count": 464,
+  "changed_runtime_paths": [
+    "scripts/ui/operations_workbench.gd"
+  ],
+  "change_scope": "Exactly four UI literal strings only, verified diff; domain/schema/art/font/input unchanged.",
+  "headless": {
+    "checks": 723,
+    "failures": 0,
+    "actual_exit": 0,
+    "engine_errors_warnings": 0
+  },
+  "full_saved_state_pairs_byte_equal": [
+    "compact_market/ramen_lab_save.json",
+    "desktop_market/ramen_lab_save.json",
+    "portrait_market/ramen_lab_save.json"
+  ],
+  "app": "/private/tmp/ramen-market-copy-qa-20261102-v1/Ramen QA.app",
+  "pack_sha256": "cae429c4686b6b40da4fbe9128b68d85098d6dc9edbbc15adc5352a607dff424",
+  "official_signature_exit": 0,
+  "source_exact": true,
+  "before_native_run": "20261102T045311Z-89897",
+  "before_native_checks": 819,
+  "before_native_captures": 32,
+  "before_native_all_reviewed": true,
+  "native_executed": false,
+  "claude_or_other_agents": 0,
+  "phone_live_save_changed": false
+}
