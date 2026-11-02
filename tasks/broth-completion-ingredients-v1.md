@@ -45,3 +45,12 @@ Source474/PCK/official engine signature exact; only UI and QA differ from8957192
 Three whole saved states equal accepted PR66 native bytes. Centered5portion/
 long-name probes are synthetic; actual61st completion verifies earned formula
 and read-only dragging. Exact v1 native app approval requested, no launch/merge.
+
+## NATIVE ACCEPTANCE
+Exact v1 approved; fresh run20261102T111940Z-74052 passes2921/0, actual exit0,
+engine errors/warnings0. All30captures reviewed via9sheets and before completion.
+Earned amounts/method, result spacing, explicit actions and shelf/save flows stay
+readable. Mechanical auditor pins4cd6f56/474source/PCK/engine/signature/capture
+structure and time. Three whole saves equal old native and three more equal new
+headless. Publish3unmodified originals. All criteria complete; exact-head PR68
+may merge. iPhone, human fun and campaign remain separate.

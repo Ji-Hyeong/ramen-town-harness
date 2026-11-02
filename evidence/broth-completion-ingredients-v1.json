@@ -25,10 +25,10 @@
       "byte_equal_accepted_main_native": true
     }
   ],
-  "native_executed": false,
+  "native_executed": true,
   "date": "2026-11-02",
   "task": "broth-completion-ingredients-v1",
-  "status": "headless_accepted_native_approval_pending",
+  "status": "accepted_headless_and_native",
   "schema": 21,
   "candidate_app": "/private/tmp/ramen-broth-completion-qa-20261102-v1/Ramen QA.app",
   "checks": {
@@ -71,5 +71,75 @@
     "bytes": 15023,
     "sha256": "761933ef3d4621d48d731b69698fe82b1747df718abf5d9142a1b86e174c9707",
     "purpose": "Preserve exact accepted root before another UI/native task would exceed active history16KB. Existing game runtime schema21; no new approval in archives."
-  }
+  },
+  "native_acceptance": {
+    "native_run": "/private/tmp/ramen-broth-completion-qa-20261102-v1/runs/20261102T111940Z-74052",
+    "source_revision": "4cd6f56331292e3e1ccef48832c43fb8877b4ccd",
+    "checks": 2921,
+    "actual_exit": 0,
+    "engine_errors_warnings": 0,
+    "pack_sha256": "ec757aba438c42f0789c55478cd3ae6f11490900755894231f2d22789de937f3",
+    "official_signature_exit": 0,
+    "whole_save_pairs": [
+      {
+        "file": "portrait_shelf/ramen_lab_save.json",
+        "sha256": "88e28e70e927c79f5116ebf0864e2ad3f57d2fcbec6c3e192b5d4b288254706d",
+        "byte_equal": true
+      },
+      {
+        "file": "compact_shelf/ramen_lab_save.json",
+        "sha256": "88e28e70e927c79f5116ebf0864e2ad3f57d2fcbec6c3e192b5d4b288254706d",
+        "byte_equal": true
+      },
+      {
+        "file": "desktop_shelf/ramen_lab_save.json",
+        "sha256": "88e28e70e927c79f5116ebf0864e2ad3f57d2fcbec6c3e192b5d4b288254706d",
+        "byte_equal": true
+      }
+    ]
+  },
+  "native_review": {
+    "review_complete": true,
+    "reviewed_captures": 30,
+    "reviewed_contact_sheets": 9,
+    "new_headless_save_pairs": [
+      {
+        "profile": "portrait",
+        "sha256": "88e28e70e927c79f5116ebf0864e2ad3f57d2fcbec6c3e192b5d4b288254706d",
+        "byte_equal_new_headless": true
+      },
+      {
+        "profile": "compact",
+        "sha256": "88e28e70e927c79f5116ebf0864e2ad3f57d2fcbec6c3e192b5d4b288254706d",
+        "byte_equal_new_headless": true
+      },
+      {
+        "profile": "desktop",
+        "sha256": "88e28e70e927c79f5116ebf0864e2ad3f57d2fcbec6c3e192b5d4b288254706d",
+        "byte_equal_new_headless": true
+      }
+    ],
+    "notes": [
+      "All30fresh captures reviewed. Completion centered owned ingredients/counts/method readable with room between facts and actions at all3sizes.",
+      "Existing library, hold/swipe cancellation, archived current use, brew, restore-full guidance, save refusal/recovery/restart reviewed."
+    ]
+  },
+  "mechanical_report_sha256": "45397be8e0ddc0f9e65d27a7f5b759cbda49e5304c004299aee32d8c9c7ab13d",
+  "public_original_captures": [
+    {
+      "path": "game/docs/broth-completion-ingredients-screenshots/before-portrait-complete.png",
+      "source_name": "portrait_shelf_05_complete61.png",
+      "sha256": "5d94aeed2d65f374e340dff02b3d5c4cf8c85a4f1f8c15fe8d381a579bd8ff55"
+    },
+    {
+      "path": "game/docs/broth-completion-ingredients-screenshots/after-portrait-complete.png",
+      "source_name": "portrait_shelf_05_complete61.png",
+      "sha256": "34cf12d28c8a2f3e288f3c72f9adae5499e42c767e290b481eabfe95fd177b15"
+    },
+    {
+      "path": "game/docs/broth-completion-ingredients-screenshots/after-compact-complete.png",
+      "source_name": "compact_shelf_05_complete61.png",
+      "sha256": "aebe35f826ea5485f9efe4c4b50e375561ca63b8bdcca132b5daa909641f3c99"
+    }
+  ]
 }

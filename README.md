@@ -10,6 +10,7 @@ Godot 라멘가게 프로토타입입니다. 완성 육수는 삭제 없이 보�
 
 - [육수 보관함](game/docs/BROTH_SHELF_ARCHIVE_V1.md): 실제 유료60→61번째 개발과 과거 메뉴 보존, 저장21 이행.
 - [배합을 구분하는 목록](game/docs/BROTH_LIBRARY_INGREDIENT_CUES_V1.md): 실제 Mac2,741검사·세 크기30장 검토, 전체 저장 대조.
+- [완성한 육수의 배합](game/docs/BROTH_COMPLETION_INGREDIENTS_V1.md): 결과 화면에도 실제 재료·분량·공법 표시, Mac2,921검사·30장 검토.
 - [독립 QA 대조 도구](game/docs/NATIVE_QA_AUDIT_V1.md): 소스·실행·캡처·전체 저장을 확인하고 화면의 직접 검토는 별도로 유지.
 
 작업 계약 → 구현 → 독립 검증 → 실제 화면 검토 → PR 반영을 기록합니다.

@@ -29,12 +29,24 @@
 공식 엔진 서명을 확인했다. 이전 main8957192의 AGENTS.md 15,023바이트는 원본
 Git blob 그대로 보존했고 SHA256·출처와 색인을 남겼다.
 
-## 실제 화면 확인 대기
+## 실제 화면 확인 완료
 
-`/private/tmp/ramen-broth-completion-qa-20261102-v1/Ramen QA.app`의 실행 승인을
-요청했다. 승인 후 새 세 크기의 원본30장과 기존 완성 화면을 직접 비교하고,
-실제 종료·로그·전체 저장·소스/패키지/엔진을 대조하기 전에는 main에 병합하지 않는다.
-기능·배치 통과를 실제 렌더링·iPhone·사람의 재미·본편 완성으로 보고하지 않는다.
+사용자가 승인한 정확한 v1을 한 번 실행했다. 새 실행 `20261102T111940Z-74052`는
+실제 화면 검사2,921개·실패0·종료0·엔진 오류/경고0으로 끝났다. 세 크기의 새
+원본30장을9개 모음으로 모두 검토하고 기존 완성 화면과 비교했다. 가운데 모인
+생강 ×2·다시마 ×1과 우림 방식, 원가/시간, 직접 담기와 다른 개발품 보기가 읽힌다.
+보관·복귀·우림·저장 실패/복구·재시작도 검토했다.
+
+자동 대조는 정확한 커밋 `4cd6f56`의474개 소스, 별도 고정한 패키지/엔진 해시,
+공식 서명, 새 PNG의 구조·크기·생성 시각을 확인했다. 세 크기의 전체 저장은
+이전 승인 native 결과와 새 headless 결과에 각각 바이트까지 같았다.
+PNG의 시각 검토는 자동 대조와 별도로 수행했다.
+
+[이전 완성 화면](broth-completion-ingredients-screenshots/before-portrait-complete.png),
+[개선 완성 화면](broth-completion-ingredients-screenshots/after-portrait-complete.png),
+[작은 세로 화면](broth-completion-ingredients-screenshots/after-compact-complete.png).
+원본30장과 전체 대조 보고서는 비공개 시험 산출물에 보존했다.
+Mac 검증을 iPhone·사람의 재미·본편 완성으로 보고하지 않는다.
 Claude·다른 에이전트·사용자 저장·전역 설정은 사용하거나 바꾸지 않았다.
 
 [작업 계약](../../tasks/broth-completion-ingredients-v1.md),

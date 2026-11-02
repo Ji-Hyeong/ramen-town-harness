@@ -10,6 +10,7 @@
 
 [육수 보관함](docs/BROTH_SHELF_ARCHIVE_V1.md) ·
 [목록의 배합 표시](docs/BROTH_LIBRARY_INGREDIENT_CUES_V1.md) ·
+[완성 화면의 실제 배합](docs/BROTH_COMPLETION_INGREDIENTS_V1.md) ·
 [장터 시식회·배합 가독성 통합](docs/MARKET_ORDER_READABILITY_INTEGRATION_V1.md) ·
 [독립 실행 대조](docs/NATIVE_QA_AUDIT_V1.md).
 실제 Mac 화면·전체 저장·소스 대조를 통과한 범위이며, 현재 개발분의 iPhone 표시·
