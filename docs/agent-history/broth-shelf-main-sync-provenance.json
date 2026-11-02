@@ -1,0 +1,8 @@
+{
+  "source_commit": "1ae88f8d0052a450f2530750376d8702e5817941",
+  "source_path": "AGENTS.md",
+  "archive": "docs/agent-history/AGENTS-broth-shelf-checkpoint-1ae88f8.md",
+  "bytes": 13468,
+  "sha256": "f0a5c51d27425507ed8efc3c3ee8d4b175cae6461495b1ecdd8630c0b666bd2b",
+  "purpose": "Preserve pending shelf start before merging accepted copy-only main; no native shelf acceptance implied."
+}

@@ -2,7 +2,7 @@ extends RefCounted
 ## Raw ingredients are saved, never a trusted cached score or product value.
 ## Rebuild every broth from this catalog so records, service and previews agree.
 const Methods = preload("res://scripts/domain/recipe_process.gd")
-const MAX_RECIPES := 60
+const MAX_RECIPES := 300
 const DATA: Array = [
 	{"id":"pork_bone","name":"돼지뼈","category":"뼈","icon":"broth_tonkotsu","cost":480,"seconds":24,"base":true,"axes":{"rich":5,"aroma":0}},
 	{"id":"chicken_bone","name":"닭뼈","category":"뼈","icon":"broth_chicken","cost":330,"seconds":16,"base":true,"axes":{"rich":2,"aroma":1}},
@@ -112,12 +112,12 @@ static func contains(recipes: Array, recipe: Dictionary) -> bool:
 
 ## Validate the persisted workshop and cross-check saved recipes at the current
 ## rank/supplier state. The UI never saves cached product stats or elapsed work.
-static func state_error(raw: Variant, rank: int, discovered: Array, day: int) -> String:
+static func state_error(raw: Variant, rank: int, discovered: Array, day: int, recipe_limit: int=MAX_RECIPES) -> String:
 	if typeof(raw)!=TYPE_DICTIONARY or raw.size()!=4:
 		return "육수 개발실 저장 구조가 올바르지 않아요."
 	for key in ["ingredients","method","recipes","legacy"]:
 		if not raw.has(key): return "육수 개발실 항목이 빠졌어요."
-	if typeof(raw["legacy"])!=TYPE_BOOL or typeof(raw["recipes"])!=TYPE_ARRAY or raw["recipes"].size()>MAX_RECIPES:
+	if typeof(raw["legacy"])!=TYPE_BOOL or typeof(raw["recipes"])!=TYPE_ARRAY or raw["recipes"].size()>recipe_limit:
 		return "육수 개발 기록 구조가 올바르지 않아요."
 	var draft: Dictionary={"ingredients":raw["ingredients"],"method":raw["method"]}
 	var err: String=error(draft,rank,discovered,true,true)

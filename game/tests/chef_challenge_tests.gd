@@ -1,4 +1,5 @@
 extends RefCounted
+## Historical schema projections also omit the v21 reversible broth shelf.
 ## Historical schema projections also exclude the optional v20 market order.
 ## Acceptance uses earned public state and actual runtime orders. No XP, rank,
 ## wallet or challenge success is injected to manufacture an achievable target.
@@ -103,7 +104,7 @@ func run(callback: Callable, data_dir: String) -> void:
 		elif version<=12: keys=State.TOP_KEYS_V11
 		for key in raw.keys():
 			if not keys.has(key): raw.erase(key)
-		raw["schema_version"]=version; raw.erase("broth_workshop"); raw.erase("noodle_workshop"); raw.erase("recipe_knowledge"); raw.erase("server_challenge"); raw.erase("market_tasting_order")
+		raw["schema_version"]=version; raw.erase("broth_workshop"); raw.erase("noodle_workshop"); raw.erase("recipe_knowledge"); raw.erase("server_challenge"); raw.erase("market_tasting_order"); raw.erase("broth_shelf")
 		if version<=2:
 			raw["draft"]["config"]["topping"]=raw["draft"]["config"]["toppings"][0]
 			raw["draft"]["config"].erase("toppings")
@@ -120,7 +121,7 @@ func run(callback: Callable, data_dir: String) -> void:
 			"bad_wait": bad["chef_challenge"]["attempt"]["wait_total"]=-1
 			"bad_record": bad["chef_challenge"]["attempt"]["record_id"]=bad["next_record_id"]
 			"unearned": bad["chef_challenge"]["attempt"]["units"]=0; bad["chef_challenge"]["attempt"]["wait_total"]=0; bad["chef_challenge"]["attempt"]["star_sum"]=0
-			"old_root": bad["schema_version"]=13; bad.erase("broth_workshop"); bad.erase("noodle_workshop"); bad.erase("recipe_knowledge"); bad.erase("server_challenge"); bad.erase("market_tasting_order")
+			"old_root": bad["schema_version"]=13; bad.erase("broth_workshop"); bad.erase("noodle_workshop"); bad.erase("recipe_knowledge"); bad.erase("server_challenge"); bad.erase("market_tasting_order"); bad.erase("broth_shelf")
 			"boolean": bad["chef_challenge"]["completed_day"]=true
 		before=json(restored)
 		check.call(restored.load_from_dict(bad)!="" and json(restored)==before,"malformed chef load atomic: "+kind)
@@ -148,7 +149,7 @@ func run(callback: Callable, data_dir: String) -> void:
 	var fake_old: Dictionary=grown.to_dict()
 	fake_old.erase("chef_challenge")
 	fake_old.erase("mountain_foraging")
-	fake_old["schema_version"]=13; fake_old.erase("broth_workshop"); fake_old.erase("noodle_workshop"); fake_old.erase("recipe_knowledge"); fake_old.erase("server_challenge"); fake_old.erase("market_tasting_order")
+	fake_old["schema_version"]=13; fake_old.erase("broth_workshop"); fake_old.erase("noodle_workshop"); fake_old.erase("recipe_knowledge"); fake_old.erase("server_challenge"); fake_old.erase("market_tasting_order"); fake_old.erase("broth_shelf")
 	check.call(historical.load_from_dict(fake_old)!="","old schema rejects nested mastery snapshot")
 
 	var preview: Dictionary=grown.hiring_preview("prep_assistant")
@@ -169,7 +170,7 @@ func run(callback: Callable, data_dir: String) -> void:
 	var raw13: Dictionary=multi.to_dict()
 	raw13.erase("chef_challenge")
 	raw13.erase("mountain_foraging")
-	raw13["schema_version"]=13; raw13.erase("broth_workshop"); raw13.erase("noodle_workshop"); raw13.erase("recipe_knowledge"); raw13.erase("server_challenge"); raw13.erase("market_tasting_order")
+	raw13["schema_version"]=13; raw13.erase("broth_workshop"); raw13.erase("noodle_workshop"); raw13.erase("recipe_knowledge"); raw13.erase("server_challenge"); raw13.erase("market_tasting_order"); raw13.erase("broth_shelf")
 	var old_text: String=JSON.stringify(raw13,"\t",true)
 	var old_store=Save.new(old_dir)
 	var old_file:=FileAccess.open(old_store.main_path(),FileAccess.WRITE)
@@ -182,7 +183,7 @@ func run(callback: Callable, data_dir: String) -> void:
 	var projected: Dictionary=migrated.to_dict()
 	projected.erase("chef_challenge")
 	projected.erase("mountain_foraging")
-	projected["schema_version"]=13; projected.erase("broth_workshop"); projected.erase("noodle_workshop"); projected.erase("recipe_knowledge"); projected.erase("server_challenge"); projected.erase("market_tasting_order")
+	projected["schema_version"]=13; projected.erase("broth_workshop"); projected.erase("noodle_workshop"); projected.erase("recipe_knowledge"); projected.erase("server_challenge"); projected.erase("market_tasting_order"); projected.erase("broth_shelf")
 	check.call(JSON.stringify(projected,"",true)==JSON.stringify(raw13,"",true),"all v13 progression/report/records/wallet remain exact")
 	check.call(old_store.save_state(migrated)["ok"] and FileAccess.get_file_as_string(old_store.legacy_bak_path(13))==old_text,"first schema14 save preserves exact v13 original")
 	finished=true

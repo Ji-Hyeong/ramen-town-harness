@@ -1,4 +1,5 @@
 extends RefCounted
+## Historical schema projections also omit the v21 reversible broth shelf.
 ## Separate actual paid continuations for both routes. Rank, stock and cash
 ## come from the earned raw/farming fixture, never synthetic grants.
 const State=preload("res://scripts/domain/game_state.gd")
@@ -111,7 +112,7 @@ func _migration(folder: String) -> void:
 	var source: String=FileAccess.get_file_as_string("res://tests/fixtures/market-order-v19-save.json")
 	var raw: Dictionary=JSON.parse_string(source);var state:=State.new()
 	check.call(int(raw["schema_version"])==19 and state.load_from_dict(raw)=="","exact accepted previous19save loads")
-	var converted: Dictionary=state.to_dict();converted.erase("market_tasting_order");converted["schema_version"]=19
+	var converted: Dictionary=state.to_dict();converted.erase("market_tasting_order");converted.erase("broth_shelf");converted["schema_version"]=19
 	# JSON numbers enter as floats; compare both sides at the serialized boundary
 	# rather than confusing integer normalization with a changed game value.
 	check.call(JSON.parse_string(JSON.stringify(converted))==raw and state.market_order_review()["status"] in ["locked","open"],"migration changes only schema and adds empty optional progress")

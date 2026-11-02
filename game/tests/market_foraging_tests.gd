@@ -1,4 +1,5 @@
 extends RefCounted
+## Historical schema projections also omit the v21 reversible broth shelf.
 ## Historical schema projections also exclude the optional v20 market order.
 ## Shared meaningful transaction tests, invoked by the full suite and a focused
 ## runner. Only the caller's disposable data directory is read or written.
@@ -244,7 +245,7 @@ func _legacy(data_dir: String) -> void:
 	old.erase("harbor_foraging")
 	old.erase("chef_challenge")
 	old.erase("mountain_foraging")
-	old["schema_version"] = 10; old.erase("broth_workshop"); old.erase("noodle_workshop"); old.erase("recipe_knowledge"); old.erase("server_challenge"); old.erase("market_tasting_order")
+	old["schema_version"] = 10; old.erase("broth_workshop"); old.erase("noodle_workshop"); old.erase("recipe_knowledge"); old.erase("server_challenge"); old.erase("market_tasting_order"); old.erase("broth_shelf")
 	var store: Save = Save.new(data_dir.path_join("legacy10"))
 	DirAccess.make_dir_recursive_absolute(store.dir)
 	var text: String = JSON.stringify(old, "\t", true) + "\n"
@@ -261,6 +262,6 @@ func _legacy(data_dir: String) -> void:
 	migrated.erase("harbor_foraging")
 	migrated.erase("chef_challenge")
 	migrated.erase("mountain_foraging")
-	migrated["schema_version"] = 10; migrated.erase("broth_workshop"); migrated.erase("noodle_workshop"); migrated.erase("recipe_knowledge"); migrated.erase("server_challenge"); migrated.erase("market_tasting_order")
+	migrated["schema_version"] = 10; migrated.erase("broth_workshop"); migrated.erase("noodle_workshop"); migrated.erase("recipe_knowledge"); migrated.erase("server_challenge"); migrated.erase("market_tasting_order"); migrated.erase("broth_shelf")
 	check.call(migrated == old, "all existing v10 values preserved")
 	check.call(store.save_state(restored)["ok"] and FileAccess.get_file_as_string(store.legacy_bak_path(10)) == text, "first v11 save preserves exact v10 original")
