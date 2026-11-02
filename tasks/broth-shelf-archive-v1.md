@@ -85,3 +85,7 @@ Prepared v1/v2 were not launched; replace premature v2 request with exact v3.
 Full-shelf restore now shows a visible reason and fixed read-only working-notes
 navigation. All60old records/best witnesses and first60owned formulas equal
 after actual61st brew/service; exact20backup verified. Native approval pending.
+
+Additional scoped verification tool: game/tools/audit_broth_owner_cap.gd tests
+the synthetic300ownership guard with59working, so a full working shelf cannot
+mask that guard. It is excluded from the frozen app's runtime source list.

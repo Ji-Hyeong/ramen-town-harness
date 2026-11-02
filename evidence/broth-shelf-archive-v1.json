@@ -127,5 +127,15 @@
   ],
   "source_import_note": "Owned source editor import exit0 with4known missing cached tool UID warnings;8generated tools UID files preserved privately,4new runtime/test UIDs retained. Frozen v3 import/export errors/warnings0.",
   "claude_or_other_agents": 0,
-  "phone_live_save_global_config_changed": false
+  "phone_live_save_global_config_changed": false,
+  "independent_owned_cap_with_free_working_slot": {
+    "checks": 12,
+    "failures": 0,
+    "actual_exit": 0,
+    "engine_errors_warnings": 0,
+    "owned": 300,
+    "working": 59,
+    "synthetic": true,
+    "script_sha256": "39ae2ac60dcfe61cf845d879a4699638086819ff703a005f2a454d0a97f30402"
+  }
 }
