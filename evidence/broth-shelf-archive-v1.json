@@ -3,7 +3,7 @@
   "task": "broth-shelf-archive-v1",
   "base": "02dabeeb0af5a1624d5e960faf89cb21577994ff",
   "integrated_accepted_copy_main": "9fcb503bfc66dc8e723bd7282497dc99365f8c12",
-  "status": "headless_accepted_native_approval_pending",
+  "status": "accepted_headless_and_native",
   "schema": 21,
   "working_shelf_limit": 60,
   "owned_formula_limit": 300,
@@ -109,13 +109,13 @@
     "frozen_import_export_errors_warnings": 0,
     "schema": 21,
     "qa_script": "res://tests/broth_shelf_qa.gd",
-    "native_executed": false,
+    "native_executed": true,
     "versus_frozen_ui_1955_source_changed_only": [
       "tests/recipe_knowledge_tests.gd"
     ],
     "note": "All production and active shelf QA bytes unchanged from clean1955frozen run. Standalone knowledge test writer assertions updated; baseline accepted20 showed identical4old hardcoded19failures."
   },
-  "native_executed": false,
+  "native_executed": true,
   "superseded_unrun_apps": [
     "/private/tmp/ramen-broth-shelf-qa-20261102-v1/Ramen QA.app",
     "/private/tmp/ramen-broth-shelf-qa-20261102-v2/Ramen QA.app"
@@ -137,5 +137,53 @@
     "working": 59,
     "synthetic": true,
     "script_sha256": "39ae2ac60dcfe61cf845d879a4699638086819ff703a005f2a454d0a97f30402"
-  }
+  },
+  "native_acceptance": {
+    "run": "/private/tmp/ramen-broth-shelf-qa-20261102-v3/runs/20261102T101349Z-56279",
+    "actual_exit": 0,
+    "checks": 2045,
+    "failures": 0,
+    "engine_errors_warnings": 0,
+    "review_complete": true,
+    "reviewed_captures": 30,
+    "reviewed_contact_sheets": 9,
+    "post_source_exact": 474,
+    "post_pack_exact": true,
+    "post_official_signature_exit": 0,
+    "whole_native_headless_save_pairs": [
+      {
+        "profile": "portrait",
+        "sha256": "88e28e70e927c79f5116ebf0864e2ad3f57d2fcbec6c3e192b5d4b288254706d",
+        "byte_equal": true
+      },
+      {
+        "profile": "compact",
+        "sha256": "88e28e70e927c79f5116ebf0864e2ad3f57d2fcbec6c3e192b5d4b288254706d",
+        "byte_equal": true
+      },
+      {
+        "profile": "desktop",
+        "sha256": "88e28e70e927c79f5116ebf0864e2ad3f57d2fcbec6c3e192b5d4b288254706d",
+        "byte_equal": true
+      }
+    ],
+    "review_notes": [
+      "All three screen sizes: working/archive filters, pressed controls, archived current broth use, paid61st brew, full restore reason and working-notes link, successful restore, intentional save failure, recovery and restart reviewed.",
+      "No clipped action, blank capture or new blocking layout defect found. Similar formulas currently share generic display names; ingredient-identification cues remain bounded UX follow-up."
+    ]
+  },
+  "public_original_captures": [
+    {
+      "path": "game/docs/broth-shelf-screenshots/compact_shelf_06_restore_full.png",
+      "sha256": "2cd9cac04e76fc4edba40ab1da94b217742ca51f8fda785dd918af81d66abad9"
+    },
+    {
+      "path": "game/docs/broth-shelf-screenshots/portrait_shelf_05_complete61.png",
+      "sha256": "c95eb31cafac4b2fcb79ec2c46d908ae7457d1d3a242bb3adf0f986bc0c8f814"
+    },
+    {
+      "path": "game/docs/broth-shelf-screenshots/portrait_shelf_10_restart.png",
+      "sha256": "96b2687e81e08d64c48bf7bb5d9f79c33e311603a23024c6313aa0d05c229e55"
+    }
+  ]
 }

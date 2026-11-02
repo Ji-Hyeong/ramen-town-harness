@@ -89,3 +89,14 @@ after actual61st brew/service; exact20backup verified. Native approval pending.
 Additional scoped verification tool: game/tools/audit_broth_owner_cap.gd tests
 the synthetic300ownership guard with59working, so a full working shelf cannot
 mask that guard. It is excluded from the frozen app's runtime source list.
+
+## NATIVE ACCEPTANCE
+User approved final v3; launch only that app, not superseded v1/v2. Fresh native
+run20261102T101349Z-56279:2045checks/0failures, actual exit0, engine errors and
+warnings0. Review all30captures across390x844/390x750/1280x800 via9contact sheets.
+Working/archive filters, press, current archived use, paid61st brew, restore-full
+reason/read-only link, restore, intentional save refusal, recovery and restart
+are readable and consistent. Three whole native/headless saves byte-equal.
+Post-run474source/PCK/official signature exact. Publish3unmodified originals and
+hashes. All implementation and verification criteria complete; proceed with
+exact-head PR65 acceptance. Human fun, campaign volume and iPhone remain separate.
