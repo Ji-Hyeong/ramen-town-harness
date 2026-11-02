@@ -44,3 +44,7 @@ or subscription quota. No percentage of service usage savings is promised.
 ## Broth shelf headless acceptance
 
 [Exact2ce3ab3root](AGENTS-broth-shelf-headless-2ce3ab3.md) and [provenance](broth-shelf-headless-provenance.json) preserve all pending acceptance/checkpoint records before the next active history entry. Native approval was pending; archives do not grant it.
+
+## Broth ingredient cues accepted root
+
+[Exact8957192root](AGENTS-broth-cues-accepted-8957192.md) and [provenance](broth-cues-accepted-provenance.json) preserve all prior rules and histories before another native task would exceed16KB. PR66 was accepted; future completion changes are not approved by this archive.

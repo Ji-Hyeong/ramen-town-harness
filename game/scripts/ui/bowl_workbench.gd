@@ -2339,6 +2339,16 @@ func _show_component_completion(kind: String, index: int) -> void:
 	name_label.name="ComponentCompletionName"
 	name_label.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
 	body.add_child(name_label)
+	if kind=="broth":
+		# The completion belongs to this owned formula, not the unfinished blend
+		# the player may edit next. Reuse the library's exact portion grouping.
+		_broth_library_cues(body,result["recipe"],index)
+		var portions: HFlowContainer=body.get_child(body.get_child_count()-1)
+		portions.alignment=FlowContainer.ALIGNMENT_CENTER
+		var method:=_label(str(ProcessRules.method("broth",result["recipe"]["method"])["name"]),15,TEAL)
+		method.name="ComponentCompletionMethod"
+		method.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
+		body.add_child(method)
 	_facts(body,[["한 그릇 원가",won(item["cost"])],["준비 시간","%d초" % item["seconds"]]])
 	var status:=_label("그릇에 사용 중" if result["applied"] else "완성 · 아직 그릇에 담기 전",16,TEAL)
 	status.name="ComponentCompletionState"
@@ -2351,7 +2361,7 @@ func _show_component_completion(kind: String, index: int) -> void:
 	if kind=="broth" and not state.noodle_ready(): next="이 육수 담고 면 만들기"
 	elif kind=="noodle" and not state.broth_ready(): next="이 면 담고 육수 만들기"
 	_modal_footer("개발비 결제 완료",next,func(): _emit(kind+"_use",{"index":index,"advance":true}),bool(_info["busy"]))
-	_compact_detail(540)
+	_compact_detail(610 if kind=="broth" else 540)
 
 
 func _change_component_page(kind: String, delta: int) -> void:

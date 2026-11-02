@@ -1,0 +1,75 @@
+{
+  "base_main": "8957192afd927486987b9a01febaba2ef59bc9c7",
+  "source_count": 474,
+  "source_exact": true,
+  "changed_runtime_files": [
+    "game/scripts/ui/bowl_workbench.gd",
+    "game/tests/broth_shelf_qa.gd"
+  ],
+  "pack_sha256": "ec757aba438c42f0789c55478cd3ae6f11490900755894231f2d22789de937f3",
+  "official_signature_exit": 0,
+  "whole_headless_vs_accepted_native": [
+    {
+      "profile": "portrait",
+      "sha256": "88e28e70e927c79f5116ebf0864e2ad3f57d2fcbec6c3e192b5d4b288254706d",
+      "byte_equal_accepted_main_native": true
+    },
+    {
+      "profile": "compact",
+      "sha256": "88e28e70e927c79f5116ebf0864e2ad3f57d2fcbec6c3e192b5d4b288254706d",
+      "byte_equal_accepted_main_native": true
+    },
+    {
+      "profile": "desktop",
+      "sha256": "88e28e70e927c79f5116ebf0864e2ad3f57d2fcbec6c3e192b5d4b288254706d",
+      "byte_equal_accepted_main_native": true
+    }
+  ],
+  "native_executed": false,
+  "date": "2026-11-02",
+  "task": "broth-completion-ingredients-v1",
+  "status": "headless_accepted_native_approval_pending",
+  "schema": 21,
+  "candidate_app": "/private/tmp/ramen-broth-completion-qa-20261102-v1/Ramen QA.app",
+  "checks": {
+    "frozen-ui-v1": {
+      "actual_exit": 0,
+      "issue_lines": [],
+      "summary": [
+        "BROTH SHELF UI checks=2831 failures=0 mode=layout-only"
+      ]
+    },
+    "domain-v1": {
+      "actual_exit": 0,
+      "issue_lines": [],
+      "summary": [
+        "BROTH SHELF checks=425 failures=0 services=3"
+      ]
+    },
+    "component-v1": {
+      "actual_exit": 0,
+      "issue_lines": [],
+      "summary": [
+        "COMPONENT UI checks=315 failures=0 mode=layout"
+      ]
+    },
+    "formula-v1": {
+      "actual_exit": 0,
+      "issue_lines": [],
+      "summary": [
+        "PAID FORMULA COMPARISON checks=635 failures=0 mode=layout-only"
+      ]
+    }
+  },
+  "centered_max_five_portion_layout_separately_synthetic": true,
+  "claude_or_other_agents": 0,
+  "phone_live_save_global_settings_changed": false,
+  "lossless_root_archive": {
+    "source_commit": "8957192afd927486987b9a01febaba2ef59bc9c7",
+    "source_path": "AGENTS.md",
+    "archive": "docs/agent-history/AGENTS-broth-cues-accepted-8957192.md",
+    "bytes": 15023,
+    "sha256": "761933ef3d4621d48d731b69698fe82b1747df718abf5d9142a1b86e174c9707",
+    "purpose": "Preserve exact accepted root before another UI/native task would exceed active history16KB. Existing game runtime schema21; no new approval in archives."
+  }
+}

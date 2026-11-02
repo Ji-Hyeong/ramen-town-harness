@@ -1,0 +1,8 @@
+{
+  "source_commit": "8957192afd927486987b9a01febaba2ef59bc9c7",
+  "source_path": "AGENTS.md",
+  "archive": "docs/agent-history/AGENTS-broth-cues-accepted-8957192.md",
+  "bytes": 15023,
+  "sha256": "761933ef3d4621d48d731b69698fe82b1747df718abf5d9142a1b86e174c9707",
+  "purpose": "Preserve exact accepted root before another UI/native task would exceed active history16KB. Existing game runtime schema21; no new approval in archives."
+}
