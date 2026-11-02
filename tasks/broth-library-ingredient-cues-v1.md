@@ -45,3 +45,13 @@ mainad92619. Three whole UI saves equal that main's native saves byte-for-byte.
 Maximum five-portion/long-name/repeated-ingredient cases are synthetic layout
 only and do not modify player state. Actual native/rendered readability pending
 user-approved final v2 launch; preserve unrun v1. No merge yet.
+
+## NATIVE ACCEPTANCE
+User approved exact v2; fresh run20261102T104626Z-65713 passes2741/0, actual
+exit0/errors-warnings0. All30PNGs reviewed via9sheets against the prior list.
+Ingredients/count/method are readable and scroll/actions/save recovery remain
+usable at all three sizes. Mechanical auditor pins source6e77974/474files and
+reviewed PCK/engine hashes; signature0, exact capture structure/dimensions/time,
+three whole save pairs equal prior native. Three more pairs equal new headless.
+Publish3unmodified before/after originals. All acceptance criteria complete;
+proceed with exact-head PR66 acceptance. iPhone/human-fun/campaign remain separate.
