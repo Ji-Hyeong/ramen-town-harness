@@ -1,0 +1,232 @@
+{
+  "date": "2026-11-02",
+  "task": "market-order-readability-integration-v1",
+  "base": "fc7e5e914bc1cfb1d659d8deed8fd08e8f3df70f",
+  "runtime_schema": 20,
+  "candidate_head_before_evidence": "029e594eace151d38ec9047b992ebc490f17248d",
+  "status": "combined_headless_and_native_accepted",
+  "source_count": 464,
+  "candidates": [
+    "14bb4352a6af504a61f71fbf7dbb230af3f9fd58",
+    "1fb9a0a5b05bbcad6be9fd044ccc53717db4c99a"
+  ],
+  "checks": {
+    "domain": {
+      "actual_exit": 0,
+      "errors_warnings": 0,
+      "summary": "tests=130 checks=60730 failures=0"
+    },
+    "market-domain": {
+      "actual_exit": 0,
+      "errors_warnings": 0,
+      "summary": "MARKET ORDER checks=198 failures=0"
+    },
+    "market-ui": {
+      "actual_exit": 0,
+      "errors_warnings": 0,
+      "summary": "MARKET ORDER UI checks=723 failures=0 mode=layout-only"
+    },
+    "formula-ui": {
+      "actual_exit": 0,
+      "errors_warnings": 0,
+      "summary": "PAID FORMULA COMPARISON checks=635 failures=0 mode=layout-only"
+    },
+    "sales-ui": {
+      "actual_exit": 0,
+      "errors_warnings": 0,
+      "summary": "FORAGING SALES LOOP checks=575 failures=0 mode=layout-only"
+    },
+    "paid-ui": {
+      "actual_exit": 0,
+      "errors_warnings": 0,
+      "summary": "PAID RESULT CHANGE baseline=false mode=layout-only checks=365 failures=0"
+    },
+    "journey-ui": {
+      "actual_exit": 0,
+      "errors_warnings": 0,
+      "summary": "FIRST MENU JOURNEY checks=359 failures=0 mode=layout"
+    },
+    "pause-combined": {
+      "actual_exit": 0,
+      "errors_warnings": 0,
+      "summary": "MOBILE PAUSE CONTRACT cases=6 checks=197 failures=0"
+    },
+    "builder": {
+      "actual_exit": 0,
+      "tests": 24,
+      "failures": 0
+    }
+  },
+  "apps": [
+    {
+      "app": "/private/tmp/ramen-market-order-integrated-qa-20261102-v1/Ramen QA.app",
+      "source_count": 464,
+      "pack_sha256": "7d789a075bb1eaeeb106f4a48341f2a1bb4bdc8f00e7f19c8b9c011dd39b1e70",
+      "engine_signature_exit": 0,
+      "source_exact": true,
+      "qa_script": "res://tests/market_order_qa.gd"
+    },
+    {
+      "app": "/private/tmp/ramen-formula-integrated-qa-20261102-v1/Ramen QA.app",
+      "source_count": 464,
+      "pack_sha256": "4dd62b9974cabfc6d4b7176796979a2d34d1ee7da6ef4715ec68a6dd3775b2fc",
+      "engine_signature_exit": 0,
+      "source_exact": true,
+      "qa_script": "res://tests/paid_formula_comparison_qa.gd"
+    }
+  ],
+  "old_schema_19_values": {
+    "comparison": "Exact parsed values for every old19field; only20version and canonical empty new order differ. No dropped old field.",
+    "states": [
+      "qa_data/compact_formula/earned/ramen_lab_save.json",
+      "qa_data/compact_formula/fresh/ramen_lab_save.json",
+      "qa_data/compact_formula/legacy/ramen_lab_save.json",
+      "qa_data/desktop_formula/earned/ramen_lab_save.json",
+      "qa_data/desktop_formula/fresh/ramen_lab_save.json",
+      "qa_data/desktop_formula/legacy/ramen_lab_save.json",
+      "qa_data/portrait_formula/earned/ramen_lab_save.json",
+      "qa_data/portrait_formula/fresh/ramen_lab_save.json",
+      "qa_data/portrait_formula/legacy/ramen_lab_save.json"
+    ],
+    "all_old_values_equal": true
+  },
+  "three_root_archives_verified_against_git_blobs": true,
+  "native_executed": true,
+  "pending_approval_replaces": [
+    "/private/tmp/ramen-paid-formula-readability-qa-20261102-v1/Ramen QA.app",
+    "/private/tmp/ramen-market-tasting-order-qa-20261102-v3/Ramen QA.app"
+  ],
+  "claude_or_other_agents": 0,
+  "phone_live_save_global_config_changed": false,
+  "limits": "Headless does not verify rendered images or human fun; withheld main merge pending exact native runs and all fresh screenshot review. Existing PR57/58 evidence remains scoped to separate candidates.",
+  "latest_tools_docs_main_merged": "2ed3dc2db34f6c58a2d053d8aa0f1e2bac07696f",
+  "post_main_sync_runtime_source_unchanged": true,
+  "native": [
+    {
+      "suite": "market",
+      "app": "/private/tmp/ramen-market-order-integrated-qa-20261102-v1/Ramen QA.app",
+      "run_id": "20261102T045311Z-89897",
+      "checks": 819,
+      "failures": 0,
+      "actual_exit": 0,
+      "engine_errors_warnings": 0,
+      "captures": 32,
+      "all_captures_reviewed": true,
+      "review_sheets": 9,
+      "source_count": 464,
+      "source_exact": true,
+      "pack_sha256": "7d789a075bb1eaeeb106f4a48341f2a1bb4bdc8f00e7f19c8b9c011dd39b1e70",
+      "post_signature_exit": 0,
+      "full_saved_states_equal_to_headless": 3
+    },
+    {
+      "suite": "formula",
+      "app": "/private/tmp/ramen-formula-integrated-qa-20261102-v1/Ramen QA.app",
+      "run_id": "20261102T045518Z-90392",
+      "checks": 698,
+      "failures": 0,
+      "actual_exit": 0,
+      "engine_errors_warnings": 0,
+      "captures": 21,
+      "all_captures_reviewed": true,
+      "review_sheets": 6,
+      "source_count": 464,
+      "source_exact": true,
+      "pack_sha256": "4dd62b9974cabfc6d4b7176796979a2d34d1ee7da6ef4715ec68a6dd3775b2fc",
+      "post_signature_exit": 0,
+      "full_saved_states_equal_to_headless": 9
+    }
+  ],
+  "full_native_headless_state_pairs": [
+    {
+      "suite": "market",
+      "path": "compact_market/ramen_lab_save.json",
+      "whole_values_equal": true,
+      "bytes_equal": true
+    },
+    {
+      "suite": "market",
+      "path": "desktop_market/ramen_lab_save.json",
+      "whole_values_equal": true,
+      "bytes_equal": true
+    },
+    {
+      "suite": "market",
+      "path": "portrait_market/ramen_lab_save.json",
+      "whole_values_equal": true,
+      "bytes_equal": true
+    },
+    {
+      "suite": "formula",
+      "path": "compact_formula/earned/ramen_lab_save.json",
+      "whole_values_equal": true,
+      "bytes_equal": true
+    },
+    {
+      "suite": "formula",
+      "path": "compact_formula/fresh/ramen_lab_save.json",
+      "whole_values_equal": true,
+      "bytes_equal": true
+    },
+    {
+      "suite": "formula",
+      "path": "compact_formula/legacy/ramen_lab_save.json",
+      "whole_values_equal": true,
+      "bytes_equal": true
+    },
+    {
+      "suite": "formula",
+      "path": "desktop_formula/earned/ramen_lab_save.json",
+      "whole_values_equal": true,
+      "bytes_equal": true
+    },
+    {
+      "suite": "formula",
+      "path": "desktop_formula/fresh/ramen_lab_save.json",
+      "whole_values_equal": true,
+      "bytes_equal": true
+    },
+    {
+      "suite": "formula",
+      "path": "desktop_formula/legacy/ramen_lab_save.json",
+      "whole_values_equal": true,
+      "bytes_equal": true
+    },
+    {
+      "suite": "formula",
+      "path": "portrait_formula/earned/ramen_lab_save.json",
+      "whole_values_equal": true,
+      "bytes_equal": true
+    },
+    {
+      "suite": "formula",
+      "path": "portrait_formula/fresh/ramen_lab_save.json",
+      "whole_values_equal": true,
+      "bytes_equal": true
+    },
+    {
+      "suite": "formula",
+      "path": "portrait_formula/legacy/ramen_lab_save.json",
+      "whole_values_equal": true,
+      "bytes_equal": true
+    }
+  ],
+  "published_originals": [
+    {
+      "file": "game/docs/market-order-readability-screenshots/market-portrait-ready.png",
+      "source_name": "portrait_market_07_ready.png",
+      "sha256": "51a03a56e855430bee0dc136df4724be5f021d5be469feed785e18106cba8aa9"
+    },
+    {
+      "file": "game/docs/market-order-readability-screenshots/market-desktop-restart.png",
+      "source_name": "desktop_market_09_restart.png",
+      "sha256": "cc080d312bb016fd7d8f7ef5699fade2d1dd29b6dcbbb52770cd4df7dd8fbd80"
+    },
+    {
+      "file": "game/docs/market-order-readability-screenshots/formula-compact-long.png",
+      "source_name": "compact_formula_06_long.png",
+      "sha256": "c7576d5c511f7fb9404f64630f2f89e8eb77e10a32e4e28e5dce2e2bfe9cb63b"
+    }
+  ],
+  "rendering_limits": "53fresh Mac captures fully reviewed; does not prove iPhone physical safe area/performance, human fun, final art or campaign duration. Minor generic copy wrapping and compact detail scrolling remain polish."
+}

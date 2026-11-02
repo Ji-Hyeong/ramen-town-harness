@@ -1,0 +1,41 @@
+{
+  "task": "paid-formula-readability-v1",
+  "base": "1ce05cd059164d70e75f7e4ec825259dfbe50827",
+  "status": "headless_accepted_native_approval_pending",
+  "source_count": 452,
+  "app": "/private/tmp/ramen-paid-formula-readability-qa-20261102-v1/Ramen QA.app",
+  "pack_sha256": "3d25b672f9a2859f3eeae8533e477fa3786ed70d73851ba4a6d0905572b05edb",
+  "vendor_signature_valid": true,
+  "checks": {
+    "formula": {
+      "exit": 0,
+      "errors_warnings": [],
+      "summary": [
+        "PAID FORMULA COMPARISON checks=635 failures=0 mode=layout-only"
+      ]
+    },
+    "paid": {
+      "exit": 0,
+      "errors_warnings": [],
+      "summary": [
+        "PAID RESULT CHANGE baseline=false mode=layout-only checks=365 failures=0"
+      ]
+    }
+  },
+  "unchanged_full_saved_states": [
+    "qa_data/compact_formula/earned/ramen_lab_save.json",
+    "qa_data/compact_formula/fresh/ramen_lab_save.json",
+    "qa_data/compact_formula/legacy/ramen_lab_save.json",
+    "qa_data/desktop_formula/earned/ramen_lab_save.json",
+    "qa_data/desktop_formula/fresh/ramen_lab_save.json",
+    "qa_data/desktop_formula/legacy/ramen_lab_save.json",
+    "qa_data/portrait_formula/earned/ramen_lab_save.json",
+    "qa_data/portrait_formula/fresh/ramen_lab_save.json",
+    "qa_data/portrait_formula/legacy/ramen_lab_save.json"
+  ],
+  "native_executed": false,
+  "schema": 19,
+  "domain_services_assets_unchanged": true,
+  "claude_or_other_agents": 0,
+  "phone_live_save": false
+}

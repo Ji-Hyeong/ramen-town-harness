@@ -1,0 +1,8 @@
+{
+  "source": "Accepted PR56 combined raw paid-formula QA, portrait fresh disk checkpoint",
+  "source_run": "combined-formula headless accepted with main1ce05cd",
+  "schema": 19,
+  "sha256": "6003d58c61955175d69053bbcdf27eb70b35378062234f1cdf71d0acfa56110d",
+  "bytes": 9936,
+  "changes": "none; exact existing isolated QA save; no live player data"
+}

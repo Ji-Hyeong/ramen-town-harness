@@ -1,0 +1,23 @@
+extends SceneTree
+## Explicit isolated writes only; no user:// or player data is used.
+const Pure=preload("res://tests/market_order_tests.gd")
+const Actual=preload("res://tests/market_order_integration_tests.gd")
+var checks: int=0
+var failures: Array[String]=[]
+
+func _initialize() -> void:
+	var folder: String=""
+	for arg in OS.get_cmdline_user_args():
+		if arg.begins_with("--test-data-dir="):folder=arg.trim_prefix("--test-data-dir=")
+	if not folder.is_absolute_path() or folder.begins_with("user://") or folder.begins_with("res://"):
+		printerr("Explicit absolute --test-data-dir is required.");quit(2);return
+	var pure:=Pure.new();pure.run(_check)
+	var actual:=Actual.new();actual.run(_check,folder)
+	_check(actual.finished,"both actual routes and migration finish")
+	print("MARKET ORDER checks=%d failures=%d" % [checks,failures.size()])
+	for failure in failures:printerr("FAIL: "+failure)
+	quit(0 if failures.is_empty() else 1)
+
+func _check(ok: bool,message: String) -> void:
+	checks+=1
+	if not ok:failures.append(message)

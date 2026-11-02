@@ -17,6 +17,7 @@ const Contest = preload("res://scripts/domain/ramen_contest.gd")
 const Eval = preload("res://scripts/domain/recipe_evaluator.gd")
 const Process = preload("res://scripts/domain/recipe_process.gd")
 const Growth = preload("res://scripts/domain/shop_growth.gd")
+const MarketOrder = preload("res://scripts/domain/market_tasting_order.gd")
 const BODY = preload("res://assets/fonts/Pretendard-Regular.otf")
 const BOLD = preload("res://assets/fonts/Pretendard-Bold.otf")
 const INK := Color("18354f")
@@ -112,6 +113,17 @@ func _dish(config: Dictionary, minimum: Vector2) -> Control:
 	out.mouse_filter=Control.MOUSE_FILTER_IGNORE
 	out.set_config(config)
 	return out
+
+
+## Reuse the exploration screen's real material art rule. Sesame oil has a
+## pixel ingredient icon, not a bowl-food atlas entry; it is not a missing-food
+## fallback. Both explicit routes use their actual ingredient illustration.
+func _market_picture(id: String,minimum: Vector2) -> TextureRect:
+	var texture: Texture2D=Pixel.scaled_tex(Pixel.icon_image(id),3) if id=="oil_roasted_sesame" else Art.food(id)
+	var picture: TextureRect=_picture(texture,minimum)
+	picture.name="OpsMarketIngredient"
+	picture.material=Art.image_material(texture)
+	return picture
 
 
 func _ready() -> void:
@@ -474,6 +486,10 @@ func _research_list() -> void:
 	_summary.text="%s · %d점 · 완료 %d/%d" % [stage["title"],_state.research_points(),_state.research_completed_ids().size(),Research.REQUESTS.size()]
 	_target()
 	var grid:=_grid()
+	var market: Dictionary=_state.market_order_review()
+	var market_status: String={"locked":"2랭크에서 열려요","open":"요리 방향 고르기","active":"진행 중 · 실제 영업으로 대접","ready":"달성 · 답례 받기","done":"완료 · 대접 기록 보기"}[market["status"]]
+	var ingredient: String="oil_roasted_sesame" if market["direction"]=="sesame_depth" else "topping_citrus_peel"
+	_row(grid,"장터 시식회","장터 메뉴로 손님 대접",market_status,"OpsMarketOrder","market_tasting",_market_picture(ingredient,Vector2(64,64)))
 	for req in Research.REQUESTS:
 		var status: String=_state.research_status(req["id"])
 		var text: String={"done":"완료 · 보상 수령","locked":"잠김 · 해금 조건 보기","open":"도전 가능 · 조건 보기"}[status]
@@ -481,6 +497,9 @@ func _research_list() -> void:
 
 
 func _research_page() -> void:
+	if _id=="market_tasting":
+		_market_order_page()
+		return
 	var req: Dictionary=Research.find(_id)
 	var status: String=_state.research_status(_id)
 	var paper:=_paper(_body)
@@ -509,6 +528,66 @@ func _research_page() -> void:
 	_primary_kind="research"
 	_primary_data={"id":_id}
 	_primary.disabled=status!="open" or rec.is_empty() or bool(_context["busy"])
+
+
+## An actual service event lives inside the existing request tab. Only the
+## explicit accept/claim buttons emit transactions; browsing never selects a
+## recipe or grants knowledge. A stored paid dish appears only with real proof.
+func _market_order_page() -> void:
+	var review: Dictionary=_state.market_order_review()
+	var status: String=review["status"]
+	var busy: bool=bool(_context["busy"])
+	_summary.text="장터 시식회 · "+{"locked":"준비 중","open":"방향 선택","active":"손님 대접","ready":"답례 도착","done":"완료"}[status]
+	var paper:=_paper(_body)
+	paper.add_child(_label("장터에서 가게까지",24,INK,true,"OpsMarketTitle"))
+	_policy.text="선택 후 변경 불가 · 답례 5,000원 1회"
+	_primary.disabled=true
+	_primary.text="요리 방향을 골라 주세요"
+	if status in ["locked","open"]:
+		paper.add_child(_label("장터 재료로 만든 메뉴를 손님에게 대접해 주세요.",17))
+		for route in MarketOrder.routes():
+			var option:=_paper(_body)
+			option.add_child(_market_picture(route["ingredient"],Vector2(0,64)))
+			option.add_child(_label(route["title"],20,INK,true))
+			option.add_child(_label("유자껍질 · 진함 5 이하 · 향 6 이상" if route["id"]=="citrus_clear" else "볶은 참깨유 · 진함 8 이상 · 향 6 이상",15,TEAL))
+			var accept:=_button("이 방향으로 수락","OpsMarketAccept_"+str(route["id"]),"teal","chevron_right")
+			accept.disabled=busy or status=="locked"
+			accept.pressed.connect(func():action_requested.emit("market_start",{"direction":str(route["id"])}))
+			option.add_child(accept)
+		_body.add_child(_label("수락 후 한 영업에 5그릇 · 평균 별 3개\n이미 개발한 메뉴도 대접할 수 있어요.",16))
+		if status=="locked":
+			_primary.text="2랭크부터 열려요"
+			_body.add_child(_label("가게 등급을 2랭크로 올려 주세요.",16,RED,false,"OpsMarketLock"))
+		return
+	var direction: Dictionary=MarketOrder.Directions.find(review["direction"])
+	paper.add_child(_market_picture(direction["ingredient"],Vector2(0,64)))
+	paper.add_child(_label(direction["title"],21,INK,true,"OpsMarketDirection"))
+	paper.add_child(_label("%d일차에 수락" % review["opened_day"],15,TEAL))
+	var receipt: Dictionary=review["receipt"]
+	if not receipt.is_empty():
+		paper.add_child(_dish(receipt["config"],Vector2(0,130)))
+		paper.add_child(_label("%s v%d" % [receipt["name"],receipt["version"]],17,INK,true,"OpsMarketMenu"))
+		paper.add_child(_label("기록한 영업 · %d일차" % receipt["service_day"],15,TEAL))
+	var metrics:=HBoxContainer.new()
+	metrics.add_theme_constant_override("separation",16)
+	_body.add_child(metrics)
+	var units:=_col(metrics,4)
+	units.add_child(_label("대접한 그릇",15,TEAL))
+	units.add_child(_label("%d / 5그릇" % int(receipt.get("units",0)),21,INK,true,"OpsMarketUnits"))
+	var stars:=_col(metrics,4)
+	stars.add_child(_label("평균 만족",15,TEAL))
+	stars.add_child(_label("영업 후 확인" if receipt.is_empty() else "%.2f / 5" % (float(receipt["star_sum"])/int(receipt["units"])),21,INK,true,"OpsMarketStars"))
+	_policy.text="한 메뉴 5그릇 · 평균 별 3개 · 답례 1회"
+	if status=="done":
+		_body.add_child(_label("%d일차 · 답례 5,000원 수령 완료" % review["claimed_day"],17,TEAL,true,"OpsMarketClaimed"))
+		_primary.text="시식회 완료"
+	else:
+		_link("재료와 개발 보기","OpsMarketGoal","market_goal",{"direction":review["direction"]},busy)
+		_link("판매 준비","OpsMarketSelling","market_selling",{},busy)
+		_primary.text="답례 5,000원 받기" if status=="ready" else "실제 영업에서 대접해 주세요"
+		_primary_kind="market_claim"
+		_primary.disabled=busy or status!="ready" or _state.wallet>_state.MAX_WALLET-MarketOrder.REWARD
+		if status=="ready" and _state.wallet>_state.MAX_WALLET-MarketOrder.REWARD:_body.add_child(_label("자금 한도를 넘어요. 자금을 사용한 뒤 받아 주세요.",16,RED,false,"OpsMarketCap"))
 
 
 func _stories_list() -> void:

@@ -1,0 +1,66 @@
+{
+  "date": "2026-11-02",
+  "task": "market-tasting-order-v1",
+  "base": "1ce05cd059164d70e75f7e4ec825259dfbe50827",
+  "status": "headless_accepted_native_approval_pending",
+  "schema": 20,
+  "source_count": 464,
+  "app": "/private/tmp/ramen-market-tasting-order-qa-20261102-v3/Ramen QA.app",
+  "pack_sha256": "27dcb9dcdc7a2afa48a0cf497a56a7cf8f470f16667c1a692bb9b564c47fadf5",
+  "vendor_signature_valid": true,
+  "checks": {
+    "ui": {
+      "exit": 0,
+      "errors_warnings": [],
+      "summary": [
+        "MARKET ORDER UI checks=723 failures=0 mode=layout-only"
+      ]
+    },
+    "sales": {
+      "exit": 0,
+      "errors_warnings": [],
+      "summary": [
+        "FORAGING SALES LOOP checks=575 failures=0 mode=layout-only"
+      ]
+    },
+    "journey": {
+      "exit": 0,
+      "errors_warnings": [],
+      "summary": [
+        "FIRST MENU JOURNEY checks=359 failures=0 mode=layout"
+      ]
+    },
+    "domain": {
+      "exit": 0,
+      "errors_warnings": [],
+      "summary": [
+        "MARKET ORDER checks=198 failures=0"
+      ]
+    },
+    "server": {
+      "exit": 0,
+      "errors_warnings": [],
+      "summary": [
+        "SERVER CHALLENGE mode=layout-only checks=773 failures=0"
+      ]
+    }
+  },
+  "existing_domain_suite": {
+    "tests": 130,
+    "checks": 60730,
+    "failures": 0,
+    "exit": 0,
+    "errors_warnings": 0
+  },
+  "builder_tests": 24,
+  "actual_evidence": "separate earned raw/farming continuations; public paid manufacture/tasting, actual single and expanded runtime, exact disk restarts/old19backup",
+  "synthetic_evidence": "pure malformed inputs and wallet-cap clone only, not progression",
+  "reward": 5000,
+  "once_only": true,
+  "forecast_and_analytical_and_partial_excluded": true,
+  "native_executed": false,
+  "claude_other_agents": 0,
+  "phone_live_save": false,
+  "independent_PR57": "preserved; current464source does not contain its pending readability fix",
+  "initial_failures_preserved": true
+}
