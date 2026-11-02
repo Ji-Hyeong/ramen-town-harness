@@ -28,6 +28,7 @@ const Comparison=preload("res://scripts/domain/component_comparison.gd")
 const ChangeSummary=preload("res://scripts/ui/recipe_change_summary.gd")
 const Disclosure=preload("res://scripts/ui/disclosure_card.gd")
 const Broth = preload("res://scripts/domain/broth_workshop.gd")
+const BrothShelf=preload("res://scripts/domain/broth_shelf.gd")
 const PantryArt = preload("res://scripts/ui/broth_material_art.gd")
 const WorkView = preload("res://scripts/ui/tasting_work_view.gd")
 const KitchenJourney=preload("res://scripts/ui/kitchen_journey.gd")
@@ -96,6 +97,7 @@ var _broth_category: String="전체"
 var _broth_page: String="blend"
 var _broth_scroll: Dictionary={}
 var _component_pages: Dictionary={"broth":0,"noodle":0}
+var _broth_archive_view: bool=false
 
 
 func _ready() -> void:
@@ -2179,7 +2181,12 @@ func _arrange_stage() -> void:
 ## Both workshops use the same read-only comparison and explicit transaction UI.
 func _render_component_library(kind: String, review: Dictionary, body: VBoxContainer) -> void:
 	var title: String="육수" if kind=="broth" else "면"
-	var count: int=review["recipes"].size()
+	# Filter immutable ownership indices rather than renumber recipes. Existing
+	# menu comparisons and use actions must keep the original completed formula.
+	var indices: Array[int]=[]
+	for index in review["recipes"].size():
+		if kind!="broth" or BrothShelf.archived(review["shelf"],review["recipes"][index]["recipe"])==_broth_archive_view:indices.append(index)
+	var count: int=indices.size()
 	var pages: int=maxi(1,ceili(float(count)/6.0))
 	var page: int=clampi(int(_component_pages[kind]),0,pages-1)
 	_component_pages[kind]=page
@@ -2188,8 +2195,22 @@ func _render_component_library(kind: String, review: Dictionary, body: VBoxConta
 	pager.name="ComponentPager"
 	pager.add_theme_constant_override("separation",8)
 	var column: VBoxContainer=_modal.find_child("DetailsColumn",true,false)
+	if kind=="broth":
+		var shelves:=HBoxContainer.new()
+		shelves.name="BrothShelves"
+		shelves.add_theme_constant_override("separation",6)
+		column.add_child(shelves);column.move_child(shelves,2)
+		for archived in [false,true]:
+			var amount: int=review["shelf"]["archived"].size() if archived else int(review["working_count"])
+			var shelf:=_button(("보관함" if archived else "작업 노트")+" · %d" % amount,"BrothShelfArchive" if archived else "BrothShelfWorking")
+			shelf.toggle_mode=true;shelf.set_pressed_no_signal(_broth_archive_view==archived)
+			shelf.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+			shelf.pressed.connect(func(): _broth_archive_view=archived;_component_pages["broth"]=0;_show_broth_workshop("library"))
+			shelves.add_child(shelf)
+		var capacity:=_label("작업 %d/%d · 전체 %d/%d" % [review["working_count"],review["working_limit"],review["recipes"].size(),review["owned_limit"]],14,TEAL)
+		capacity.name="BrothShelfCapacity";body.add_child(capacity)
 	column.add_child(pager)
-	column.move_child(pager,2)
+	column.move_child(pager,3 if kind=="broth" else 2)
 	var previous:=_button("","ComponentPrevious","arrow_back")
 	previous.tooltip_text="앞쪽 개발 목록"
 	previous.disabled=page==0
@@ -2204,9 +2225,10 @@ func _render_component_library(kind: String, review: Dictionary, body: VBoxConta
 	next.disabled=page>=pages-1
 	next.pressed.connect(_change_component_page.bind(kind,1))
 	pager.add_child(next)
-	if count==0: body.add_child(_label("아직 개발 기록이 없어요. 배합에서 처음 만들어 보세요.",17,MUTED))
+	if count==0: body.add_child(_label("보관한 육수가 없어요." if kind=="broth" and _broth_archive_view else "아직 개발 기록이 없어요. 배합에서 처음 만들어 보세요.",17,MUTED))
 	var first: int=count-1-page*6
-	for index in range(first,maxi(-1,first-6),-1):
+	for position in range(first,maxi(-1,first-6),-1):
+		var index: int=indices[position]
 		var result: Dictionary=state.component_comparison(kind,index)
 		if not result["ok"]:
 			body.add_child(_label(result["message"],16,RED))
@@ -2230,6 +2252,12 @@ func _render_component_library(kind: String, review: Dictionary, body: VBoxConta
 		names.add_child(_label(item["name"],20))
 		names.add_child(_label("그릇에 사용 중" if result["applied"] else "%d번째 개발 · %d일차" % [index+1,review["recipes"][index]["day"]],14,TEAL))
 		hero.add_child(names)
+		if kind=="broth":
+			var archive:=_button("꺼내기" if _broth_archive_view else "보관","BrothRestore_"+str(index) if _broth_archive_view else "BrothArchive_"+str(index))
+			archive.tooltip_text="무료로 작업 노트에 꺼내기" if _broth_archive_view else "메뉴와 배합을 유지하고 보관함에 넣기"
+			archive.disabled=bool(_info["busy"]) or (_broth_archive_view and int(review["working_count"])>=int(review["working_limit"]))
+			archive.pressed.connect(func(): _emit("broth_restore" if _broth_archive_view else "broth_archive",{"index":index}))
+			hero.add_child(archive)
 		card.add_child(hero)
 		card.add_child(_label("한 그릇 %s · 준비 %d초" % [won(item["cost"]),item["seconds"]],16,TEAL))
 		var actions:=HBoxContainer.new()
@@ -2295,7 +2323,9 @@ func _change_component_page(kind: String, delta: int) -> void:
 func _return_component_library(kind: String, newest: bool=false) -> void:
 	# Completing a new experiment must reveal its new card even when the player
 	# started from an older archive page. Back navigation preserves the page.
-	if newest: _component_pages[kind]=0
+	if newest:
+		_component_pages[kind]=0
+		if kind=="broth":_broth_archive_view=false
 	if kind=="broth": _show_broth_workshop("library")
 	else: _show_noodle_workshop("library")
 

@@ -1,4 +1,5 @@
 extends RefCounted
+## Historical schema projections also omit the v21 reversible broth shelf.
 ## Historical schema projections also exclude the optional v20 market order.
 ## Earn every supplier, rank and sample through public actions. Invalid saves
 ## are derived from valid receipts, so rejection cannot pass on a broken setup.
@@ -156,7 +157,7 @@ func _corruptions(st: State) -> void:
 			"stage": farm["active"]={"stage":"fake"}
 			"type": farm["completed"]=true
 			"version":
-				raw["schema_version"]=14; raw.erase("broth_workshop"); raw.erase("noodle_workshop"); raw.erase("recipe_knowledge"); raw.erase("server_challenge"); raw.erase("market_tasting_order")
+				raw["schema_version"]=14; raw.erase("broth_workshop"); raw.erase("noodle_workshop"); raw.erase("recipe_knowledge"); raw.erase("server_challenge"); raw.erase("market_tasting_order"); raw.erase("broth_shelf")
 				raw.erase("mountain_foraging")
 			"supplier": raw["exploration"]["discovered"].pop_back()
 		var target:=State.new()
@@ -260,7 +261,7 @@ func _legacy(data_dir: String) -> void:
 	ok(st.claim_chef_challenge(),"old version earned mastery")
 	var raw: Dictionary=st.to_dict()
 	raw.erase("mountain_foraging")
-	raw["schema_version"]=14; raw.erase("broth_workshop"); raw.erase("noodle_workshop"); raw.erase("recipe_knowledge"); raw.erase("server_challenge"); raw.erase("market_tasting_order")
+	raw["schema_version"]=14; raw.erase("broth_workshop"); raw.erase("noodle_workshop"); raw.erase("recipe_knowledge"); raw.erase("server_challenge"); raw.erase("market_tasting_order"); raw.erase("broth_shelf")
 	var text: String=JSON.stringify(raw,"\t",true)+"\n"
 	var store=Save.new(data_dir.path_join("legacy14"))
 	check.call(DirAccess.make_dir_recursive_absolute(store.dir)==OK,"isolated legacy directory")
@@ -273,7 +274,7 @@ func _legacy(data_dir: String) -> void:
 	check.call(store.load_into(migrated)["status"]=="ok" and migrated.mountain_foraging_state()==Mountain.empty_state(),"v14 migration grants no materials")
 	var compared: Dictionary=migrated.to_dict()
 	compared.erase("mountain_foraging")
-	compared["schema_version"]=14; compared.erase("broth_workshop"); compared.erase("noodle_workshop"); compared.erase("recipe_knowledge"); compared.erase("server_challenge"); compared.erase("market_tasting_order")
+	compared["schema_version"]=14; compared.erase("broth_workshop"); compared.erase("noodle_workshop"); compared.erase("recipe_knowledge"); compared.erase("server_challenge"); compared.erase("market_tasting_order"); compared.erase("broth_shelf")
 	check.call(compared==raw and migrated.chef_challenge_review()["status"]=="mastered","every progressed value/mastery exactly preserved")
 	ok(store.save_state(migrated),"first v15 save")
 	check.call(FileAccess.get_file_as_string(store.legacy_bak_path(14))==text,"original v14 bytes backed up")

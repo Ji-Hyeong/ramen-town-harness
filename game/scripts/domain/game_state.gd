@@ -65,7 +65,7 @@ const Stories = preload("res://scripts/domain/regular_stories.gd")
 ## v19 adds an explicitly accepted server challenge; older games get no retroactive proof.
 ## v20 adds one optional market service order. Earlier saves gain empty progress
 ## only; no past tasting/service grants retroactive cash, items or eligibility.
-const SCHEMA_VERSION: int = 20
+const SCHEMA_VERSION: int = 21
 const EXPANSION_PRICE: int = 60000
 const MIN_SCHEMA_VERSION: int = 1
 const LEGACY_MAX_RECORDS: int = 30
@@ -97,7 +97,9 @@ const TOP_KEYS_V16: Array = TOP_KEYS_V15 + ["broth_workshop"]
 const TOP_KEYS_V17: Array = TOP_KEYS_V16 + ["noodle_workshop"]
 const TOP_KEYS_V18: Array = TOP_KEYS_V17 + ["recipe_knowledge"]
 const TOP_KEYS_V19: Array = TOP_KEYS_V18 + ["server_challenge"]
-const TOP_KEYS: Array = TOP_KEYS_V19 + ["market_tasting_order"]
+const TOP_KEYS_V20: Array = TOP_KEYS_V19 + ["market_tasting_order"]
+const TOP_KEYS: Array = TOP_KEYS_V20 + ["broth_shelf"]
+const BrothShelf=preload("res://scripts/domain/broth_shelf.gd")
 const RECORD_KEYS: Array = ["record_id", "lineage_id", "name", "version", "tasted_day", "config", "scores", "comparison"]
 const COMPARISON_KEYS: Array = ["prev_record_id", "prev_version", "prev_scores", "prev_config"]
 const DRAFT_KEYS: Array = ["config", "name", "lineage_id"]
@@ -137,6 +139,7 @@ var _foraging: Dictionary = Foraging.empty_state()
 var _harbor_foraging: Dictionary = Harbor.empty_state()
 var _mountain_foraging: Dictionary = Mountain.empty_state()
 var _broth_workshop: Dictionary = Broth.empty_state()
+var _broth_shelf: Dictionary = BrothShelf.empty_state()
 ## Brewing is transient. Restart restores the saved blend, without charging or
 ## creating a completed product for work which did not finish.
 var _broth_active: Dictionary = {}
@@ -261,9 +264,11 @@ func broth_review() -> Dictionary:
 		reason="항구에서 정어리 연구 샘플을 먼저 구해 주세요."
 	if reason=="" and Broth.contains(_broth_workshop["recipes"],blend): reason="이미 개발한 배합이에요. 개발한 육수에서 골라 주세요."
 	if reason=="" and _broth_workshop["recipes"].size()>=Broth.MAX_RECIPES: reason="육수 개발 기록이 가득 찼어요."
+	if reason=="" and BrothShelf.active_count(_broth_shelf,_broth_workshop["recipes"])>=BrothShelf.ACTIVE_LIMIT: reason="작업 노트가 가득 찼어요. 개발 노트에서 육수 하나를 보관해 주세요."
 	if reason=="" and wallet<fee: reason="육수 개발비가 부족해요."
 	return {"blend":blend,"product":item,"cost":fee,"capacity":Broth.capacity(_rank),"reason":reason,
 		"recipes":_broth_workshop["recipes"].duplicate(true),"active":broth_active(),
+		"shelf":_broth_shelf.duplicate(true),"working_count":BrothShelf.active_count(_broth_shelf,_broth_workshop["recipes"]),"working_limit":BrothShelf.ACTIVE_LIMIT,"owned_limit":BrothShelf.OWNED_LIMIT,
 		"progress":float(_broth_active.get("elapsed",0.0))/float(_broth_active.get("duration",1.0)),
 		"duration":5.0+float(method["work_extra"]),"ready":broth_ready()}
 
@@ -312,6 +317,16 @@ func advance_broth(seconds: float) -> Dictionary:
 	wallet-=int(job["fee"])
 	_broth_workshop["recipes"].append({"recipe":job["blend"].duplicate(true),"day":day})
 	return {"ok":true,"finished":true,"message":"육수가 완성됐어요. 이 육수로 라멘을 만들어 보세요.","index":_broth_workshop["recipes"].size()-1}
+
+
+## A reversible organization transaction: every owned row and historical raw
+## config remains intact. Archived formulas are usable without a hidden fee.
+func set_broth_archived(index: int,to_archive: bool) -> Dictionary:
+	if _busy():return _locked_fail()
+	var result: Dictionary=BrothShelf.change(_broth_shelf,_broth_workshop["recipes"],index,to_archive)
+	if not result["ok"]:return _fail(result["message"])
+	_broth_shelf=result["state"]
+	return _ok(result["message"])
 
 
 func use_broth(index: int) -> Dictionary:
@@ -2069,6 +2084,7 @@ func to_dict() -> Dictionary:
 	return {
 		"schema_version": SCHEMA_VERSION,
 		"broth_workshop":_broth_workshop.duplicate(true),
+		"broth_shelf":_broth_shelf.duplicate(true),
 		"noodle_workshop":_noodle_workshop.duplicate(true),
 		"recipe_knowledge": _recipe_knowledge.duplicate(true),
 		"day": day,
@@ -2149,6 +2165,8 @@ func load_from_dict(raw: Variant) -> String:
 	elif version == 19:
 		expected_keys = TOP_KEYS_V19
 	elif version == 20:
+		expected_keys = TOP_KEYS_V20
+	elif version == 21:
 		expected_keys = TOP_KEYS
 	var key_err: String = Check.keys_error(d, expected_keys, "저장")
 	if key_err != "":
@@ -2335,7 +2353,9 @@ func load_from_dict(raw: Variant) -> String:
 		discovered_now.append(row["id"])
 	var broth_parsed: Dictionary=Broth.empty_state(true)
 	if version>=16:
-		var broth_err: String=Broth.state_error(d["broth_workshop"],growth_rank,discovered_now,int(d["day"]))
+		# Old files retain their original60-product grammar; they cannot smuggle
+		# a larger library by changing only the schema number.
+		var broth_err: String=Broth.state_error(d["broth_workshop"],growth_rank,discovered_now,int(d["day"]),60 if version<=20 else Broth.MAX_RECIPES)
 		if broth_err!="": return broth_err
 		broth_parsed=d["broth_workshop"].duplicate(true)
 		for recipe in broth_parsed["recipes"]: recipe["day"]=int(recipe["day"])
@@ -2345,6 +2365,11 @@ func load_from_dict(raw: Variant) -> String:
 			if broth_err!="": return broth_err
 		broth_err=_broth_config_error(dcfg["config"],broth_parsed,growth_rank,discovered_now,true)
 		if broth_err!="": return broth_err
+	var shelf_parsed: Dictionary=BrothShelf.empty_state()
+	if version>=21:
+		var shelf_result: Dictionary=BrothShelf.parse(d["broth_shelf"],broth_parsed["recipes"])
+		if not shelf_result["ok"]:return shelf_result["message"]
+		shelf_parsed=shelf_result["state"]
 	var noodle_parsed: Dictionary=Noodle.empty_state(true)
 	if version>=17:
 		var noodle_err: String=Noodle.state_error(d["noodle_workshop"],growth_rank,discovered_now,int(d["day"]))
@@ -2516,6 +2541,7 @@ func load_from_dict(raw: Variant) -> String:
 	_noodle_workshop = noodle_parsed
 	_noodle_active = {}
 	_broth_workshop = broth_parsed
+	_broth_shelf = shelf_parsed
 	_broth_active = {}
 	_contests = contests_parsed
 	_research_done = research_parsed

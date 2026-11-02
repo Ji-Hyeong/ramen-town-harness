@@ -3293,6 +3293,7 @@ func _on_broth_action(kind: String, data: Dictionary) -> void:
 		"broth_begin": result=state.begin_broth()
 		"broth_cancel": result=state.cancel_broth()
 		"broth_use": result=state.use_broth(int(data["index"]))
+		"broth_archive","broth_restore": result=state.set_broth_archived(int(data["index"]),kind=="broth_archive")
 		_:
 			push_error("알 수 없는 육수 개발 동작: "+kind)
 			return
@@ -3306,7 +3307,8 @@ func _on_broth_action(kind: String, data: Dictionary) -> void:
 	else: _flash(str(result["message"]))
 	_refresh_all()
 	_sync_bowl_editor()
-	if kind!="broth_use": _bowl_editor._show_broth_workshop()
+	if kind in ["broth_archive","broth_restore"]:_bowl_editor._show_broth_workshop("library")
+	elif kind!="broth_use": _bowl_editor._show_broth_workshop()
 	elif result["ok"] and bool(data.get("advance",false)):
 		_bowl_editor._close_modal()
 		if not state.noodle_ready(): _bowl_editor._show_noodle_workshop()

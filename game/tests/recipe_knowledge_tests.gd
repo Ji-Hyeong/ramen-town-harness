@@ -1,4 +1,5 @@
 extends SceneTree
+## Historical schema projections also omit the v21 reversible broth shelf.
 ## Historical schema projections also exclude the optional v20 market order.
 ## Domain proof for recipe knowledge: a recipe is revealed only by a real, successful, explicit
 ## selection (or paid tasting) while both bowl components are genuinely ready; previews, partial
@@ -442,8 +443,8 @@ func malformed(st: State) -> void:
 	d=good.duplicate(true); d["recipe_knowledge"]["keys"].append("g".repeat(64)); cases["key with non-hex letters"]=d
 	d=good.duplicate(true); d["recipe_knowledge"]["keys"].append(first); cases["duplicate key"]=d
 	d=good.duplicate(true); d["recipe_knowledge"]["keys"][0]={"tare":"tare_shio"}; cases["config snapshot instead of a hash"]=d
-	d=good.duplicate(true); d["schema_version"]=17; d.erase("server_challenge"); d.erase("market_tasting_order"); cases["v17 may not carry knowledge"]=d
-	d=good.duplicate(true); d["schema_version"]=16; d.erase("server_challenge"); d.erase("market_tasting_order"); cases["v16 may not carry knowledge"]=d
+	d=good.duplicate(true); d["schema_version"]=17; d.erase("server_challenge"); d.erase("market_tasting_order"); d.erase("broth_shelf"); cases["v17 may not carry knowledge"]=d
+	d=good.duplicate(true); d["schema_version"]=16; d.erase("server_challenge"); d.erase("market_tasting_order"); d.erase("broth_shelf"); cases["v16 may not carry knowledge"]=d
 	for label in cases:
 		var message: String=other.load_from_dict(cases[label])
 		verify(message!="","malformed save is refused: "+label)
