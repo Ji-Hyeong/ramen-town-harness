@@ -36,12 +36,18 @@ Request both exact paths together, explicitly replacing old pending requests.
 Native execution uses supported Computer Use after approval. Existing root
 archives must match their original Git blobs/bytes/SHA256 values.
 
-## CURRENT RESULT
+## FINAL RESULT
 Combined headless acceptance passes: old domain130tests/60730checks; market198;
 marketUI723; formula635; sales575; paid365; firstjourney359; pause197; builder24.
 All actual exit0/errors-warnings0. Nine whole old19value sets remain identical
 after only the20version and canonical empty order addition. Three archived roots
 match original Git blobs. Two new464source apps have exact source/PCK/signature
-proof. Native approval requested together, replacing earlier standalone requests.
-Native execution, image review and main merge are blocked on that action-time
-approval; no equivalent terminal bypass or old-capture reuse is authorized.
+proof. User approved the exact integrated pair on2026-11-02; older separate apps
+were not needed. Actual market run20261102T045311Z-89897 passes819/0/32PNGs and
+formula run20261102T045518Z-90392 passes698/0/21PNGs. Both actual exit0 and no
+engine errors/warnings; all53fresh captures reviewed via15contact sheets. All12
+whole native/headless saves are byte-identical. Post-run frozen464source/PCK/
+official signature checks pass. Publish3unmodified originals and acceptance.
+Both UI tool calls timed out after launch; fresh launcher records proved actual
+execution, so neither app was duplicated. No phone or human-fun claim. Generic
+copy wrapping/compact detail scrolling remain polish, not missing transactions.
