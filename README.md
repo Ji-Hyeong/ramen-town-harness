@@ -1,5 +1,24 @@
 # Ramen Town — Codex × Claude 개발 하네스
 
+## 현재 검증된 버전 · 2026-11-02
+
+원재료를 직접 배합해 육수와 면을 만들고, 시식·재료 탐색·실제 판매로 이어가는
+Godot 라멘가게 프로토타입입니다. 완성 육수는 삭제 없이 보관·복귀하며 계속 개발하고,
+목록에서는 같은 이름의 육수도 원재료 그림·분량·우림 방식으로 구분합니다.
+
+<img src="game/docs/broth-library-ingredient-cues-screenshots/before-portrait-full-working.png" width="230" alt="이전 육수 목록"> <img src="game/docs/broth-library-ingredient-cues-screenshots/after-portrait-full-working.png" width="230" alt="재료와 분량을 표시한 현재 육수 목록">
+
+- [육수 보관함](game/docs/BROTH_SHELF_ARCHIVE_V1.md): 실제 유료60→61번째 개발과 과거 메뉴 보존, 저장21 이행.
+- [배합을 구분하는 목록](game/docs/BROTH_LIBRARY_INGREDIENT_CUES_V1.md): 실제 Mac2,741검사·세 크기30장 검토, 전체 저장 대조.
+- [완성한 육수의 배합](game/docs/BROTH_COMPLETION_INGREDIENTS_V1.md): 결과 화면에도 실제 재료·분량·공법 표시, Mac2,921검사·30장 검토.
+- [독립 QA 대조 도구](game/docs/NATIVE_QA_AUDIT_V1.md): 소스·실행·캡처·전체 저장을 확인하고 화면의 직접 검토는 별도로 유지.
+
+작업 계약 → 구현 → 독립 검증 → 실제 화면 검토 → PR 반영을 기록합니다.
+역할과 사용량에 관한 최신 지시는 [AGENTS.md](AGENTS.md)를 따르며 이번 연속 작업은
+Codex가 담당했습니다. 테스트 수를 게임 완성도로 환산하지 않습니다. iPhone의 현재
+개발분 검증과6~10시간 본편·사람의 재미 평가는 남아 있습니다.
+이하 날짜별 개발 기록은 당시 상태이며 최신 검증 범위는 각 보고서를 따릅니다.
+
 >2026-10-29 시식 목표 확인: 함께 맞는 다른 방향보다 선택한 개발 목표의 ‘목표 달성 / 목표 충족 / 더 실험’을 먼저 표시합니다. 실제 시식 기록만 판정하고, 상세에서 충족·미달을 읽습니다. [조작과 범위](game/docs/SELECTED_GOAL_FEEDBACK_V1.md) · [실제 수정 전후](game/docs/uiux-reset/selected-goal-feedback-v1/).
 
 >2026-10-29 지역의 만남과 연계 실험: 장터·항구·산골에서 두 몫 중 하나를 선택해 연구 재료를 모으고, 두 지역의 재료를 연결하는 세 개발 방향을 추가합니다. 목표는 ‘지역 실험 / 지역 연계’로 나눠 고릅니다. [조작과 범위](game/docs/FORAGING_ENCOUNTERS_V1.md) · [실제 화면](game/docs/uiux-reset/foraging-encounters-v1/).

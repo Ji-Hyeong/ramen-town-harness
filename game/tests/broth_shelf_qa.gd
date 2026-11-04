@@ -82,6 +82,8 @@ func _cue_boundaries(holder: SubViewport,editor: Control) -> void:
 		editor.call("_broth_library_cues",probe,recipe,999)
 		await _settle()
 		var flow: HFlowContainer=probe.get_child(0)
+		flow.alignment=FlowContainer.ALIGNMENT_CENTER
+		await _settle()
 		_check_cues(flow,recipe,16+actual.size.x)
 		_check(flow.size.y<=84,"maximum five raw ingredients use at most three compact rows")
 		flow.queue_free();await _settle()
@@ -142,7 +144,19 @@ func _shelf_flow(tag: String,vp: Vector2i) -> void:
 	app.call("_process",20.0);await _settle()
 	_check(state.broth_review()["recipes"].size()==61 and state.wallet==money-fee,"actual controller completes and charges61st broth exactly once")
 	_check(JSON.stringify(state.records(),"",true)==original_records,"all60historical raw records stay byte-equivalent")
+	var completed: Dictionary=state.broth_review()["recipes"][60]["recipe"]
+	var completion_cues: HFlowContainer=editor.find_child("BrothRecipeCues_60",true,false)
+	_check(completion_cues!=null,"paid completion shows the actually earned raw formula")
+	if completion_cues!=null:_check_cues(completion_cues,completed,vp.x-14)
+	var completion_method: Label=editor.find_child("ComponentCompletionMethod",true,false)
+	_check(completion_method!=null and completion_method.text==CueMethods.method("broth",completed["method"])["name"],"completion identifies the owned extraction method")
+	_fixed_action(editor,vp,"raw broth completion")
+	for label in editor.find_children("*","Label",true,false):
+		if label.is_visible_in_tree():_check(_text_height_fits(label),"completed ingredient/method/result text fits: "+label.name)
 	await _shot(holder,tag+"_shelf_05_complete61.png")
+	before=_json(state)
+	if completion_cues!=null:await _drag_list(holder,completion_cues.get_global_rect().get_center())
+	_check(_json(state)==before,"dragging completion ingredients does not pay again, apply or grant anything")
 	await _tap(holder,editor,"ComponentCompletionLibrary")
 	await _tap(holder,editor,"BrothShelfArchive")
 	var restore: Button=editor.find_child("BrothRestore_59",true,false)
